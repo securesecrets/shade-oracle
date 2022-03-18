@@ -1,0 +1,21 @@
+[package]
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
+name = "shared-types"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+debug-print = ["platform/debug-print"]
+backtraces = ["platform/backtraces"]
+
+[dependencies]
+secret-toolkit = { version = "0.2", features = ["permit"] }
+rand = {version = "0.7.3", optional = true}
+schemars = "0.7"
+serde = {version = "1.0.103", default-features = false, features = ["derive"]}
+secretcli = { path = "../secretcli" }
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "21.12", features = ["scrt", "backtraces"] }
