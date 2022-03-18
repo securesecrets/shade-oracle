@@ -1,0 +1,12 @@
+/Users/saverypop/Documents/programming/secret-network/shade-oracle/target/debug/deps/libremain-589a504acdf1edb6.dylib: /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/lib.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/atom.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/check.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/compare.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/emit.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/format.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/parse.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/visit.rs
+
+/Users/saverypop/Documents/programming/secret-network/shade-oracle/target/debug/deps/remain-589a504acdf1edb6.d: /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/lib.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/atom.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/check.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/compare.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/emit.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/format.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/parse.rs /Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/visit.rs
+
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/lib.rs:
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/atom.rs:
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/check.rs:
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/compare.rs:
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/emit.rs:
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/format.rs:
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/parse.rs:
+/Users/saverypop/.cargo/registry/src/github.com-1ecc6299db9ec823/remain-0.2.2/src/visit.rs:

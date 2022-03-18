@@ -23,17 +23,17 @@ default = []
 [dependencies]
 colored = "2.0.0"
 chrono = "0.4.19"
-shared-types = { path = "../../shared_types" }
+shared-types = { path = "../shared_types" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.67"}
 getrandom = { version = "0.2", features = ["js"] } # Prevents wasm from freaking out when running make
 rand = { version = "0.8.4"}
-shade-oracles = { path = "../../shade_oracles" }
+shade-oracles = { path = "../shade_oracles" }
 
 syn = { version="1.0.57",features=["full","fold"] }
 quote = "1.0.8"
 
-mock-band = { path = "../../contracts/mocks/mock_band" }
+mock-band = { path = "../../contracts/mock_band" }
 proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
 earn-v1-oracle = { path = "../../contracts/earn_v1_oracle" }
 lp-oracle = { path = "../../contracts/lp_oracle" }

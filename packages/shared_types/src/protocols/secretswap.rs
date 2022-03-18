@@ -1,6 +1,6 @@
 use core::fmt;
 
-use fadroma_platform_scrt::{
+use fadroma::platform::{
     Api, CanonicalAddr, Extern, HumanAddr, Querier, StdResult, Storage, Uint128,
 };
 use schemars::JsonSchema;
