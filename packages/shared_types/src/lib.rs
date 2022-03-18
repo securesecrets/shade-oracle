@@ -3,13 +3,12 @@ use scrt::{space_pad, to_binary, Coin, CosmosMsg, HumanAddr, StdResult, Uint128,
 use scrt_math::Uint256;
 
 // Modules re-export
-pub use fadroma_ensemble as ensemble;
-pub use fadroma_auth as auth;
-pub use fadroma_killswitch as killswitch;
-pub use fadroma_derive_contract as derive;
-pub use fadroma_math as scrt_math;
-pub use fadroma_platform_scrt as scrt;
-pub use fadroma_snip20_impl as composable_snip20;
+pub use fadroma::ensemble as ensemble;
+pub use fadroma::auth as auth;
+pub use fadroma::killswitch as killswitch;
+pub use fadroma::math as scrt_math;
+pub use fadroma::platform as scrt;
+pub use fadroma::snip20_impl as composable_snip20;
 pub use secret_toolkit;
 use serde::Serialize;
 

@@ -1,5 +1,4 @@
-use crate::scrt::{Api, CanonicalAddr, HumanAddr, StdError, Uint128};
-use fadroma_platform_scrt::{ContractLink, Extern, Storage, Querier, Env, StdResult};
+use crate::scrt::{Api, CanonicalAddr, HumanAddr, StdError, Uint128, ContractLink, Extern, Storage, Querier, Env, StdResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
