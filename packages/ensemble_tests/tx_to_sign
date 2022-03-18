@@ -1,0 +1,1 @@
+{"account_number":"0","chain_id":"mulberry-1","fee":{"amount":[{"amount":"0","denom":"uscrt"}],"gas":"1"},"memo":"","msgs":[{"type":"query_permit","value":{"allowed_tokens":["secret1vtymzkkeu7w8uxfnhyagjkkpe2xgj07vdp9agu"],"permissions":["balance"],"permit_name":"user_a_permit"}}],"sequence":"0"}
