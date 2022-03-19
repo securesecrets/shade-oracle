@@ -1,9 +1,17 @@
+use schemars::JsonSchema;
+use serde::{Serialize, Deserialize};
+
 use crate::{
     asset::Contract,
     composable_snip20::msg as snip20,
-    scrt::{to_binary, HumanAddr, Querier, QueryRequest, StdError, StdResult, WasmQuery},
-    secret_toolkit::snip20::{Balance, TokenInfoResponse},
+    scrt::{Uint128, to_binary, HumanAddr, Querier, QueryRequest, StdError, StdResult, WasmQuery},
+    secret_toolkit::snip20::{TokenInfoResponse},
 };
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Balance {
+    pub amount: Uint128,
+}
 
 pub fn query_token_info(
     contract: &Contract,

@@ -1,10 +1,10 @@
 use crate::contract::{handle, init, query, QueryMsg};
-use cosmwasm_std::{
+use shared_types::scrt::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env},
     Uint128,
 };
-use shade_lend::oracles::band::{HandleMsg, InitMsg, ReferenceData};
+use shade_oracles::oracles::band::{HandleMsg, InitMsg, ReferenceData};
 
 #[test]
 fn update_config() {

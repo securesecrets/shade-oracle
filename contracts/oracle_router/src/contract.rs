@@ -2,7 +2,7 @@ use crate::{
     registry::{batch_update_registry, get_price, update_registry},
     state::*,
 };
-use shade_lend::oracles::router::*;
+use shade_oracles::oracles::router::*;
 use shared_types::{
     scrt::{
         to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,

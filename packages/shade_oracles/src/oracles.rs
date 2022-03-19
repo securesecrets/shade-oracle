@@ -1,9 +1,9 @@
 use schemars::JsonSchema;
-use secret_toolkit::utils::Query;
 use serde::{Deserialize, Serialize};
 use shared_types::{
     asset::{Contract, ResponseStatus},
     scrt::*,
+    secret_toolkit::utils::Query,
     scrt_math::Uint256,
 };
 

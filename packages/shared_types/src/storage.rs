@@ -2,18 +2,19 @@ use crate::{
     scrt::{
         PrefixedStorage, ReadonlyPrefixedStorage, ReadonlyStorage, StdError, StdResult, Storage,
     },
-    secret_toolkit::serialization::{Bincode2, Json, Serde},
+    scrt_storage as scrt_storage,
     storage::{bincode_state::*, json_state::*},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use std::any::type_name;
 
 pub mod json_state {
 
+    use fadroma::from_slice;
+
     use super::*;
 
-    /// Returns StdResult<()> resulting from saving an item to storage using Json (de)serialization
-    /// because bincode2 annoyingly uses a float op when deserializing an enum
+    /// Returns StdResult<()> resulting from saving an item to storage using serde_json_wasm
     ///
     /// # Arguments
     ///
@@ -25,12 +26,10 @@ pub mod json_state {
         key: &[u8],
         value: &T,
     ) -> StdResult<()> {
-        storage.set(key, &Json::serialize(value)?);
-        Ok(())
+        scrt_storage::save(storage, key, value)
     }
 
-    /// Returns StdResult<T> from retrieving the item with the specified key using Json
-    /// (de)serialization because bincode2 annoyingly uses a float op when deserializing an enum.
+    /// Returns StdResult<T> from retrieving the item with the specified key using serde_json_wasm
     /// Returns a StdError::NotFound if there is no item with that key
     ///
     /// # Arguments
@@ -41,15 +40,11 @@ pub mod json_state {
         storage: &S,
         key: &[u8],
     ) -> StdResult<T> {
-        Json::deserialize(
-            &storage
-                .get(key)
-                .ok_or_else(|| StdError::not_found(type_name::<T>()))?,
-        )
+        scrt_storage::load(storage, key)?
+            .ok_or_else(|| StdError::not_found(type_name::<T>()))
     }
 
-    /// Returns StdResult<Option<T>> from retrieving the item with the specified key using Json
-    /// (de)serialization because bincode2 annoyingly uses a float op when deserializing an enum.
+    /// Returns StdResult<Option<T>> from retrieving the item with the specified key using serde_json_wasm
     /// Returns Ok(None) if there is no item with that key
     ///
     /// # Arguments
@@ -61,7 +56,7 @@ pub mod json_state {
         key: &[u8],
     ) -> StdResult<Option<T>> {
         match storage.get(key) {
-            Some(value) => Json::deserialize(&value).map(Some),
+            Some(value) => from_slice(&value),
             None => Ok(None),
         }
     }
@@ -77,7 +72,7 @@ pub mod bincode_state {
     /// * `key` - a byte slice representing the key to access the stored item
     /// * `value` - a reference to the item to store
     pub fn save<T: Serialize, S: Storage>(storage: &mut S, key: &[u8], value: &T) -> StdResult<()> {
-        storage.set(key, &Bincode2::serialize(value)?);
+        storage.set(key, &bincode2::serialize(value).unwrap());
         Ok(())
     }
 
@@ -99,11 +94,10 @@ pub mod bincode_state {
     /// * `storage` - a reference to the storage this item is in
     /// * `key` - a byte slice representing the key that accesses the stored item
     pub fn load<T: DeserializeOwned, S: ReadonlyStorage>(storage: &S, key: &[u8]) -> StdResult<T> {
-        Bincode2::deserialize(
-            &storage
-                .get(key)
-                .ok_or_else(|| StdError::not_found(type_name::<T>()))?,
-        )
+        let data = storage
+        .get(key)
+        .ok_or_else(|| StdError::not_found(type_name::<T>()))?;
+        bincode2::deserialize::<T>(&data).map_err(|e| StdError::serialize_err(type_name::<T>(), e))
     }
 
     /// Returns StdResult<Option<T>> from retrieving the item with the specified key.
@@ -118,7 +112,7 @@ pub mod bincode_state {
         key: &[u8],
     ) -> StdResult<Option<T>> {
         match storage.get(key) {
-            Some(value) => Bincode2::deserialize(&value).map(Some),
+            Some(value) => Ok(Some(bincode2::deserialize::<T>(&value).map_err(|e| StdError::serialize_err(type_name::<T>(), e))?)),
             None => Ok(None),
         }
     }
@@ -198,11 +192,7 @@ pub mod traits {
             storage: &S,
             key: &[u8],
         ) -> StdResult<T> {
-            let object = json_may_load(&Self::storage(storage), key)?;
-            match object {
-                Some(object) => Ok(object),
-                None => Err(StdError::generic_err("Could not find item.")),
-            }
+            json_load(&Self::storage(storage), key)
         }
 
         fn save_json<S: Storage, T: Serialize>(

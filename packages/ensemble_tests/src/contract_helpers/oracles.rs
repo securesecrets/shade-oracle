@@ -1,7 +1,7 @@
 use super::EnsembleContract;
 use crate::{ensemble_new, ensemblify};
 use serde::{Deserialize, Serialize};
-use shade_lend::oracles::{
+use shade_oracles::oracles::{
     band, common as common_oracles, earn_v1_oracle, lp_oracle, proxy_band_oracle, router,
 };
 use shared_types::{
@@ -128,7 +128,7 @@ impl MockBand {
 
         account_key: Option<&str>,
     ) -> StdResult<()> {
-        let msg = shade_lend::oracles::band::HandleMsg::UpdateSymbolPrice {
+        let msg = shade_oracles::oracles::band::HandleMsg::UpdateSymbolPrice {
             base_symbol: pair.0.to_string(),
             quote_symbol: pair.1.to_string(),
             rate: rate,

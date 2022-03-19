@@ -5,7 +5,7 @@ use shared_types::{
     composable_snip20::msg as snip20msg,
     ensemble::ContractEnsemble,
     scrt::{Binary, ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
-    secret_toolkit::snip20,
+    composable_snip20::msg as snip20,
 };
 use std::{cell::RefCell, rc::Rc};
 
