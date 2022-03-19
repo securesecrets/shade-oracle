@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{constants::*, contract_helpers::oracles::*, init_oracle, init_band};
 use serde_json::Result;
-use shade_lend::oracles::*;
+use shade_oracles::oracles::*;
 use shared_types::{
     asset::Contract,
     ensemble::{ContractEnsemble, MockEnv},

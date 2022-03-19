@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use shade_lend::oracles::{
+use shade_oracles::oracles::{
     common::{query_price, PriceResponse, QueryMsg},
     lp_oracle::{
         get_fair_lp_token_price, ConfigResponse, Dex, FairLpPriceInfo, HandleAnswer, HandleMsg,

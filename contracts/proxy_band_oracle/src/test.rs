@@ -1,5 +1,5 @@
 use crate::contract::{handle, init, query};
-use shade_lend::oracles::{
+use shade_oracles::oracles::{
     common::QueryMsg,
     proxy_band_oracle::{ConfigResponse, HandleMsg, InitMsg},
 };

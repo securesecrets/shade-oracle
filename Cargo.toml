@@ -8,6 +8,7 @@ members = [
   "contracts/lp_oracle",
   "contracts/earn_v1_oracle",
   "contracts/oracle_router",
+  "contracts/snip20",
 ]
 
 [profile.release]

@@ -1,4 +1,5 @@
 use asset::Contract;
+use schemars::JsonSchema;
 use scrt::{space_pad, to_binary, Coin, CosmosMsg, HumanAddr, StdResult, Uint128, WasmMsg};
 use scrt_math::Uint256;
 
@@ -9,10 +10,19 @@ pub use fadroma::killswitch as killswitch;
 pub use fadroma::math as scrt_math;
 pub use fadroma::platform as scrt;
 pub use fadroma::snip20_impl as composable_snip20;
-pub use secret_toolkit;
+pub use fadroma::ISnip20 as ISnip20;
+pub use fadroma::storage as scrt_storage;
+pub use fadroma::platform::secret_toolkit as secret_toolkit;
+use serde::Deserialize;
 use serde::Serialize;
 
 pub const SECONDS_IN_A_YEAR: u128 = 31_556_952u128;
+
+#[derive(Serialize, Deserialize, JsonSchema, Clone, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum CommonPermission {
+    Balance,
+}
 
 pub fn get_precision(factor: u8) -> Uint256 {
     Uint256::from(1 * 10u128.pow(factor.into()))

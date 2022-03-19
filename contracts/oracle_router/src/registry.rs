@@ -1,5 +1,5 @@
 use crate::state::*;
-use shade_lend::oracles::{common::query_price, router::*};
+use shade_oracles::oracles::{common::query_price, router::*};
 use shared_types::scrt::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
 };

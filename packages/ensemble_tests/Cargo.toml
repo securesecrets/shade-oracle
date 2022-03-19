@@ -38,3 +38,4 @@ proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
 earn-v1-oracle = { path = "../../contracts/earn_v1_oracle" }
 lp-oracle = { path = "../../contracts/lp_oracle" }
 oracle-router = { path = "../../contracts/oracle_router" }
+snip20 = { path = "../../contracts/snip20" }

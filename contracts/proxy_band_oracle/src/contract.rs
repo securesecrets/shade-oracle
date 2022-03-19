@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use shade_lend::oracles::{
+use shade_oracles::oracles::{
     band::BandQuery,
     common::{PriceResponse, QueryMsg},
     proxy_band_oracle::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},

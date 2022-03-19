@@ -1,12 +1,11 @@
 use crate::state::{SavedBandData, PREFIX_BASE_ASSET_PRICE_DATA};
-use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdError,
-    StdResult, Storage, Uint128,
+use shared_types::scrt::{
+    PrefixedStorage, ReadonlyPrefixedStorage, to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdError,
+    StdResult, Storage, Uint128
 };
-use cosmwasm_storage::{PrefixedStorage, ReadonlyPrefixedStorage};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use shade_lend::oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
+use shade_oracles::oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
 use shared_types::{
     asset::ResponseStatus,
     storage::bincode_state::{may_load, save},

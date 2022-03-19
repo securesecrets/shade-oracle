@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use shade_earn_v1::strategy::{query_deposit_for_shares, query_generic_config};
-use shade_lend::oracles::{
+use shade_oracles::oracles::{
     common::{query_price, PriceResponse, QueryMsg},
     earn_v1_oracle::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
 };
 use shared_types::{
+    protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
     asset::{CanonicalContract, Contract, ResponseStatus},
     get_precision,
     querier::query_token_info,

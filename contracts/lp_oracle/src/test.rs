@@ -1,4 +1,4 @@
-use shade_lend::oracles::lp_oracle::{get_fair_lp_token_price, FairLpPriceInfo};
+use shade_oracles::oracles::lp_oracle::{get_fair_lp_token_price, FairLpPriceInfo};
 
 #[test]
 fn test_get_fair_lp_token_price_1() {

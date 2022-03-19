@@ -11,11 +11,8 @@ use shared_types::{
 
 use crate::constants::DEFAULT_ADMIN;
 
-pub mod liquidation;
 pub mod oracles;
-pub mod overseer;
 pub mod token;
-pub mod vault;
 
 pub trait EnsembleContract {
     fn get_info(&self) -> ContractLink<HumanAddr>;
