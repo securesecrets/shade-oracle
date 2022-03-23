@@ -18,5 +18,5 @@ secret-toolkit = { version = "0.2", features = ["permit"] }
 schemars = "0.7"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 snafu = { version = "0.6.3" }
-mulberry-utils = { version = "0.1.0", git = "https://github.com/securesecrets/shade-lend", branch = "develop", features = ["protocols"] }
+mulberry-utils = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "develop", features = ["protocols"] }
 

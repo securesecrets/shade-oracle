@@ -562,9 +562,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.14"
+version = "0.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
+checksum = "6389c490849ff5bc16be905ae24bc913a9c8892e19b2341dbc175e14c341c2b8"
 dependencies = [
  "cfg-if",
 ]
@@ -629,7 +629,7 @@ dependencies = [
 [[package]]
 name = "mulberry-utils"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-lend?branch=develop#9610ba3a4ee155dbed4332307100f5bd8ad78ef5"
+source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=develop#91937fc750a41fba973839778c0d8aa4ab03ee8e"
 dependencies = [
  "bincode2",
  "fadroma",
