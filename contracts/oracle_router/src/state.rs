@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use shared_types::{
-    asset::{CanonicalContract, Contract},
+use mulberry_utils::{
+    common::types::{CanonicalContract, Contract},
     scrt::{
         Api, CanonicalAddr, PrefixedStorage, ReadonlyPrefixedStorage, ReadonlyStorage, StdError,
         StdResult, Storage,

@@ -3,8 +3,8 @@ use std::{
     rc::Rc,
 };
 
-use shared_types::{
-    asset::Contract,
+use mulberry_utils::{
+    common::types::Contract,
     ensemble::{ContractEnsemble, MockEnv},
     scrt::{ContractInstantiationInfo, ContractLink, HumanAddr, StdResult},
 };
@@ -59,45 +59,45 @@ pub trait EnsembleContract {
 macro_rules! ensemblify {
     ($harness: ident, $init: path, $handle: path, $query: path, $element: ident) => {
         pub struct $harness;
-        impl shared_types::ensemble::ContractHarness for $harness {
+        impl mulberry_utils::ensemble::ContractHarness for $harness {
             fn init(
                 &self,
-                deps: &mut shared_types::ensemble::MockDeps,
-                env: shared_types::scrt::Env,
-                msg: shared_types::scrt::Binary,
-            ) -> shared_types::scrt::StdResult<shared_types::scrt::InitResponse> {
-                $init(deps, env, shared_types::scrt::from_binary(&msg)?)
+                deps: &mut mulberry_utils::ensemble::MockDeps,
+                env: mulberry_utils::scrt::Env,
+                msg: mulberry_utils::scrt::Binary,
+            ) -> mulberry_utils::scrt::StdResult<mulberry_utils::scrt::InitResponse> {
+                $init(deps, env, mulberry_utils::scrt::from_binary(&msg)?)
             }
 
             fn handle(
                 &self,
-                deps: &mut shared_types::ensemble::MockDeps,
-                env: shared_types::scrt::Env,
-                msg: shared_types::scrt::Binary,
-            ) -> shared_types::scrt::StdResult<shared_types::scrt::HandleResponse> {
-                $handle(deps, env, shared_types::scrt::from_binary(&msg)?)
+                deps: &mut mulberry_utils::ensemble::MockDeps,
+                env: mulberry_utils::scrt::Env,
+                msg: mulberry_utils::scrt::Binary,
+            ) -> mulberry_utils::scrt::StdResult<mulberry_utils::scrt::HandleResponse> {
+                $handle(deps, env, mulberry_utils::scrt::from_binary(&msg)?)
             }
 
             fn query(
                 &self,
-                deps: &shared_types::ensemble::MockDeps,
-                msg: shared_types::scrt::Binary,
-            ) -> shared_types::scrt::StdResult<shared_types::scrt::Binary> {
-                $query(deps, shared_types::scrt::from_binary(&msg)?)
+                deps: &mulberry_utils::ensemble::MockDeps,
+                msg: mulberry_utils::scrt::Binary,
+            ) -> mulberry_utils::scrt::StdResult<mulberry_utils::scrt::Binary> {
+                $query(deps, mulberry_utils::scrt::from_binary(&msg)?)
             }
         }
         pub struct $element {
-            pub info: shared_types::scrt::ContractLink<HumanAddr>,
-            pub ensemble: std::rc::Rc<std::cell::RefCell<shared_types::ensemble::ContractEnsemble>>,
+            pub info: mulberry_utils::scrt::ContractLink<HumanAddr>,
+            pub ensemble: std::rc::Rc<std::cell::RefCell<mulberry_utils::ensemble::ContractEnsemble>>,
         }
         impl crate::contract_helpers::EnsembleContract for $element {
-            fn as_contract(&self) -> shared_types::asset::Contract {
+            fn as_contract(&self) -> mulberry_utils::common::types::Contract {
                 Contract::new(&self.get_info())
             }
-            fn get_info(&self) -> shared_types::scrt::ContractLink<HumanAddr> {
+            fn get_info(&self) -> mulberry_utils::scrt::ContractLink<HumanAddr> {
                 self.info.clone()
             }
-            fn get_ensemble(&self) -> std::cell::RefMut<shared_types::ensemble::ContractEnsemble> {
+            fn get_ensemble(&self) -> std::cell::RefMut<mulberry_utils::ensemble::ContractEnsemble> {
                 self.ensemble.borrow_mut()
             }
         }

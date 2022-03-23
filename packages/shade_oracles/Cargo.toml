@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 [features]
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
-backtraces = ["shared-types/backtraces"]
+backtraces = ["mulberry-utils/backtraces"]
 
 [dependencies]
 thiserror = { version = "1.0" }
@@ -18,5 +18,5 @@ secret-toolkit = { version = "0.2", features = ["permit"] }
 schemars = "0.7"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 snafu = { version = "0.6.3" }
-shared-types = { path = "../shared_types", features = ["backtraces"] }
+mulberry-utils = { version = "0.1.0", git = "https://github.com/securesecrets/shade-lend", branch = "develop", features = ["protocols"] }
 

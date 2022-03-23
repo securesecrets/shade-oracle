@@ -1,4 +1,4 @@
-use shared_types::{
+use mulberry_utils::{
     composable_snip20::{
         msg::{HandleMsg, InitMsg, QueryMsg},
         snip20_handle, snip20_init, snip20_query, DefaultSnip20Impl,
@@ -31,7 +31,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
-    use shared_types::scrt::{
+    use mulberry_utils::scrt::{
         do_handle, do_init, do_query, ExternalApi, ExternalQuerier, ExternalStorage,
     };
 

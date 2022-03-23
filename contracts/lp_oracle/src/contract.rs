@@ -1,20 +1,20 @@
 use serde::{Deserialize, Serialize};
-use shade_oracles::oracles::{
+use shade_oracles::{
     common::{query_price, PriceResponse, QueryMsg},
-    lp_oracle::{
+    lp::{
         get_fair_lp_token_price, ConfigResponse, Dex, FairLpPriceInfo, HandleAnswer, HandleMsg,
         InitMsg,
     },
 };
-use shared_types::{
-    asset::{CanonicalContract, Contract, ResponseStatus},
+use mulberry_utils::{
+    common::types::{CanonicalContract, Contract, ResponseStatus},
     protocols::{
         secretswap::{
             AssetInfo, SecretSwapPairInfo, SecretSwapPairQueryMsg, SecretSwapPoolResponse,
         },
         siennaswap::{SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfo},
     },
-    querier::query_token_info,
+    common::querier::query_token_info,
     scrt::{
         debug_print, to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
         InitResponse, Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128,

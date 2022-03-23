@@ -1,10 +1,10 @@
 use crate::contract::{handle, init, query};
-use shade_oracles::oracles::{
+use shade_oracles::{
     common::QueryMsg,
-    proxy_band_oracle::{ConfigResponse, HandleMsg, InitMsg},
+    band::proxy::{ConfigResponse, HandleMsg, InitMsg},
 };
-use shared_types::{
-    asset::Contract,
+use mulberry_utils::{
+    common::types::Contract,
     scrt::{coins, from_binary, mock_dependencies, mock_env, StdError},
 };
 

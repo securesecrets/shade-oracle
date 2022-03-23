@@ -37,15 +37,12 @@ endef
 
 docker_name=shade-lend_sn-node_1
 
-ORACLES = oracles/oracle_router oracles/proxy_band_oracle oracles/lp_oracle oracles/earn_v1_oracle
+ORACLES = oracle_router proxy_band_oracle lp_oracle earn_v1_oracle mock_band
 CORE = vault overseer liquidation fee_router
-MOCK = mocks/mock_band mocks/mock_lp mocks/mock_farm mocks/mock_strategy
-TOKENS = snip20 earn_token_v1
+TOKENS = snip20
 CONTRACTS_EXTERNAL = amm_snip20 exchange factory ido launchpad lp_token snip20_sienna
 
-CONTRACTS = overseer vault oracles/oracle_router liquidation #${TOKENS} ${CORE} ${MOCK} ${ORACLES}
-#CONTRACTS = mocks/mock_strategy mocks/mock_farm
-#CONTRACTS_EXTERNAL = amm-snip20 exchange factory ido launchpad lp-token mgmt rpt snip20-sienna wrapped wrapped-fixes
+CONTRACTS = ${ORACLES}
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
 DOCKER_EXEC = docker exec ${docker_name} /bin/bash -c

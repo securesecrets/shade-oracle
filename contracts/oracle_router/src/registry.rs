@@ -1,6 +1,6 @@
 use crate::state::*;
-use shade_oracles::oracles::{common::query_price, router::*};
-use shared_types::scrt::{
+use shade_oracles::{common::query_price, router::*};
+use mulberry_utils::scrt::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
 };
 

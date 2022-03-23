@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-backtraces = ["shared-types/backtraces"]
+backtraces = ["mulberry-utils/backtraces"]
 
 [dependencies]
-shared-types = { path = "../../packages/shared_types", features = ["backtraces"] }
+mulberry-utils = { version = "0.1.0", git = "https://github.com/securesecrets/shade-lend", branch = "develop", features = ["backtraces"] }
