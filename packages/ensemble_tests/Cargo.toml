@@ -23,7 +23,7 @@ default = []
 [dependencies]
 colored = "2.0.0"
 chrono = "0.4.19"
-mulberry-utils = { version = "0.1.0", git = "git@github.com:securesecrets/shade-lend.git", branch = "develop", features = ["protocols"] }
+mulberry-utils = { version = "0.1.0", git = "https://github.com/securesecrets/shade-lend", branch = "develop", features = ["protocols"] }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.67"}
 getrandom = { version = "0.2", features = ["js"] } # Prevents wasm from freaking out when running make
