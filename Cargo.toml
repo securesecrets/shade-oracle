@@ -2,7 +2,6 @@
 members = [
   "packages/ensemble_tests",
   "packages/shade_oracles",
-  "packages/shared_types",
 
   "contracts/proxy_band_oracle",
   "contracts/lp_oracle",

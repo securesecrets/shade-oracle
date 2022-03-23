@@ -1,0 +1,1 @@
+If you run into issues with `cargo check`, try to do `export CARGO_NET_GIT_FETCH_WITH_CLI=true` so you can authenticate with git. This is needed because we are pulling a dependency from one of our private repos.

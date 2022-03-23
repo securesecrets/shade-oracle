@@ -229,10 +229,10 @@ checksum = "4bb454f0228b18c7f4c3b0ebbee346ed9c52e7443b0999cd543ff3571205701d"
 name = "earn-v1-oracle"
 version = "0.1.0"
 dependencies = [
+ "mulberry-utils",
  "schemars",
  "serde",
  "shade-oracles",
- "shared-types",
  "snafu",
 ]
 
@@ -243,9 +243,10 @@ dependencies = [
  "chrono",
  "colored",
  "earn-v1-oracle",
- "getrandom 0.2.5",
+ "getrandom",
  "lp-oracle",
  "mock-band",
+ "mulberry-utils",
  "oracle-router",
  "proxy-band-oracle",
  "quote",
@@ -253,7 +254,6 @@ dependencies = [
  "serde",
  "serde_json",
  "shade-oracles",
- "shared-types",
  "snip20",
  "syn",
 ]
@@ -470,17 +470,6 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
-dependencies = [
- "cfg-if",
- "libc",
- "wasi 0.9.0+wasi-snapshot-preview1",
-]
-
-[[package]]
-name = "getrandom"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d39cd93900197114fa1fcb7ae84ca742095eed9442088988ae74fa744e930e77"
@@ -488,7 +477,7 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
+ "wasi",
  "wasm-bindgen",
 ]
 
@@ -584,10 +573,10 @@ dependencies = [
 name = "lp-oracle"
 version = "0.1.0"
 dependencies = [
+ "mulberry-utils",
  "schemars",
  "serde",
  "shade-oracles",
- "shared-types",
  "snafu",
 ]
 
@@ -603,10 +592,10 @@ version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "mockall",
+ "mulberry-utils",
  "schemars",
  "serde",
  "shade-oracles",
- "shared-types",
  "snafu",
 ]
 
@@ -635,6 +624,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "mulberry-utils"
+version = "0.1.0"
+source = "git+https://github.com/securesecrets/shade-lend?branch=develop#9610ba3a4ee155dbed4332307100f5bd8ad78ef5"
+dependencies = [
+ "bincode2",
+ "fadroma",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
@@ -678,9 +678,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 name = "oracle-router"
 version = "0.1.0"
 dependencies = [
+ "mulberry-utils",
  "serde",
  "shade-oracles",
- "shared-types",
 ]
 
 [[package]]
@@ -743,10 +743,10 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "mockall",
+ "mulberry-utils",
  "schemars",
  "serde",
  "shade-oracles",
- "shared-types",
  "snafu",
 ]
 
@@ -765,8 +765,6 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
 dependencies = [
- "getrandom 0.1.16",
- "libc",
  "rand_chacha 0.2.2",
  "rand_core 0.5.1",
  "rand_hc",
@@ -808,9 +806,6 @@ name = "rand_core"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
-dependencies = [
- "getrandom 0.1.16",
-]
 
 [[package]]
 name = "rand_core"
@@ -818,7 +813,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
- "getrandom 0.2.5",
+ "getrandom",
 ]
 
 [[package]]
@@ -1200,23 +1195,12 @@ dependencies = [
 name = "shade-oracles"
 version = "0.1.0"
 dependencies = [
+ "mulberry-utils",
  "schemars",
  "secret-toolkit 0.2.0",
  "serde",
- "shared-types",
  "snafu",
  "thiserror",
-]
-
-[[package]]
-name = "shared-types"
-version = "0.1.0"
-dependencies = [
- "bincode2",
- "fadroma",
- "rand 0.7.3",
- "schemars",
- "serde",
 ]
 
 [[package]]
@@ -1244,7 +1228,7 @@ dependencies = [
 name = "snip20"
 version = "0.1.0"
 dependencies = [
- "shared-types",
+ "mulberry-utils",
 ]
 
 [[package]]
@@ -1309,7 +1293,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
 dependencies = [
  "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
+ "wasi",
  "winapi",
 ]
 
@@ -1342,12 +1326,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "wasi"
-version = "0.9.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "wasi"

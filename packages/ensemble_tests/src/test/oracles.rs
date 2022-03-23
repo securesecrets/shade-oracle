@@ -2,9 +2,9 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{constants::*, contract_helpers::oracles::*, init_oracle, init_band};
 use serde_json::Result;
-use shade_oracles::oracles::*;
-use shared_types::{
-    asset::Contract,
+use shade_oracles::*;
+use mulberry_utils::{
+    common::types::Contract,
     ensemble::{ContractEnsemble, MockEnv},
     scrt::{ContractLink, Uint128},
 };

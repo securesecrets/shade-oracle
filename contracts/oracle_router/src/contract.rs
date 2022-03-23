@@ -2,8 +2,8 @@ use crate::{
     registry::{batch_update_registry, get_price, update_registry},
     state::*,
 };
-use shade_oracles::oracles::router::*;
-use shared_types::{
+use shade_oracles::router::*;
+use mulberry_utils::{
     scrt::{
         to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
         StdError, StdResult, Storage, BLOCK_SIZE,

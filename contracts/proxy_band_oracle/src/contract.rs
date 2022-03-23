@@ -1,13 +1,17 @@
 use serde::{Deserialize, Serialize};
-use shade_oracles::oracles::{
-    band::BandQuery,
+use shade_oracles::{
+    band::{
+        BandQuery,
+        proxy::{
+            ConfigResponse, HandleAnswer, HandleMsg, InitMsg,
+        }
+    },
     common::{PriceResponse, QueryMsg},
-    proxy_band_oracle::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
 };
-use shared_types::{
-    asset::{CanonicalContract, Contract, ResponseStatus},
+use mulberry_utils::{
+    common::types::{CanonicalContract, Contract, ResponseStatus},
     scrt::{
-        debug_print, to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
+        debug_print, to_binary, Api, Env, Extern, HandleResponse, HumanAddr,
         InitResponse, Querier, QueryResult, StdError, StdResult, Storage, BLOCK_SIZE,
     },
     secret_toolkit::utils::{pad_handle_result, pad_query_result, Query},

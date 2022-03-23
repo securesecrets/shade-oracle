@@ -1,11 +1,11 @@
 use super::EnsembleContract;
 use crate::{ensemble_new, ensemblify};
 use serde::{Deserialize, Serialize};
-use shade_oracles::oracles::{
-    band, common as common_oracles, earn_v1_oracle, lp_oracle, proxy_band_oracle, router,
+use shade_oracles::{
+    band::{self, proxy}, common as common_oracles, earn, lp, router,
 };
-use shared_types::{
-    asset::Contract,
+use mulberry_utils::{
+    common::types::Contract,
     composable_snip20::msg as snip20,
     ensemble::ContractEnsemble,
     scrt::{ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
@@ -128,7 +128,7 @@ impl MockBand {
 
         account_key: Option<&str>,
     ) -> StdResult<()> {
-        let msg = shade_oracles::oracles::band::HandleMsg::UpdateSymbolPrice {
+        let msg = shade_oracles::band::HandleMsg::UpdateSymbolPrice {
             base_symbol: pair.0.to_string(),
             quote_symbol: pair.1.to_string(),
             rate: rate,
@@ -149,7 +149,7 @@ impl ProxyBandOracle {
         address: &str,
         account_key: Option<&str>,
     ) -> Self {
-        let msg = proxy_band_oracle::InitMsg {
+        let msg = proxy::InitMsg {
             owner,
             base_symbol: pair.0.to_string().clone(),
             quote_symbol: pair.1.to_string().clone(),
@@ -165,12 +165,12 @@ impl ProxyBandOracle {
 
 impl OracleContract for LpOracle {}
 impl LpOracle {
-    ensemble_new!(LpOracle, lp_oracle::InitMsg);
+    ensemble_new!(LpOracle, lp::InitMsg);
 }
 
 impl OracleContract for EarnV1Oracle {}
 impl EarnV1Oracle {
-    ensemble_new!(EarnV1Oracle, earn_v1_oracle::InitMsg);
+    ensemble_new!(EarnV1Oracle, earn::InitMsg);
 }
 
 #[macro_export]
