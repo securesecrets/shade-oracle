@@ -60,8 +60,8 @@ impl MockBand {
 /// Create mock band with as many initial price feeds as possible (mock_band, address, ensemble, ("SCRT", "USD", Uint128(10)), ...)
 macro_rules! init_band {
     ($name:ident, $addr:expr, $ensemble:expr, $($opt:expr),*) => {
-        let $name = $ensemble.borrow_mut().register(Box::new(crate::contract_helpers::mock_band::MockBandHarness));
-        let $name = crate::contract_helpers::mock_band::MockBand::new(&$ensemble, &$name, $addr, None);
+        let $name = $ensemble.borrow_mut().register(Box::new(shade_oracles_ensemble::contract_helpers::mock_band::MockBandHarness));
+        let $name = shade_oracles_ensemble::contract_helpers::mock_band::MockBand::new(&$ensemble, &$name, $addr, None);
         $(
             $name
             .update_band_pair($opt.0, $opt.1, None, None)
