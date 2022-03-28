@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{contract_helpers::oracles::*, init_oracle, init_band};
+use crate::{init_oracle, init_band, contract_helpers::common::OracleContract};
 use mulberry_utils::{
     common::{constants::*, types::Contract},
     ensemble::{ContractEnsemble},
