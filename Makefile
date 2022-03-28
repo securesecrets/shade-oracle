@@ -2,7 +2,6 @@
 contracts_dir=contracts
 compiled_dir=compiled
 checksum_dir=${compiled_dir}/checksum
-sub_dirs = oracles mocks strategies
 
 # Compresses the wasm file, args: compressed_file_name, built_file_name
 define compress_wasm =
@@ -16,17 +15,10 @@ rm ./$$TARGET_FILE.wasm;\
 }
 endef
 
-docker_name=shade-lend_sn-node_1
-
 ORACLES = oracle_router proxy_band_oracle lp_oracle earn_v1_oracle mock_band
-CORE = vault overseer liquidation fee_router
-TOKENS = snip20
-CONTRACTS_EXTERNAL = amm_snip20 exchange factory ido launchpad lp_token snip20_sienna
-
 CONTRACTS = ${ORACLES}
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
-DOCKER_EXEC = docker exec ${docker_name} /bin/bash -c
 
 release: build_release compress
 

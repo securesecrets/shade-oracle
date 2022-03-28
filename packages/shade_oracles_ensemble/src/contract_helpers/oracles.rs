@@ -1,12 +1,10 @@
-use super::EnsembleContract;
-use crate::{ensemble_new, ensemblify};
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     band::{self, proxy}, common as common_oracles, earn, lp, router,
 };
 use mulberry_utils::{
-    common::types::Contract,
-    composable_snip20::msg as snip20,
+    ensemble_new, ensemblify,
+    ensemble_helpers::EnsembleContract,
+    common::{types::Contract},
     ensemble::ContractEnsemble,
     scrt::{ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
 };
@@ -21,7 +19,7 @@ ensemblify!(
 );
 
 impl OracleRouter {
-    pub fn query_config(&self, key: String) -> StdResult<router::ConfigResponse> {
+    pub fn query_config(&self) -> StdResult<router::ConfigResponse> {
         self.query(&router::QueryMsg::GetOwner {})
     }
 
