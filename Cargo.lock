@@ -237,28 +237,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ensemble-tests"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "colored",
- "earn-v1-oracle",
- "getrandom",
- "lp-oracle",
- "mock-band",
- "mulberry-utils",
- "oracle-router",
- "proxy-band-oracle",
- "quote",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "shade-oracles",
- "snip20",
- "syn",
-]
-
-[[package]]
 name = "fadroma"
 version = "21.12.0"
 source = "git+https://github.com/hackbg/fadroma?branch=21.12#51b434ad106f7c40e31c3ba6262f2b89ea392710"
@@ -445,9 +423,9 @@ dependencies = [
 
 [[package]]
 name = "fragile"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8da1b8f89c5b5a5b7e59405cfcf0bb9588e5ed19f0b57a4cd542bbba3f164a6d"
+checksum = "e9d758e60b45e8d749c89c1b389ad8aee550f86aa12e2b9298b546dda7a82ab1"
 
 [[package]]
 name = "generic-array"
@@ -470,9 +448,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d39cd93900197114fa1fcb7ae84ca742095eed9442088988ae74fa744e930e77"
+checksum = "9be70c98951c83b8d2f8f60d7065fa6d5146873094452a1008da8c2f1e4205ad"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -629,7 +607,7 @@ dependencies = [
 [[package]]
 name = "mulberry-utils"
 version = "0.1.0"
-source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=develop#75b659ec7656638e918b6f7d6a19fc8626281de5"
+source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=develop#e6ec03449ccfe94a9bd7185a552f89a2762c9010"
 dependencies = [
  "bincode2",
  "fadroma",
@@ -752,9 +730,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.16"
+version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4af2ec4714533fcdf07e886f17025ace8b997b9ce51204ee69b6da831c3da57"
+checksum = "632d02bff7f874a36f33ea8bb416cd484b90cc66c1194b1a1110d067a7013f58"
 dependencies = [
  "proc-macro2",
 ]
@@ -1204,6 +1182,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "shade-oracles-ensemble"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "colored",
+ "earn-v1-oracle",
+ "getrandom",
+ "lp-oracle",
+ "mock-band",
+ "mulberry-utils",
+ "oracle-router",
+ "proxy-band-oracle",
+ "quote",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "shade-oracles",
+ "snip20",
+ "syn",
+]
+
+[[package]]
 name = "snafu"
 version = "0.6.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1251,9 +1251,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea297be220d52398dcc07ce15a209fce436d361735ac1db700cab3b6cdfb9f54"
+checksum = "704df27628939572cd88d33f171cd6f896f4eaca85252c6e0a72d8d8287ee86f"
 dependencies = [
  "proc-macro2",
  "quote",

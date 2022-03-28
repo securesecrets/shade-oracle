@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  "packages/ensemble_tests",
+  "packages/shade_oracles_ensemble",
   "packages/shade_oracles",
 
   "contracts/proxy_band_oracle",

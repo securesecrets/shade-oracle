@@ -1,7 +1,7 @@
-use super::EnsembleContract;
-use crate::{constants::VIEW_KEY, ensemble_new, ensemblify};
 use mulberry_utils::{
-    common::types::Contract,
+    ensemble_new, ensemblify,
+    ensemble_helpers::EnsembleContract,
+    common::{constants::*, types::Contract},
     composable_snip20::msg as snip20msg,
     ensemble::ContractEnsemble,
     scrt::{Binary, ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
