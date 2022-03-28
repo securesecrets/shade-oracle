@@ -607,7 +607,7 @@ dependencies = [
 [[package]]
 name = "mulberry-utils"
 version = "0.1.0"
-source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=develop#e6ec03449ccfe94a9bd7185a552f89a2762c9010"
+source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=dev-utils#9454eabd94ee478fe6dc02ef11c307cf8b0493d2"
 dependencies = [
  "bincode2",
  "fadroma",

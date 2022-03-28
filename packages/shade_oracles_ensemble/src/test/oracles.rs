@@ -4,7 +4,7 @@ use crate::{self as shade_oracles_ensemble, contract_helpers::common::OracleCont
 use mulberry_utils::{
     common::{constants::*, types::Contract},
     ensemble::{ContractEnsemble},
-    scrt::{Uint128}, protocols::shade_earn_v1,
+    scrt::{Uint128},
 };
 
 #[test]
