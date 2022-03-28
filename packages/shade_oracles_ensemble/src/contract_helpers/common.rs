@@ -26,7 +26,7 @@ macro_rules! init_oracle {
     (proxy_band, $name:ident, $addr:expr, $ensemble:expr, $pair:expr, $mock_band:expr) => {
         let contract = $ensemble
         .borrow_mut()
-        .register(Box::new(crate::contract_helpers::proxy_band::ProxyBandOracleHarness));
+        .register(Box::new(shade_oracles_ensemble::contract_helpers::proxy_band::ProxyBandOracleHarness));
         let $name = crate::contract_helpers::proxy_band::ProxyBandOracle::new(
             DEFAULT_ADMIN.to_string(),
             $pair,
@@ -40,8 +40,8 @@ macro_rules! init_oracle {
     (lp, $name:ident, $addr:expr, $ensemble:expr, $oracle0:expr, $oracle1:expr, $factory:expr, $dex:expr) => {
         let contract = $ensemble
         .borrow_mut()
-        .register(Box::new(LpOracleHarness));
-        let msg = lp_oracle::InitMsg {
+        .register(Box::new(shade_oracles_ensemble::contract_helpers::lp::LpOracleHarness));
+        let msg = shade_oracles_ensemble::contract_helpers::lp::lp_oracle::InitMsg {
             owner: DEFAULT_ADMIN.to_string(),
             oracle0: $oracle0.as_contract(),
             oracle1: $oracle1.as_contract(),

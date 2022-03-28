@@ -1,10 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{init_oracle, init_band, contract_helpers::common::OracleContract};
+use crate::{self as shade_oracles_ensemble, contract_helpers::common::OracleContract, init_band, init_oracle};
 use mulberry_utils::{
     common::{constants::*, types::Contract},
     ensemble::{ContractEnsemble},
-    scrt::{Uint128},
+    scrt::{Uint128}, protocols::shade_earn_v1,
 };
 
 #[test]
