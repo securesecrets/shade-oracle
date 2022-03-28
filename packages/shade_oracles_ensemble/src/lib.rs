@@ -2,6 +2,7 @@
 pub mod contract_helpers;
 
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod test;
 
 #[cfg(feature = "contracts")]
