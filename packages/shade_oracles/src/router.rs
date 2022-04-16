@@ -1,9 +1,9 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use mulberry_utils::{
     common::types::{Contract, ResponseStatus},
     HandlePaddable,
 };
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -70,9 +70,7 @@ pub struct OracleResponse {
 
 pub mod querier {
     use crate::common::PriceResponse;
-    use mulberry_utils::scrt::{
-        to_binary, HumanAddr, Querier, QueryRequest, StdResult, WasmQuery,
-    };
+    use mulberry_utils::scrt::{to_binary, HumanAddr, Querier, QueryRequest, StdResult, WasmQuery};
 
     use super::QueryMsg;
     use super::*;

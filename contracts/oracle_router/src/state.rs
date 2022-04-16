@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use mulberry_utils::{
     common::types::{CanonicalContract, Contract},
     scrt::{
@@ -7,6 +6,7 @@ use mulberry_utils::{
     },
     storage::{bincode_state::*, traits::SingletonStorable},
 };
+use serde::{Deserialize, Serialize};
 
 pub const KEY_CONFIG: &[u8] = b"YteGsgSZyO";
 pub const KEY_ORACLES: &[u8] = b"d3a17d1b";

@@ -1,10 +1,5 @@
-use shade_oracles::{
-    common as common_oracles
-};
-use mulberry_utils::{
-    ensemble_helpers::EnsembleContract,
-    scrt::{ StdResult},
-};
+use mulberry_utils::{ensemble_helpers::EnsembleContract, scrt::StdResult};
+use shade_oracles::common as common_oracles;
 
 pub trait OracleContract
 where
@@ -24,9 +19,9 @@ where
 /// Create an instance of an oracle with (type, name, address, ensemble, ...)
 macro_rules! init_oracle {
     (proxy_band, $name:ident, $addr:expr, $ensemble:expr, $pair:expr, $mock_band:expr) => {
-        let contract = $ensemble
-        .borrow_mut()
-        .register(Box::new(shade_oracles_ensemble::contract_helpers::proxy_band::ProxyBandOracleHarness));
+        let contract = $ensemble.borrow_mut().register(Box::new(
+            shade_oracles_ensemble::contract_helpers::proxy_band::ProxyBandOracleHarness,
+        ));
         let $name = crate::contract_helpers::proxy_band::ProxyBandOracle::new(
             DEFAULT_ADMIN.to_string(),
             $pair,
@@ -38,9 +33,9 @@ macro_rules! init_oracle {
         );
     };
     (lp, $name:ident, $addr:expr, $ensemble:expr, $oracle0:expr, $oracle1:expr, $factory:expr, $dex:expr) => {
-        let contract = $ensemble
-        .borrow_mut()
-        .register(Box::new(shade_oracles_ensemble::contract_helpers::lp::LpOracleHarness));
+        let contract = $ensemble.borrow_mut().register(Box::new(
+            shade_oracles_ensemble::contract_helpers::lp::LpOracleHarness,
+        ));
         let msg = shade_oracles_ensemble::contract_helpers::lp::lp_oracle::InitMsg {
             owner: DEFAULT_ADMIN.to_string(),
             oracle0: $oracle0.as_contract(),
@@ -48,12 +43,6 @@ macro_rules! init_oracle {
             factory: $factory.as_contract(),
             dex: $dex,
         };
-        let $name = LpOracle::new(
-            &msg,
-            &$ensemble,
-            &contract,
-            $addr,
-            None,
-        );
-    }
+        let $name = LpOracle::new(&msg, &$ensemble, &contract, $addr, None);
+    };
 }

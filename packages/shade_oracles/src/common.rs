@@ -1,9 +1,6 @@
+use mulberry_utils::{common::types::Contract, scrt::*};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use mulberry_utils::{
-    common::types::{Contract},
-    scrt::*,
-};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
