@@ -1,11 +1,11 @@
 use mulberry_utils::{
-    ensemble_new, ensemblify,
-    ensemble_helpers::EnsembleContract,
     common::{constants::*, types::Contract},
     composable_snip20::msg as snip20msg,
-    ensemble::ContractEnsemble,
-    scrt::{Binary, ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
     composable_snip20::msg as snip20,
+    ensemble::ContractEnsemble,
+    ensemble_helpers::EnsembleContract,
+    ensemble_new, ensemblify,
+    scrt::{Binary, ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
 };
 use std::{cell::RefCell, rc::Rc};
 

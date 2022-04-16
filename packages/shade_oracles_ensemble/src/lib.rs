@@ -8,11 +8,12 @@ mod test;
 #[cfg(feature = "contracts")]
 #[path = ""]
 mod reexport_contracts {
-    pub mod mock_band;
-    pub mod proxy_band_oracle;
-    pub mod earn_v1_oracle;
-    pub mod lp_oracle;
-    pub mod oracle_router;
+    pub use ::earn_v1_oracle;
+    pub use ::mock_band;
+    pub use ::oracle_router;
+    pub use ::proxy_band_oracle;
+    pub use ::secretswap_lp_oracle;
+    pub use ::siennaswap_lp_oracle;
 }
 
 #[cfg(feature = "contracts")]
