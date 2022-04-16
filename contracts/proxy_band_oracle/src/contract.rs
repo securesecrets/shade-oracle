@@ -29,7 +29,7 @@ pub struct State {
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
+    _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
     let band_contract: CanonicalContract = CanonicalContract {
