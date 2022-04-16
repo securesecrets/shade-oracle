@@ -14,9 +14,6 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[contract-helpers]
-proc-macro = true
-
 [features]
 default = []
 contracts = []
@@ -37,6 +34,7 @@ quote = "1.0.8"
 mock-band = { path = "../../contracts/mock_band" }
 proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
 earn-v1-oracle = { path = "../../contracts/earn_v1_oracle" }
-lp-oracle = { path = "../../contracts/lp_oracle" }
+siennaswap-lp-oracle = { path = "../../contracts/siennaswap_lp_oracle" }
+secretswap-lp-oracle = { path = "../../contracts/secretswap_lp_oracle" }
 oracle-router = { path = "../../contracts/oracle_router" }
 snip20 = { path = "../../contracts/snip20" }

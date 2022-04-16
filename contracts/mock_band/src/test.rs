@@ -29,7 +29,7 @@ fn update_config() {
 
     // it worked, let's query the state
     let res = query(
-        &mut deps,
+        &deps,
         QueryMsg::GetReferenceData {
             base_symbol: "ETH".to_string(),
             quote_symbol: "USD".to_string(),

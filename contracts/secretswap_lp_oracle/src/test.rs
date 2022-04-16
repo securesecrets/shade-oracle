@@ -7,7 +7,7 @@ fn test_get_fair_lp_token_price_1() {
     // https://snowtrace.io/token/0xa389f9430876455c36478deea9769b7ca4e3ddb1#readContract
     let price_info_1 = FairLpPriceInfo {
         reserve: 108206619407191,
-        price: 1 * 10u128.pow(18),
+        price: 10u128.pow(18),
         decimals: 6,
     };
 

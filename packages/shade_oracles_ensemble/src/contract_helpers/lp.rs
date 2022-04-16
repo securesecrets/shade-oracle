@@ -12,15 +12,35 @@ use std::{cell::RefCell, rc::Rc};
 
 use super::common::OracleContract;
 
-ensemblify!(
-    LpOracleHarness,
-    ::lp_oracle::contract::init,
-    ::lp_oracle::contract::handle,
-    ::lp_oracle::contract::query,
-    LpOracle
-);
+pub mod secretswap {
+    use super::*;
+    ensemblify!(
+        SecretswapLpOracleHarness,
+        ::secretswap_lp_oracle::contract::init,
+        ::secretswap_lp_oracle::contract::handle,
+        ::secretswap_lp_oracle::contract::query,
+        SecretswapLpOracle
+    );
+    
+    impl OracleContract for SecretswapLpOracle {}
+    impl SecretswapLpOracle {
+        ensemble_new!(SecretswapLpOracle, lp::secretswap::InitMsg);
+    }
+}
 
-impl OracleContract for LpOracle {}
-impl LpOracle {
-    ensemble_new!(LpOracle, lp::InitMsg);
+pub mod siennaswap {
+    use super::*;
+
+    ensemblify!(
+        SiennaswapLpOracleHarness,
+        ::siennaswap_lp_oracle::contract::init,
+        ::siennaswap_lp_oracle::contract::handle,
+        ::siennaswap_lp_oracle::contract::query,
+        SiennaswapLpOracle
+    );
+    
+    impl OracleContract for SiennaswapLpOracle {}
+    impl SiennaswapLpOracle {
+        ensemble_new!(SiennaswapLpOracle, lp::siennaswap::InitMsg);
+    }
 }

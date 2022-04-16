@@ -33,8 +33,8 @@ impl ProxyBandOracle {
     ) -> Self {
         let msg = proxy::InitMsg {
             owner,
-            base_symbol: pair.0.to_string().clone(),
-            quote_symbol: pair.1.to_string().clone(),
+            base_symbol: pair.0.to_string(),
+            quote_symbol: pair.1.to_string(),
             band,
         };
         let info = Self::init(&msg, ensemble, init_info, address, account_key);
