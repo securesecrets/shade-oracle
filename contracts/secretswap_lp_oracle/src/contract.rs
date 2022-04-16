@@ -5,7 +5,7 @@ use mulberry_utils::{
         AssetInfo, SecretSwapPairInfo, SecretSwapPairQueryMsg, SecretSwapPoolResponse,
     },
     scrt::{
-        debug_print, to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
+        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
         InitResponse, Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128,
         WasmQuery, BLOCK_SIZE,
     },
@@ -133,8 +133,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     };
 
     state.save_json(&mut deps.storage)?;
-
-    debug_print!("Contract was initialized by {}", env.message.sender);
 
     Ok(InitResponse::default())
 }

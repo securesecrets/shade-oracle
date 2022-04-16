@@ -4,7 +4,7 @@ use mulberry_utils::{
     get_precision,
     protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
     scrt::{
-        debug_print, to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
+        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
         InitResponse, Querier, QueryResult, StdError, StdResult, Storage, Uint128, BLOCK_SIZE,
     },
     scrt_math::Uint256,
@@ -61,8 +61,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     };
 
     state.save_json(&mut deps.storage)?;
-
-    debug_print!("Contract was initialized by {}", env.message.sender);
 
     Ok(InitResponse::default())
 }
