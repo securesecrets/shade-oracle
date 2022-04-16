@@ -24,7 +24,7 @@ impl Snip20 {
         let balance: snip20msg::QueryAnswer = self
             .query(&snip20::QueryMsg::Balance {
                 address: HumanAddr(address),
-                key: viewing_key.unwrap_or(VIEW_KEY.to_string()),
+                key: viewing_key.unwrap_or_else(|| VIEW_KEY.to_string()),
             })
             .unwrap();
 
@@ -37,7 +37,7 @@ impl Snip20 {
     pub fn mint(&self, recipient: String, amount: u128, sender_key: Option<&str>) -> StdResult<()> {
         self.handle(
             &snip20::HandleMsg::Mint {
-                recipient: HumanAddr(recipient.clone()),
+                recipient: HumanAddr(recipient),
                 amount: Uint128(amount),
                 memo: None,
                 padding: None,
@@ -56,7 +56,7 @@ impl Snip20 {
     ) -> StdResult<()> {
         self.handle(
             &snip20::HandleMsg::Send {
-                recipient: HumanAddr(recipient.clone()),
+                recipient: HumanAddr(recipient),
                 recipient_code_hash: code_hash,
                 amount: Uint128(amount),
                 msg: hook,

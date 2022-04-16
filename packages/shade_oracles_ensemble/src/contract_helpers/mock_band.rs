@@ -27,7 +27,7 @@ impl MockBand {
     ) -> Self {
         let info = Self::init(
             &band::InitMsg {},
-            &ensemble,
+            ensemble,
             init_info,
             address,
             account_key,
@@ -49,8 +49,8 @@ impl MockBand {
         let msg = shade_oracles::band::HandleMsg::UpdateSymbolPrice {
             base_symbol: pair.0.to_string(),
             quote_symbol: pair.1.to_string(),
-            rate: rate,
-            last_updated: last_updated,
+            rate,
+            last_updated,
         };
         self.handle(&msg, account_key)
     }

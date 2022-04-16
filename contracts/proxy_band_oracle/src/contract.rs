@@ -1,21 +1,20 @@
+use mulberry_utils::{
+    auth::{assert_admin, load_admin, save_admin},
+    common::types::{CanonicalContract, Contract, ResponseStatus},
+    scrt::{
+        debug_print, to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+        QueryResult, StdError, StdResult, Storage, BLOCK_SIZE,
+    },
+    secret_toolkit::utils::{pad_handle_result, pad_query_result, Query},
+    storage::bincode_state::{load, save},
+};
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     band::{
+        proxy::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
         BandQuery,
-        proxy::{
-            ConfigResponse, HandleAnswer, HandleMsg, InitMsg,
-        }
     },
     common::{PriceResponse, QueryMsg},
-};
-use mulberry_utils::{
-    common::types::{CanonicalContract, Contract, ResponseStatus},
-    scrt::{
-        debug_print, to_binary, Api, Env, Extern, HandleResponse, HumanAddr,
-        InitResponse, Querier, QueryResult, StdError, StdResult, Storage, BLOCK_SIZE,
-    },
-    secret_toolkit::utils::{pad_handle_result, pad_query_result, Query},
-    storage::bincode_state::{load, save}, auth::{save_admin, assert_admin, load_admin},
 };
 
 pub static CONFIG_KEY: &[u8] = b"config";
@@ -140,7 +139,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<PriceResponse> {
     let state: State = load(&deps.storage, CONFIG_KEY)?;
 
-    Ok(BandQuery::GetReferenceData {
+    BandQuery::GetReferenceData {
         base_symbol: state.base_symbol,
         quote_symbol: state.quote_symbol,
     }
@@ -148,5 +147,5 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         &deps.querier,
         state.band.code_hash,
         deps.api.human_address(&state.band.address)?,
-    )?)
+    )
 }

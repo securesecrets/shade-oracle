@@ -4,7 +4,8 @@ members = [
   "packages/shade_oracles",
 
   "contracts/proxy_band_oracle",
-  "contracts/lp_oracle",
+  "contracts/secretswap_lp_oracle",
+  "contracts/siennaswap_lp_oracle",
   "contracts/earn_v1_oracle",
   "contracts/oracle_router",
   "contracts/snip20",

@@ -1,20 +1,7 @@
-use serde::{Deserialize, Serialize};
-use shade_oracles::{
-    common::{query_price, PriceResponse, QueryMsg},
-    lp::{
-        get_fair_lp_token_price, ConfigResponse, Dex, FairLpPriceInfo, HandleAnswer, HandleMsg,
-        InitMsg,
-    },
-};
 use mulberry_utils::{
-    common::types::{CanonicalContract, Contract, ResponseStatus},
-    protocols::{
-        secretswap::{
-            AssetInfo, SecretSwapPairInfo, SecretSwapPairQueryMsg, SecretSwapPoolResponse,
-        },
-        siennaswap::{SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfo},
-    },
     common::querier::query_token_info,
+    common::types::{CanonicalContract, Contract, ResponseStatus},
+    protocols::siennaswap::{SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfo},
     scrt::{
         debug_print, to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
         InitResponse, Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128,
@@ -22,6 +9,15 @@ use mulberry_utils::{
     },
     secret_toolkit::utils::{pad_handle_result, pad_query_result},
     storage::traits::SingletonStorable,
+};
+use serde::{Deserialize, Serialize};
+use shade_oracles::{
+    common::{query_price, PriceResponse, QueryMsg},
+    lp::{
+        get_fair_lp_token_price,
+        siennaswap::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
+        FairLpPriceInfo,
+    },
 };
 use std::cmp::min;
 
@@ -33,7 +29,6 @@ pub struct State {
     pub oracle1: CanonicalContract,
     pub factory: CanonicalContract,
     pub lp_token: CanonicalContract,
-    pub dex: Dex,
     pub token0_decimals: u8,
     pub token1_decimals: u8,
 }
@@ -70,7 +65,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         code_hash: msg.factory.code_hash.clone(),
     };
 
-    let lp_token;
     let mut token0: Contract = Contract {
         address: "a".to_string(),
         code_hash: "b".to_string(),
@@ -80,85 +74,41 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         code_hash: "b".to_string(),
     };
 
-    match msg.dex {
-        Dex::SecretSwap => {
-            let pair_info: SecretSwapPairInfo =
-                deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: HumanAddr::from(msg.factory.address),
-                    callback_code_hash: msg.factory.code_hash,
-                    msg: to_binary(&SecretSwapPairQueryMsg::Pair {})?,
-                }))?;
-            lp_token = CanonicalContract {
-                address: deps.api.canonical_address(&pair_info.liquidity_token)?,
-                code_hash: pair_info.token_code_hash,
-            };
-
-            if let AssetInfo::Token {
-                contract_addr,
-                token_code_hash,
-                viewing_key: _,
-            } = &pair_info.asset_infos[0]
-            {
-                token0.address = contract_addr.to_string();
-                token0.code_hash = token_code_hash.to_string();
-            } else {
-                return Err(StdError::generic_err(
-                    "Could not resolve SecretSwap token 1 info.",
-                ));
-            }
-
-            if let AssetInfo::Token {
-                contract_addr,
-                token_code_hash,
-                viewing_key: _,
-            } = &pair_info.asset_infos[1]
-            {
-                token1.address = contract_addr.to_string();
-                token1.code_hash = token_code_hash.to_string();
-            } else {
-                return Err(StdError::generic_err(
-                    "Could not resolve SecretSwap token 2 info.",
-                ));
-            }
-        }
-        Dex::SiennaSwap => {
-            let pair_info: SiennaSwapPairInfo =
-                deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: HumanAddr::from(msg.factory.address.clone()),
-                    callback_code_hash: msg.factory.code_hash.clone(),
-                    msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
-                }))?;
-            lp_token = CanonicalContract {
-                address: deps
-                    .api
-                    .canonical_address(&HumanAddr::from(pair_info.liquidity_token.address))?,
-                code_hash: pair_info.liquidity_token.code_hash,
-            };
-            if let SiennaDexTokenType::CustomToken {
-                contract_addr,
-                token_code_hash,
-            } = &pair_info.pair[0]
-            {
-                token0.address = contract_addr.to_string();
-                token0.code_hash = token_code_hash.to_string();
-            } else {
-                return Err(StdError::generic_err(
-                    "Could not resolve SiennaSwap token 1 info.",
-                ));
-            }
-            if let SiennaDexTokenType::CustomToken {
-                contract_addr,
-                token_code_hash,
-            } = &pair_info.pair[1]
-            {
-                token1.address = contract_addr.to_string();
-                token1.code_hash = token_code_hash.to_string();
-            } else {
-                return Err(StdError::generic_err(
-                    "Could not resolve SiennaSwap token 2 info.",
-                ));
-            }
-        }
+    let pair_info: SiennaSwapPairInfo =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: HumanAddr::from(msg.factory.address.clone()),
+            callback_code_hash: msg.factory.code_hash.clone(),
+            msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
+        }))?;
+    let lp_token = CanonicalContract {
+        address: deps
+            .api
+            .canonical_address(&HumanAddr::from(pair_info.liquidity_token.address))?,
+        code_hash: pair_info.liquidity_token.code_hash,
+    };
+    if let SiennaDexTokenType::CustomToken {
+        contract_addr,
+        token_code_hash,
+    } = &pair_info.pair[0]
+    {
+        token0.address = contract_addr.to_string();
+        token0.code_hash = token_code_hash.to_string();
+    } else {
+        return Err(StdError::generic_err(
+            "Could not resolve SiennaSwap token 1 info.",
+        ));
+    }
+    if let SiennaDexTokenType::CustomToken {
+        contract_addr,
+        token_code_hash,
+    } = &pair_info.pair[1]
+    {
+        token1.address = contract_addr.to_string();
+        token1.code_hash = token_code_hash.to_string();
+    } else {
+        return Err(StdError::generic_err(
+            "Could not resolve SiennaSwap token 2 info.",
+        ));
     }
 
     let token0_decimals = query_token_info(&token0, &deps.querier)?
@@ -174,7 +124,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         oracle1,
         factory,
         lp_token,
-        dex: msg.dex,
         token0_decimals,
         token1_decimals,
     };
@@ -199,8 +148,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                 oracle0,
                 oracle1,
                 factory,
-                dex,
-            } => try_update_config(deps, env, owner, oracle0, oracle1, factory, dex),
+            } => try_update_config(deps, env, owner, oracle0, oracle1, factory),
         },
         BLOCK_SIZE,
     )
@@ -213,7 +161,6 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     oracle0: Option<Contract>,
     oracle1: Option<Contract>,
     factory: Option<Contract>,
-    dex: Option<Dex>,
 ) -> StdResult<HandleResponse> {
     let mut state: State = State::new_json(&deps.storage)?;
 
@@ -249,8 +196,6 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
         state.factory = factory;
     }
 
-    state.dex = dex.unwrap_or(state.dex);
-
     state.save_json(&mut deps.storage)?;
 
     Ok(HandleResponse {
@@ -282,7 +227,6 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
         oracle1: state.oracle0.as_human(&deps.api)?,
         oracle2: state.oracle1.as_human(&deps.api)?,
         factory: state.factory.as_human(&deps.api)?,
-        dex: state.dex,
     })
 }
 
@@ -295,31 +239,14 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     let price1: PriceResponse = query_price(&state.oracle1.as_human(&deps.api)?, &deps.querier)?;
 
-    let reserve0;
-    let reserve1;
-
-    match state.dex {
-        Dex::SecretSwap => {
-            let pair_info: SecretSwapPoolResponse =
-                deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: deps.api.human_address(&state.factory.address)?,
-                    callback_code_hash: state.factory.code_hash,
-                    msg: to_binary(&SecretSwapPairQueryMsg::Pool {})?,
-                }))?;
-            reserve0 = pair_info.assets[0].amount;
-            reserve1 = pair_info.assets[1].amount;
-        }
-        Dex::SiennaSwap => {
-            let pair_info: SiennaSwapPairInfo =
-                deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: deps.api.human_address(&state.factory.address)?,
-                    callback_code_hash: state.factory.code_hash,
-                    msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
-                }))?;
-            reserve0 = pair_info.amount_0;
-            reserve1 = pair_info.amount_1;
-        }
-    }
+    let pair_info: SiennaSwapPairInfo =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: deps.api.human_address(&state.factory.address)?,
+            callback_code_hash: state.factory.code_hash,
+            msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
+        }))?;
+    let reserve0 = pair_info.amount_0;
+    let reserve1 = pair_info.amount_1;
 
     let lp_token_info = query_token_info(&state.lp_token.as_human(&deps.api)?, &deps.querier)?;
 
