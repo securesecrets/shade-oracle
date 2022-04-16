@@ -1,13 +1,11 @@
-use shade_oracles::{
-    earn
-};
 use mulberry_utils::{
-    ensemble_new, ensemblify,
-    ensemble_helpers::EnsembleContract,
-    common::{types::Contract},
+    common::types::Contract,
     ensemble::ContractEnsemble,
+    ensemble_helpers::EnsembleContract,
+    ensemble_new, ensemblify,
     scrt::{ContractInstantiationInfo, HumanAddr},
 };
+use shade_oracles::earn;
 use std::{cell::RefCell, rc::Rc};
 
 use super::common::OracleContract;

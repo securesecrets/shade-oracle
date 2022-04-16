@@ -1,13 +1,11 @@
-use shade_oracles::{
-    band::{self}
-};
 use mulberry_utils::{
-    ensemblify,
-    ensemble_helpers::EnsembleContract,
-    common::{types::Contract},
+    common::types::Contract,
     ensemble::ContractEnsemble,
+    ensemble_helpers::EnsembleContract,
+    ensemblify,
     scrt::{ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
 };
+use shade_oracles::band::{self};
 use std::{cell::RefCell, rc::Rc};
 
 ensemblify!(
@@ -25,13 +23,7 @@ impl MockBand {
         address: &str,
         account_key: Option<&str>,
     ) -> Self {
-        let info = Self::init(
-            &band::InitMsg {},
-            ensemble,
-            init_info,
-            address,
-            account_key,
-        );
+        let info = Self::init(&band::InitMsg {}, ensemble, init_info, address, account_key);
         MockBand {
             info,
             ensemble: ensemble.clone(),

@@ -1,13 +1,11 @@
-use shade_oracles::{
-    band::{proxy}
-};
 use mulberry_utils::{
-    ensemblify,
-    ensemble_helpers::EnsembleContract,
-    common::{types::Contract},
+    common::types::Contract,
     ensemble::ContractEnsemble,
+    ensemble_helpers::EnsembleContract,
+    ensemblify,
     scrt::{ContractInstantiationInfo, HumanAddr},
 };
+use shade_oracles::band::proxy;
 use std::{cell::RefCell, rc::Rc};
 
 use super::common::OracleContract;

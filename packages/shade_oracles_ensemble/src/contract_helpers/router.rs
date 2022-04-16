@@ -1,13 +1,11 @@
-use shade_oracles::{
-    common as common_oracles, router,
-};
 use mulberry_utils::{
-    ensemble_new, ensemblify,
-    ensemble_helpers::EnsembleContract,
-    common::{types::Contract},
+    common::types::Contract,
     ensemble::ContractEnsemble,
+    ensemble_helpers::EnsembleContract,
+    ensemble_new, ensemblify,
     scrt::{ContractInstantiationInfo, HumanAddr, StdResult},
 };
+use shade_oracles::{common as common_oracles, router};
 use std::{cell::RefCell, rc::Rc};
 
 ensemblify!(
@@ -17,7 +15,6 @@ ensemblify!(
     ::oracle_router::contract::query,
     OracleRouter
 );
-
 
 impl OracleRouter {
     ensemble_new!(OracleRouter, router::InitMsg);
