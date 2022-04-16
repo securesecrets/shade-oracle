@@ -1,61 +1,99 @@
+use mulberry_utils::{
+    common::types::{Contract, ResponseStatus},
+    scrt::*,
+    scrt_math::Uint256,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use mulberry_utils::{
-common::types::{Contract, ResponseStatus},
-scrt::*,
-scrt_math::Uint256,
-};
 
-/// Oracle1 - contract for an oracle of asset 1
-///
-/// Oracle2 - contract for an oracle of asset 2
-///
-/// Factory - contract that mints the LP token for asset 1 & asset 2
-/// (SecretSwap - Pair | SiennaSwap - Exchange)
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct InitMsg {
-    pub owner: String,
-    pub oracle0: Contract,
-    pub oracle1: Contract,
-    pub factory: Contract,
-    pub dex: Dex,
+pub mod secretswap {
+    use super::*;
+    /// Oracle1 - contract for an oracle of asset 1
+    ///
+    /// Oracle2 - contract for an oracle of asset 2
+    ///
+    /// Factory - contract that mints the LP token for asset 1 & asset 2
+    /// (SecretSwap - Pair | SiennaSwap - Exchange)
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub struct InitMsg {
+        pub owner: String,
+        pub oracle0: Contract,
+        pub oracle1: Contract,
+        pub factory: Contract,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum HandleMsg {
+        UpdateConfig {
+            owner: Option<String>,
+            oracle0: Option<Contract>,
+            oracle1: Option<Contract>,
+            factory: Option<Contract>,
+        },
+    }
+
+    #[derive(Serialize, Deserialize, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum HandleAnswer {
+        UpdateConfig { status: ResponseStatus },
+    }
+
+    // We define a custom struct for each query response
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub struct ConfigResponse {
+        pub owner: String,
+        pub oracle1: Contract,
+        pub oracle2: Contract,
+        pub factory: Contract,
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum Dex {
-    SecretSwap,
-    SiennaSwap,
-}
+pub mod siennaswap {
+    use super::*;
+    /// Oracle1 - contract for an oracle of asset 1
+    ///
+    /// Oracle2 - contract for an oracle of asset 2
+    ///
+    /// Factory - contract that mints the LP token for asset 1 & asset 2
+    /// (SecretSwap - Pair | SiennaSwap - Exchange)
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub struct InitMsg {
+        pub owner: String,
+        pub oracle0: Contract,
+        pub oracle1: Contract,
+        pub factory: Contract,
+    }
 
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleMsg {
-    UpdateConfig {
-        owner: Option<String>,
-        oracle0: Option<Contract>,
-        oracle1: Option<Contract>,
-        factory: Option<Contract>,
-        dex: Option<Dex>,
-    },
-}
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum HandleMsg {
+        UpdateConfig {
+            owner: Option<String>,
+            oracle0: Option<Contract>,
+            oracle1: Option<Contract>,
+            factory: Option<Contract>,
+        },
+    }
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleAnswer {
-    UpdateConfig { status: ResponseStatus },
-}
+    #[derive(Serialize, Deserialize, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum HandleAnswer {
+        UpdateConfig { status: ResponseStatus },
+    }
 
-// We define a custom struct for each query response
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ConfigResponse {
-    pub owner: String,
-    pub oracle1: Contract,
-    pub oracle2: Contract,
-    pub factory: Contract,
-    pub dex: Dex,
+    // We define a custom struct for each query response
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub struct ConfigResponse {
+        pub owner: String,
+        pub oracle1: Contract,
+        pub oracle2: Contract,
+        pub factory: Contract,
+    }
 }
 
 pub struct FairLpPriceInfo {

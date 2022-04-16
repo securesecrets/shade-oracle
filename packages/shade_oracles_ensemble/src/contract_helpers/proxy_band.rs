@@ -1,13 +1,11 @@
-use shade_oracles::{
-    band::{proxy}
-};
 use mulberry_utils::{
-    ensemblify,
-    ensemble_helpers::EnsembleContract,
-    common::{types::Contract},
+    common::types::Contract,
     ensemble::ContractEnsemble,
+    ensemble_helpers::EnsembleContract,
+    ensemblify,
     scrt::{ContractInstantiationInfo, HumanAddr},
 };
+use shade_oracles::band::proxy;
 use std::{cell::RefCell, rc::Rc};
 
 use super::common::OracleContract;
@@ -33,8 +31,8 @@ impl ProxyBandOracle {
     ) -> Self {
         let msg = proxy::InitMsg {
             owner,
-            base_symbol: pair.0.to_string().clone(),
-            quote_symbol: pair.1.to_string().clone(),
+            base_symbol: pair.0.to_string(),
+            quote_symbol: pair.1.to_string(),
             band,
         };
         let info = Self::init(&msg, ensemble, init_info, address, account_key);

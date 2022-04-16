@@ -1,11 +1,11 @@
 use crate::contract::{handle, init, query};
-use shade_oracles::{
-    common::QueryMsg,
-    band::proxy::{ConfigResponse, HandleMsg, InitMsg},
-};
 use mulberry_utils::{
     common::types::Contract,
     scrt::{coins, from_binary, mock_dependencies, mock_env, StdError},
+};
+use shade_oracles::{
+    band::proxy::{ConfigResponse, HandleMsg, InitMsg},
+    common::QueryMsg,
 };
 
 #[test]
@@ -68,7 +68,7 @@ fn update_config() {
     assert_eq!(0, res.messages.len());
 
     // it worked, let's query the state
-    let res = query(&mut deps, QueryMsg::GetConfig {}).unwrap();
+    let res = query(&deps, QueryMsg::GetConfig {}).unwrap();
     let value: ConfigResponse = from_binary(&res).unwrap();
     assert_eq!("owner0001", value.owner.as_str());
 

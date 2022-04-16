@@ -2,7 +2,6 @@ use crate::{
     registry::{batch_update_registry, get_price, update_registry},
     state::*,
 };
-use shade_oracles::router::*;
 use mulberry_utils::{
     scrt::{
         to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
@@ -11,6 +10,7 @@ use mulberry_utils::{
     secret_toolkit::utils::{pad_handle_result, pad_query_result},
     storage::traits::SingletonStorable,
 };
+use shade_oracles::router::*;
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -78,7 +78,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 let oracle = Oracle::get(&deps.storage, &deps.api, key.as_str())?;
                 to_binary(&OracleResponse { oracle })
             }
-            QueryMsg::GetPrice { key } => get_price(&deps, key),
+            QueryMsg::GetPrice { key } => get_price(deps, key),
         },
         BLOCK_SIZE,
     )

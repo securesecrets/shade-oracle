@@ -1,20 +1,20 @@
-use serde::{Deserialize, Serialize};
-use shade_oracles::{
-    common::{query_price, PriceResponse, QueryMsg},
-    earn::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
-};
 use mulberry_utils::{
-    protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
+    common::querier::query_token_info,
     common::types::{CanonicalContract, Contract, ResponseStatus},
     get_precision,
-    common::querier::query_token_info,
+    protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
     scrt::{
-        debug_print, to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
+        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
         InitResponse, Querier, QueryResult, StdError, StdResult, Storage, Uint128, BLOCK_SIZE,
     },
     scrt_math::Uint256,
     secret_toolkit::utils::{pad_handle_result, pad_query_result},
     storage::traits::SingletonStorable,
+};
+use serde::{Deserialize, Serialize};
+use shade_oracles::{
+    common::{query_price, PriceResponse, QueryMsg},
+    earn::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -36,7 +36,7 @@ impl SingletonStorable for State {
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
+    _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
     let underlying_oracle = msg.deposit_token_oracle.as_canonical(&deps.api)?;
@@ -61,8 +61,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     };
 
     state.save_json(&mut deps.storage)?;
-
-    debug_print!("Contract was initialized by {}", env.message.sender);
 
     Ok(InitResponse::default())
 }
@@ -164,7 +162,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let deposits_for_one_share = Uint256::from(query_deposit_for_shares(
         &state.strategy.as_human(&deps.api)?,
         &deps.querier,
-        Uint128(1 * 10u128.pow(state.share_token_decimals.into())),
+        Uint128(10u128.pow(state.share_token_decimals.into())),
     )?);
 
     let deposit_token_oracle_response = query_price(
