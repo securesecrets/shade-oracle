@@ -8,18 +8,19 @@ use serde::{Deserialize, Serialize};
 
 pub mod secretswap {
     use super::*;
-    /// Oracle1 - contract for an oracle of asset 1
+    /// Symbol_0 - symbol for asset 0 to be called on oracle router
     ///
-    /// Oracle2 - contract for an oracle of asset 2
+    /// Symbol_1 - symbol for asset 1 to be called on oracle router
     ///
-    /// Factory - contract that mints the LP token for asset 1 & asset 2
+    /// Factory - contract that mints the LP token for asset 0 & asset 1
     /// (SecretSwap - Pair | SiennaSwap - Exchange)
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
         pub owner: String,
-        pub oracle0: Contract,
-        pub oracle1: Contract,
+        pub symbol_0: String,
+        pub symbol_1: String,
+        pub router: Contract,
         pub factory: Contract,
     }
 
@@ -28,8 +29,9 @@ pub mod secretswap {
     pub enum HandleMsg {
         UpdateConfig {
             owner: Option<String>,
-            oracle0: Option<Contract>,
-            oracle1: Option<Contract>,
+            symbol_0: Option<String>,
+            symbol_1: Option<String>,
+            router: Option<Contract>,
             factory: Option<Contract>,
         },
     }
@@ -63,8 +65,9 @@ pub mod siennaswap {
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
         pub owner: String,
-        pub oracle0: Contract,
-        pub oracle1: Contract,
+        pub symbol_0: String,
+        pub symbol_1: String,
+        pub router: Contract,
         pub factory: Contract,
     }
 
@@ -73,8 +76,9 @@ pub mod siennaswap {
     pub enum HandleMsg {
         UpdateConfig {
             owner: Option<String>,
-            oracle0: Option<Contract>,
-            oracle1: Option<Contract>,
+            symbol_0: Option<String>,
+            symbol_1: Option<String>,
+            router: Option<Contract>,
             factory: Option<Contract>,
         },
     }
@@ -90,8 +94,9 @@ pub mod siennaswap {
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
         pub owner: String,
-        pub oracle1: Contract,
-        pub oracle2: Contract,
+        pub symbol_0: String,
+        pub symbol_1: String,
+        pub router: Contract,
         pub factory: Contract,
     }
 }
