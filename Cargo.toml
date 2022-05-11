@@ -6,6 +6,7 @@ members = [
   "contracts/proxy_band_oracle",
   "contracts/secretswap_lp_oracle",
   "contracts/siennaswap_lp_oracle",
+  "contracts/siennaswap_lp_spot_oracle",
   "contracts/earn_v1_oracle",
   "contracts/oracle_router",
   "contracts/snip20",
