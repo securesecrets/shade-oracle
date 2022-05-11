@@ -14,9 +14,8 @@ use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{PriceResponse, QueryMsg},
     lp::{
-        get_fair_lp_token_price,
         siennaswap::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
-        FairLpPriceInfo,
+        FairLpPriceInfo, get_lp_token_spot_price,
     },
     router::querier::query_price,
 };
@@ -268,7 +267,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         decimals: state.token1_decimals,
     };
 
-    let price = get_fair_lp_token_price(a, b, total_supply.u128(), lp_token_decimals);
+    let price = get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals);
 
     let response = PriceResponse {
         rate: Uint128(price.unwrap()),
