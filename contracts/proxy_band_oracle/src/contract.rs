@@ -2,8 +2,8 @@ use mulberry_utils::{
     auth::{assert_admin, load_admin, save_admin},
     common::types::{CanonicalContract, Contract, ResponseStatus},
     scrt::{
-        to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
-        QueryResult, StdError, StdResult, Storage, BLOCK_SIZE,
+        to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
+        StdError, StdResult, Storage, BLOCK_SIZE,
     },
     secret_toolkit::utils::{pad_handle_result, pad_query_result, Query},
     storage::bincode_state::{load, save},

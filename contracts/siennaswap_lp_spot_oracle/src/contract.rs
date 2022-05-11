@@ -3,9 +3,9 @@ use mulberry_utils::{
     common::types::{CanonicalContract, Contract, ResponseStatus},
     protocols::siennaswap::{SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfo},
     scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
-        InitResponse, Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128,
-        WasmQuery, BLOCK_SIZE,
+        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+        Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
+        BLOCK_SIZE,
     },
     secret_toolkit::utils::{pad_handle_result, pad_query_result},
     storage::traits::SingletonStorable,
@@ -13,12 +13,12 @@ use mulberry_utils::{
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{PriceResponse, QueryMsg},
-    router::querier::{query_price},
     lp::{
         get_fair_lp_token_price,
         siennaswap::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
         FairLpPriceInfo,
     },
+    router::querier::query_price,
 };
 use std::cmp::min;
 
@@ -46,11 +46,8 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-
     let router: CanonicalContract = CanonicalContract {
-        address: deps
-            .api
-            .canonical_address(&HumanAddr(msg.router.address))?,
+        address: deps.api.canonical_address(&HumanAddr(msg.router.address))?,
         code_hash: msg.router.code_hash,
     };
 
@@ -233,9 +230,17 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<PriceResponse> {
     let state: State = State::new_json(&deps.storage)?;
 
-    let price0: PriceResponse = query_price(&state.router.as_human(&deps.api)?, &deps.querier, state.symbol_0)?;
+    let price0: PriceResponse = query_price(
+        &state.router.as_human(&deps.api)?,
+        &deps.querier,
+        state.symbol_0,
+    )?;
 
-    let price1: PriceResponse = query_price(&state.router.as_human(&deps.api)?, &deps.querier, state.symbol_1)?;
+    let price1: PriceResponse = query_price(
+        &state.router.as_human(&deps.api)?,
+        &deps.querier,
+        state.symbol_1,
+    )?;
 
     let pair_info: SiennaSwapPairInfo =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
