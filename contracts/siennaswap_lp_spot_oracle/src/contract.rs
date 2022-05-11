@@ -14,8 +14,9 @@ use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{PriceResponse, QueryMsg},
     lp::{
+        get_lp_token_spot_price,
         siennaswap::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
-        FairLpPriceInfo, get_lp_token_spot_price,
+        FairLpPriceInfo,
     },
     router::querier::query_price,
 };

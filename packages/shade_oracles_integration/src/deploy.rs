@@ -1,6 +1,8 @@
 use colored::*;
-use mulberry_integration_tests::{
+use shade_oracles_integration::{
     constants::*,
+};
+use shade_oracles_integration::{
     contract_helpers::{
         oracles::{
             BandContract, EarnV1OracleContract, LpOracleContract, OracleContract,
@@ -21,16 +23,6 @@ use mulberry_utils::{
 };
 use secretcli::secretcli::{account_address, query_contract, test_contract_handle, test_inst_init};
 use serde_json::Result;
-use shade_earn_v1::strategy::{self, msg::TreasuryInfo};
-use shade_lend::{
-    fee_router, liquidation,
-    mocks::{
-        mock_farm,
-        mock_lp::{self, AssetContract},
-    },
-    overseer::{self},
-    vault,
-};
 use shade_oracles::{band, common as common_oracles, lp::Dex, router::RegistryOperation};
 
 fn main() -> Result<()> {
@@ -38,7 +30,7 @@ fn main() -> Result<()> {
 
     let mut users = vec![];
     users.push(HumanAddr::from(user_a.clone()));
-4
+
     println!("Account A: {}", user_a.blue().clone());
     println!("");
 
