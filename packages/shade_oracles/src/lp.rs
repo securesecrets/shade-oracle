@@ -47,9 +47,10 @@ pub mod secretswap {
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
         pub owner: String,
-        pub oracle1: Contract,
-        pub oracle2: Contract,
         pub factory: Contract,
+        pub symbol_0: String,
+        pub symbol_1: String,
+        pub router: Contract,
     }
 }
 
