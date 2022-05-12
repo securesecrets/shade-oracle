@@ -15,7 +15,8 @@ rm ./$$TARGET_FILE.wasm;\
 }
 endef
 
-ORACLES = oracle_router proxy_band_oracle secretswap_lp_oracle siennaswap_lp_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle earn_v1_oracle mock_band
+# ORACLES = oracle_router proxy_band_oracle secretswap_lp_oracle siennaswap_lp_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle earn_v1_oracle mock_band
+ORACLES = siennaswap_lp_spot_oracle
 CONTRACTS = ${ORACLES}
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
@@ -29,6 +30,9 @@ build_release:
 
 build_debug:
 	(cd ${contracts_dir}; RUSTFLAGS='-C link-arg=-s' cargo build --release --target wasm32-unknown-unknown)
+
+deploy-testnet:
+	cd packages/shade_oracles_integration && export RUST_BACKTRACE=full && cargo run --bin "deploy"
 
 compress: setup $(CONTRACTS);
 

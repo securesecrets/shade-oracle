@@ -11,9 +11,9 @@ exclude = [
   "cached_contracts",
 ]
 
-# [[bin]]
-# name = "deploy"
-# path = "src/deploy.rs"
+[[bin]]
+name = "deploy"
+path = "src/deploy.rs"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
