@@ -117,8 +117,9 @@ fn deploy() -> Result<()> {
         Some("stkd_scrt_scrt_lp_oracle"),
     )?;
 
+    println!("Registering stkd-SCRT/SCRT oracle to router.");
     router.update_registry(
-        RegistryOperation::Add {
+        RegistryOperation::Replace {
             oracle: stkd_scrt_scrt_lp_oracle.as_contract(),
             key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
         },

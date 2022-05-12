@@ -16,7 +16,7 @@ rm ./$$TARGET_FILE.wasm;\
 endef
 
 # ORACLES = oracle_router proxy_band_oracle secretswap_lp_oracle siennaswap_lp_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle earn_v1_oracle mock_band
-ORACLES = siennaswap_lp_spot_oracle
+ORACLES = siennaswap_lp_spot_oracle shade_staking_derivative_oracle
 CONTRACTS = ${ORACLES}
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
