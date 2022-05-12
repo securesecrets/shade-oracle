@@ -75,6 +75,7 @@ pub mod querier {
     use super::QueryMsg;
     use super::*;
 
+    /// Gets the price returned by the oracle stored at key
     pub fn query_price(
         contract: &Contract,
         querier: &impl Querier,
@@ -85,5 +86,19 @@ pub mod querier {
             callback_code_hash: contract.code_hash.clone(),
             msg: to_binary(&QueryMsg::GetPrice { key })?,
         }))
+    }
+
+    // Gets the oracle contract stored at key
+    pub fn query_oracle(
+        contract: &Contract,
+        querier: &impl Querier,
+        key: String,
+    ) -> StdResult<Contract> {
+        let resp: OracleResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: HumanAddr(contract.address.clone()),
+            callback_code_hash: contract.code_hash.clone(),
+            msg: to_binary(&QueryMsg::GetOracle { key })?,
+        }))?;
+        Ok(resp.oracle)
     }
 }

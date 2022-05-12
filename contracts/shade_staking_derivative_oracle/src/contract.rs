@@ -11,8 +11,8 @@ use mulberry_utils::{
 };
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{PriceResponse, QueryMsg},
-    router::querier::query_price,
+    common::{query_price, PriceResponse, QueryMsg},
+    router::querier::query_oracle,
     staking_derivative::shade::{
         querier::query_price as query_derivative_price, ConfigResponse, HandleAnswer, HandleMsg,
         InitMsg,
@@ -166,12 +166,14 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<PriceResponse> {
     let state: State = State::new_json(&deps.storage)?;
 
-    // price of underlying asset to 10^18.
-    let underlying_price: PriceResponse = query_price(
+    let underlying_oracle = query_oracle(
         &state.router.as_human(&deps.api)?,
         &deps.querier,
         state.symbol,
     )?;
+
+    // price of underlying asset to 10^18.
+    let underlying_price = query_price(&underlying_oracle, &deps.querier)?;
 
     let staking_derivative_price = query_derivative_price(
         &state.staking_derivative.as_human(&deps.api)?,
