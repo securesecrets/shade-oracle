@@ -1,7 +1,10 @@
 use mulberry_utils::{
     common::querier::query_token_info,
     common::types::{CanonicalContract, Contract, ResponseStatus},
-    protocols::siennaswap::{SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfo},
+    protocols::siennaswap::{
+        SiennaDexTokenType, SiennaSwapExchangeQueryMsg,
+        SiennaSwapPairInfoResponse,
+    },
     scrt::{
         to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
         Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
@@ -67,12 +70,13 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         code_hash: "b".to_string(),
     };
 
-    let pair_info: SiennaSwapPairInfo =
+    let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: HumanAddr::from(msg.factory.address.clone()),
             callback_code_hash: msg.factory.code_hash.clone(),
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
+    let pair_info = pair_info_response.pair_info;
     let lp_token = CanonicalContract {
         address: deps
             .api
@@ -242,12 +246,13 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         state.symbol_1,
     )?;
 
-    let pair_info: SiennaSwapPairInfo =
+    let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: deps.api.human_address(&state.factory.address)?,
             callback_code_hash: state.factory.code_hash,
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
+    let pair_info = pair_info_response.pair_info;
     let reserve0 = pair_info.amount_0;
     let reserve1 = pair_info.amount_1;
 
