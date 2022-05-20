@@ -3,6 +3,7 @@ members = [
   "packages/shade_oracles_ensemble",
   "packages/shade_oracles",
 
+  "contracts/silk_oracle",
   "contracts/proxy_band_oracle",
   "contracts/secretswap_lp_oracle",
   "contracts/siennaswap_lp_oracle",
