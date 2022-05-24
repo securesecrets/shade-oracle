@@ -3,7 +3,7 @@ pub mod contract;
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     use super::contract;
-    use shade_oracles::scrt::{
+    use cosmwasm_std::{
         do_handle, do_init, do_query, ExternalApi, ExternalQuerier, ExternalStorage,
     };
 
