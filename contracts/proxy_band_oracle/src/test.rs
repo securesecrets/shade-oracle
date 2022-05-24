@@ -1,12 +1,12 @@
 use crate::contract::{handle, init, query};
 use shade_oracles::{
     band::proxy::{ConfigResponse, HandleMsg, InitMsg},
-    common::QueryMsg, scrt::HumanAddr,
+    common::QueryMsg,
 };
 use shade_oracles::{
     common::Contract,
-    scrt::{coins, from_binary, mock_dependencies, mock_env, StdError},
 };
+use cosmwasm_std::{coins, from_binary, HumanAddr, testing::{mock_dependencies, mock_env}, StdError};
 
 #[test]
 fn proper_initialization() {

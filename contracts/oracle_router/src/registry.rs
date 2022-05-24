@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::state::*;
 use shade_oracles::common::{Contract, OraclePrice};
-use shade_oracles::scrt::{
+use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
 };
 use shade_oracles::{common::querier::{query_price, query_prices}, router::*};
@@ -61,8 +61,13 @@ pub fn get_prices<S: Storage, A: Api, Q: Querier>(
     let mut prices: Vec<OraclePrice> = vec![];
 
     for (key, value) in map {
-        let mut queried_prices = query_prices(&key, &deps.querier, value)?;
-        prices.append(&mut queried_prices);
+        if value.len() == 1 {
+            let queried_price = query_price(&key, &deps.querier, value[0].clone())?;
+            prices.push(queried_price);
+        } else {
+            let mut queried_prices = query_prices(&key, &deps.querier, value)?;
+            prices.append(&mut queried_prices);
+        }
     }
     to_binary(&prices)
 }

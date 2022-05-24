@@ -1,69 +1,56 @@
 use shade_oracles::{
-    common::querier::query_token_info,
-    common::types::{CanonicalContract, Contract, ResponseStatus},
-    get_precision,
-    scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
-        Querier, QueryResult, StdError, StdResult, Storage, Uint128, BLOCK_SIZE,
-    },
-    secret_toolkit::utils::{pad_handle_result, pad_query_result},
-    storage::traits::SingletonStorable,
+    common::{querier::query_token_info, CommonOracleConfig},
+    common::{ResponseStatus, BLOCK_SIZE, Contract}, band::ReferenceData, storage::Item,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
+use cosmwasm_std::{
+    to_binary, Api, Env, Extern, HandleResponse, InitResponse,
+    Querier, QueryResult, StdResult, Storage, Uint128, Binary, StdError,
 };
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{querier::{query_price, query_token_info}, PriceResponse, QueryMsg},
+    common::{get_precision, querier::{query_price}, throw_unsupported_symbol_error, QueryMsg, OraclePrice},
     router::querier::query_oracle,
     staking_derivative::shade::{
-        querier::query_price as query_derivative_price, ConfigResponse, HandleAnswer, HandleMsg,
-        InitMsg,
+        querier::query_price as query_derivative_price,
+        {ConfigResponse, InitMsg, HandleMsg, HandleStatusAnswer},
     },
 };
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
-    pub owner: CanonicalAddr,
-    pub symbol: String,
-    pub router: CanonicalContract,
-    pub staking_derivative: CanonicalContract,
+    pub supported_symbol: String,
+    pub underlying_symbol: String,
+    pub router: Contract,
+    pub staking_derivative: Contract,
     pub token_decimals: u8,
 }
 
-impl SingletonStorable for State {
-    fn namespace() -> Vec<u8> {
-        b"config".to_vec()
-    }
-}
+const CONFIG: Item<CommonOracleConfig> = Item::new("config");
+const STATE: Item<State> = Item::new("state");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-    let router: CanonicalContract = CanonicalContract {
-        address: deps.api.canonical_address(&HumanAddr(msg.router.address))?,
-        code_hash: msg.router.code_hash,
-    };
-
-    let staking_derivative: CanonicalContract = CanonicalContract {
-        address: deps
-            .api
-            .canonical_address(&HumanAddr(msg.staking_derivative.address.clone()))?,
-        code_hash: msg.staking_derivative.code_hash.clone(),
-    };
 
     let token_decimals = query_token_info(&msg.staking_derivative, &deps.querier)?
         .token_info
         .decimals;
 
     let state: State = State {
-        owner: deps.api.canonical_address(&HumanAddr(msg.owner))?,
-        symbol: msg.symbol,
-        router,
-        staking_derivative,
+        supported_symbol: msg.supported_symbol,
+        underlying_symbol: msg.underlying_symbol,
+        router: msg.router,
+        staking_derivative: msg.staking_derivative,
         token_decimals,
     };
 
-    state.save_json(&mut deps.storage)?;
+    let config = CommonOracleConfig { owner: msg.owner, enabled: true };
+
+    STATE.save(&mut deps.storage, &state)?;
+    CONFIG.save(&mut deps.storage, &config)?;
 
     Ok(InitResponse::default())
 }
@@ -75,66 +62,28 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
+        // TODO: Add handle for set status
         match msg {
-            HandleMsg::UpdateConfig {
-                owner,
-                symbol,
-                staking_derivative,
-                router,
-            } => try_update_config(deps, env, owner, symbol, staking_derivative, router),
+            HandleMsg::SetStatus { enabled } => try_update_status(deps, &env, enabled),
         },
         BLOCK_SIZE,
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
+fn try_update_status<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
-    owner: Option<String>,
-    symbol: Option<String>,
-    staking_derivative: Option<Contract>,
-    router: Option<Contract>,
+    env: &Env,
+    enabled: bool,
 ) -> StdResult<HandleResponse> {
-    let mut state: State = State::new_json(&deps.storage)?;
-
-    if deps.api.canonical_address(&env.message.sender)? != state.owner {
-        return Err(StdError::Unauthorized { backtrace: None });
-    }
-
-    if let Some(owner) = owner {
-        state.owner = deps.api.canonical_address(&HumanAddr(owner))?;
-    }
-
-    if let Some(router) = router {
-        let router = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(router.address))?,
-            code_hash: router.code_hash,
-        };
-        state.router = router;
-    }
-
-    if let Some(staking_derivative) = staking_derivative {
-        let staking_derivative = CanonicalContract {
-            address: deps
-                .api
-                .canonical_address(&HumanAddr(staking_derivative.address))?,
-            code_hash: staking_derivative.code_hash,
-        };
-        state.staking_derivative = staking_derivative;
-    }
-
-    if let Some(symbol) = symbol {
-        state.symbol = symbol;
-    }
-
-    state.save_json(&mut deps.storage)?;
-
+    CONFIG.load(&deps.storage)?.is_owner(env)?;
+    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+        config.enabled = enabled;
+        Ok(config)
+    })?;
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
+        data: Some(to_binary(&HandleStatusAnswer { status: ResponseStatus::Success, enabled: new_config.enabled, })?),
     })
 }
 
@@ -142,7 +91,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
-            QueryMsg::GetPrice { .. } => to_binary(&try_query_price(deps)?),
+            QueryMsg::GetPrice { symbol } => try_query_price(deps, symbol),
+            QueryMsg::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
         },
         BLOCK_SIZE,
     )
@@ -151,32 +101,40 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
 fn try_query_config<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<ConfigResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    let state = STATE.load(&deps.storage)?;
+    let config = CONFIG.load(&deps.storage)?;
 
     Ok(ConfigResponse {
-        owner: deps.api.human_address(&state.owner)?.to_string(),
-        symbol: state.symbol,
-        router: state.router.as_human(&deps.api)?,
-        staking_derivative: state.staking_derivative.as_human(&deps.api)?,
+        owner: config.owner,
+        router: state.router,
+        staking_derivative: state.staking_derivative,
+        supported_symbol: state.supported_symbol,
+        underlying_symbol: state.underlying_symbol,
+        enabled: config.enabled,
     })
 }
 
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-) -> StdResult<PriceResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    symbol: String,
+) -> StdResult<Binary> {
+    let state = STATE.load(&deps.storage)?;
+
+    if symbol != state.supported_symbol {
+        return Err(throw_unsupported_symbol_error(symbol));
+    }
 
     let underlying_oracle = query_oracle(
-        &state.router.as_human(&deps.api)?,
+        &state.router,
         &deps.querier,
-        state.symbol,
+        state.underlying_symbol.clone(),
     )?;
 
     // price of underlying asset to 10^18.
-    let underlying_price = query_price(&underlying_oracle, &deps.querier)?;
+    let underlying_price = query_price(&underlying_oracle, &deps.querier, state.underlying_symbol)?;
 
     let staking_derivative_price = query_derivative_price(
-        &state.staking_derivative.as_human(&deps.api)?,
+        &state.staking_derivative,
         &deps.querier,
     )?;
 
@@ -184,13 +142,14 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         Uint128(get_precision(state.token_decimals).clamp_u128()?);
 
     let price = underlying_price
+        .price
         .rate
         .multiply_ratio(staking_derivative_price, staking_derivative_price_precision);
 
-    let response = PriceResponse {
+    let response = ReferenceData {
         rate: price,
-        last_updated_base: underlying_price.last_updated_base,
-        last_updated_quote: underlying_price.last_updated_quote,
+        last_updated_base: underlying_price.price.last_updated_base,
+        last_updated_quote: underlying_price.price.last_updated_quote,
     };
-    Ok(response)
+    to_binary(&OraclePrice::new(symbol, response))
 }
