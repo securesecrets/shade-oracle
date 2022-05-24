@@ -4,6 +4,7 @@ use crate::{
     band::ReferenceData,
 };
 use cosmwasm_std::*;
+use fadroma::Uint256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize}; 
 
@@ -62,6 +63,11 @@ impl Contract {
             code_hash: self.code_hash.clone(),
         })
     }
+}
+
+
+pub fn get_precision(factor: u8) -> Uint256 {
+    Uint256::from(10u128.pow(factor.into()))
 }
 
 pub fn throw_unsupported_symbol_error(symbol: String) -> StdError {

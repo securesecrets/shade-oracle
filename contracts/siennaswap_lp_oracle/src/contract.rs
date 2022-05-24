@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::querier::{query_price, query_token_info},
-    common::{BLOCK_SIZE, CanonicalContract, Contract, ResponseStatus},
+    common::{BLOCK_SIZE, CanonicalContract, Contract, ResponseStatus, throw_unsupported_symbol_error},
     common::{CommonOracleConfig, HandleMsg, HandleStatusAnswer, OraclePrice, QueryMsg},
     lp::{
         get_fair_lp_token_price,
@@ -191,6 +191,10 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<Binary> {
     let state = STATE.load(&deps.storage)?;
 
+    if symbol != state.supported_symbol {
+        return Err(throw_unsupported_symbol_error(symbol));
+    }
+    
     let oracle0 = query_oracle(
         &state.router.as_human(&deps.api)?,
         &deps.querier,

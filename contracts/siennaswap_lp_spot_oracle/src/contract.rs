@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use shade_oracles::{
-    common::{BLOCK_SIZE, Contract, CanonicalContract, querier::{query_token_info, query_price}, OraclePrice, QueryMsg, CommonOracleConfig, HandleMsg, HandleStatusAnswer, ResponseStatus},
+    common::{throw_unsupported_symbol_error, BLOCK_SIZE, Contract, CanonicalContract, querier::{query_token_info, query_price}, OraclePrice, QueryMsg, CommonOracleConfig, HandleMsg, HandleStatusAnswer, ResponseStatus},
     lp::{
         get_lp_token_spot_price,
         siennaswap::{
@@ -202,7 +202,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let state = STATE.load(&deps.storage)?;
 
     if symbol != state.supported_symbol {
-        return Err(StdError::generic_err(format!("This oracle only supports the {} symbol. (Attempted symbol: {}).", state.supported_symbol, symbol)))
+        return Err(throw_unsupported_symbol_error(symbol));
     }
 
     let oracle0 = query_oracle(
