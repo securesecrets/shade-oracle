@@ -9,7 +9,8 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "snake_case")]
 pub struct InitMsg {
-    pub owner: String,
+    pub owner: HumanAddr,
+    pub default_oracle: Contract,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -25,7 +26,7 @@ pub enum RegistryOperation {
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum HandleMsg {
-    ChangeOwner { new_owner: String },
+    UpdateConfig { owner: Option<HumanAddr>, default_oracle: Option<Contract> },
     UpdateRegistry { operation: RegistryOperation },
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
 }
@@ -34,7 +35,7 @@ pub enum HandleMsg {
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum HandleAnswer {
-    ChangeOwner { status: ResponseStatus },
+    UpdateConfig { status: ResponseStatus },
     UpdateRegistry { status: ResponseStatus },
     BatchUpdateRegistry { status: ResponseStatus },
 }
@@ -43,7 +44,7 @@ pub enum HandleAnswer {
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum QueryMsg {
-    GetOwner {},
+    GetConfig {},
     /// Get oracle at that key
     GetOracle {
         key: String,
@@ -63,17 +64,19 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct ConfigResponse {
-    pub owner: String,
+    pub owner: HumanAddr,
+    pub default_oracle: Contract,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct OracleResponse {
+    pub key: String,
     pub oracle: Contract,
 }
 
 pub mod querier {
-    use crate::common::PriceResponse;
+    use crate::common::*;
     use crate::scrt::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
 
     use super::QueryMsg;
@@ -84,7 +87,7 @@ pub mod querier {
         contract: &Contract,
         querier: &impl Querier,
         key: String,
-    ) -> StdResult<PriceResponse> {
+    ) -> StdResult<OraclePrice> {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
@@ -97,7 +100,7 @@ pub mod querier {
         contract: &Contract,
         querier: &impl Querier,
         keys: Vec<String>,
-    ) -> StdResult<PriceResponse> {
+    ) -> StdResult<Vec<OraclePrice>> {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),

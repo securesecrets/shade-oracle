@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{hash::{Hash, Hasher}};
 
 use crate::{
     scrt::*,
@@ -31,13 +31,18 @@ pub struct HandleStatusAnswer {
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct PriceResponse {
-    pub prices: OraclePrices,
+pub struct OraclePrice {
+    pub symbol: String,
+    pub price: ReferenceData,
 }
 
-pub type OraclePrices = HashMap<String, ReferenceData>;
+impl OraclePrice {
+    pub fn new(symbol: String, reference_data: ReferenceData) -> Self {
+        OraclePrice { symbol, price: reference_data }
+    }
+}
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Contract {
     pub address: HumanAddr,
@@ -129,11 +134,23 @@ pub mod querier {
         contract: &Contract,
         querier: &impl Querier,
         symbol: String,
-    ) -> StdResult<PriceResponse> {
+    ) -> StdResult<OraclePrice> {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
             msg: to_binary(&QueryMsg::GetPrice { symbol })?,
+        }))
+    }
+
+    pub fn query_prices(
+        contract: &Contract,
+        querier: &impl Querier,
+        symbols: Vec<String>,
+    ) -> StdResult<Vec<OraclePrice>> {
+        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: contract.address.clone(),
+            callback_code_hash: contract.code_hash.clone(),
+            msg: to_binary(&QueryMsg::GetPrices { symbols })?,
         }))
     }
 
