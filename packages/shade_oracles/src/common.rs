@@ -1,4 +1,4 @@
-use std::{hash::{Hash, Hasher}};
+use std::{hash::{Hash}};
 
 use crate::{
     band::ReferenceData,
@@ -52,6 +52,10 @@ pub struct Contract {
 }
 
 impl Contract {
+    pub fn new(address: String, code_hash: String) -> Self {
+        Contract { address: HumanAddr(address), code_hash }
+    }
+
     pub fn as_canonical(&self, api: &impl Api) -> Result<CanonicalContract, StdError> {
         Ok(CanonicalContract {
             address: api.canonical_address(&self.address.clone())?,
