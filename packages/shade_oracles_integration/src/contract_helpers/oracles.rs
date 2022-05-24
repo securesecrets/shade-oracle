@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
     band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
-    earn as earn_v1_oracle, lp as lp_oracle, router, scrt::{Uint128, HumanAddr},
+    earn as earn_v1_oracle, lp as lp_oracle, router,
 };
+use cosmwasm_std::{Uint128, HumanAddr};
 
 use super::{GasLog, TestableContract};
 

@@ -1,15 +1,11 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{Contract, ResponseStatus, CommonOracleConfig, HandleStatusAnswer, OraclePrice, QueryMsg},
-    scrt::{
-        to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
-        StdError, StdResult, Storage, BLOCK_SIZE,
-        secret_toolkit::utils::{pad_handle_result, pad_query_result, Query}, Binary,
-
-    }, band::{ReferenceData, proxy::{HandleMsg, HandleAnswer}}, storage::Item,
+    common::{Contract, ResponseStatus, CommonOracleConfig, HandleStatusAnswer, OraclePrice, QueryMsg, BLOCK_SIZE}, band::{ReferenceData, proxy::{HandleMsg, HandleAnswer}}, storage::Item,
 };
+use cosmwasm_std::{to_binary, Binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
+    StdError, StdResult, Storage,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 use shade_oracles::{
     band::{
         proxy::{ConfigResponse, InitMsg},
@@ -25,7 +21,7 @@ pub struct State {
     pub quote_symbol: String,
 }
 
-const COMMON: Item<CommonOracleConfig> = Item::new("config");
+const CONFIG: Item<CommonOracleConfig> = Item::new("config");
 const STATE: Item<State> = Item::new("band-state");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
@@ -45,7 +41,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     };
 
     STATE.save(&mut deps.storage, &state)?;
-    COMMON.save(&mut deps.storage, &common)?;
+    CONFIG.save(&mut deps.storage, &common)?;
 
     Ok(InitResponse::default())
 }
@@ -56,7 +52,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     let response: Result<HandleResponse, StdError> = match msg {
-        HandleMsg::SetStatus { enabled, } => try_update_status(deps, env, enabled),
+        HandleMsg::SetStatus { enabled, } => try_update_status(deps, &env, enabled),
         HandleMsg::UpdateConfig {
             owner,
             band,
@@ -68,10 +64,11 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 
 fn try_update_status<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    _env: Env,
+    env: &Env,
     enabled: bool,
 ) -> StdResult<HandleResponse> {
-    let new_config = COMMON.update(&mut deps.storage, |mut config| -> StdResult<_> {
+    CONFIG.load(&deps.storage)?.is_owner(env)?;
+    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
         config.enabled = enabled;
         Ok(config)
     })?;
@@ -89,7 +86,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     band: Option<Contract>,
     quote_symbol: Option<String>,
 ) -> StdResult<HandleResponse> {
-    let config = COMMON.load(&deps.storage)?;
+    let config = CONFIG.load(&deps.storage)?;
     config.is_owner(&env)?;
 
     STATE.update(&mut deps.storage, |mut state| -> StdResult<_> {
@@ -98,7 +95,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
         Ok(state)
     })?;
 
-    COMMON.update(&mut deps.storage, |mut config| -> StdResult<_> {
+    CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
         config.owner = owner.unwrap_or(config.owner);
         Ok(config)
     })?;
@@ -125,7 +122,7 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<Binary> {
     let state = STATE.load(&deps.storage)?;
-    let common = COMMON.load(&deps.storage)?;
+    let common = CONFIG.load(&deps.storage)?;
 
     to_binary(&ConfigResponse {
         owner: common.owner,
@@ -139,6 +136,8 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     symbol: String,
 ) -> StdResult<Binary> {
+    CONFIG.load(&deps.storage)?.is_enabled()?;
+
     let state = STATE.load(&deps.storage)?;
 
     let band_response: ReferenceData = BandQuery::GetReferenceData {
@@ -158,6 +157,8 @@ fn try_query_prices<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     symbols: Vec<String>,
 ) -> StdResult<Binary> {
+    CONFIG.load(&deps.storage)?.is_enabled()?;
+
     let state = STATE.load(&deps.storage)?;
 
     let quote_symbols = vec![state.quote_symbol; symbols.len()];

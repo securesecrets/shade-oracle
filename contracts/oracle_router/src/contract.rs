@@ -2,14 +2,13 @@ use crate::{
     registry::{batch_update_registry, get_price, update_registry, get_prices},
     state::*,
 };
-use shade_oracles::router::*;
-use shade_oracles::{
-    scrt::{
+use shade_oracles::{common::BLOCK_SIZE, router::*};
+use cosmwasm_std::{
         to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
-        StdError, StdResult, Storage, BLOCK_SIZE,
-        secret_toolkit::utils::{pad_handle_result, pad_query_result},
-    },
+        StdError, StdResult, Storage,
 };
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
+
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,

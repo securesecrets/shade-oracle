@@ -1,15 +1,18 @@
-use crate::{common::Contract, scrt::*};
+use crate::{common::{Contract, ResponseStatus}};
+use cosmwasm_std::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod shade {
+
     use super::*;
 
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
         pub owner: HumanAddr,
-        pub symbol: String,
+        pub supported_symbol: String,
+        pub underlying_symbol: String,
         pub staking_derivative: Contract,
         pub router: Contract,
     }
@@ -19,9 +22,24 @@ pub mod shade {
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
         pub owner: HumanAddr,
-        pub symbol: String,
+        pub supported_symbol: String,
+        pub underlying_symbol: String,        
         pub router: Contract,
         pub staking_derivative: Contract,
+        pub enabled: bool,
+    }
+
+    /// Every HandleMsg for each specific oracle type should include this
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum HandleMsg {
+        SetStatus { enabled: bool },
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub struct HandleStatusAnswer {
+        pub status: ResponseStatus,
         pub enabled: bool,
     }
 

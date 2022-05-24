@@ -1,6 +1,6 @@
 use crate::contract::{handle, init, query, QueryMsg};
 use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
-use shade_oracles::scrt::{
+use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env},
     Uint128,

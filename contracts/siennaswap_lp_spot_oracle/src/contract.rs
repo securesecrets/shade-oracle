@@ -1,12 +1,6 @@
+use serde::{Serialize, Deserialize};
 use shade_oracles::{
-    scrt::{
-        serde::{Deserialize, Serialize},
-        to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse,
-        Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
-        BLOCK_SIZE,
-        secret_toolkit::utils::{pad_query_result},
-    },
-    common::{Contract, CanonicalContract, querier::{query_token_info, query_price}, PriceResponse, QueryMsg, CommonOracleConfig, HandleMsg},
+    common::{throw_unsupported_symbol_error, BLOCK_SIZE, Contract, CanonicalContract, querier::{query_token_info, query_price}, OraclePrice, QueryMsg, CommonOracleConfig, HandleMsg, HandleStatusAnswer, ResponseStatus},
     lp::{
         get_lp_token_spot_price,
         siennaswap::{
@@ -16,12 +10,18 @@ use shade_oracles::{
         FairLpPriceInfo,
     },
     storage::Item,
-    router::querier::query_oracle,
+    router::querier::query_oracle, band::ReferenceData,
 };
+use cosmwasm_std::{
+    to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+    Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery, Binary,
+};
+use secret_toolkit::utils::{pad_query_result, pad_handle_result};
 use std::cmp::min;
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
+    pub supported_symbol: String,
     pub symbol_0: String,
     pub symbol_1: String,
     pub router: CanonicalContract,
@@ -32,7 +32,7 @@ pub struct State {
 }
 
 const STATE: Item<State> = Item::new("state");
-const COMMON: Item<CommonOracleConfig> = Item::new("common");
+const CONFIG: Item<CommonOracleConfig> = Item::new("common");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -47,7 +47,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let factory: CanonicalContract = CanonicalContract {
         address: deps
             .api
-            .canonical_address(&msg.factory.address.clone())?,
+            .canonical_address(&msg.factory.address)?,
         code_hash: msg.factory.code_hash.clone(),
     };
 
@@ -62,7 +62,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let pair_info_response: SiennaSwapQueryResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: HumanAddr::from(msg.factory.address.clone()),
+            contract_addr: msg.factory.address.clone(),
             callback_code_hash: msg.factory.code_hash.clone(),
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
@@ -82,7 +82,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
             lp_token = CanonicalContract {
                 address: deps
                     .api
-                    .canonical_address(&HumanAddr::from(liquidity_token.address))?,
+                    .canonical_address(&liquidity_token.address)?,
                 code_hash: liquidity_token.code_hash,
             };
             if let SiennaDexTokenType::CustomToken {
@@ -120,6 +120,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
+        supported_symbol: msg.supported_symbol,
         symbol_0: msg.symbol_0,
         symbol_1: msg.symbol_1,
         router,
@@ -131,28 +132,48 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let common: CommonOracleConfig = CommonOracleConfig { owner: msg.owner, enabled: true };
 
-    COMMON.save(&mut deps.storage, &common)?;
+    CONFIG.save(&mut deps.storage, &common)?;
     STATE.save(&mut deps.storage, &state)?;
 
     Ok(InitResponse::default())
 }
 
-/* CONFIG UPDATE NEEDS TO BE FIXED */
 pub fn handle<S: Storage, A: Api, Q: Querier>(
-    _deps: &mut Extern<S, A, Q>,
-    _env: Env,
-    _msg: HandleMsg,
+    deps: &mut Extern<S, A, Q>,
+    env: Env,
+    msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
+    pad_handle_result(
+        match msg {
+            HandleMsg::SetStatus { enabled } => try_update_status(deps, &env, enabled),
+        },
+        BLOCK_SIZE,
+    )
+}
 
-    Err(StdError::generic_err("Handle messages are disabled."))
+fn try_update_status<S: Storage, A: Api, Q: Querier>(
+    deps: &mut Extern<S, A, Q>,
+    env: &Env,
+    enabled: bool,
+) -> StdResult<HandleResponse> {
+    CONFIG.load(&deps.storage)?.is_owner(env)?;
+    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+        config.enabled = enabled;
+        Ok(config)
+    })?;
+    Ok(HandleResponse {
+        messages: vec![],
+        log: vec![],
+        data: Some(to_binary(&HandleStatusAnswer { status: ResponseStatus::Success, enabled: new_config.enabled, })?),
+    })
 }
 
 pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
-            QueryMsg::GetPrice { .. } => to_binary(&try_query_price(deps)?),
-            QueryMsg::GetPrices { symbols } => Err(StdError::generic_err("Unsupported method.")),
+            QueryMsg::GetPrice { symbol } => try_query_price(deps, symbol),
+            QueryMsg::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
         },
         BLOCK_SIZE,
     )
@@ -162,7 +183,7 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<ConfigResponse> {
     let state: State = STATE.load(&deps.storage)?;
-    let common: CommonOracleConfig = COMMON.load(&deps.storage)?;
+    let common: CommonOracleConfig = CONFIG.load(&deps.storage)?;
 
     Ok(ConfigResponse {
         owner: common.owner,
@@ -171,15 +192,18 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
         router: state.router.as_human(&deps.api)?,
         factory: state.factory.as_human(&deps.api)?,
         enabled: common.enabled,
+        supported_symbol: state.supported_symbol,
     })
 }
-
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-) -> StdResult<PriceResponse> {
-    let state: State = STATE.load(&deps.storage)?;
+    symbol: String,
+) -> StdResult<Binary> {
+    let state = STATE.load(&deps.storage)?;
 
-    // NEED TO UPDATE THIS WHEN ORACLE ROUTER IS DONE
+    if symbol != state.supported_symbol {
+        return Err(throw_unsupported_symbol_error(symbol));
+    }
 
     let oracle0 = query_oracle(
         &state.router.as_human(&deps.api)?,
@@ -192,9 +216,9 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         state.symbol_1.clone(),
     )?;
 
-    let price0: PriceResponse = query_price(&oracle0, &deps.querier, state.symbol_0)?;
+    let price0 = query_price(&oracle0, &deps.querier, state.symbol_0)?;
 
-    let price1: PriceResponse = query_price(&oracle1, &deps.querier, state.symbol_1)?;
+    let price1 = query_price(&oracle1, &deps.querier, state.symbol_1)?;
 
     let pair_info_response: SiennaSwapQueryResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -228,22 +252,22 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     let a = FairLpPriceInfo {
         reserve: reserve0.u128(),
-        price: price0.rate.u128(),
+        price: price0.price.rate.u128(),
         decimals: state.token0_decimals,
     };
 
     let b = FairLpPriceInfo {
         reserve: reserve1.u128(),
-        price: price1.rate.u128(),
+        price: price1.price.rate.u128(),
         decimals: state.token1_decimals,
     };
 
     let price = get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals);
 
-    let response = PriceResponse {
+    let data = ReferenceData {
         rate: Uint128(price.unwrap()),
-        last_updated_base: min(price0.last_updated_base, price1.last_updated_base),
-        last_updated_quote: min(price0.last_updated_quote, price1.last_updated_quote),
+        last_updated_base: min(price0.price.last_updated_base, price1.price.last_updated_base),
+        last_updated_quote: min(price0.price.last_updated_quote, price1.price.last_updated_quote),
     };
-    Ok(response)
+    to_binary(&OraclePrice::new(symbol, data))
 }

@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
-use shade_oracles::scrt::{
+use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
     StdError, StdResult, Storage, Uint128,
 };

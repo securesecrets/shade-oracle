@@ -15,25 +15,35 @@ exclude = [
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = []
+default = ["all"]
+all = [
+  "siennaswap-spot-lp",
+  "siennaswap-lp",
+  "band-mock",
+  "proxy-band",
+  "router",
+]
 contracts = []
+siennaswap-spot-lp = []
+siennaswap-lp = []
+band-mock = []
+proxy-band = []
+router = []
 
 [dependencies]
-colored = "2.0.0"
-chrono = "0.4.19"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-serde_json = { version = "1.0.67"}
-getrandom = { version = "0.2", features = ["js"] } # Prevents wasm from freaking out when running make
-rand = { version = "0.8.4"}
-shade-oracles = { path = "../shade_oracles", features = ["scrt"] }
+cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
+cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
+cosmwasm-schema = "0.10.1"
+
+shade-oracles = { path = "../shade_oracles" }
 
 syn = { version="1.0.57",features=["full","fold"] }
 quote = "1.0.8"
 
+ensemble-harness = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "refactor" }
 mock-band = { path = "../../contracts/mock_band" }
 proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
-earn-v1-oracle = { path = "../../contracts/earn_v1_oracle" }
+shade-staking-derivative-oracle = { path = "../../contracts/shade_staking_derivative_oracle" }
 siennaswap-lp-oracle = { path = "../../contracts/siennaswap_lp_oracle" }
-secretswap-lp-oracle = { path = "../../contracts/secretswap_lp_oracle" }
+siennaswap-lp-spot-oracle = { path = "../../contracts/siennaswap_lp_spot_oracle" }
 oracle-router = { path = "../../contracts/oracle_router" }
-snip20 = { path = "../../contracts/snip20" }

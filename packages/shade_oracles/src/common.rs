@@ -1,11 +1,14 @@
-use std::{hash::{Hash, Hasher}};
+use std::{hash::{Hash}};
 
 use crate::{
-    scrt::*,
     band::ReferenceData,
 };
+use cosmwasm_std::*;
+use fadroma::Uint256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize}; 
+
+pub const BLOCK_SIZE: usize = 256;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -50,12 +53,21 @@ pub struct Contract {
 }
 
 impl Contract {
+    pub fn new(address: String, code_hash: String) -> Self {
+        Contract { address: HumanAddr(address), code_hash }
+    }
+
     pub fn as_canonical(&self, api: &impl Api) -> Result<CanonicalContract, StdError> {
         Ok(CanonicalContract {
             address: api.canonical_address(&self.address.clone())?,
             code_hash: self.code_hash.clone(),
         })
     }
+}
+
+
+pub fn get_precision(factor: u8) -> Uint256 {
+    Uint256::from(10u128.pow(factor.into()))
 }
 
 pub fn throw_unsupported_symbol_error(symbol: String) -> StdError {
@@ -113,9 +125,9 @@ impl CommonOracleConfig {
 
     pub fn is_enabled(&self) -> StdResult<&Self> {
         if self.enabled {
-            Err(StdError::generic_err("This oracle has been disabled."))
-        } else {
             Ok(self)
+        } else {
+            Err(StdError::generic_err("This oracle has been disabled."))
         }
     }
 }
