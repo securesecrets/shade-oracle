@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::querier::{query_price, query_token_info},
-    common::{CanonicalContract, Contract},
-    common::{CommonOracleConfig, HandleMsg, HandleStatusAnswer, PriceResponse, QueryMsg},
+    common::{BLOCK_SIZE, CanonicalContract, Contract, ResponseStatus},
+    common::{CommonOracleConfig, HandleMsg, HandleStatusAnswer, OraclePrice, QueryMsg},
     lp::{
         get_fair_lp_token_price,
         siennaswap::{ConfigResponse, InitMsg},
@@ -12,20 +12,18 @@ use shade_oracles::{
         SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
     },
     router::querier::query_oracle,
-    scrt::{
-        secret_toolkit::utils::{pad_handle_result, pad_query_result},
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
-        Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
-        BLOCK_SIZE,
-    },
     storage::Item,
 };
+use cosmwasm_std::{
+    to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+    Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery, Binary,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use std::cmp::min;
 
-/// state of the auction
 #[derive(Serialize, Deserialize)]
 pub struct State {
-    pub owner: CanonicalAddr,
+    pub oracle_symbol: String,
     pub symbol_0: String,
     pub symbol_1: String,
     pub router: CanonicalContract,
@@ -33,11 +31,10 @@ pub struct State {
     pub lp_token: CanonicalContract,
     pub token0_decimals: u8,
     pub token1_decimals: u8,
-    pub enabled: bool,
 }
 
 const STATE: Item<State> = Item::new("state");
-const COMMON: Item<CommonOracleConfig> = Item::new("common");
+const CONFIG: Item<CommonOracleConfig> = Item::new("common");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -55,11 +52,11 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     };
 
     let mut token0: Contract = Contract {
-        address: "a".to_string(),
+        address: HumanAddr("a".to_string()),
         code_hash: "b".to_string(),
     };
     let mut token1: Contract = Contract {
-        address: "a".to_string(),
+        address: HumanAddr("a".to_string()),
         code_hash: "b".to_string(),
     };
 
@@ -81,7 +78,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         token_code_hash,
     } = &pair_info.pair[0]
     {
-        token0.address = contract_addr.to_string();
+        token0.address = HumanAddr(contract_addr.to_string());
         token0.code_hash = token_code_hash.to_string();
     } else {
         return Err(StdError::generic_err(
@@ -93,7 +90,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         token_code_hash,
     } = &pair_info.pair[1]
     {
-        token1.address = contract_addr.to_string();
+        token1.address = HumanAddr(contract_addr.to_string());
         token1.code_hash = token_code_hash.to_string();
     } else {
         return Err(StdError::generic_err(
@@ -120,7 +117,12 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         enabled: true,
     };
 
-    state.save_json(&mut deps.storage)?;
+    let config = CommonOracleConfig {
+        owner: msg.owner,
+        enabled: true,
+    };
+
+    STATE.save(&mut deps.storage, &state)?;
 
     Ok(InitResponse::default())
 }
@@ -132,7 +134,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
         match msg {
-            HandleMsg::SetStatus { enabled } => try_update_status(deps, enabled),
+            HandleMsg::SetStatus { enabled } => try_update_status(deps, &env, enabled),
         },
         BLOCK_SIZE,
     )
@@ -140,18 +142,18 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 
 fn try_update_status<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    new_status: bool,
+    env: &Env,
+    enabled: bool,
 ) -> StdResult<HandleResponse> {
-    let mut state: State = State::new_json(&deps.storage)?;
-
-    state.enabled = new_status;
-
-    state.save_json(&mut deps.storage)?;
-
+    CONFIG.load(&deps.storage)?.is_owner(env)?;
+    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+        config.enabled = enabled;
+        Ok(config)
+    })?;
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleStatusAnswer { new_status })?),
+        data: Some(to_binary(&HandleStatusAnswer { status: ResponseStatus::Success, enabled: new_config.enabled, })?),
     })
 }
 
@@ -160,6 +162,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
             QueryMsg::GetPrice { .. } => to_binary(&try_query_price(deps)?),
+            QueryMsg::GetPrices { symbols } => Err(StdError::generic_err("GetPrices method not supported.")),
         },
         BLOCK_SIZE,
     )
@@ -181,8 +184,9 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
 
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-) -> StdResult<PriceResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    symbol: String,
+) -> StdResult<Binary> {
+    let state = STATE.load(&deps.storage)?;
 
     let oracle0 = query_oracle(
         &state.router.as_human(&deps.api)?,
