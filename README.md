@@ -32,6 +32,8 @@ This is a router contract that should be the entry point for any consumer of ora
 
 This implementation allows us to deploy new oracles to replace existing ones without requiring us to update configuration across all of our applications. For example, without an oracle router, if we had five different teams and thirteen different applications using the SCRT oracle and we had to update the SCRT oracle contract to add Chainlink feed support, those five separate teams need to independently update configuration of their applications to point to the new oracle and hopefully not make any mistakes. Having this update happen in one place and seamlessly propogate through the system greatly reduces our risk at the cost of a slightly more expensive query.
 
+To protect against hitting the query recursion limit, the recommended use case is to use the oracle router to get oracle stored at some key, and then query the price directly on that oracle.
+
 #### mock_band
 This is not an oracle, this is a mock band contract that can be used by other oracles to get Band prices during local testing. **This contract should not be deployed or used in testnet or mainnet.**
 

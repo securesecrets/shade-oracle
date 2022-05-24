@@ -1,23 +1,24 @@
-use mulberry_utils::{
-    common::querier::query_token_info,
-    common::types::{CanonicalContract, Contract, ResponseStatus},
-    protocols::siennaswap::{SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfo},
-    scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
-        InitResponse, Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128,
-        WasmQuery, BLOCK_SIZE,
-    },
-    secret_toolkit::utils::{pad_handle_result, pad_query_result},
-    storage::traits::SingletonStorable,
-};
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{query_price, PriceResponse, QueryMsg},
+    common::querier::{query_price, query_token_info},
+    common::{CanonicalContract, Contract},
+    common::{CommonOracleConfig, HandleMsg, HandleStatusAnswer, PriceResponse, QueryMsg},
     lp::{
         get_fair_lp_token_price,
-        siennaswap::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
+        siennaswap::{ConfigResponse, InitMsg},
         FairLpPriceInfo,
     },
+    protocols::siennaswap::{
+        SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
+    },
+    router::querier::query_oracle,
+    scrt::{
+        secret_toolkit::utils::{pad_handle_result, pad_query_result},
+        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+        Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
+        BLOCK_SIZE,
+    },
+    storage::Item,
 };
 use std::cmp::min;
 
@@ -25,43 +26,31 @@ use std::cmp::min;
 #[derive(Serialize, Deserialize)]
 pub struct State {
     pub owner: CanonicalAddr,
-    pub oracle0: CanonicalContract,
-    pub oracle1: CanonicalContract,
+    pub symbol_0: String,
+    pub symbol_1: String,
+    pub router: CanonicalContract,
     pub factory: CanonicalContract,
     pub lp_token: CanonicalContract,
     pub token0_decimals: u8,
     pub token1_decimals: u8,
+    pub enabled: bool,
 }
 
-impl SingletonStorable for State {
-    fn namespace() -> Vec<u8> {
-        b"config".to_vec()
-    }
-}
+const STATE: Item<State> = Item::new("state");
+const COMMON: Item<CommonOracleConfig> = Item::new("common");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-    let oracle0: CanonicalContract = CanonicalContract {
-        address: deps
-            .api
-            .canonical_address(&HumanAddr(msg.oracle0.address))?,
-        code_hash: msg.oracle0.code_hash,
-    };
-
-    let oracle1: CanonicalContract = CanonicalContract {
-        address: deps
-            .api
-            .canonical_address(&HumanAddr(msg.oracle1.address))?,
-        code_hash: msg.oracle1.code_hash,
+    let router: CanonicalContract = CanonicalContract {
+        address: deps.api.canonical_address(&msg.router.address)?,
+        code_hash: msg.router.code_hash,
     };
 
     let factory: CanonicalContract = CanonicalContract {
-        address: deps
-            .api
-            .canonical_address(&HumanAddr(msg.factory.address.clone()))?,
+        address: deps.api.canonical_address(&msg.factory.address.clone())?,
         code_hash: msg.factory.code_hash.clone(),
     };
 
@@ -74,12 +63,13 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         code_hash: "b".to_string(),
     };
 
-    let pair_info: SiennaSwapPairInfo =
+    let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: HumanAddr::from(msg.factory.address.clone()),
             callback_code_hash: msg.factory.code_hash.clone(),
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
+    let pair_info = pair_info_response.pair_info;
     let lp_token = CanonicalContract {
         address: deps
             .api
@@ -119,13 +109,15 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
-        owner: deps.api.canonical_address(&HumanAddr(msg.owner))?,
-        oracle0,
-        oracle1,
+        owner: deps.api.canonical_address(&msg.owner)?,
+        symbol_0: msg.symbol_0,
+        symbol_1: msg.symbol_1,
+        router,
         factory,
         lp_token,
         token0_decimals,
         token1_decimals,
+        enabled: true,
     };
 
     state.save_json(&mut deps.storage)?;
@@ -133,7 +125,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-/* CONFIG UPDATE NEEDS TO BE FIXED */
 pub fn handle<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -141,67 +132,26 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig {
-                owner,
-                oracle0,
-                oracle1,
-                factory,
-            } => try_update_config(deps, env, owner, oracle0, oracle1, factory),
+            HandleMsg::SetStatus { enabled } => try_update_status(deps, enabled),
         },
         BLOCK_SIZE,
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
+fn try_update_status<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
-    owner: Option<String>,
-    oracle0: Option<Contract>,
-    oracle1: Option<Contract>,
-    factory: Option<Contract>,
+    new_status: bool,
 ) -> StdResult<HandleResponse> {
     let mut state: State = State::new_json(&deps.storage)?;
 
-    if deps.api.canonical_address(&env.message.sender)? != state.owner {
-        return Err(StdError::Unauthorized { backtrace: None });
-    }
-
-    if let Some(owner) = owner {
-        state.owner = deps.api.canonical_address(&HumanAddr(owner))?;
-    }
-
-    if let Some(oracle0) = oracle0 {
-        let oracle0 = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(oracle0.address))?,
-            code_hash: oracle0.code_hash,
-        };
-        state.oracle0 = oracle0;
-    }
-
-    if let Some(oracle1) = oracle1 {
-        let oracle1 = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(oracle1.address))?,
-            code_hash: oracle1.code_hash,
-        };
-        state.oracle1 = oracle1;
-    }
-
-    if let Some(factory) = factory {
-        let factory = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(factory.address))?,
-            code_hash: factory.code_hash,
-        };
-        state.factory = factory;
-    }
+    state.enabled = new_status;
 
     state.save_json(&mut deps.storage)?;
 
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
+        data: Some(to_binary(&HandleStatusAnswer { new_status })?),
     })
 }
 
@@ -221,9 +171,10 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
     let state: State = State::new_json(&deps.storage)?;
 
     Ok(ConfigResponse {
-        owner: deps.api.human_address(&state.owner)?.to_string(),
-        oracle1: state.oracle0.as_human(&deps.api)?,
-        oracle2: state.oracle1.as_human(&deps.api)?,
+        owner: deps.api.human_address(&state.owner)?,
+        symbol_0: state.symbol_0,
+        symbol_1: state.symbol_1,
+        router: state.router.as_human(&deps.api)?,
         factory: state.factory.as_human(&deps.api)?,
     })
 }
@@ -233,16 +184,28 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<PriceResponse> {
     let state: State = State::new_json(&deps.storage)?;
 
-    let price0: PriceResponse = query_price(&state.oracle0.as_human(&deps.api)?, &deps.querier)?;
+    let oracle0 = query_oracle(
+        &state.router.as_human(&deps.api)?,
+        &deps.querier,
+        state.symbol_0,
+    )?;
+    let oracle1 = query_oracle(
+        &state.router.as_human(&deps.api)?,
+        &deps.querier,
+        state.symbol_1,
+    )?;
 
-    let price1: PriceResponse = query_price(&state.oracle1.as_human(&deps.api)?, &deps.querier)?;
+    let price0: PriceResponse = query_price(&oracle0, &deps.querier)?;
 
-    let pair_info: SiennaSwapPairInfo =
+    let price1: PriceResponse = query_price(&oracle1, &deps.querier)?;
+
+    let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: deps.api.human_address(&state.factory.address)?,
             callback_code_hash: state.factory.code_hash,
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
+    let pair_info = pair_info_response.pair_info;
     let reserve0 = pair_info.amount_0;
     let reserve1 = pair_info.amount_1;
 

@@ -8,14 +8,24 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
+default = ["scrt"]
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
-backtraces = ["mulberry-utils/backtraces"]
+backtraces = ["secret-cosmwasm-std/backtraces"]
+debug-print = ["secret-cosmwasm-std/debug-print"]
+scrt = []
+storage = ["secret-storage-plus"]
 
 [dependencies]
-thiserror = { version = "1.0" }
+secret-cosmwasm-std = "0.10.0"
+secret-cosmwasm-storage = "0.10.0"
+cosmwasm-schema = "0.10.1"
+schemars = { version = "0.7" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
-schemars = "0.7"
+
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
 snafu = { version = "0.6.3" }
-mulberry-utils = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "dev-utils", features = ["protocols"] }
+
+secret-storage-plus = { git = "https://github.com/securesecrets/secret-storage-plus", tag = "v1.0.0", optional = true }
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = [] }

@@ -1,17 +1,17 @@
-use mulberry_utils::{
+use serde::{Deserialize, Serialize};
+use shade_oracles::{
     common::querier::query_token_info,
     common::types::{CanonicalContract, Contract, ResponseStatus},
     get_precision,
     protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
     scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr,
-        InitResponse, Querier, QueryResult, StdError, StdResult, Storage, Uint128, BLOCK_SIZE,
+        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+        Querier, QueryResult, StdError, StdResult, Storage, Uint128, BLOCK_SIZE,
     },
     scrt_math::Uint256,
     secret_toolkit::utils::{pad_handle_result, pad_query_result},
     storage::traits::SingletonStorable,
 };
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{query_price, PriceResponse, QueryMsg},
     earn::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
