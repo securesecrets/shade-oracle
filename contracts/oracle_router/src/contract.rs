@@ -1,11 +1,11 @@
 use crate::{
-    registry::{batch_update_registry, get_price, update_registry},
+    registry::{batch_update_registry, get_price, update_registry, get_prices},
     state::*,
 };
 use shade_oracles::router::*;
 use shade_oracles::{
     scrt::{
-        to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+        to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
         StdError, StdResult, Storage, BLOCK_SIZE,
         secret_toolkit::utils::{pad_handle_result, pad_query_result},
     },
@@ -16,10 +16,11 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-    let config = RawConfig {
-        owner: deps.api.canonical_address(&HumanAddr(msg.owner))?,
+    let config = Config {
+        owner: msg.owner,
+        default_oracle: msg.default_oracle,
     };
-    config.save(&mut deps.storage)?;
+    CONFIG.save(&mut deps.storage, &config)?;
     Ok(InitResponse::default())
 }
 
@@ -30,20 +31,21 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
         match msg {
-            HandleMsg::ChangeOwner { new_owner } => {
-                is_owner(&deps.storage, &deps.api, &env)?;
-                let new_config = RawConfig {
-                    owner: deps.api.canonical_address(&HumanAddr(new_owner))?,
-                };
-                new_config.save(&mut deps.storage)?;
+            HandleMsg::UpdateConfig { owner, default_oracle } => {
+                is_owner(&deps.storage, &env)?;
+                CONFIG.update(&mut deps.storage, |mut new_config| -> StdResult<_> {
+                    new_config.owner = owner.unwrap_or(new_config.owner);
+                    new_config.default_oracle = default_oracle.unwrap_or(new_config.default_oracle);
+                    Ok(new_config)
+                })?;
                 Ok(HandleResponse::default())
             }
             HandleMsg::UpdateRegistry { operation } => {
-                is_owner(&deps.storage, &deps.api, &env)?;
+                is_owner(&deps.storage, &env)?;
                 update_registry(deps, env, operation)
             }
             HandleMsg::BatchUpdateRegistry { operations } => {
-                is_owner(&deps.storage, &deps.api, &env)?;
+                is_owner(&deps.storage, &env)?;
                 batch_update_registry(deps, env, operations)
             }
         },
@@ -51,10 +53,9 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     )
 }
 
-fn is_owner(storage: &impl Storage, api: &impl Api, env: &Env) -> StdResult<()> {
-    let config = RawConfig::new(storage)?;
-    let current_owner = api.human_address(&config.owner)?;
-    if env.message.sender != current_owner {
+fn is_owner(storage: &impl Storage, env: &Env) -> StdResult<()> {
+    let config = CONFIG.load(storage)?;
+    if env.message.sender != config.owner {
         Err(StdError::unauthorized())
     } else {
         Ok(())
@@ -67,19 +68,27 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<Binary> {
     pad_query_result(
         match msg {
-            QueryMsg::GetOwner {} => {
-                let config = RawConfig::new(&deps.storage)?;
+            QueryMsg::GetConfig {} => {
+                let config = CONFIG.load(&deps.storage)?;
                 to_binary(&ConfigResponse {
-                    owner: deps.api.human_address(&config.owner)?.to_string(),
+                    owner: config.owner,
+                    default_oracle: config.default_oracle,
                 })
             }
             QueryMsg::GetOracle { key } => {
-                let oracle = Oracle::get(&deps.storage, &deps.api, key.as_str())?;
-                to_binary(&OracleResponse { oracle })
+                let oracle = ORACLES.load(&deps.storage, key.clone())?;
+                to_binary(&OracleResponse { oracle, key })
             }
             QueryMsg::GetPrice { key } => get_price(deps, key),
-            QueryMsg::GetOracles { keys } => todo!(),
-            QueryMsg::GetPrices { keys } => todo!(),
+            QueryMsg::GetOracles { keys } => {
+                let mut oracles = vec![];
+                for key in keys {
+                    let oracle = ORACLES.load(&deps.storage, key.clone())?;
+                    oracles.push(OracleResponse { key, oracle })
+                }
+                to_binary(&oracles)
+            },
+            QueryMsg::GetPrices { keys } => get_prices(deps, keys),
         },
         BLOCK_SIZE,
     )

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{Contract, ResponseStatus, CommonOracleConfig, HandleStatusAnswer, OraclePrices},
+    common::{Contract, ResponseStatus, CommonOracleConfig, HandleStatusAnswer, OraclePrice, QueryMsg},
     scrt::{
         to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
         StdError, StdResult, Storage, BLOCK_SIZE,
@@ -15,7 +15,6 @@ use shade_oracles::{
         proxy::{ConfigResponse, InitMsg},
         BandQuery,
     },
-    common::{PriceResponse, QueryMsg},
 };
 
 /// state of the auction
@@ -152,12 +151,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         state.band.address,
     )?;
 
-    let mut prices: OraclePrices = HashMap::new();
-    prices.insert(symbol, band_response);
-
-    to_binary(&PriceResponse {
-        prices,
-    })
+    to_binary(&OraclePrice::new(symbol, band_response))
 }
 
 fn try_query_prices<S: Storage, A: Api, Q: Querier>(
@@ -173,12 +167,10 @@ fn try_query_prices<S: Storage, A: Api, Q: Querier>(
         quote_symbols,
     }.query(&deps.querier, state.band.code_hash, state.band.address)?;
 
-    let mut prices: OraclePrices = HashMap::new();
+    let mut prices: Vec<OraclePrice> = vec![];
     for (index, symbol) in symbols.iter().enumerate() {
-        prices.insert(symbol.to_string(), band_response[index].clone());
+        prices.push(OraclePrice::new(symbol.to_string(), band_response[index].clone()));
     };
 
-    to_binary(&PriceResponse {
-        prices,
-    })
+    to_binary(&prices)
 }

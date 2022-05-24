@@ -37,7 +37,7 @@ impl OracleRouterContract {
         query_contract(self.get_info(), router::QueryMsg::GetOracle { key })
     }
 
-    pub fn query_price(&self, key: String) -> Result<common_oracles::PriceResponse> {
+    pub fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
         query_contract(self.get_info(), router::QueryMsg::GetPrice { key })
     }
 
@@ -45,8 +45,8 @@ impl OracleRouterContract {
         query_contract(self.get_info(), router::QueryMsg::GetOracle { key })
     }
 
-    pub fn change_admin(&self, new_owner: String, sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = router::HandleMsg::ChangeOwner { new_owner };
+    pub fn update_config(&self, owner: Option<HumanAddr>, default_oracle: Option<Contract>, sender_key: Option<&str>) -> Result<GasLog> {
+        let msg = router::HandleMsg::UpdateConfig { owner, default_oracle };
         self.wrap_handle(&msg, sender_key)
     }
 
@@ -147,7 +147,7 @@ pub trait OracleContract
 where
     Self: TestableContract,
 {
-    fn query_price(&self, symbol: String) -> Result<common_oracles::PriceResponse> {
+    fn query_price(&self, symbol: String) -> Result<common_oracles::OraclePrice> {
         query_contract(
             self.get_info(),
             shade_oracles::common::QueryMsg::GetPrice { symbol },

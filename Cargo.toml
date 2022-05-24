@@ -4,6 +4,7 @@ members = [
   "packages/shade_oracles_integration",
 
   "contracts/proxy_band_oracle",
+  "contracts/oracle_router",
 ]
 
 [profile.release]
