@@ -21,12 +21,11 @@ contracts = []
 [dependencies]
 colored = "2.0.0"
 chrono = "0.4.19"
-mulberry-utils = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "dev-utils", features = ["protocols", "ensemble"] }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.67"}
 getrandom = { version = "0.2", features = ["js"] } # Prevents wasm from freaking out when running make
 rand = { version = "0.8.4"}
-shade-oracles = { path = "../shade_oracles" }
+shade-oracles = { path = "../shade_oracles", features = ["scrt"] }
 
 syn = { version="1.0.57",features=["full","fold"] }
 quote = "1.0.8"

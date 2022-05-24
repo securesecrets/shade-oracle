@@ -1,5 +1,5 @@
-use mulberry_utils::{ensemble_helpers::EnsembleContract, scrt::StdResult};
 use shade_oracles::common as common_oracles;
+use shade_oracles::{ensemble_helpers::EnsembleContract, scrt::StdResult};
 
 pub trait OracleContract
 where

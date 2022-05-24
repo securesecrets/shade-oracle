@@ -1,11 +1,11 @@
-use mulberry_utils::{
+use shade_oracles::band::{self};
+use shade_oracles::{
     common::types::Contract,
     ensemble::ContractEnsemble,
     ensemble_helpers::EnsembleContract,
     ensemblify,
     scrt::{ContractInstantiationInfo, HumanAddr, StdResult, Uint128},
 };
-use shade_oracles::band::{self};
 use std::{cell::RefCell, rc::Rc};
 
 ensemblify!(

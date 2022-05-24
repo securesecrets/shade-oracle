@@ -1,11 +1,11 @@
-use mulberry_utils::{
+use shade_oracles::{common as common_oracles, router};
+use shade_oracles::{
     common::types::Contract,
     ensemble::ContractEnsemble,
     ensemble_helpers::EnsembleContract,
     ensemble_new, ensemblify,
     scrt::{ContractInstantiationInfo, HumanAddr, StdResult},
 };
-use shade_oracles::{common as common_oracles, router};
 use std::{cell::RefCell, rc::Rc};
 
 ensemblify!(

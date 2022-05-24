@@ -5,7 +5,7 @@ pub mod state;
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     use super::contract;
-    use mulberry_utils::scrt::{
+    use shade_oracles::scrt::{
         do_handle, do_init, do_query, ExternalApi, ExternalQuerier, ExternalStorage,
     };
 
