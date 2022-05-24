@@ -6,6 +6,7 @@ members = [
   "contracts/proxy_band_oracle",
   "contracts/oracle_router",
   "contracts/siennaswap_lp_oracle",
+  "contracts/shade_staking_derivative_oracle",
 ]
 
 [profile.release]
