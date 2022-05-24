@@ -198,6 +198,7 @@ impl ProxyBandOracleContract {
             quote_symbol: quote_symbol.to_string(),
             band,
         };
+        println!("wrap init");
         let info = Self::wrap_init(&msg, account_key, name)?;
         Ok(ProxyBandOracleContract { info })
     }

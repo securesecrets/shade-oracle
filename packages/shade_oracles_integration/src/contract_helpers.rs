@@ -57,6 +57,7 @@ pub trait TestableContract {
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<NetContract> {
+        println!("blah");
         test_inst_init(
             msg,
             Self::get_file(),
