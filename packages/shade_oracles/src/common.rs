@@ -1,11 +1,13 @@
 use std::{hash::{Hash, Hasher}};
 
 use crate::{
-    scrt::*,
     band::ReferenceData,
 };
+use cosmwasm_std::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize}; 
+
+pub const BLOCK_SIZE: usize = 256;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

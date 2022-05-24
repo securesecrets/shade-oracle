@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{Contract},
-    scrt::{
-        HumanAddr,
-    }, storage::{Item, Map},
+    storage::{Item, Map},
+};
+use cosmwasm_std::{
+    HumanAddr,
 };
 
 pub const CONFIG: Item<Config> = Item::new("YteGsgSZyO");

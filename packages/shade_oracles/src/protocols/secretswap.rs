@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::scrt::{Api, CanonicalAddr, Extern, HumanAddr, Querier, StdResult, Storage, Uint128};
+use cosmwasm_std::{Api, CanonicalAddr, Extern, HumanAddr, Querier, StdResult, Storage, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
