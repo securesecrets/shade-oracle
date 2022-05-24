@@ -1,31 +1,32 @@
 use shade_oracles::{
     common::querier::query_token_info,
-    common::types::{CanonicalContract, Contract, ResponseStatus},
-    get_precision,
-    scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
-        Querier, QueryResult, StdError, StdResult, Storage, Uint128, BLOCK_SIZE,
-    },
-    secret_toolkit::utils::{pad_handle_result, pad_query_result},
+    common::{CanonicalContract, ResponseStatus, BLOCK_SIZE},
     storage::traits::SingletonStorable,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
+use cosmwasm_std::{
+    to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+    Querier, QueryResult, StdResult, Storage, Uint128,
 };
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{querier::{query_price, query_token_info}, PriceResponse, QueryMsg},
+    common::{querier::{query_price}, QueryMsg, PriceResponse},
     router::querier::query_oracle,
     staking_derivative::shade::{
-        querier::query_price as query_derivative_price, ConfigResponse, HandleAnswer, HandleMsg,
-        InitMsg,
+        querier::query_price as query_derivative_price,
+        {ConfigResponse, InitMsg, HandleMsg, HandleStatusAnswer},
     },
 };
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
     pub owner: CanonicalAddr,
-    pub symbol: String,
+    pub supported_symbol: String,
+    pub underlying_symbol: String,
     pub router: CanonicalContract,
     pub staking_derivative: CanonicalContract,
     pub token_decimals: u8,
+    pub enabled: bool,
 }
 
 impl SingletonStorable for State {
@@ -57,10 +58,12 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let state: State = State {
         owner: deps.api.canonical_address(&HumanAddr(msg.owner))?,
-        symbol: msg.symbol,
+        supported_symbol: msg.supported_symbol,
+        underlying_symbol: msg.underlying_symbol,
         router,
         staking_derivative,
         token_decimals,
+        enabled: true,
     };
 
     state.save_json(&mut deps.storage)?;
@@ -75,66 +78,28 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
+        // TODO: Add handle for set status
         match msg {
-            HandleMsg::UpdateConfig {
-                owner,
-                symbol,
-                staking_derivative,
-                router,
-            } => try_update_config(deps, env, owner, symbol, staking_derivative, router),
+            HandleMsg::SetStatus { enabled } => try_update_status(deps, &env, enabled),
         },
         BLOCK_SIZE,
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
+fn try_update_status<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
-    owner: Option<String>,
-    symbol: Option<String>,
-    staking_derivative: Option<Contract>,
-    router: Option<Contract>,
+    env: &Env,
+    enabled: bool,
 ) -> StdResult<HandleResponse> {
-    let mut state: State = State::new_json(&deps.storage)?;
-
-    if deps.api.canonical_address(&env.message.sender)? != state.owner {
-        return Err(StdError::Unauthorized { backtrace: None });
-    }
-
-    if let Some(owner) = owner {
-        state.owner = deps.api.canonical_address(&HumanAddr(owner))?;
-    }
-
-    if let Some(router) = router {
-        let router = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(router.address))?,
-            code_hash: router.code_hash,
-        };
-        state.router = router;
-    }
-
-    if let Some(staking_derivative) = staking_derivative {
-        let staking_derivative = CanonicalContract {
-            address: deps
-                .api
-                .canonical_address(&HumanAddr(staking_derivative.address))?,
-            code_hash: staking_derivative.code_hash,
-        };
-        state.staking_derivative = staking_derivative;
-    }
-
-    if let Some(symbol) = symbol {
-        state.symbol = symbol;
-    }
-
-    state.save_json(&mut deps.storage)?;
-
+    CONFIG.load(&deps.storage)?.is_owner(env)?;
+    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+        config.enabled = enabled;
+        Ok(config)
+    })?;
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
+        data: Some(to_binary(&HandleStatusAnswer { status: ResponseStatus::Success, enabled: new_config.enabled, })?),
     })
 }
 
@@ -143,6 +108,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
             QueryMsg::GetPrice { .. } => to_binary(&try_query_price(deps)?),
+            QueryMsg::GetPrices { symbols } => todo!(),
         },
         BLOCK_SIZE,
     )
@@ -155,9 +121,11 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
 
     Ok(ConfigResponse {
         owner: deps.api.human_address(&state.owner)?.to_string(),
-        symbol: state.symbol,
         router: state.router.as_human(&deps.api)?,
         staking_derivative: state.staking_derivative.as_human(&deps.api)?,
+        supported_symbol: state.supported_symbol,
+        underlying_symbol: state.underlying_symbol,
+        enabled: state.enabled,
     })
 }
 
@@ -169,11 +137,11 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let underlying_oracle = query_oracle(
         &state.router.as_human(&deps.api)?,
         &deps.querier,
-        state.symbol,
+        state.underlying_symbol,
     )?;
 
     // price of underlying asset to 10^18.
-    let underlying_price = query_price(&underlying_oracle, &deps.querier)?;
+    let underlying_price = query_price(&underlying_oracle, &deps.querier, state.underlying_symbol)?;
 
     let staking_derivative_price = query_derivative_price(
         &state.staking_derivative.as_human(&deps.api)?,
