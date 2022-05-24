@@ -15,9 +15,12 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-backtraces = ["mulberry-utils/backtraces"]
+backtraces = ["shade-oracles/backtraces"]
 
 [dependencies]
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-mulberry-utils = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "dev-utils", features = ["backtraces"] }
+cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
+cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
+secret-toolkit = { version = "0.2", features = ["permit"] }
 shade-oracles = { path = "../../packages/shade_oracles" }
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+

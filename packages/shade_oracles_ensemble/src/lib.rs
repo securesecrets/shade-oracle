@@ -1,18 +1,14 @@
 #[cfg(not(target_arch = "wasm32"))]
-pub mod contract_helpers;
-
-#[cfg(test)]
-#[cfg(not(target_arch = "wasm32"))]
-mod test;
+pub mod harness;
 
 #[cfg(feature = "contracts")]
 #[path = ""]
 mod reexport_contracts {
-    pub mod mock_band;
-    pub mod proxy_band_oracle;
-    pub mod earn_v1_oracle;
-    pub mod lp_oracle;
-    pub mod oracle_router;
+    pub use ::mock_band;
+    pub use ::oracle_router;
+    pub use ::proxy_band_oracle;
+    pub use ::siennaswap_lp_spot_oracle;
+    pub use ::siennaswap_lp_oracle;
 }
 
 #[cfg(feature = "contracts")]

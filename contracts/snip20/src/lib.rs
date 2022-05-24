@@ -1,9 +1,11 @@
-use mulberry_utils::{
-    composable_snip20::{
+use fadroma::{
+    platform::{
+        Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdResult, Storage,
+    },
+    snip20_impl::{
         msg::{HandleMsg, InitMsg, QueryMsg},
         snip20_handle, snip20_init, snip20_query, DefaultSnip20Impl,
     },
-    scrt::{Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdResult, Storage},
 };
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
@@ -31,7 +33,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
-    use mulberry_utils::scrt::{
+    use cosmwasm_std::{
         do_handle, do_init, do_query, ExternalApi, ExternalQuerier, ExternalStorage,
     };
 
