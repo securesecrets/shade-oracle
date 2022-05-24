@@ -143,7 +143,7 @@ impl AssetRaw {
                     viewing_key,
                     token_code_hash,
                 } => AssetInfo::Token {
-                    contract_addr: deps.api.human_address(&contract_addr)?.to_string(),
+                    contract_addr: deps.api.human_address(contract_addr)?.to_string(),
                     viewing_key: viewing_key.clone(),
                     token_code_hash: token_code_hash.clone(),
                 },
@@ -179,7 +179,7 @@ impl AssetInfoRaw {
                 viewing_key,
                 token_code_hash,
             } => Ok(AssetInfo::Token {
-                contract_addr: deps.api.human_address(&contract_addr)?.to_string(),
+                contract_addr: deps.api.human_address(contract_addr)?.to_string(),
                 viewing_key: viewing_key.clone(),
                 token_code_hash: token_code_hash.clone(),
             }),

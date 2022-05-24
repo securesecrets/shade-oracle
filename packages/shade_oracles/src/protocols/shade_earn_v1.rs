@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, HumanAddr, Querier, QueryRequest, StdError, StdResult, Uint128, WasmQuery,
+    to_binary, Querier, QueryRequest, StdError, StdResult, Uint128, WasmQuery,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -91,7 +91,7 @@ pub fn query_generic_config(
     querier: &impl Querier,
 ) -> StdResult<GenericConfig> {
     let config_response: GenericConfig = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: HumanAddr::from(contract.address.clone()),
+        contract_addr: contract.address.clone(),
         callback_code_hash: contract.code_hash.clone(),
         msg: to_binary(&QueryMsg::GetConfig {
             r#type: ConfigType::General,

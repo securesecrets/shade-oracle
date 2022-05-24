@@ -11,11 +11,11 @@ use shade_oracles::{
     protocols::siennaswap::{
         SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
     },
-    router::querier::query_oracle,
-    storage::Item,
+    router::{querier::query_oracle},
+    storage::Item, band::ReferenceData,
 };
 use cosmwasm_std::{
-    to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+    to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse,
     Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery, Binary,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
@@ -23,7 +23,7 @@ use std::cmp::min;
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
-    pub oracle_symbol: String,
+    pub supported_symbol: String,
     pub symbol_0: String,
     pub symbol_1: String,
     pub router: CanonicalContract,
@@ -47,7 +47,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     };
 
     let factory: CanonicalContract = CanonicalContract {
-        address: deps.api.canonical_address(&msg.factory.address.clone())?,
+        address: deps.api.canonical_address(&msg.factory.address)?,
         code_hash: msg.factory.code_hash.clone(),
     };
 
@@ -62,7 +62,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: HumanAddr::from(msg.factory.address.clone()),
+            contract_addr: msg.factory.address.clone(),
             callback_code_hash: msg.factory.code_hash.clone(),
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
@@ -70,7 +70,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let lp_token = CanonicalContract {
         address: deps
             .api
-            .canonical_address(&HumanAddr::from(pair_info.liquidity_token.address))?,
+            .canonical_address(&pair_info.liquidity_token.address)?,
         code_hash: pair_info.liquidity_token.code_hash,
     };
     if let SiennaDexTokenType::CustomToken {
@@ -106,7 +106,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
-        owner: deps.api.canonical_address(&msg.owner)?,
+        supported_symbol: msg.supported_symbol,
         symbol_0: msg.symbol_0,
         symbol_1: msg.symbol_1,
         router,
@@ -114,7 +114,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         lp_token,
         token0_decimals,
         token1_decimals,
-        enabled: true,
     };
 
     let config = CommonOracleConfig {
@@ -123,6 +122,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     };
 
     STATE.save(&mut deps.storage, &state)?;
+    CONFIG.save(&mut deps.storage, &config)?;
 
     Ok(InitResponse::default())
 }
@@ -161,8 +161,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
-            QueryMsg::GetPrice { .. } => to_binary(&try_query_price(deps)?),
-            QueryMsg::GetPrices { symbols } => Err(StdError::generic_err("GetPrices method not supported.")),
+            QueryMsg::GetPrice { symbol } => to_binary(&try_query_price(deps,symbol)?),
+            QueryMsg::GetPrices { .. } => Err(StdError::generic_err("GetPrices method not supported.")),
         },
         BLOCK_SIZE,
     )
@@ -171,14 +171,17 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
 fn try_query_config<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<ConfigResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    let state = STATE.load(&deps.storage)?;
+    let config = CONFIG.load(&deps.storage)?;
 
     Ok(ConfigResponse {
-        owner: deps.api.human_address(&state.owner)?,
+        owner: config.owner,
         symbol_0: state.symbol_0,
         symbol_1: state.symbol_1,
         router: state.router.as_human(&deps.api)?,
         factory: state.factory.as_human(&deps.api)?,
+        supported_symbol: state.supported_symbol,
+        enabled: config.enabled,
     })
 }
 
@@ -191,17 +194,17 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let oracle0 = query_oracle(
         &state.router.as_human(&deps.api)?,
         &deps.querier,
-        state.symbol_0,
+        state.symbol_0.clone(),
     )?;
     let oracle1 = query_oracle(
         &state.router.as_human(&deps.api)?,
         &deps.querier,
-        state.symbol_1,
+        state.symbol_1.clone(),
     )?;
 
-    let price0: PriceResponse = query_price(&oracle0, &deps.querier)?;
+    let price0 = query_price(&oracle0, &deps.querier, state.symbol_0)?;
 
-    let price1: PriceResponse = query_price(&oracle1, &deps.querier)?;
+    let price1 = query_price(&oracle1, &deps.querier, state.symbol_1)?;
 
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -220,22 +223,22 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     let a = FairLpPriceInfo {
         reserve: reserve0.u128(),
-        price: price0.rate.u128(),
+        price: price0.price.rate.u128(),
         decimals: state.token0_decimals,
     };
 
     let b = FairLpPriceInfo {
         reserve: reserve1.u128(),
-        price: price1.rate.u128(),
+        price: price1.price.rate.u128(),
         decimals: state.token1_decimals,
     };
 
     let price = get_fair_lp_token_price(a, b, total_supply.u128(), lp_token_decimals);
 
-    let response = PriceResponse {
+    let data = ReferenceData {
         rate: Uint128(price.unwrap()),
-        last_updated_base: min(price0.last_updated_base, price1.last_updated_base),
-        last_updated_quote: min(price0.last_updated_quote, price1.last_updated_quote),
+        last_updated_base: min(price0.price.last_updated_base, price1.price.last_updated_base),
+        last_updated_quote: min(price0.price.last_updated_quote, price1.price.last_updated_quote),
     };
-    Ok(response)
+    to_binary(&OraclePrice::new(symbol, data))
 }
