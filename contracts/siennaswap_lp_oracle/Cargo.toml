@@ -23,3 +23,6 @@ secret-toolkit = { version = "0.2", features = ["permit"] }
 shade-oracles = { path = "../../packages/shade_oracles" }
 schemars = "0.7"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+
+[dev-dependencies]
+cosmwasm-schema = "0.10.1"
