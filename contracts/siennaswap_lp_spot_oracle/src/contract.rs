@@ -172,7 +172,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
-            QueryMsg::GetPrice { symbol } => to_binary(&try_query_price(deps, symbol)?),
+            QueryMsg::GetPrice { symbol } => try_query_price(deps, symbol),
             QueryMsg::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
         },
         BLOCK_SIZE,
