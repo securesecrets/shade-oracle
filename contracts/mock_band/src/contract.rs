@@ -1,15 +1,23 @@
-use crate::state::{SavedBandData, PREFIX_BASE_ASSET_PRICE_DATA};
-use mulberry_utils::scrt::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, PrefixedStorage, Querier,
-    ReadonlyPrefixedStorage, StdError, StdResult, Storage, Uint128,
-};
-use mulberry_utils::{
-    common::types::ResponseStatus,
-    storage::bincode_state::{may_load, save},
-};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
+use shade_oracles::scrt::{
+    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
+    StdError, StdResult, Storage, Uint128,
+};
+use shade_oracles::storage::Map;
+use shade_oracles::{
+    common::ResponseStatus,
+};
+
+#[derive(Serialize, Deserialize, Default, JsonSchema)]
+pub struct SavedBandData {
+    pub rate: u128,
+    pub last_updated_base: u64,
+    pub last_updated_quote: u64,
+}
+
+const MOCK_DATA: Map<(&str, &str), SavedBandData> = Map::new("price-data");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     _deps: &mut Extern<S, A, Q>,
@@ -30,18 +38,14 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             quote_symbol,
             rate,
             last_updated,
-        } => Ok(HandleResponse {
-            messages: vec![],
-            log: vec![],
-            data: Some(to_binary(&update_symbol_price(
-                deps,
-                env,
-                base_symbol,
-                quote_symbol,
-                rate,
-                last_updated,
-            ))?),
-        }),
+        } => update_symbol_price(
+            deps,
+            env,
+            base_symbol,
+            quote_symbol,
+            rate,
+            last_updated,
+        ),
     }
 }
 
@@ -52,32 +56,28 @@ pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
     quote_symbol: String,
     rate: Uint128,
     last_updated: Option<u64>,
-) -> HandleAnswer {
-    let mut symbol_subspace = PrefixedStorage::multilevel(
-        &[PREFIX_BASE_ASSET_PRICE_DATA, base_symbol.as_bytes()],
-        &mut deps.storage,
-    );
-    let mut new_data: SavedBandData = SavedBandData {
-        rate: rate.u128(),
-        last_updated_base: env.block.time,
-        last_updated_quote: env.block.time,
-    };
+) -> StdResult<HandleResponse> {
 
-    if let Some(last_updated) = last_updated {
-        new_data.last_updated_base = last_updated;
-        new_data.last_updated_quote = last_updated;
-    }
+    MOCK_DATA.update(&mut deps.storage, (base_symbol.as_str(), quote_symbol.as_str()), |_data| -> StdResult<_> {
+        let mut new_data: SavedBandData = SavedBandData {
+            rate: rate.u128(),
+            last_updated_base: env.block.time,
+            last_updated_quote: env.block.time,
+        };
+    
+        if let Some(last_updated) = last_updated {
+            new_data.last_updated_base = last_updated;
+            new_data.last_updated_quote = last_updated;
+        }
+        Ok(new_data)
+    })?;
 
-    let result = save(&mut symbol_subspace, quote_symbol.as_bytes(), &new_data);
 
-    match result {
-        Ok(_) => HandleAnswer::UpdateSymbolPrice {
-            status: ResponseStatus::Success,
-        },
-        Err(_) => HandleAnswer::UpdateSymbolPrice {
-            status: ResponseStatus::Failure,
-        },
-    }
+    Ok(HandleResponse {
+        messages: vec![],
+        log: vec![],
+        data: Some(to_binary(&HandleAnswer::UpdateSymbolPrice { status: ResponseStatus::Success })?),
+    })
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -125,12 +125,9 @@ fn query_saved_band_data<S: Storage, A: Api, Q: Querier>(
     base_symbol: String,
     quote_symbol: String,
 ) -> StdResult<Binary> {
-    let symbol_subspace = ReadonlyPrefixedStorage::multilevel(
-        &[PREFIX_BASE_ASSET_PRICE_DATA, base_symbol.as_bytes()],
-        &deps.storage,
-    );
-    let saved_band_data: Result<Option<SavedBandData>, StdError> =
-        may_load(&symbol_subspace, quote_symbol.as_bytes());
+
+    let saved_band_data =
+        MOCK_DATA.may_load(&deps.storage, (base_symbol.as_str(), quote_symbol.as_str()));
 
     match saved_band_data {
         Ok(saved_band_data) => {

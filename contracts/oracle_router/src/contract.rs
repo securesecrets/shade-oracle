@@ -2,15 +2,14 @@ use crate::{
     registry::{batch_update_registry, get_price, update_registry},
     state::*,
 };
-use mulberry_utils::{
+use shade_oracles::router::*;
+use shade_oracles::{
     scrt::{
         to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
         StdError, StdResult, Storage, BLOCK_SIZE,
+        secret_toolkit::utils::{pad_handle_result, pad_query_result},
     },
-    secret_toolkit::utils::{pad_handle_result, pad_query_result},
-    storage::traits::SingletonStorable,
 };
-use shade_oracles::router::*;
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -79,6 +78,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 to_binary(&OracleResponse { oracle })
             }
             QueryMsg::GetPrice { key } => get_price(deps, key),
+            QueryMsg::GetOracles { keys } => todo!(),
+            QueryMsg::GetPrices { keys } => todo!(),
         },
         BLOCK_SIZE,
     )

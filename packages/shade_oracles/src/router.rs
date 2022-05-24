@@ -1,6 +1,6 @@
-use mulberry_utils::{
-    common::types::{Contract, ResponseStatus},
-    HandlePaddable,
+use crate::{
+    common::{Contract, ResponseStatus},
+    scrt::*,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -30,8 +30,6 @@ pub enum HandleMsg {
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
 }
 
-impl HandlePaddable for HandleMsg {}
-
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
@@ -54,6 +52,12 @@ pub enum QueryMsg {
     GetPrice {
         key: String,
     },
+    GetOracles {
+        keys: Vec<String>,
+    },
+    GetPrices {
+        keys: Vec<String>,
+    },
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -70,7 +74,7 @@ pub struct OracleResponse {
 
 pub mod querier {
     use crate::common::PriceResponse;
-    use mulberry_utils::scrt::{to_binary, HumanAddr, Querier, QueryRequest, StdResult, WasmQuery};
+    use crate::scrt::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
 
     use super::QueryMsg;
     use super::*;
@@ -82,9 +86,22 @@ pub mod querier {
         key: String,
     ) -> StdResult<PriceResponse> {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: HumanAddr(contract.address.clone()),
+            contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
             msg: to_binary(&QueryMsg::GetPrice { key })?,
+        }))
+    }
+
+    /// Gets the prices returned by the oracles stored at that key
+    pub fn query_prices(
+        contract: &Contract,
+        querier: &impl Querier,
+        keys: Vec<String>,
+    ) -> StdResult<PriceResponse> {
+        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: contract.address.clone(),
+            callback_code_hash: contract.code_hash.clone(),
+            msg: to_binary(&QueryMsg::GetPrices { keys })?,
         }))
     }
 
@@ -95,7 +112,7 @@ pub mod querier {
         key: String,
     ) -> StdResult<Contract> {
         let resp: OracleResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: HumanAddr(contract.address.clone()),
+            contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
             msg: to_binary(&QueryMsg::GetOracle { key })?,
         }))?;

@@ -1,8 +1,5 @@
-use mulberry_utils::{
-    common::types::{Contract, ResponseStatus},
-    scrt::*,
-    scrt_math::Uint256,
-};
+use crate::{common::Contract, scrt::*};
+use fadroma::Uint256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -17,40 +14,23 @@ pub mod secretswap {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
-        pub owner: String,
+        pub owner: HumanAddr,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
         pub factory: Contract,
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleMsg {
-        UpdateConfig {
-            owner: Option<String>,
-            symbol_0: Option<String>,
-            symbol_1: Option<String>,
-            router: Option<Contract>,
-            factory: Option<Contract>,
-        },
-    }
-
-    #[derive(Serialize, Deserialize, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleAnswer {
-        UpdateConfig { status: ResponseStatus },
     }
 
     // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
-        pub owner: String,
+        pub owner: HumanAddr,
         pub factory: Contract,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
+        pub enabled: bool,
     }
 }
 
@@ -65,40 +45,23 @@ pub mod siennaswap {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
-        pub owner: String,
+        pub owner: HumanAddr,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
         pub factory: Contract,
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleMsg {
-        UpdateConfig {
-            owner: Option<String>,
-            symbol_0: Option<String>,
-            symbol_1: Option<String>,
-            router: Option<Contract>,
-            factory: Option<Contract>,
-        },
-    }
-
-    #[derive(Serialize, Deserialize, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleAnswer {
-        UpdateConfig { status: ResponseStatus },
     }
 
     // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
-        pub owner: String,
+        pub owner: HumanAddr,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
         pub factory: Contract,
+        pub enabled: bool,
     }
 
     #[derive(Serialize, Deserialize, JsonSchema)]

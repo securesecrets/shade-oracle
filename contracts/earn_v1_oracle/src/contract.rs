@@ -1,4 +1,5 @@
-use mulberry_utils::{
+use serde::{Deserialize, Serialize};
+use shade_oracles::{
     common::querier::query_token_info,
     common::types::{CanonicalContract, Contract, ResponseStatus},
     get_precision,
@@ -11,7 +12,6 @@ use mulberry_utils::{
     secret_toolkit::utils::{pad_handle_result, pad_query_result},
     storage::traits::SingletonStorable,
 };
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{query_price, PriceResponse, QueryMsg},
     earn::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},

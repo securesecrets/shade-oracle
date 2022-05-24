@@ -1,26 +1,24 @@
-use mulberry_utils::{
-    common::querier::query_token_info,
-    common::types::{CanonicalContract, Contract, ResponseStatus},
+use serde::{Deserialize, Serialize};
+use shade_oracles::{
+    common::querier::{query_price, query_token_info},
+    common::{CanonicalContract, Contract},
+    common::{CommonOracleConfig, HandleMsg, HandleStatusAnswer, PriceResponse, QueryMsg},
+    lp::{
+        get_fair_lp_token_price,
+        siennaswap::{ConfigResponse, InitMsg},
+        FairLpPriceInfo,
+    },
     protocols::siennaswap::{
         SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
     },
+    router::querier::query_oracle,
     scrt::{
+        secret_toolkit::utils::{pad_handle_result, pad_query_result},
         to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
         Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
         BLOCK_SIZE,
     },
-    secret_toolkit::utils::{pad_handle_result, pad_query_result},
-    storage::traits::SingletonStorable,
-};
-use serde::{Deserialize, Serialize};
-use shade_oracles::{
-    common::{query_price, PriceResponse, QueryMsg},
-    lp::{
-        get_fair_lp_token_price,
-        siennaswap::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
-        FairLpPriceInfo,
-    },
-    router::querier::query_oracle,
+    storage::Item,
 };
 use std::cmp::min;
 
@@ -35,13 +33,11 @@ pub struct State {
     pub lp_token: CanonicalContract,
     pub token0_decimals: u8,
     pub token1_decimals: u8,
+    pub enabled: bool,
 }
 
-impl SingletonStorable for State {
-    fn namespace() -> Vec<u8> {
-        b"config".to_vec()
-    }
-}
+const STATE: Item<State> = Item::new("state");
+const COMMON: Item<CommonOracleConfig> = Item::new("common");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -49,14 +45,12 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
     let router: CanonicalContract = CanonicalContract {
-        address: deps.api.canonical_address(&HumanAddr(msg.router.address))?,
+        address: deps.api.canonical_address(&msg.router.address)?,
         code_hash: msg.router.code_hash,
     };
 
     let factory: CanonicalContract = CanonicalContract {
-        address: deps
-            .api
-            .canonical_address(&HumanAddr(msg.factory.address.clone()))?,
+        address: deps.api.canonical_address(&msg.factory.address.clone())?,
         code_hash: msg.factory.code_hash.clone(),
     };
 
@@ -115,7 +109,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
-        owner: deps.api.canonical_address(&HumanAddr(msg.owner))?,
+        owner: deps.api.canonical_address(&msg.owner)?,
         symbol_0: msg.symbol_0,
         symbol_1: msg.symbol_1,
         router,
@@ -123,6 +117,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         lp_token,
         token0_decimals,
         token1_decimals,
+        enabled: true,
     };
 
     state.save_json(&mut deps.storage)?;
@@ -130,7 +125,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-/* CONFIG UPDATE NEEDS TO BE FIXED */
 pub fn handle<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -138,69 +132,26 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig {
-                owner,
-                symbol_0,
-                symbol_1,
-                router,
-                factory,
-            } => try_update_config(deps, env, owner, symbol_0, symbol_1, router, factory),
+            HandleMsg::SetStatus { enabled } => try_update_status(deps, enabled),
         },
         BLOCK_SIZE,
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
+fn try_update_status<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
-    owner: Option<String>,
-    symbol_0: Option<String>,
-    symbol_1: Option<String>,
-    router: Option<Contract>,
-    factory: Option<Contract>,
+    new_status: bool,
 ) -> StdResult<HandleResponse> {
     let mut state: State = State::new_json(&deps.storage)?;
 
-    if deps.api.canonical_address(&env.message.sender)? != state.owner {
-        return Err(StdError::Unauthorized { backtrace: None });
-    }
-
-    if let Some(owner) = owner {
-        state.owner = deps.api.canonical_address(&HumanAddr(owner))?;
-    }
-
-    if let Some(router) = router {
-        let router = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(router.address))?,
-            code_hash: router.code_hash,
-        };
-        state.router = router;
-    }
-
-    if let Some(symbol_0) = symbol_0 {
-        state.symbol_0 = symbol_0;
-    }
-
-    if let Some(symbol_1) = symbol_1 {
-        state.symbol_1 = symbol_1;
-    }
-
-    if let Some(factory) = factory {
-        let factory = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(factory.address))?,
-            code_hash: factory.code_hash,
-        };
-        state.factory = factory;
-    }
+    state.enabled = new_status;
 
     state.save_json(&mut deps.storage)?;
 
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
+        data: Some(to_binary(&HandleStatusAnswer { new_status })?),
     })
 }
 
@@ -220,7 +171,7 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
     let state: State = State::new_json(&deps.storage)?;
 
     Ok(ConfigResponse {
-        owner: deps.api.human_address(&state.owner)?.to_string(),
+        owner: deps.api.human_address(&state.owner)?,
         symbol_0: state.symbol_0,
         symbol_1: state.symbol_1,
         router: state.router.as_human(&deps.api)?,

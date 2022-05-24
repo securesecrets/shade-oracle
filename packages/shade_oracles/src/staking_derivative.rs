@@ -1,45 +1,28 @@
-use mulberry_utils::{common::types::Contract, scrt::*};
+use crate::{common::Contract, scrt::*};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod shade {
     use super::*;
-    use mulberry_utils::common::types::ResponseStatus;
 
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
-        pub owner: String,
+        pub owner: HumanAddr,
         pub symbol: String,
         pub staking_derivative: Contract,
         pub router: Contract,
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleMsg {
-        UpdateConfig {
-            owner: Option<String>,
-            symbol: Option<String>,
-            staking_derivative: Option<Contract>,
-            router: Option<Contract>,
-        },
-    }
-
-    #[derive(Serialize, Deserialize, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleAnswer {
-        UpdateConfig { status: ResponseStatus },
     }
 
     // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
-        pub owner: String,
+        pub owner: HumanAddr,
         pub symbol: String,
         pub router: Contract,
         pub staking_derivative: Contract,
+        pub enabled: bool,
     }
 
     pub mod querier {
@@ -103,7 +86,7 @@ pub mod shade {
         pub fn query_price(contract: &Contract, querier: &impl Querier) -> StdResult<Uint128> {
             let resp: StakingDerivativeQueryAnswer =
                 querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: HumanAddr(contract.address.clone()),
+                    contract_addr: contract.address.clone(),
                     callback_code_hash: contract.code_hash.clone(),
                     msg: to_binary(&StakingDerivativeQueryMsg::StakingInfo { time: 0 })?,
                 }))?;

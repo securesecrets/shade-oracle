@@ -1,4 +1,4 @@
-use mulberry_utils::{
+use shade_oracles::{
     common::querier::query_token_info,
     common::types::{CanonicalContract, Contract, ResponseStatus},
     get_precision,
@@ -11,7 +11,7 @@ use mulberry_utils::{
 };
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{query_price, PriceResponse, QueryMsg},
+    common::{querier::{query_price, query_token_info}, PriceResponse, QueryMsg},
     router::querier::query_oracle,
     staking_derivative::shade::{
         querier::query_price as query_derivative_price, ConfigResponse, HandleAnswer, HandleMsg,
