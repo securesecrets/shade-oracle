@@ -1,10 +1,10 @@
 use crate::contract::{handle, init, query, QueryMsg};
-use mulberry_utils::scrt::{
+use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
+use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env},
     Uint128,
 };
-use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
 
 #[test]
 fn update_config() {
@@ -29,7 +29,7 @@ fn update_config() {
 
     // it worked, let's query the state
     let res = query(
-        &mut deps,
+        &deps,
         QueryMsg::GetReferenceData {
             base_symbol: "ETH".to_string(),
             quote_symbol: "USD".to_string(),
