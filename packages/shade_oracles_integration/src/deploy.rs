@@ -10,8 +10,8 @@ use shade_oracles::{
 use shade_oracles::{
     common::{self, Contract},
     protocols,
-    scrt::{HumanAddr, Uint128},
 };
+use cosmwasm_std::{HumanAddr, Uint128};
 use shade_oracles_integration::constants::testnet::*;
 use shade_oracles_integration::constants::*;
 use shade_oracles_integration::contract_helpers::oracles::ShadeStakingDerivativeOracleContract;

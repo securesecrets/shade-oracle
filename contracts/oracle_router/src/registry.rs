@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::state::*;
 use shade_oracles::common::{Contract, OraclePrice};
-use shade_oracles::scrt::{
+use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
 };
 use shade_oracles::{common::querier::{query_price, query_prices}, router::*};

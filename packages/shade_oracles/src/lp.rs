@@ -1,4 +1,5 @@
-use crate::{common::Contract, scrt::*};
+use crate::{common::Contract};
+use cosmwasm_std::*;
 use fadroma::Uint256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

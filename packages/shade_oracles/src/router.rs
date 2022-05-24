@@ -1,7 +1,7 @@
 use crate::{
     common::{Contract, ResponseStatus},
-    scrt::*,
 };
+use cosmwasm_std::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -77,7 +77,7 @@ pub struct OracleResponse {
 
 pub mod querier {
     use crate::common::*;
-    use crate::scrt::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
+    use cosmwasm_std::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
 
     use super::QueryMsg;
     use super::*;

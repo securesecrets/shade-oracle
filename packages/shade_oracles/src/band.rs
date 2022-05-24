@@ -1,7 +1,8 @@
 use crate::{
     common::ResponseStatus,
-    scrt::{secret_toolkit::utils::Query, *},
 };
+use secret_toolkit::utils::Query;
+use cosmwasm_std::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

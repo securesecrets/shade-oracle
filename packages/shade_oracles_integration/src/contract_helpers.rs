@@ -8,7 +8,8 @@ use secretcli::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use shade_oracles::{common::Contract, scrt::HumanAddr};
+use shade_oracles::{common::Contract};
+use cosmwasm_std::HumanAddr;
 
 pub mod oracles;
 

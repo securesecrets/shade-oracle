@@ -1,4 +1,4 @@
-use crate::scrt::{
+use cosmwasm_std::{
     to_binary, HumanAddr, Querier, QueryRequest, StdError, StdResult, Uint128, WasmQuery,
 };
 use schemars::JsonSchema;
