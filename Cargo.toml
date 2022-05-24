@@ -3,7 +3,6 @@ members = [
   "packages/shade_oracles",
   "packages/shade_oracles_integration",
   "packages/shade_oracles_ensemble",
-  "packages/secretcli",
 
   "contracts/proxy_band_oracle",
   "contracts/oracle_router",
