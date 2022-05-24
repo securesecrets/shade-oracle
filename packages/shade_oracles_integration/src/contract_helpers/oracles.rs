@@ -1,11 +1,10 @@
 use crate::constants::*;
-use mulberry_utils::{common::types::Contract, scrt::Uint128};
 use secretcli::{cli_types::NetContract, secretcli::query_contract};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
-    band, band::proxy as proxy_band_oracle, common as common_oracles, earn as earn_v1_oracle,
-    lp as lp_oracle, router,
+    band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
+    earn as earn_v1_oracle, lp as lp_oracle, router, scrt::{Uint128, HumanAddr},
 };
 
 use super::{GasLog, TestableContract};
@@ -148,10 +147,10 @@ pub trait OracleContract
 where
     Self: TestableContract,
 {
-    fn query_price(&self) -> Result<common_oracles::PriceResponse> {
+    fn query_price(&self, symbol: String) -> Result<common_oracles::PriceResponse> {
         query_contract(
             self.get_info(),
-            shade_oracles::common::QueryMsg::GetPrice {},
+            shade_oracles::common::QueryMsg::GetPrice { symbol },
         )
     }
     fn query_config<Response: serde::de::DeserializeOwned>(&self) -> Result<Response> {
@@ -188,15 +187,14 @@ impl BandContract {
 impl ProxyBandOracleContract {
     pub fn new(
         owner: String,
-        pair: (&str, &str),
+        quote_symbol: &str,
         band: Contract,
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
         let msg = proxy_band_oracle::InitMsg {
-            owner,
-            base_symbol: pair.0.to_string(),
-            quote_symbol: pair.1.to_string(),
+            owner: HumanAddr::from(owner),
+            quote_symbol: quote_symbol.to_string(),
             band,
         };
         let info = Self::wrap_init(&msg, account_key, name)?;

@@ -18,14 +18,14 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-backtraces = ["mulberry-utils/backtraces"]
+backtraces = ["shade-oracles/backtraces"]
 
 [dependencies]
 schemars = "0.7"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 snafu = { version = "0.6.3" }
-mulberry-utils = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "dev-utils" }
-shade-oracles = { path = "../../packages/shade_oracles" }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["scrt", "storage"] }
+
 
 [dev_dependencies]
 cosmwasm-schema = { git = "https://github.com/enigmampc/SecretNetwork", tag = "v1.0.4-debug-print" }

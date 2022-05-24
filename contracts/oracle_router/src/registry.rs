@@ -1,8 +1,8 @@
 use crate::state::*;
-use mulberry_utils::scrt::{
+use shade_oracles::scrt::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
 };
-use shade_oracles::{common::query_price, router::*};
+use shade_oracles::{common::querier::query_price, router::*};
 
 pub fn update_registry<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -29,7 +29,7 @@ pub fn get_price<S: Storage, A: Api, Q: Querier>(
     key: String,
 ) -> StdResult<Binary> {
     let oracle = Oracle::get(&deps.storage, &deps.api, key.as_str())?;
-    to_binary(&query_price(&oracle, &deps.querier)?)
+    to_binary(&query_price(&oracle, &deps.querier, key)?)
 }
 
 fn resolve_registry_operation(

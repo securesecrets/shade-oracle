@@ -1,12 +1,10 @@
-use mulberry_utils::{
-    common::types::{CanonicalContract, Contract},
-    scrt::{
-        Api, CanonicalAddr, PrefixedStorage, ReadonlyPrefixedStorage, ReadonlyStorage, StdError,
-        StdResult, Storage,
-    },
-    storage::{bincode_state::*, traits::SingletonStorable},
-};
 use serde::{Deserialize, Serialize};
+use shade_oracles::{
+    common::{CanonicalContract, Contract},
+    scrt::{
+        Api, CanonicalAddr, StdResult,
+    },
+};
 
 pub const KEY_CONFIG: &[u8] = b"YteGsgSZyO";
 pub const KEY_ORACLES: &[u8] = b"d3a17d1b";
@@ -15,12 +13,6 @@ pub const KEY_ORACLES: &[u8] = b"d3a17d1b";
 #[serde(deny_unknown_fields)]
 pub struct RawConfig {
     pub owner: CanonicalAddr,
-}
-
-impl SingletonStorable for RawConfig {
-    fn namespace() -> Vec<u8> {
-        KEY_CONFIG.to_vec()
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -35,29 +27,5 @@ impl Oracle {
         Ok(Oracle {
             contract: contract.as_canonical(api)?,
         })
-    }
-
-    pub fn save<S: Storage>(self, storage: &mut S, key: &str) -> StdResult<()> {
-        let mut store = PrefixedStorage::new(KEY_ORACLES, storage);
-        save(&mut store, key.as_bytes(), &self)?;
-        Ok(())
-    }
-
-    pub fn remove<S: Storage>(storage: &mut S, key: &str) -> StdResult<()> {
-        let mut store = PrefixedStorage::new(KEY_ORACLES, storage);
-        remove(&mut store, key.as_bytes());
-        Ok(())
-    }
-
-    pub fn get<S: ReadonlyStorage>(storage: &S, api: &impl Api, key: &str) -> StdResult<Contract> {
-        let store = ReadonlyPrefixedStorage::new(KEY_ORACLES, storage);
-        let oracle: Option<Oracle> = may_load(&store, key.as_bytes())?;
-        match oracle {
-            Some(oracle) => Ok(oracle.contract.as_human(api)?),
-            None => Err(StdError::generic_err(format!(
-                "Could not find oraacle at {}.",
-                key
-            ))),
-        }
     }
 }

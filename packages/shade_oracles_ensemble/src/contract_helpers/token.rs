@@ -1,4 +1,4 @@
-use mulberry_utils::{
+use shade_oracles::{
     common::{constants::*, types::Contract},
     composable_snip20::msg as snip20msg,
     composable_snip20::msg as snip20,

@@ -2,13 +2,13 @@ use crate::{
     constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY},
     utils::generate_label,
 };
-use mulberry_utils::common::types::Contract;
 use secretcli::{
     cli_types::NetContract,
     secretcli::{test_contract_handle, test_inst_init},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
+use shade_oracles::{common::Contract, scrt::HumanAddr};
 
 pub mod oracles;
 
@@ -26,7 +26,7 @@ pub trait TestableContract {
     fn as_contract(&self) -> Contract {
         let net = self.get_info();
         Contract {
-            address: net.address.clone(),
+            address: HumanAddr(net.address.clone()),
             code_hash: net.code_hash.clone(),
         }
     }

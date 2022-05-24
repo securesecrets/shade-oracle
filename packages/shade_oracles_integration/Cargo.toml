@@ -25,7 +25,6 @@ default = []
 colored = "2.0.0"
 chrono = "0.4.19"
 shade-oracles = { version = "0.1.0", path = "../shade_oracles" }
-mulberry-utils = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "dev-utils", features = ["protocols"] }
 secretcli = { version = "0.1.0", git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "dev-utils" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.67"}
