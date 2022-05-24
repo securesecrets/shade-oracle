@@ -77,13 +77,15 @@ fn deploy(user_a: String) -> Result<()> {
         Some("oracle_router"),
     )?;
 
-    router.update_registry(
+    println!("Updating registry.");
+    let txn = router.update_registry(
         RegistryOperation::Add {
             oracle: scrt_oracle.as_contract(),
             key: "SCRT".to_string(),
         },
         Some(HOOMP_KEY),
-    )?;
+    )?.txhash;
+    println!("Completed tx: {}", txn);
 
     let scrt_rate = router.query_price("SCRT".to_string())?.price.rate;
     println!("Router price of SCRT: {}", scrt_rate);
