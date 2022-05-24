@@ -125,9 +125,9 @@ impl CommonOracleConfig {
 
     pub fn is_enabled(&self) -> StdResult<&Self> {
         if self.enabled {
-            Err(StdError::generic_err("This oracle has been disabled."))
-        } else {
             Ok(self)
+        } else {
+            Err(StdError::generic_err("This oracle has been disabled."))
         }
     }
 }
