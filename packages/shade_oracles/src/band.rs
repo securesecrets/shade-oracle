@@ -45,7 +45,7 @@ impl Query for BandQuery {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, JsonSchema)]
 pub struct ReferenceData {
-    pub rate: Uint128,
+    pub rate: cosmwasm_std::Uint128,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
 }
