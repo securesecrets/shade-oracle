@@ -33,6 +33,15 @@ pub mod proxy_band {
     helpers::implement_harness!(ProxyBandOracle, proxy_band_oracle);
 }
 
+#[cfg(feature = "index-oracle")]
+pub mod index_oracle {
+    use ensemble_harness::helpers;
+    use index_oracle;
+
+    pub struct IndexOracle;
+    helpers::implement_harness!(IndexOracle, index_oracle);
+}
+
 #[cfg(feature = "router")]
 pub mod router {
     use ensemble_harness::helpers;

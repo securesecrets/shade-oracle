@@ -27,68 +27,16 @@ use shade_oracles::{
     },
     band::ReferenceData,
     storage::{Item},
+    index_oracle::{
+        InitMsg, HandleMsg, HandleAnswer, QueryMsg,
+    },
 };
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct Asset {
-    symbol: String,
-    weight: Uint128,
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Config {
     pub admins: Vec<HumanAddr>,
     pub router: Contract,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct InitMsg {
-    admins: Option<Vec<HumanAddr>>,
-    router: Contract,
-    symbol: String,
-    basket: HashMap<String, Uint128>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleMsg {
-    // Asset with weight 0 will be removed
-    // all others are added or changed
-    ModBasket {
-        basket: HashMap<String, Uint128>,
-    },
-    UpdateConfig {
-        admins: Option<Vec<HumanAddr>>,
-        router: Option<Contract>,
-    },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleAnswer {
-    ModBasket {
-        status: ResponseStatus,
-    },
-    UpdateConfig {
-        status: ResponseStatus,
-    },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum QueryMsg {
-    // Asset with weight 0 will be removed
-    // all others are added or changed
-    GetPrice {
-        symbol: String,
-    },
-    GetPrices {
-        symbols: Vec<String>,
-    },
-    GetConfig { },
 }
 
 /*
@@ -126,6 +74,10 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         },
         router: msg.router,
     };
+
+    if msg.basket.is_empty() {
+        return Err(StdError::generic_err("Basket cannot be empty"));
+    }
 
     if msg.basket.contains_key(&msg.symbol) {
         return Err(StdError::generic_err(format!("Recursive symbol {}", msg.symbol)));
@@ -256,7 +208,7 @@ pub fn eval_basket<S: Storage, A: Api, Q: Querier>(
 
     let symbols = basket.keys().cloned().collect();
 
-    let mut weight_sum = Uint512::zero();
+    let weight_sum = Uint512::from(basket.values().map(|i| i.u128()).sum::<u128>());
     let mut index_price = Uint512::zero();
 
     for price in query_prices(&config.router, &deps.querier, symbols)? {
@@ -289,9 +241,10 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::generic_err(format!("Missing price feed for {}", symbol)));
     }
 
-    to_binary(&OraclePrice::new( symbol, 
+    to_binary(&OraclePrice::new(symbol, 
         ReferenceData {
             rate: eval_basket(&deps, BASKET.load(&deps.storage)?)?,
+            //TODO these should be the minimum found at eval time
             last_updated_base: 0,
             last_updated_quote: 0,
         }))

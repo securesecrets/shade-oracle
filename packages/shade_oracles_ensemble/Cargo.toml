@@ -22,6 +22,7 @@ all = [
   "band-mock",
   "proxy-band",
   "router",
+  "index-oracle",
 ]
 contracts = []
 siennaswap-spot-lp = []
@@ -29,6 +30,7 @@ siennaswap-lp = []
 band-mock = []
 proxy-band = []
 router = []
+index-oracle = []
 
 [dependencies]
 cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
@@ -47,3 +49,4 @@ shade-staking-derivative-oracle = { path = "../../contracts/shade_staking_deriva
 siennaswap-lp-oracle = { path = "../../contracts/siennaswap_lp_oracle" }
 siennaswap-lp-spot-oracle = { path = "../../contracts/siennaswap_lp_spot_oracle" }
 oracle-router = { path = "../../contracts/oracle_router" }
+index-oracle = { path = "../../contracts/index_oracle" }
