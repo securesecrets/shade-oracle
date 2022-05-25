@@ -15,9 +15,11 @@ use shade_oracles::{
     },
     storage::Item,
 };
-
-use cosmwasm_std::{to_binary, Binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
-    StdError, StdResult, Storage, Uint128,
+use cosmwasm_std::{
+    to_binary, Binary, Api, Env, 
+    Extern, HandleResponse, HumanAddr, 
+    InitResponse, Querier, QueryResult,
+    StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 

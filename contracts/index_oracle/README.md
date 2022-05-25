@@ -24,6 +24,7 @@ Contract responsible for aggregating a list of assets (denom/weight) into a sing
 | router       | Contract | Oracle Router contract                                   | no       |
 | symbol       | String   | Symbol of representing this basket of assets             | no       |
 | basket       | HashMap  | Map of `{symbol: weight}`                                | no       |
+| target       | Uint128  | Initial price target                                     | no       |
 
 ## Owner
 

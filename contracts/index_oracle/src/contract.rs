@@ -72,6 +72,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         router: msg.router,
     };
 
+<<<<<<< HEAD
     CONFIG.save(&mut deps.storage, &config)?;
     SYMBOL.save(&mut deps.storage, &msg.symbol)?;
 
@@ -101,6 +102,15 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     for (sym, c) in build_constants(basket, fetch_prices(deps, symbols)?, msg.target) {
         CONSTANTS.save(&mut deps.storage, sym, &c)?;
     }
+=======
+    if msg.basket.contains_key(&msg.symbol) {
+        return Err(StdError::generic_err(format!("Recursive symbol {}", msg.symbol)));
+    }
+
+    CONFIG.save(&mut deps.storage, &config)?;
+    BASKET.save(&mut deps.storage, &msg.basket)?;
+    SYMBOL.save(&mut deps.storage, &msg.symbol)?;
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
 
     Ok(InitResponse::default())
 }
@@ -120,7 +130,11 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
         }, BLOCK_SIZE)
 }
 
+<<<<<<< HEAD
 pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+=======
+pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> StdResult<Binary> {
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
@@ -129,11 +143,16 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
              */
             QueryMsg::GetPrice { symbol, .. } => to_binary(&try_query_price(deps, symbol)?),
             QueryMsg::GetPrices { symbols } => {
+<<<<<<< HEAD
+=======
+
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
                 let mut prices = vec![];
                 for symbol in symbols {
                     prices.push(try_query_price(deps, symbol)?);
                 }
                 to_binary(&prices)
+<<<<<<< HEAD
             },
             QueryMsg::Basket { } => {
                 let weights: HashMap<String,Uint128> = WEIGHTS
@@ -224,6 +243,12 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     Ok(price_data)
 }
 
+=======
+            }
+        }, BLOCK_SIZE)
+}
+
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
 fn try_update_config<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -260,7 +285,11 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 fn mod_basket<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
+<<<<<<< HEAD
     mod_basket: Vec<(String, Uint128)>,
+=======
+    basket: HashMap<String, Uint128>,
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
 ) -> StdResult<HandleResponse> {
 
     let config = CONFIG.load(&deps.storage)?;
@@ -269,6 +298,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::unauthorized());
     }
 
+<<<<<<< HEAD
     let self_symbol = SYMBOL.load(&deps.storage)?;
 
     let mut weights: HashMap<_,_> = WEIGHTS.range(&deps.storage, None, None, Order::Ascending).map(|i| i.ok().unwrap()).collect();
@@ -279,11 +309,20 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
 
         // Disallow recursive symbols
         if mod_sym == self_symbol {
+=======
+    let mut cur_basket = BASKET.load(&deps.storage)?;
+    let self_symbol = SYMBOL.load(&deps.storage)?;
+
+    for (mod_sym, mod_weight) in basket.iter() {
+        // Disallow adding recursive symbol e.g. SILK basket containing SILK
+        if *mod_sym == self_symbol {
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
             return Err(StdError::generic_err(format!("Recursive symbol {}", self_symbol)));
         }
 
         // Remove 0 weights
         if mod_weight.is_zero() {
+<<<<<<< HEAD
             weights.remove(&mod_sym.to_string());
             WEIGHTS.remove(&mut deps.storage, mod_sym);
         }
@@ -324,6 +363,17 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
             CONSTANTS.remove(&mut deps.storage, sym);
         }
     }
+=======
+            cur_basket.remove(mod_sym);
+        }
+        // Add/Update others
+        else {
+            cur_basket.insert(mod_sym.clone(), *mod_weight);
+        }
+    }
+
+    BASKET.save(&mut deps.storage, &cur_basket)?;
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
 
     Ok(HandleResponse {
         messages: vec![],
@@ -334,6 +384,36 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     })
 }
 
+<<<<<<< HEAD
+=======
+pub fn eval_basket<S: Storage, A: Api, Q: Querier>(
+    deps: &Extern<S, A, Q>,
+    basket: HashMap<String, Uint128>,
+) -> StdResult<Uint128> {
+
+    let config = CONFIG.load(&deps.storage)?;
+
+    let symbols = basket.keys().cloned().collect();
+
+    let mut weight_sum = Uint512::zero();
+    let mut index_price = Uint512::zero();
+
+    for price in query_prices(&config.router, &deps.querier, symbols)? {
+        index_price += Uint512::from(price.price.rate.u128()) * Uint512::from(basket.get(&price.symbol).unwrap().u128())
+                / Uint512::from(10u128.pow(18));
+    }
+
+    Ok(Uint128(
+        secret_cosmwasm_math_compat::Uint128::try_from(
+            index_price
+                .checked_mul(Uint512::from(10u128.pow(18)))?
+                .checked_div(weight_sum)?,
+        )?
+        .u128(),
+    ))
+}
+
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
 fn try_query_config<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<Config> {
@@ -345,12 +425,16 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     symbol: String,
 ) -> StdResult<Binary> {
 
+<<<<<<< HEAD
     let config = CONFIG.load(&deps.storage)?;
 
+=======
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
     if symbol != SYMBOL.load(&deps.storage)? {
         return Err(StdError::generic_err(format!("Missing price feed for {}", symbol)));
     }
 
+<<<<<<< HEAD
     let constants: HashMap<_,_> = CONSTANTS.range(&deps.storage, None, None, Order::Ascending).map(|i| i.ok().unwrap()).collect();
     let (symbols, _): (Vec<String>, Vec<Uint128>) = constants.clone().into_iter().unzip();
     let prices = fetch_prices(deps, symbols.clone())?;
@@ -366,4 +450,12 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
             }
         )
     )
+=======
+    to_binary(&OraclePrice::new( symbol, 
+        ReferenceData {
+            rate: eval_basket(&deps, BASKET.load(&deps.storage)?)?,
+            last_updated_base: 0,
+            last_updated_quote: 0,
+        }))
+>>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
 }
