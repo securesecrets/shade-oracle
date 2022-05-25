@@ -1,17 +1,18 @@
-
-# Proxy Band Oracle Contract
+# Index Oracle
 * [Introduction](#Introduction)
 * [Sections](#Sections)
     * [Init](#Init)
     * [Owner](#Owner)
         * Messages
             * [UpdateConfig](#UpdateConfig)
+            * [ModBasket](#ModBasket)
     * [User](#User)
         * Queries
             * [GetConfig](#GetConfig)
             * [GetPrice](#GetPrice)
+            * [GetPrices](#GetPrices)
 # Introduction
-Contract responsible for retrieving the price of a single asset.
+Contract responsible for aggregating a list of assets (denom/weight) into a single price feed (SILK)
 
 # Sections
 
@@ -20,9 +21,8 @@ Contract responsible for retrieving the price of a single asset.
 | Name         | Type     | Description                                              | optional |
 |--------------|----------|----------------------------------------------------------|----------|
 | owner        | String   | Contract owner, has ability to adjust config             | no       |
-| band         | Contract | Band contract to retrieve prices from                    | no       |
-| base_symbol  | String   | Symbol of asset to retrieve price of                     | no       |
-| quote_symbol | String   | Symbol of the asset which the desired asset is quoted in | no       |
+| router       | Contract | Oracle Router contract                                   | no       |
+| symbol       | String   | Symbol of representing this basket of assets             | no       |
 
 ## Owner
 

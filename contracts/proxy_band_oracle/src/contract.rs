@@ -1,17 +1,25 @@
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
-    common::{Contract, ResponseStatus, CommonOracleConfig, HandleStatusAnswer, OraclePrice, QueryMsg, BLOCK_SIZE}, band::{ReferenceData, proxy::{HandleMsg, HandleAnswer}}, storage::Item,
+    common::{
+        Contract, ResponseStatus, CommonOracleConfig, 
+        HandleStatusAnswer, OraclePrice, QueryMsg, BLOCK_SIZE
+    }, 
+    band::{
+        ReferenceData, BandQuery,
+        proxy::{
+            HandleMsg, HandleAnswer,
+            ConfigResponse, InitMsg,
+        }
+    },
+    storage::Item,
 };
-use cosmwasm_std::{to_binary, Binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
+use cosmwasm_std::{
+    to_binary, Binary, Api, Env, 
+    Extern, HandleResponse, HumanAddr, 
+    InitResponse, Querier, QueryResult,
     StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
-use shade_oracles::{
-    band::{
-        proxy::{ConfigResponse, InitMsg},
-        BandQuery,
-    },
-};
 
 /// state of the auction
 #[derive(Serialize, Deserialize)]

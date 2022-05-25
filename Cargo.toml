@@ -4,7 +4,7 @@ members = [
   "packages/shade_oracles_integration",
   "packages/shade_oracles_ensemble",
 
-  "contracts/silk_oracle",
+  "contracts/index_oracle",
   "contracts/proxy_band_oracle",
   "contracts/oracle_router",
   "contracts/siennaswap_lp_oracle",

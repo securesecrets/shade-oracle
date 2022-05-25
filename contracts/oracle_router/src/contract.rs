@@ -9,7 +9,6 @@ use cosmwasm_std::{
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 
-
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     _env: Env,
