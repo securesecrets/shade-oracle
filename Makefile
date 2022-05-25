@@ -13,7 +13,7 @@ cat ./$(1).wasm | gzip -n -9 > ${compiled_dir}/$(1).wasm.gz
 rm ./$(1).wasm
 endef
 
-ORACLES = oracle_router proxy_band_oracle secretswap_lp_oracle siennaswap_lp_oracle earn_v1_oracle mock_band silk_oracle
+ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle
 CONTRACTS = ${ORACLES}
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
@@ -21,6 +21,15 @@ COMPILED = ${CONTRACTS:=.wasm.gz}
 release: build_release compress
 
 debug: build_debug compress
+
+build_release:
+	(cd ${contracts_dir}; RUSTFLAGS='-C link-arg=-s' cargo build --release --target wasm32-unknown-unknown --locked)
+
+build_debug:
+	(cd ${contracts_dir}; RUSTFLAGS='-C link-arg=-s' cargo build --release --target wasm32-unknown-unknown)
+
+deploy-testnet:
+	cd packages/shade_oracles_integration && export RUST_BACKTRACE=full && cargo run --bin "deploy"
 
 compress: setup $(CONTRACTS);
 

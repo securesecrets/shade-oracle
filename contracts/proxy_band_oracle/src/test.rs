@@ -1,26 +1,25 @@
 use crate::contract::{handle, init, query};
-use mulberry_utils::{
-    common::types::Contract,
-    scrt::{coins, from_binary, mock_dependencies, mock_env, StdError},
-};
 use shade_oracles::{
     band::proxy::{ConfigResponse, HandleMsg, InitMsg},
     common::QueryMsg,
 };
+use shade_oracles::{
+    common::Contract,
+};
+use cosmwasm_std::{coins, from_binary, HumanAddr, testing::{mock_dependencies, mock_env}, StdError};
 
 #[test]
 fn proper_initialization() {
     let mut deps = mock_dependencies(20, &[]);
 
     let band_contract = Contract {
-        address: "band0000".to_string(),
+        address: HumanAddr("band0000".to_string()),
         code_hash: "band_hash0000".to_string(),
     };
     let msg = InitMsg {
-        owner: "owner0000".to_string(),
+        owner: HumanAddr("owner0000".to_string()),
         band: band_contract,
-        base_symbol: "USD".to_string(),
-        quote_symbol: "ETH".to_string(),
+        quote_symbol: "USD".to_string(),
     };
     let env = mock_env("creator", &coins(1000, "earth"));
 
@@ -32,7 +31,6 @@ fn proper_initialization() {
     let res = query(&deps, QueryMsg::GetConfig {}).unwrap();
     let value: ConfigResponse = from_binary(&res).unwrap();
     assert_eq!("owner0000", value.owner.as_str());
-    assert_eq!("band0000", value.band.address)
 }
 
 #[test]
@@ -40,10 +38,9 @@ fn update_config() {
     let mut deps = mock_dependencies(20, &[]);
     let mock_coins = coins(1000, "earth");
     let msg = InitMsg {
-        owner: "owner0000".to_string(),
-        base_symbol: "base000".to_string(),
+        owner: HumanAddr("owner0000".to_string()),
         band: Contract {
-            address: "band0000".to_string(),
+            address: HumanAddr("band0000".to_string()),
             code_hash: "band_hash0000".to_string(),
         },
         quote_symbol: "quote000".to_string(),
@@ -54,12 +51,11 @@ fn update_config() {
 
     // update owner
     let msg = HandleMsg::UpdateConfig {
-        owner: Some("owner0001".to_string()),
+        owner: Some(HumanAddr("owner0001".to_string())),
         band: Some(Contract {
-            address: "band0001".to_string(),
+            address: HumanAddr("band0001".to_string()),
             code_hash: "band_hash0001".to_string(),
         }),
-        base_symbol: None,
         quote_symbol: None,
     };
 
@@ -76,7 +72,6 @@ fn update_config() {
     let msg = HandleMsg::UpdateConfig {
         owner: None,
         band: None,
-        base_symbol: None,
         quote_symbol: None,
     };
     let env = mock_env("creator", &mock_coins);

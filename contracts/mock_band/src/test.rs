@@ -1,10 +1,10 @@
 use crate::contract::{handle, init, query, QueryMsg};
-use mulberry_utils::scrt::{
+use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
+use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env},
     Uint128,
 };
-use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
 
 #[test]
 fn update_config() {
