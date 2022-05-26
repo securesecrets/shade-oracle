@@ -10,14 +10,16 @@ use shade_oracles::{
     common::ResponseStatus,
 };
 
+/*
 #[derive(Serialize, Deserialize, Default, JsonSchema)]
 pub struct SavedBandData {
-    pub rate: u128,
+    pub rate: Uint128,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
 }
+*/
 
-const MOCK_DATA: Map<(&str, &str), SavedBandData> = Map::new("price-data");
+const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     _deps: &mut Extern<S, A, Q>,
@@ -58,20 +60,11 @@ pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
     last_updated: Option<u64>,
 ) -> StdResult<HandleResponse> {
 
-    MOCK_DATA.update(&mut deps.storage, (base_symbol.as_str(), quote_symbol.as_str()), |_data| -> StdResult<_> {
-        let mut new_data: SavedBandData = SavedBandData {
-            rate: rate.u128(),
-            last_updated_base: env.block.time,
-            last_updated_quote: env.block.time,
-        };
-    
-        if let Some(last_updated) = last_updated {
-            new_data.last_updated_base = last_updated;
-            new_data.last_updated_quote = last_updated;
-        }
-        Ok(new_data)
+    MOCK_DATA.save(&mut deps.storage, (base_symbol, quote_symbol), &ReferenceData {
+        rate,
+        last_updated_base: 0,
+        last_updated_quote: 0,
     })?;
-
 
     Ok(HandleResponse {
         messages: vec![],
@@ -103,17 +96,12 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
         } => query_saved_band_data(deps, base_symbol, quote_symbol),
         QueryMsg::GetReferenceDataBulk {
             base_symbols,
-            quote_symbols: _,
+            quote_symbols,
         } => {
-            let mut results = Vec::new();
-            let data = ReferenceData {
-                rate: Uint128(1_000_000_000_000_000_000),
-                last_updated_base: 1628544285u64,
-                last_updated_quote: 3377610u64,
-            };
+            let mut results = vec![];
 
-            for _ in base_symbols {
-                results.push(data.clone());
+            for (base, quote) in base_symbols.iter().zip(quote_symbols) {
+                results.push(MOCK_DATA.load(&deps.storage, (base.to_string(), quote.to_string()))?);
             }
             to_binary(&results)
         }
@@ -125,29 +113,9 @@ fn query_saved_band_data<S: Storage, A: Api, Q: Querier>(
     base_symbol: String,
     quote_symbol: String,
 ) -> StdResult<Binary> {
-
-    let saved_band_data =
-        MOCK_DATA.may_load(&deps.storage, (base_symbol.as_str(), quote_symbol.as_str()));
-
-    match saved_band_data {
-        Ok(saved_band_data) => {
-            if let Some(saved_band_data) = saved_band_data {
-                to_binary(&ReferenceData {
-                    rate: Uint128(saved_band_data.rate),
-                    last_updated_base: saved_band_data.last_updated_base,
-                    last_updated_quote: saved_band_data.last_updated_quote,
-                })
-            } else {
-                to_binary(&ReferenceData {
-                    rate: Uint128(1_000_000_000_000_000_000),
-                    last_updated_base: 1628544285u64,
-                    last_updated_quote: 3377610u64,
-                })
-            }
-        }
-        Err(_) => to_binary(&StdError::GenericErr {
-            msg: "Failed to load from storage.".to_string(),
-            backtrace: None,
-        }),
-    }
+    /*
+    let data: ReferenceData = MOCK_DATA.load(&deps.storage, (base_symbol.clone(), quote_symbol.clone()))?;
+    assert_eq!(data.rate, Uint128::zero(), "MOCK BAND REF");
+    */
+    to_binary(&MOCK_DATA.load(&deps.storage, (base_symbol, quote_symbol))?)
 }
