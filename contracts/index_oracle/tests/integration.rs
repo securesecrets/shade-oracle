@@ -184,36 +184,79 @@ macro_rules! index_tests {
             #[test]
             fn $name() {
                 let (symbol, basket, prices, expected) = $value;
-                index_test(symbol, basket, prices, expected);
+                index_test(
+                    symbol.to_string(), 
+                    basket.into_iter().map(|(sym, w)| (sym.to_string(), Uint128(w))).collect(),
+                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
+                    Uint128(expected)
+                );
             }
         )*
     }
 }
 index_tests! {
     index_test_0: (
-        "sUSD".to_string(),
+        "sUSD",
         vec![
-            ("USD".to_string(), Uint128(10u128.pow(18))), // 100%
+            ("USD", 10u128.pow(18)), // 100%
         ],
-        HashMap::from([
-            ("USD".to_string(), Uint128(10u128.pow(18))), // $1
-        ]),
-        Uint128(10u128.pow(18)), // $1
+        vec![
+            ("USD", 10u128.pow(18)), // $1
+        ],
+        10u128.pow(18), // $1
     ),
     index_test_1: (
-        "SILK".to_string(),
+        "INDEX",
         vec![
-            ("USD".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
-            ("BTC".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
-            ("ETH".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
-            ("XAU".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
+            ("USD", 25 * 10u128.pow(16)), // 25%
+            ("BTC", 25 * 10u128.pow(16)), // 25%
+            ("ETH", 25 * 10u128.pow(16)), // 25%
+            ("XAU", 25 * 10u128.pow(16)), // 25%
         ],
-        HashMap::from([
-            ("USD".to_string(), Uint128(1_00 * 10u128.pow(16))), // $1
-            ("BTC".to_string(), Uint128(29_398_20 * 10u128.pow(16))), // $29398.2
-            ("ETH".to_string(), Uint128(1_831_26 * 10u128.pow(16))), // $1831.26
-            ("XAU".to_string(), Uint128(1_852_65 * 10u128.pow(16))), // $1852.65
-        ]),
-        Uint128(8_270_7775 * 10u128.pow(14)), // $8270.7775
+        vec![
+            ("USD", 1_00 * 10u128.pow(16)), // $1
+            ("BTC", 29_398_20 * 10u128.pow(16)), // $29398.2
+            ("ETH", 1_831_26 * 10u128.pow(16)), // $1831.26
+            ("XAU", 1_852_65 * 10u128.pow(16)), // $1852.65
+        ],
+        8_270_7775 * 10u128.pow(14), // $8270.7775
+    ),
+    index_test_2: (
+        "SILK",
+        vec![
+            ("USD", 39_32* 10u128.pow(16)), //  39.32%
+            ("CNY", 7_13 * 10u128.pow(16)), //  7.13%
+            ("EUR", 15_97 * 10u128.pow(16)), // 15.97%
+            ("JPY", 7_64 * 10u128.pow(16)), //  7.64%
+            ("GBP", 3_40 * 10u128.pow(16)), //  3.4%
+            ("CAD", 4_58 * 10u128.pow(16)), //  4.58%
+            ("KRW", 1_53 * 10u128.pow(16)), //  1.53%
+            ("AUD", 2_32 * 10u128.pow(16)), //  2.32%
+            ("IDR", 2_50 * 10u128.pow(16)), //  2.5%
+            ("CHF", 4_44 * 10u128.pow(16)), //  4.44%
+            ("SEK", 0_84 * 10u128.pow(16)), //  0.84%
+            ("NOK", 0_82 * 10u128.pow(16)), //  0.82%
+            ("SGD", 2_50 * 10u128.pow(16)), //  2.5%
+            ("XAU", 5_00 * 10u128.pow(16)), //  5.0%
+            ("BTC", 2_00 * 10u128.pow(16)), //  2.0%
+        ],
+        vec![
+            ("USD", 1_00 * 10u128.pow(16)), // $1
+            ("CNY", 0_15 * 10u128.pow(16)), // $0.15
+            ("EUR", 1_07 * 10u128.pow(16)), // $1.07
+            ("JPY", 0_0079 * 10u128.pow(14)), // $0.0079
+            ("GBP", 1_26 * 10u128.pow(16)), // $1.26
+            ("CAD", 0_78 * 10u128.pow(16)), // $0.78
+            ("KRW", 0_00079 * 10u128.pow(13)), // $0.00079
+            ("AUD", 0_71 * 10u128.pow(16)), // $0.71
+            ("IDR", 0_000068 * 10u128.pow(12)), // $0.000068
+            ("CHF", 1_04 * 10u128.pow(16)), // $1.04
+            ("SEK", 0_10 * 10u128.pow(16)), // $0.10
+            ("NOK", 0_10 * 10u128.pow(16)), // $0.10
+            ("SGD", 0_73 * 10u128.pow(16)), // $0.73
+            ("XAU", 1_852_65 * 10u128.pow(16)), // $1852.65
+            ("BTC", 29_398_20 * 10u128.pow(16)), // $29398.2
+        ],
+        1u128,
     ),
 }
