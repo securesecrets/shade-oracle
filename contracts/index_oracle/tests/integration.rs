@@ -151,4 +151,16 @@ index_tests! {
         ]),
         Uint128(10u128.pow(18)), // $1
     ),
+    /*
+    index_test_1: (
+        "sUSD".to_string(),
+        HashMap::from([
+            ("USD".to_string(), Uint128(10u128.pow(18))), // 100%
+        ]),
+        HashMap::from([
+            ("USD".to_string(), Uint128(10u128.pow(18))), // $1
+        ]),
+        Uint128(10u128.pow(18)), // $1
+    ),
+    */
 }

@@ -12,6 +12,7 @@ use cosmwasm_std::{
     Storage,
     HumanAddr,
     Uint128,
+    Order,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -26,7 +27,7 @@ use shade_oracles::{
         querier::query_prices,
     },
     band::ReferenceData,
-    storage::{Item},
+    storage::{Item, Map},
     index_oracle::{
         InitMsg, HandleMsg, HandleAnswer, QueryMsg,
     },
@@ -54,7 +55,7 @@ pub enum QueryAnswer {
 
 const CONFIG: Item<Config> = Item::new("config");
 const SYMBOL: Item<String> = Item::new("symbol");
-const BASKET: Item<HashMap<String, Uint128>> = Item::new("basket");
+const BASKET: Map<&str, Uint128> = Map::new("basket");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -75,6 +76,8 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         router: msg.router,
     };
 
+    CONFIG.save(&mut deps.storage, &config)?;
+
     if msg.basket.is_empty() {
         return Err(StdError::generic_err("Basket cannot be empty"));
     }
@@ -83,8 +86,10 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::generic_err(format!("Recursive symbol {}", msg.symbol)));
     }
 
-    CONFIG.save(&mut deps.storage, &config)?;
-    BASKET.save(&mut deps.storage, &msg.basket)?;
+    for (sym, weight) in msg.basket {
+        BASKET.save(&mut deps.storage, &sym, &weight)?;
+    }
+
     SYMBOL.save(&mut deps.storage, &msg.symbol)?;
 
     Ok(InitResponse::default())
@@ -169,26 +174,25 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::unauthorized());
     }
 
-    let mut cur_basket = BASKET.load(&deps.storage)?;
     let self_symbol = SYMBOL.load(&deps.storage)?;
 
-    for (mod_sym, mod_weight) in basket.iter() {
-        // Disallow adding recursive symbol e.g. SILK basket containing SILK
-        if *mod_sym == self_symbol {
-            return Err(StdError::generic_err(format!("Recursive symbol {}", self_symbol)));
-        }
+    // Disallow adding recursive symbol e.g. SILK basket containing SILK
+    if basket.contains_key(&self_symbol) {
+        return Err(StdError::generic_err(format!("Recursive symbol {}", self_symbol)));
+    }
 
+    for (mod_sym, mod_weight) in basket.iter() {
         // Remove 0 weights
         if mod_weight.is_zero() {
-            cur_basket.remove(mod_sym);
+            BASKET.remove(&mut deps.storage, mod_sym);
         }
         // Add/Update others
         else {
-            cur_basket.insert(mod_sym.clone(), *mod_weight);
+            BASKET.save(&mut deps.storage, mod_sym, mod_weight);
         }
     }
 
-    BASKET.save(&mut deps.storage, &cur_basket)?;
+    //BASKET.save(&mut deps.storage, &cur_basket)?;
 
     Ok(HandleResponse {
         messages: vec![],
@@ -197,33 +201,6 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
             status: ResponseStatus::Success,
         })?),
     })
-}
-
-pub fn eval_basket<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    basket: HashMap<String, Uint128>,
-) -> StdResult<Uint128> {
-
-    let config = CONFIG.load(&deps.storage)?;
-
-    let symbols = basket.keys().cloned().collect();
-
-    let weight_sum = Uint512::from(basket.values().map(|i| i.u128()).sum::<u128>());
-    let mut index_price = Uint512::zero();
-
-    for price in query_prices(&config.router, &deps.querier, symbols)? {
-        index_price += Uint512::from(price.price.rate.u128()) * Uint512::from(basket.get(&price.symbol).unwrap().u128())
-                / Uint512::from(10u128.pow(18));
-    }
-
-    Ok(Uint128(
-        secret_cosmwasm_math_compat::Uint128::try_from(
-            index_price
-                .checked_mul(Uint512::from(10u128.pow(18)))?
-                .checked_div(weight_sum)?,
-        )?
-        .u128(),
-    ))
 }
 
 fn try_query_config<S: Storage, A: Api, Q: Querier>(
@@ -237,15 +214,42 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     symbol: String,
 ) -> StdResult<Binary> {
 
+    let config = CONFIG.load(&deps.storage)?;
+
     if symbol != SYMBOL.load(&deps.storage)? {
         return Err(StdError::generic_err(format!("Missing price feed for {}", symbol)));
     }
 
-    to_binary(&OraclePrice::new(symbol, 
-        ReferenceData {
-            rate: eval_basket(&deps, BASKET.load(&deps.storage)?)?,
-            //TODO these should be the minimum found at eval time
-            last_updated_base: 0,
-            last_updated_quote: 0,
-        }))
+    //let basket: HashMap<String, Uint128> = HashMap::from(BASKET.range(&deps.storage, None, None, Order::Ascending).collect());
+
+    let basket: StdResult<Vec<_>> = BASKET.range(&deps.storage, None, None, Order::Ascending).collect();
+
+    let (symbols, weights): (Vec<String>, Vec<Uint128>) = basket?.into_iter().unzip();
+    let weight_sum = Uint512::from(weights.iter().map(|w| w.u128()).sum::<u128>());
+
+    let mut index_price = Uint512::zero();
+
+    for price in query_prices(&config.router, &deps.querier, symbols)? {
+        index_price += Uint512::from(price.price.rate.u128())
+                * Uint512::from(BASKET.load(&deps.storage, &price.symbol)?.u128())
+                / Uint512::from(10u128.pow(18));
+    }
+
+    let rate = Uint128(
+        secret_cosmwasm_math_compat::Uint128::try_from(
+            index_price
+                .checked_mul(Uint512::from(10u128.pow(18)))?
+                .checked_div(weight_sum)?)?.u128());
+
+    to_binary(
+        &OraclePrice::new(
+            symbol, 
+            ReferenceData {
+                rate,
+                //TODO these should be the minimum found at eval time
+                last_updated_base: 0,
+                last_updated_quote: 0,
+            }
+        )
+    )
 }
