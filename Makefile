@@ -13,8 +13,8 @@ cat ./$(1).wasm | gzip -n -9 > ${compiled_dir}/$(1).wasm.gz
 rm ./$(1).wasm
 endef
 
-ORACLES = oracle_router proxy_band_oracle secretswap_lp_oracle siennaswap_lp_oracle earn_v1_oracle mock_band index_oracle shade_staking_derivative_oracle
-CONTRACTS = ${ORACLES}
+ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle index_oracle 
+CONTRACTS = ${ORACLES} mock_band
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
 
