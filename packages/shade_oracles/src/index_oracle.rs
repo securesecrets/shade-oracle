@@ -14,7 +14,7 @@ pub struct InitMsg {
     pub admins: Option<Vec<HumanAddr>>,
     pub router: Contract,
     pub symbol: String,
-    pub basket: HashMap<String, Uint128>,
+    pub basket: Vec<(String, Uint128)>, //HashMap<String, Uint128>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

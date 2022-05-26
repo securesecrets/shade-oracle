@@ -22,7 +22,7 @@ use shade_oracles_ensemble::harness::{
 };
 
 use shade_oracles::{
-    common::Contract,
+    common::{self, Contract, OraclePrice},
     band::{self, proxy},
     router,
     index_oracle,
@@ -31,7 +31,7 @@ use shade_oracles::{
 // Add other adapters here as they come
 fn index_test(
     symbol: String, 
-    basket: HashMap<String, Uint128>,
+    basket: Vec<(String, Uint128)>,
     prices: HashMap<String, Uint128>,
     expected: Uint128,
 ) {
@@ -39,23 +39,23 @@ fn index_test(
 
     let reg_router = ensemble.register(Box::new(OracleRouter));
     let reg_index_oracle = ensemble.register(Box::new(IndexOracle));
-    let reg_band = ensemble.register(Box::new(MockBand));
-    let reg_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
+    let reg_mock_band = ensemble.register(Box::new(MockBand));
+    let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
 
     let band = ensemble.instantiate(
-        reg_band.id,
+        reg_mock_band.id,
         &band::InitMsg { },
         MockEnv::new(
             "admin",
             ContractLink {
                 address: HumanAddr("band".into()),
-                code_hash: reg_band.code_hash.clone(),
+                code_hash: reg_mock_band.code_hash.clone(),
             }
         )
     ).unwrap();
 
     let band_proxy = ensemble.instantiate(
-        reg_band_proxy.id,
+        reg_mock_band_proxy.id,
         &proxy::InitMsg {
             owner: HumanAddr("admin".into()),
             band: Contract {
@@ -68,10 +68,11 @@ fn index_test(
             "admin",
             ContractLink {
                 address: HumanAddr("band_proxy".into()),
-                code_hash: reg_band.code_hash.clone(),
+                code_hash: reg_mock_band.code_hash.clone(),
             }
         )
     ).unwrap();
+
 
     let router = ensemble.instantiate(
         reg_router.id,
@@ -86,7 +87,7 @@ fn index_test(
             "admin",
             ContractLink {
                 address: HumanAddr("router".into()),
-                code_hash: reg_band.code_hash.clone(),
+                code_hash: reg_router.code_hash.clone(),
             }
         )
     ).unwrap();
@@ -99,7 +100,7 @@ fn index_test(
                 address: router.address.clone(),
                 code_hash: router.code_hash.clone(),
             },
-            symbol,
+            symbol: symbol.clone(),
             basket,
         },
         MockEnv::new(
@@ -111,8 +112,41 @@ fn index_test(
         )
     ).unwrap();
 
+    let mut operations = vec![
+        router::RegistryOperation::Add {
+            oracle: Contract {
+                address: index_oracle.address.clone(),
+                code_hash: index_oracle.code_hash.clone(),
+            },
+            key: symbol.clone(),
+        }
+    ];
+
+    for (sym, _) in prices.clone() {
+        operations.push(
+            router::RegistryOperation::Add {
+                oracle: Contract {
+                    address: band_proxy.address.clone(),
+                    code_hash: band_proxy.code_hash.clone(),
+                },
+                key: sym,
+            }
+        );
+    }
+
+    // Configure router
+    ensemble.execute(
+        &router::HandleMsg::BatchUpdateRegistry {
+            operations,
+        },
+        MockEnv::new(
+            "admin",
+            router.clone(),
+        ),
+    ).unwrap();
+
     // Configure mock band prices
-    for (sym, price) in prices {
+    for (sym, price) in prices.clone() {
         ensemble.execute(
             &band::HandleMsg::UpdateSymbolPrice {
                 base_symbol: sym,
@@ -127,6 +161,21 @@ fn index_test(
         ).unwrap();
     }
 
+    // Not sure why this query wont let me unwrap
+    match ensemble.query(
+        index_oracle.address.clone(),
+        &index_oracle::QueryMsg::GetPrice {
+            symbol: symbol.clone()
+        }
+    ) {
+        Ok(b) => {
+            let resp: OraclePrice = from_binary(&b).ok().unwrap();
+            assert_eq!(resp.price.rate, expected, "index price");
+        },
+        Err(e) => assert!(false, "Failed to query index {}", e.to_string()),
+        //OraclePrice { symbol, price } => assert_eq!(price.rate, expected),
+        //_ => assert!(false, "Failed to query index"),
+    };
 }
 
 macro_rules! index_tests {
@@ -143,24 +192,28 @@ macro_rules! index_tests {
 index_tests! {
     index_test_0: (
         "sUSD".to_string(),
-        HashMap::from([
+        vec![
             ("USD".to_string(), Uint128(10u128.pow(18))), // 100%
-        ]),
+        ],
         HashMap::from([
             ("USD".to_string(), Uint128(10u128.pow(18))), // $1
         ]),
         Uint128(10u128.pow(18)), // $1
     ),
-    /*
     index_test_1: (
-        "sUSD".to_string(),
+        "SILK".to_string(),
+        vec![
+            ("USD".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
+            ("BTC".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
+            ("ETH".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
+            ("XAU".to_string(), Uint128(25 * 10u128.pow(16))), // 25%
+        ],
         HashMap::from([
-            ("USD".to_string(), Uint128(10u128.pow(18))), // 100%
+            ("USD".to_string(), Uint128(1_00 * 10u128.pow(16))), // $1
+            ("BTC".to_string(), Uint128(29_398_20 * 10u128.pow(16))), // $29398.2
+            ("ETH".to_string(), Uint128(1_831_26 * 10u128.pow(16))), // $1831.26
+            ("XAU".to_string(), Uint128(1_852_65 * 10u128.pow(16))), // $1852.65
         ]),
-        HashMap::from([
-            ("USD".to_string(), Uint128(10u128.pow(18))), // $1
-        ]),
-        Uint128(10u128.pow(18)), // $1
+        Uint128(8_270_7775 * 10u128.pow(14)), // $8270.7775
     ),
-    */
 }
