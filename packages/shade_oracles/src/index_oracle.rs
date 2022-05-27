@@ -15,6 +15,7 @@ pub struct InitMsg {
     pub router: Contract,
     pub symbol: String,
     pub basket: Vec<(String, Uint128)>, //HashMap<String, Uint128>,
+    pub target: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -23,7 +24,7 @@ pub enum HandleMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
     ModBasket {
-        basket: HashMap<String, Uint128>,
+        basket: Vec<(String, Uint128)>,
     },
     UpdateConfig {
         admins: Option<Vec<HumanAddr>>,
