@@ -28,7 +28,7 @@ fn main() -> Result<()> {
 
     println!("Account A: {}", user_a.blue());
 
-    deploy_test(user_a)?;
+    deploy(user_a)?;
     Ok(())
 }
 
