@@ -15,8 +15,8 @@ pub const BLOCK_SIZE: usize = 256;
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     GetConfig {},
-    GetPrice { symbol: String },
-    GetPrices { symbols: Vec<String> },
+    GetPrice { key: String },
+    GetPrices { keys: Vec<String> },
 }
 
 impl Query for QueryMsg {
@@ -40,13 +40,13 @@ pub struct HandleStatusAnswer {
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct OraclePrice {
-    pub symbol: String,
+    pub key: String,
     pub price: ReferenceData,
 }
 
 impl OraclePrice {
-    pub fn new(symbol: String, reference_data: ReferenceData) -> Self {
-        OraclePrice { symbol, price: reference_data }
+    pub fn new(key: String, reference_data: ReferenceData) -> Self {
+        OraclePrice { key, price: reference_data }
     }
 }
 
@@ -75,8 +75,8 @@ pub fn get_precision(factor: u8) -> Uint256 {
     Uint256::from(10u128.pow(factor.into()))
 }
 
-pub fn throw_unsupported_symbol_error(symbol: String) -> StdError {
-    StdError::generic_err(format!("{} is not supported as a symbol.", symbol))
+pub fn throw_unsupported_symbol_error(key: String) -> StdError {
+    StdError::generic_err(format!("{} is not supported as a key.", key))
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -150,24 +150,24 @@ pub mod querier {
     pub fn query_price(
         contract: &Contract,
         querier: &impl Querier,
-        symbol: String,
+        key: String,
     ) -> StdResult<OraclePrice> {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetPrice { symbol })?,
+            msg: to_binary(&QueryMsg::GetPrice { key })?,
         }))
     }
 
     pub fn query_prices(
         contract: &Contract,
         querier: &impl Querier,
-        symbols: Vec<String>,
+        keys: Vec<String>,
     ) -> StdResult<Vec<OraclePrice>> {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetPrices { symbols })?,
+            msg: to_binary(&QueryMsg::GetPrices { keys })?,
         }))
     }
 

@@ -19,7 +19,7 @@ use shade_oracles::{
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
-    pub supported_symbol: String,
+    pub supported_key: String,
     pub underlying_symbol: String,
     pub router: Contract,
     pub staking_derivative: Contract,
@@ -40,7 +40,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
-        supported_symbol: msg.supported_symbol,
+        supported_key: msg.supported_key,
         underlying_symbol: msg.underlying_symbol,
         router: msg.router,
         staking_derivative: msg.staking_derivative,
@@ -91,7 +91,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
-            QueryMsg::GetPrice { symbol } => try_query_price(deps, symbol),
+            QueryMsg::GetPrice { key } => try_query_price(deps, key),
             QueryMsg::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
         },
         BLOCK_SIZE,
@@ -108,7 +108,7 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
         owner: config.owner,
         router: state.router,
         staking_derivative: state.staking_derivative,
-        supported_symbol: state.supported_symbol,
+        supported_key: state.supported_key,
         underlying_symbol: state.underlying_symbol,
         enabled: config.enabled,
     })
@@ -116,12 +116,12 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
 
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-    symbol: String,
+    key: String,
 ) -> StdResult<Binary> {
     let state = STATE.load(&deps.storage)?;
 
-    if symbol != state.supported_symbol {
-        return Err(throw_unsupported_symbol_error(symbol));
+    if key != state.supported_key {
+        return Err(throw_unsupported_symbol_error(key));
     }
 
     let underlying_oracle = query_oracle(
@@ -151,5 +151,5 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         last_updated_base: underlying_price.price.last_updated_base,
         last_updated_quote: underlying_price.price.last_updated_quote,
     };
-    to_binary(&OraclePrice::new(symbol, response))
+    to_binary(&OraclePrice::new(key, response))
 }
