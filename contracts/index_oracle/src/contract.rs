@@ -47,19 +47,6 @@ pub struct Config {
     pub router: Contract,
 }
 
-/*
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum QueryAnswer {
-    GetPrice {
-        price: Uint128,
-    },
-    UpdateConfig {
-        config: Config,
-    },
-}
-*/
-
 const CONFIG: Item<Config> = Item::new("config");
 const SYMBOL: Item<String> = Item::new("symbol");
 // TODO: Change to a single Map<sym, (weight, constant)>
@@ -215,16 +202,6 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
         config.router.code_hash,
         config.router.address,
     )?;
-
-    /*
-    let mut queried = symbols.clone();
-
-    let prices: Vec<OraclePrice> = router::QueryMsg::GetPrices { keys: symbols }.query(
-        &deps.querier,
-        config.router.code_hash,
-        config.router.address,
-    )?;
-    */
 
     let mut oracle_data: HashMap<Contract, Vec<String>> = HashMap::new();
     for oracle in oracles {
