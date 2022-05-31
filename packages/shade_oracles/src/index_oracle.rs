@@ -55,4 +55,6 @@ pub enum QueryMsg {
         symbols: Vec<String>,
     },
     GetConfig { },
+    Basket { },
+    Constants { },
 }

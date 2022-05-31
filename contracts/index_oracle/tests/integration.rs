@@ -524,6 +524,18 @@ fn mod_index_test(
         ),
     ).unwrap();
 
+    // check basket changed
+    match ensemble.query(
+        index_oracle.address.clone(),
+        &index_oracle::QueryMsg::Basket {},
+    ) {
+        Ok(b) => {
+            let resp: Vec<(String, Uint128)> = from_binary(&b).ok().unwrap();
+            assert_eq!(resp, expected_basket, "Expected basket");
+        },
+        Err(e) => assert!(false, "Failed to query index basket {}", e.to_string()),
+    };
+
     // check price doesn't change on mod_price
     match ensemble.query(
         index_oracle.address.clone(),
@@ -583,7 +595,7 @@ mod_index_tests! {
         // prices
         vec![
             ("USD", 10u128.pow(18)), // $1
-            ("BTC", 30 * 10u128.pow(18)), // $30,000
+            ("BTC", 30_000 * 10u128.pow(18)), // $30,000
         ],
         // new prices
         vec![

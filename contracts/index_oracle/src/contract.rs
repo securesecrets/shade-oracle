@@ -61,6 +61,7 @@ pub enum QueryAnswer {
 
 const CONFIG: Item<Config> = Item::new("config");
 const SYMBOL: Item<String> = Item::new("symbol");
+// TODO: Change to a single Map<sym, (weight, constant)>
 const WEIGHTS: Map<String, Uint128> = Map::new("weights");
 const CONSTANTS: Map<String, Uint128> = Map::new("constants");
 
@@ -85,7 +86,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     CONFIG.save(&mut deps.storage, &config)?;
     SYMBOL.save(&mut deps.storage, &msg.symbol)?;
-
 
     if msg.basket.is_empty() {
         return Err(StdError::generic_err("Basket cannot be empty"));
@@ -146,6 +146,32 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
                     prices.push(try_query_price(deps, symbol)?);
                 }
                 to_binary(&prices)
+            },
+            QueryMsg::Basket { } => {
+                let weights: HashMap<String,Uint128> = WEIGHTS
+                    .range(&deps.storage, 
+                           None, None, 
+                           Order::Ascending
+                    ).map(|i| i.ok().unwrap()).collect();
+
+                let mut basket = vec![];
+                for (sym, w) in weights {
+                    basket.push((sym, w));
+                }
+                to_binary(&basket)
+            },
+            QueryMsg::Constants { } => {
+                let constants: HashMap<_,_> = CONSTANTS
+                    .range(&deps.storage, 
+                           None, None, 
+                           Order::Ascending
+                    ).map(|i| i.ok().unwrap()).collect();
+
+                let mut basket = vec![];
+                for (sym, c) in constants {
+                    basket.push((sym, c));
+                }
+                to_binary(&basket)
             }
         }, BLOCK_SIZE)
 }
@@ -279,12 +305,11 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     }
 
     // Verify new weights
-    let mut weight_sum = Uint128::zero();
-    for (sym, weight) in weights.clone() {
-        weight_sum += weight;
+    if weights.is_empty() {
+        return Err(StdError::generic_err("Basket cannot be empty"));
     }
-    if weight_sum != Uint128(10u128.pow(18)) {
-        return Err(StdError::generic_err(format!("Weights must add to 100%, {}", weight_sum)));
+    if weights.clone().into_iter().map(|(_, w)| w.u128()).sum::<u128>() != 10u128.pow(18) {
+        return Err(StdError::generic_err("Weights must add to 100%"));
     }
 
     let prices = fetch_prices(deps, symbols)?;
