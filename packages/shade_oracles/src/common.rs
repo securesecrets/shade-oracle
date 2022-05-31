@@ -7,6 +7,7 @@ use cosmwasm_std::*;
 use fadroma::Uint256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize}; 
+use secret_toolkit::utils::Query;
 
 pub const BLOCK_SIZE: usize = 256;
 
@@ -16,6 +17,10 @@ pub enum QueryMsg {
     GetConfig {},
     GetPrice { symbol: String },
     GetPrices { symbols: Vec<String> },
+}
+
+impl Query for QueryMsg {
+    const BLOCK_SIZE: usize = 256;
 }
 
 /// Every HandleMsg for each specific oracle type should include this

@@ -27,6 +27,7 @@ use std::{
 
 use shade_oracles::{
     common::{
+        self,
         OraclePrice, Contract,
         ResponseStatus, BLOCK_SIZE,
         //querier::query_prices,
@@ -209,16 +210,38 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
 
     let config = CONFIG.load(&deps.storage)?;
 
-    let prices: Vec<OraclePrice> = router::QueryMsg::GetPrices { keys: symbols }.query(
+    let oracles: Vec<router::OracleResponse> = router::QueryMsg::GetOracles { keys: symbols }.query(
         &deps.querier,
         config.router.code_hash,
         config.router.address,
     )?;
 
-    let mut price_data = HashMap::new();
+    /*
+    let mut queried = symbols.clone();
 
-    for oracle_price in prices {
-        price_data.insert(oracle_price.symbol.clone(), oracle_price.price.rate);
+    let prices: Vec<OraclePrice> = router::QueryMsg::GetPrices { keys: symbols }.query(
+        &deps.querier,
+        config.router.code_hash,
+        config.router.address,
+    )?;
+    */
+
+    let mut oracle_data: HashMap<Contract, Vec<String>> = HashMap::new();
+    for oracle in oracles {
+        oracle_data.entry(oracle.oracle).or_insert(vec![]).push(oracle.key);
+    }
+
+    let mut price_data = HashMap::new();
+    for (oracle, symbols) in oracle_data {
+        let prices: Vec<OraclePrice> = common::QueryMsg::GetPrices { symbols }.query(
+            &deps.querier,
+            oracle.code_hash,
+            oracle.address,
+        )?;
+
+        for oracle_price in prices {
+            price_data.insert(oracle_price.symbol.clone(), oracle_price.price.rate);
+        }
     }
 
     Ok(price_data)
