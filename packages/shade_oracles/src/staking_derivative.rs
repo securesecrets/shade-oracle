@@ -11,7 +11,7 @@ pub mod shade {
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
         pub owner: HumanAddr,
-        pub supported_symbol: String,
+        pub supported_key: String,
         pub underlying_symbol: String,
         pub staking_derivative: Contract,
         pub router: Contract,
@@ -22,7 +22,7 @@ pub mod shade {
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
         pub owner: HumanAddr,
-        pub supported_symbol: String,
+        pub supported_key: String,
         pub underlying_symbol: String,        
         pub router: Contract,
         pub staking_derivative: Contract,

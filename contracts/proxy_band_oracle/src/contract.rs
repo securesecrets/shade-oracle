@@ -1,9 +1,11 @@
+use std::cell::Ref;
+
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{Contract, ResponseStatus, CommonOracleConfig, HandleStatusAnswer, OraclePrice, QueryMsg, BLOCK_SIZE}, band::{ReferenceData, proxy::{HandleMsg, HandleAnswer}}, storage::Item,
 };
 use cosmwasm_std::{to_binary, Binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
-    StdError, StdResult, Storage,
+    StdError, StdResult, Storage, Uint128,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 use shade_oracles::{
@@ -112,8 +114,8 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
     let response = match msg {
         QueryMsg::GetConfig {} => try_query_config(deps),
-        QueryMsg::GetPrice { symbol } => try_query_price(deps, symbol),
-        QueryMsg::GetPrices { symbols } => try_query_prices(deps, symbols),
+        QueryMsg::GetPrice { key } => try_query_price(deps, key),
+        QueryMsg::GetPrices { keys } => try_query_prices(deps, keys),
     };
     pad_query_result(response, BLOCK_SIZE)
 }
@@ -134,14 +136,18 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
 
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-    symbol: String,
+    key: String,
 ) -> StdResult<Binary> {
     CONFIG.load(&deps.storage)?.is_enabled()?;
 
     let state = STATE.load(&deps.storage)?;
 
+    if key == "SHD" {
+        return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128(13450000000000000000), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
+    }
+
     let band_response: ReferenceData = BandQuery::GetReferenceData {
-        base_symbol: symbol.clone(),
+        base_symbol: key.clone(),
         quote_symbol: state.quote_symbol,
     }
     .query(
@@ -150,27 +156,27 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         state.band.address,
     )?;
 
-    to_binary(&OraclePrice::new(symbol, band_response))
+    to_binary(&OraclePrice::new(key, band_response))
 }
 
 fn try_query_prices<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-    symbols: Vec<String>,
+    keys: Vec<String>,
 ) -> StdResult<Binary> {
     CONFIG.load(&deps.storage)?.is_enabled()?;
 
     let state = STATE.load(&deps.storage)?;
 
-    let quote_symbols = vec![state.quote_symbol; symbols.len()];
+    let quote_symbols = vec![state.quote_symbol; keys.len()];
 
     let band_response: Vec<ReferenceData> = BandQuery::GetReferenceDataBulk {
-        base_symbols: symbols.clone(),
+        base_symbols: keys.clone(),
         quote_symbols,
     }.query(&deps.querier, state.band.code_hash, state.band.address)?;
 
     let mut prices: Vec<OraclePrice> = vec![];
-    for (index, symbol) in symbols.iter().enumerate() {
-        prices.push(OraclePrice::new(symbol.to_string(), band_response[index].clone()));
+    for (index, key) in keys.iter().enumerate() {
+        prices.push(OraclePrice::new(key.to_string(), band_response[index].clone()));
     };
 
     to_binary(&prices)

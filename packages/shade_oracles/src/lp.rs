@@ -16,7 +16,7 @@ pub mod secretswap {
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
         pub owner: HumanAddr,
-        pub supported_symbol: String,
+        pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
@@ -29,7 +29,7 @@ pub mod secretswap {
     pub struct ConfigResponse {
         pub owner: HumanAddr,
         pub factory: Contract,
-        pub supported_symbol: String,
+        pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
@@ -49,7 +49,7 @@ pub mod siennaswap {
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
         pub owner: HumanAddr,
-        pub supported_symbol: String,
+        pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
@@ -61,7 +61,7 @@ pub mod siennaswap {
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
         pub owner: HumanAddr,
-        pub supported_symbol: String,
+        pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
