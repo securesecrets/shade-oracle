@@ -1,6 +1,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub mod harness;
 
+/*
 #[cfg(feature = "contracts")]
 #[path = ""]
 mod reexport_contracts {
@@ -13,3 +14,4 @@ mod reexport_contracts {
 
 #[cfg(feature = "contracts")]
 pub use reexport_contracts::*;
+*/

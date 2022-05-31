@@ -17,7 +17,7 @@ use cosmwasm_std::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use secret_cosmwasm_math_compat::{self, Uint512};
+use secret_cosmwasm_math_compat::{self as compat, Uint512};
 use secret_toolkit::utils::{Query, pad_query_result, pad_handle_result};
 
 use std::{
@@ -170,15 +170,15 @@ fn eval_index(
     constants: HashMap<String, Uint128>,
 ) -> Uint128 {
 
+    //assert_eq!(constants.keys().cloned().collect::<Vec<_>>(), prices.keys().cloned().collect::<Vec<_>>());
+
+    let symbols: Vec<String> = constants.keys().cloned().collect();
     let mut index_price = Uint512::zero();
 
-    for (sym, price) in prices {
-        index_price += Uint512::from(price.u128())
-                * Uint512::from(constants[&sym].u128())
-                / Uint512::from(10u128.pow(18));
+    for sym in symbols {
+        index_price += Uint512::from(prices[&sym].u128()) * Uint512::from(constants[&sym].u128()) / Uint512::from(10u128.pow(18));
     }
-    Uint128(
-        secret_cosmwasm_math_compat::Uint128::try_from(index_price).ok().unwrap().u128())
+    Uint128(compat::Uint128::try_from(index_price).ok().unwrap().u128())
 }
 
 fn fetch_prices<S: Storage, A: Api, Q: Querier>(
@@ -239,7 +239,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 fn mod_basket<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
-    basket: Vec<(String, Uint128)>,
+    mod_basket: Vec<(String, Uint128)>,
 ) -> StdResult<HandleResponse> {
 
     let config = CONFIG.load(&deps.storage)?;
@@ -250,43 +250,59 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
 
     let self_symbol = SYMBOL.load(&deps.storage)?;
 
-    let constants: HashMap<_,_> = CONSTANTS.range(&deps.storage, None, None, Order::Ascending).map(|i| i.ok().unwrap()).collect();
-
     let mut weights: HashMap<_,_> = WEIGHTS.range(&deps.storage, None, None, Order::Ascending).map(|i| i.ok().unwrap()).collect();
+    let mut symbols: Vec<String> = weights.keys().cloned().collect();
 
-    let symbols = weights.keys().cloned().collect();
+    // Update weights
+    for (mod_sym, mod_weight) in mod_basket.into_iter() {
 
-    let prices = fetch_prices(deps, symbols)?;
-    let target = eval_index(prices.clone(), constants);
-
-    for (mod_sym, mod_weight) in basket.into_iter() {
         // Disallow recursive symbols
         if mod_sym == self_symbol {
             return Err(StdError::generic_err(format!("Recursive symbol {}", self_symbol)));
         }
+
         // Remove 0 weights
         if mod_weight.is_zero() {
             weights.remove(&mod_sym.to_string());
+            WEIGHTS.remove(&mut deps.storage, mod_sym);
         }
         // Add/Update others
         else {
-            weights.insert(mod_sym, mod_weight);
+            weights.insert(mod_sym.clone(), mod_weight);
+            WEIGHTS.save(&mut deps.storage, mod_sym.clone(), &mod_weight)?;
+
+            // Add new symbols for price querying
+            if !symbols.contains(&mod_sym) {
+                symbols.push(mod_sym.clone());
+            }
         }
     }
 
+    // Verify new weights
     let mut weight_sum = Uint128::zero();
-
     for (sym, weight) in weights.clone() {
         weight_sum += weight;
-        WEIGHTS.save(&mut deps.storage, sym, &weight)?;
     }
-
     if weight_sum != Uint128(10u128.pow(18)) {
         return Err(StdError::generic_err(format!("Weights must add to 100%, {}", weight_sum)));
     }
 
-    for (sym, c) in build_constants(weights.clone(), prices.clone(), target) {
+    let prices = fetch_prices(deps, symbols)?;
+
+    // get target price to calibrate new constants
+    let constants: HashMap<_,_> = CONSTANTS.range(&deps.storage, None, None, Order::Ascending).map(|i| i.ok().unwrap()).collect();
+    let target = eval_index(prices.clone(), constants.clone());
+
+    let new_const = build_constants(weights.clone(), prices.clone(), target);
+
+    // Recalculate the constants
+    for (sym, c) in new_const.clone() {
         CONSTANTS.save(&mut deps.storage, sym, &c)?;
+    }
+    for (sym, _) in constants {
+        if !new_const.contains_key(&sym.clone()) {
+            CONSTANTS.remove(&mut deps.storage, sym);
+        }
     }
 
     Ok(HandleResponse {
