@@ -300,7 +300,7 @@ fn mod_index_test(
     prices: HashMap<String, Uint128>,
     new_prices: HashMap<String, Uint128>,
     mod_basket: Vec<(String, Uint128)>,
-    expected_basket: Vec<(String, Uint128)>,
+    expected_weights: Vec<(String, Uint128)>,
     target: Uint128,
     expected_initial: Uint128,
     expected_final: Uint128,
@@ -528,12 +528,15 @@ fn mod_index_test(
     match ensemble.query(
         index_oracle.address.clone(),
         &index_oracle::QueryMsg::Basket {},
-    ) {
-        Ok(b) => {
-            let resp: Vec<(String, Uint128)> = from_binary(&b).ok().unwrap();
-            assert_eq!(resp, expected_basket, "Expected basket");
-        },
-        Err(e) => assert!(false, "Failed to query index basket {}", e.to_string()),
+    ).unwrap() {
+        index_oracle::QueryAnswer::Basket { 
+            mut basket 
+        } => {
+            basket.sort();
+            for (sym, w, _) in basket {
+                assert!(expected_weights.contains(&(sym.clone(), w.clone())), "Bad symbol found {}, {}", sym, w);
+            }
+        }
     };
 
     // check price doesn't change on mod_price
@@ -566,7 +569,7 @@ macro_rules! mod_index_tests {
         $(
             #[test]
             fn $name() {
-                let (symbol, basket, prices, new_prices, mod_basket, expected_basket, target, expected_initial, expected_final, error) = $value;
+                let (symbol, basket, prices, new_prices, mod_basket, expected_weights, target, expected_initial, expected_final, error) = $value;
 
                 mod_index_test(
                     symbol.to_string(), 
@@ -574,7 +577,7 @@ macro_rules! mod_index_tests {
                     prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
                     new_prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
                     mod_basket.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
-                    expected_basket.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
+                    expected_weights.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
                     Uint128(target),
                     Uint128(expected_initial),
                     Uint128(expected_final),
@@ -616,6 +619,47 @@ mod_index_tests! {
         10u128.pow(18), // $1
         // expected final
         98 * 10u128.pow(16), // $0.98
+        10u128.pow(10), // .000001% error
+    ),
+    mod_index_test_1: (
+        "AnIndex",
+        // basket
+        vec![
+            ("USD", 25 * 10u128.pow(16)), // 25%
+            ("BTC", 30 * 10u128.pow(16)), // 30%
+            ("ETH", 45 * 10u128.pow(16)), // 45%
+        ],
+        // prices
+        vec![
+            ("USD", 10u128.pow(18)), // $1
+            ("ATOM", 30 * 10u128.pow(18)), // $30
+            ("BTC", 30_000 * 10u128.pow(18)), // $30,000
+            ("ETH", 2_000 * 10u128.pow(18)), // $2,000
+        ],
+        // new prices
+        vec![
+            ("USD", 0_03 * 10u128.pow(16)), // $0.03
+            ("BTC", 45_000 * 10u128.pow(18)), // $0.98
+            ("ETH", 3_000 * 10u128.pow(18)), // $0.98
+        ],
+        // mod basket
+        vec![
+            ("USD", 0), // 0% (remove)
+            ("BTC", 10 * 10u128.pow(16)), // decrease to 10%
+            ("ATOM", 45 * 10u128.pow(16)), // add at 45%
+        ],
+        //expected basket
+        vec![
+            ("BTC", 10u128.pow(17)), // 10%
+            ("ATOM", 45 * 10u128.pow(16)), // 45%
+            ("ETH", 45 * 10u128.pow(16)), // 45%
+        ],
+        // target
+        10 * 10u128.pow(18), // $10
+        // expected initial
+        10 * 10u128.pow(18), // $10
+        // expected final
+        11_325 * 10u128.pow(15), // $11.325
         10u128.pow(10), // .000001% error
     ),
 }

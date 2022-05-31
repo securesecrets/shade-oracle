@@ -34,7 +34,7 @@ use shade_oracles::{
     band::ReferenceData,
     storage::{Item, Map},
     index_oracle::{
-        InitMsg, HandleMsg, HandleAnswer, QueryMsg,
+        InitMsg, HandleMsg, HandleAnswer, QueryMsg, QueryAnswer,
     },
     router,
 };
@@ -153,26 +153,21 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
                            None, None, 
                            Order::Ascending
                     ).map(|i| i.ok().unwrap()).collect();
-
-                let mut basket = vec![];
-                for (sym, w) in weights {
-                    basket.push((sym, w));
-                }
-                to_binary(&basket)
-            },
-            QueryMsg::Constants { } => {
-                let constants: HashMap<_,_> = CONSTANTS
+                let constants: HashMap<String,Uint128> = CONSTANTS 
                     .range(&deps.storage, 
                            None, None, 
                            Order::Ascending
                     ).map(|i| i.ok().unwrap()).collect();
 
                 let mut basket = vec![];
-                for (sym, c) in constants {
-                    basket.push((sym, c));
+                for (sym, w) in weights {
+                    basket.push((sym.clone(), w, constants[&sym]));
                 }
-                to_binary(&basket)
-            }
+                to_binary(&QueryAnswer::Basket {
+                    basket,
+
+                })
+            },
         }, BLOCK_SIZE)
 }
 
