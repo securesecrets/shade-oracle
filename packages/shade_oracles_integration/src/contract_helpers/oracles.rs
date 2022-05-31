@@ -148,10 +148,10 @@ pub trait OracleContract
 where
     Self: TestableContract,
 {
-    fn query_price(&self, symbol: String) -> Result<common_oracles::OraclePrice> {
+    fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
         query_contract(
             self.get_info(),
-            shade_oracles::common::QueryMsg::GetPrice { symbol },
+            shade_oracles::common::QueryMsg::GetPrice { key },
         )
     }
     fn query_config<Response: serde::de::DeserializeOwned>(&self) -> Result<Response> {

@@ -33,19 +33,49 @@ fn main() -> Result<()> {
 }
 
 fn deploy_test(user_a: String) -> Result<()> {
-    let band = Contract {
-        address: HumanAddr::from(BAND.to_string()),
-        code_hash: BAND_HASH.to_string(),
-    };
 
-    println!("Deploying Proxy Band Oracle.");
+    let band = Contract::new(BAND.to_string(), BAND_HASH.to_string());
+
+    println!("Deploying Band Oracle.");
     let scrt_oracle = ProxyBandOracleContract::new(
         user_a.clone(),
-         "USD",
+        "USD",
+        band.clone(),
+        Some(HOOMP_KEY),
+        Some("band_oracle"),
+    )?;
+
+    println!("Deploying oracle router and configuring it.");
+    let router = OracleRouterContract::new(
+        &router::InitMsg {
+            owner: HumanAddr(user_a.clone()),
+            default_oracle: scrt_oracle.as_contract(),
+        },
+        Some(HOOMP_KEY),
+        Some("oracle_router"),
+    )?;
+
+    println!("Deploying hardcoded SHD oracle.");
+
+    let shd_oracle = ProxyBandOracleContract::new(
+        user_a.clone(),
+        "USD",
         band,
         Some(HOOMP_KEY),
-        Some("scrt_oracle"),
+        Some("hardcoded-shd-oracle"),
     )?;
+
+    println!("Adding hardcoded SHD oracle to router.");
+    router.update_registry(
+        RegistryOperation::Add {
+            oracle: shd_oracle.as_contract(),
+            key: "SHD".to_string(),
+        },
+        Some(HOOMP_KEY),
+    )?;
+
+    let shd_rate = router.query_price("SHD".to_string())?.price.rate;
+    println!("Router price of SHD: {}", shd_rate);
 
     Ok(())
 }
@@ -94,7 +124,7 @@ fn deploy(user_a: String) -> Result<()> {
     let stkd_scrt_oracle = ShadeStakingDerivativeOracleContract::new(
         &shd_stkd::InitMsg {
             owner: HumanAddr(user_a.clone()),
-            supported_symbol: "stkd-SCRT".to_string(),
+            supported_key: "stkd-SCRT".to_string(),
             underlying_symbol: "SCRT".to_string(),
             staking_derivative,
             router: router.as_contract(),
@@ -120,7 +150,7 @@ fn deploy(user_a: String) -> Result<()> {
             symbol_1: "SCRT".to_string(),
             router: router.as_contract(),
             factory: sienna_stkd_scrt_scrt_lp,
-            supported_symbol: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
+            supported_key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
         },
         Some(HOOMP_KEY),
         Some("stkd_scrt_scrt_lp_oracle"),
