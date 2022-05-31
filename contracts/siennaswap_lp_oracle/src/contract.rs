@@ -23,7 +23,7 @@ use std::cmp::min;
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
-    pub supported_symbol: String,
+    pub supported_key: String,
     pub symbol_0: String,
     pub symbol_1: String,
     pub router: CanonicalContract,
@@ -106,7 +106,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
-        supported_symbol: msg.supported_symbol,
+        supported_key: msg.supported_key,
         symbol_0: msg.symbol_0,
         symbol_1: msg.symbol_1,
         router,
@@ -161,7 +161,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
-            QueryMsg::GetPrice { symbol } => try_query_price(deps, symbol),
+            QueryMsg::GetPrice { key } => try_query_price(deps, key),
             QueryMsg::GetPrices { .. } => Err(StdError::generic_err("GetPrices method not supported.")),
         },
         BLOCK_SIZE,
@@ -180,19 +180,19 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
         symbol_1: state.symbol_1,
         router: state.router.as_human(&deps.api)?,
         factory: state.factory.as_human(&deps.api)?,
-        supported_symbol: state.supported_symbol,
+        supported_key: state.supported_key,
         enabled: config.enabled,
     })
 }
 
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-    symbol: String,
+    key: String,
 ) -> StdResult<Binary> {
     let state = STATE.load(&deps.storage)?;
 
-    if symbol != state.supported_symbol {
-        return Err(throw_unsupported_symbol_error(symbol));
+    if key != state.supported_key {
+        return Err(throw_unsupported_symbol_error(key));
     }
     
     let oracle0 = query_oracle(
@@ -244,5 +244,5 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         last_updated_base: min(price0.price.last_updated_base, price1.price.last_updated_base),
         last_updated_quote: min(price0.price.last_updated_quote, price1.price.last_updated_quote),
     };
-    to_binary(&OraclePrice::new(symbol, data))
+    to_binary(&OraclePrice::new(key, data))
 }
