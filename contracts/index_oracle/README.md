@@ -9,6 +9,7 @@
     * [User](#User)
         * Queries
             * [GetConfig](#GetConfig)
+            * [Basket](#Basket)
             * [GetPrice](#GetPrice)
             * [GetPrices](#GetPrices)
 # Introduction
@@ -31,7 +32,7 @@ Contract responsible for aggregating a list of assets (denom/weight) into a sing
 ### Messages
 #### UpdateConfig
 ##### Request
-Updates config of proxy band oracle contract.
+Updates config of index oracle contract.
 | Name         | Type     | Description                                              | optional |
 |--------------|----------|----------------------------------------------------------|----------|
 | admins       | Vec<HumanAddr> | List of admins has ability to adjust config        | yes      |
