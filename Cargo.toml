@@ -1,7 +1,6 @@
 [workspace]
 members = [
   "packages/shade_oracles",
-  "packages/shade_oracles_integration",
   "packages/shade_oracles_ensemble",
 
   "contracts/index_oracle",
