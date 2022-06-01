@@ -20,10 +20,7 @@ use serde::{Deserialize, Serialize};
 use secret_cosmwasm_math_compat::{self as compat, Uint512};
 use secret_toolkit::utils::{Query, pad_query_result, pad_handle_result};
 
-use std::{
-    collections::HashMap,
-    ops::{Index, IndexMut},
-};
+use std::collections::HashMap;
 
 use shade_oracles::{
     common::{

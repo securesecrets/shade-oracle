@@ -1,7 +1,6 @@
 use crate::common::{
     Contract, ResponseStatus,
 };
-use std::collections::HashMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cosmwasm_std::{
