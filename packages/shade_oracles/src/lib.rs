@@ -4,6 +4,7 @@ pub mod earn;
 pub mod lp;
 pub mod protocols;
 pub mod router;
+pub mod index_oracle;
 #[cfg(feature = "scrt")]
 pub mod scrt;
 pub mod staking_derivative;

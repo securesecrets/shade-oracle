@@ -1,43 +1,50 @@
-#[cfg(feature = "siennaswap-spot-lp")]
-pub mod siennaswap_spot_lp {
-    use ensemble_harness::helpers;
-    use siennaswap_lp_spot_oracle;
+use cosmwasm_std::{from_binary, Binary, Env, HandleResponse, InitResponse, StdResult};
+use fadroma::ensemble::{ContractHarness, MockDeps};
 
-    pub struct SiennaSwapLpOracle;
-    helpers::implement_harness!(SiennaSwapLpOracle, siennaswap_lp_spot_oracle);
+#[macro_export]
+macro_rules! implement_harness {
+    ($x:ident, $s:ident) => {
+        impl ContractHarness for $x {
+            fn init(&self, deps: &mut MockDeps, env: Env, msg: Binary) -> StdResult<InitResponse> {
+                $s::contract::init(deps, env, from_binary(&msg)?)
+            }
+
+            fn handle(
+                &self,
+                deps: &mut MockDeps,
+                env: Env,
+                msg: Binary,
+            ) -> StdResult<HandleResponse> {
+                $s::contract::handle(deps, env, from_binary(&msg)?)
+            }
+
+            fn query(&self, deps: &MockDeps, msg: Binary) -> StdResult<Binary> {
+                $s::contract::query(deps, from_binary(&msg)?)
+            }
+        }
+    };
 }
 
-#[cfg(feature = "siennaswap-lp")]
-pub mod siennaswap_lp {
-    use ensemble_harness::helpers;
-    use siennaswap_lp_oracle;
+use siennaswap_lp_spot_oracle;
+pub struct SiennaSwapLpOracle;
+implement_harness!(SiennaSwapLpOracle, siennaswap_lp_spot_oracle);
 
-    pub struct SiennaSwapLp;
-    helpers::implement_harness!(SiennaSwapLp, siennaswap_lp_oracle);
-}
+use siennaswap_lp_oracle;
+pub struct SiennaSwapLp;
+implement_harness!(SiennaSwapLp, siennaswap_lp_oracle);
 
-#[cfg(feature = "band-mock")]
-pub mod band_mock {
-    use ensemble_harness::helpers;
-    use mock_band;
-    pub struct MockBand;
-    helpers::implement_harness!(MockBand, mock_band);
-}
+use mock_band;
+pub struct MockBand;
+implement_harness!(MockBand, mock_band);
 
-#[cfg(feature = "proxy-band")]
-pub mod proxy_band {
-    use ensemble_harness::helpers;
-    use proxy_band_oracle;
+use proxy_band_oracle;
+pub struct ProxyBandOracle;
+implement_harness!(ProxyBandOracle, proxy_band_oracle);
 
-    pub struct ProxyBandOracle;
-    helpers::implement_harness!(ProxyBandOracle, proxy_band_oracle);
-}
+use index_oracle;
+pub struct IndexOracle;
+implement_harness!(IndexOracle, index_oracle);
 
-#[cfg(feature = "router")]
-pub mod router {
-    use ensemble_harness::helpers;
-    use oracle_router;
-
-    pub struct OracleRouter;
-    helpers::implement_harness!(OracleRouter, oracle_router);
-}
+use oracle_router;
+pub struct OracleRouter;
+implement_harness!(OracleRouter, oracle_router);

@@ -6,6 +6,7 @@ use shade_oracles::router;
 use shade_oracles::{
     band, common as common_oracles, lp::siennaswap as SiennaSwapLpOracle,
     router::RegistryOperation, staking_derivative::shade as shd_stkd,
+    index_oracle,
 };
 use shade_oracles::{
     common::{self, Contract},
@@ -14,11 +15,11 @@ use shade_oracles::{
 use cosmwasm_std::{HumanAddr, Uint128};
 use shade_oracles_integration::constants::testnet::*;
 use shade_oracles_integration::constants::*;
-use shade_oracles_integration::contract_helpers::oracles::ShadeStakingDerivativeOracleContract;
 use shade_oracles_integration::contract_helpers::{
     oracles::{
         BandContract, EarnV1OracleContract, OracleContract, OracleRouterContract,
         ProxyBandOracleContract, SiennaswapSpotLpOracleContract,
+        ShadeStakingDerivativeOracleContract, IndexOracleContract,
     },
     TestableContract,
 };
@@ -76,6 +77,45 @@ fn deploy_test(user_a: String) -> Result<()> {
 
     let shd_rate = router.query_price("SHD".to_string())?.price.rate;
     println!("Router price of SHD: {}", shd_rate);
+
+    println!("Deploying SILK oracle.");
+
+    let silk_oracle = IndexOracleContract::new(
+        &index_oracle::InitMsg {
+            admins: None,
+            router: router.as_contract(),
+            symbol: "SILK".to_string(),
+            basket: vec![
+                ("USD", 39_33 * 10u128.pow(14)), //  39.32%
+                ("CNY", 7_13 * 10u128.pow(14)), //  7.13%
+                ("EUR", 15_97 * 10u128.pow(14)), // 15.97%
+                ("JPY", 7_64 * 10u128.pow(14)), //  7.64%
+                ("GBP", 3_40 * 10u128.pow(14)), //  3.4%
+                ("CAD", 4_58 * 10u128.pow(14)), //  4.58%
+                ("KRW", 1_53 * 10u128.pow(14)), //  1.53%
+                ("AUD", 2_32 * 10u128.pow(14)), //  2.32%
+                ("IDR", 2_50 * 10u128.pow(14)), //  2.5%
+                ("CHF", 4_44 * 10u128.pow(14)), //  4.44%
+                ("SEK", 0_84 * 10u128.pow(14)), //  0.84%
+                ("NOK", 0_82 * 10u128.pow(14)), //  0.82%
+                ("SGD", 2_50 * 10u128.pow(14)), //  2.5%
+                ("XAU", 5_00 * 10u128.pow(14)), //  5.0%
+                ("WBTC", 2_00 * 10u128.pow(14)), //  2.0%
+            ].into_iter().map(|(sym, w)| (sym.to_string(), Uint128(w))).collect(),
+            target: Uint128(1_05 * 10u128.pow(16)), // $1.05
+        },
+        Some(HOOMP_KEY),
+        Some("silk-oracle"),
+    )?;
+
+    println!("Adding SILK oracle to router.");
+    router.update_registry(
+        RegistryOperation::Add {
+            oracle: silk_oracle.as_contract(),
+            key: "SILK".to_string(),
+        },
+        Some(HOOMP_KEY),
+    )?;
 
     Ok(())
 }
@@ -161,6 +201,45 @@ fn deploy(user_a: String) -> Result<()> {
         RegistryOperation::Replace {
             oracle: stkd_scrt_scrt_lp_oracle.as_contract(),
             key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
+        },
+        Some(HOOMP_KEY),
+    )?;
+
+    println!("Deploying SILK oracle.");
+
+    let silk_oracle = IndexOracleContract::new(
+        &index_oracle::InitMsg {
+            admins: None,
+            router: router.as_contract(),
+            symbol: "SILK".to_string(),
+            basket: vec![
+                ("USD", 39_33 * 10u128.pow(14)), //  39.32%
+                ("CNY", 7_13 * 10u128.pow(14)), //  7.13%
+                ("EUR", 15_97 * 10u128.pow(14)), // 15.97%
+                ("JPY", 7_64 * 10u128.pow(14)), //  7.64%
+                ("GBP", 3_40 * 10u128.pow(14)), //  3.4%
+                ("CAD", 4_58 * 10u128.pow(14)), //  4.58%
+                ("KRW", 1_53 * 10u128.pow(14)), //  1.53%
+                ("AUD", 2_32 * 10u128.pow(14)), //  2.32%
+                ("IDR", 2_50 * 10u128.pow(14)), //  2.5%
+                ("CHF", 4_44 * 10u128.pow(14)), //  4.44%
+                ("SEK", 0_84 * 10u128.pow(14)), //  0.84%
+                ("NOK", 0_82 * 10u128.pow(14)), //  0.82%
+                ("SGD", 2_50 * 10u128.pow(14)), //  2.5%
+                ("XAU", 5_00 * 10u128.pow(14)), //  5.0%
+                ("WBTC", 2_00 * 10u128.pow(14)), //  2.0%
+            ].into_iter().map(|(sym, w)| (sym.to_string(), Uint128(w))).collect(),
+            target: Uint128(1_05 * 10u128.pow(16)), // $1.05
+        },
+        Some(HOOMP_KEY),
+        Some("silk-oracle"),
+    )?;
+
+    println!("Adding SILK oracle to router.");
+    router.update_registry(
+        RegistryOperation::Add {
+            oracle: silk_oracle.as_contract(),
+            key: "SILK".to_string(),
         },
         Some(HOOMP_KEY),
     )?;

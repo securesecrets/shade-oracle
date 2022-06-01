@@ -1,5 +1,5 @@
 use crate::{
-    common::ResponseStatus,
+    common::{ResponseStatus, Contract},
 };
 use secret_toolkit::utils::Query;
 use cosmwasm_std::*;
@@ -41,7 +41,7 @@ pub enum BandQuery {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReferenceData {
-    pub rate: Uint128,
+    pub rate: cosmwasm_std::Uint128,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
 }
@@ -53,6 +53,32 @@ pub struct ReferenceDataBulk {
 
 impl Query for BandQuery {
     const BLOCK_SIZE: usize = 256;
+}
+
+pub fn reference_data<S: Storage, A: Api, Q: Querier>(
+    deps: &Extern<S, A, Q>,
+    base_symbol: String,
+    quote_symbol: String,
+    band: Contract,
+) -> StdResult<ReferenceData> {
+    BandQuery::GetReferenceData {
+        base_symbol,
+        quote_symbol,
+    }
+    .query(&deps.querier, band.code_hash, band.address)
+}
+
+pub fn reference_data_bulk<S: Storage, A: Api, Q: Querier>(
+    deps: &Extern<S, A, Q>,
+    base_symbols: Vec<String>,
+    quote_symbols: Vec<String>,
+    band: Contract,
+) -> StdResult<Vec<ReferenceData>> {
+    BandQuery::GetReferenceDataBulk {
+        base_symbols,
+        quote_symbols,
+    }
+    .query(&deps.querier, band.code_hash, band.address)
 }
 
 pub mod proxy {
