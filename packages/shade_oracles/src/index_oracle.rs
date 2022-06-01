@@ -9,6 +9,13 @@ use cosmwasm_std::{
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+pub struct Config {
+    pub admins: Vec<HumanAddr>,
+    pub router: Contract,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct InitMsg {
     pub admins: Option<Vec<HumanAddr>>,
     pub router: Contract,
@@ -48,10 +55,10 @@ pub enum QueryMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
     GetPrice {
-        symbol: String,
+        key: String,
     },
     GetPrices {
-        symbols: Vec<String>,
+        keys: Vec<String>,
     },
     GetConfig { },
     Basket { },

@@ -15,8 +15,6 @@ use cosmwasm_std::{
     Order,
     QueryResult,
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use secret_cosmwasm_math_compat::{self as compat, Uint512};
 use secret_toolkit::utils::{Query, pad_query_result, pad_handle_result};
 
@@ -33,16 +31,10 @@ use shade_oracles::{
     storage::{Item, Map},
     index_oracle::{
         InitMsg, HandleMsg, HandleAnswer, QueryMsg, QueryAnswer,
+        Config,
     },
     router,
 };
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct Config {
-    pub admins: Vec<HumanAddr>,
-    pub router: Contract,
-}
 
 const CONFIG: Item<Config> = Item::new("config");
 const SYMBOL: Item<String> = Item::new("symbol");
@@ -124,11 +116,11 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
             /* add 'symbol' so we can error if its the wrong oracle
              * Prevents router failure from causing economic failure
              */
-            QueryMsg::GetPrice { symbol, .. } => to_binary(&try_query_price(deps, symbol)?),
-            QueryMsg::GetPrices { symbols } => {
+            QueryMsg::GetPrice { key, .. } => to_binary(&try_query_price(deps, key)?),
+            QueryMsg::GetPrices { keys } => {
                 let mut prices = vec![];
-                for symbol in symbols {
-                    prices.push(try_query_price(deps, symbol)?);
+                for key in keys {
+                    prices.push(try_query_price(deps, key)?);
                 }
                 to_binary(&prices)
             },
@@ -339,11 +331,11 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
 
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-    symbol: String,
+    key: String,
 ) -> StdResult<Binary> {
 
-    if symbol != SYMBOL.load(&deps.storage)? {
-        return Err(StdError::generic_err(format!("Missing price feed for {}", symbol)));
+    if key != SYMBOL.load(&deps.storage)? {
+        return Err(StdError::generic_err(format!("Missing price feed for {}", key)));
     }
 
     let constants: HashMap<_,_> = CONSTANTS.range(&deps.storage, None, None, Order::Ascending).map(|i| i.ok().unwrap()).collect();
@@ -352,7 +344,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     to_binary(
         &OraclePrice::new(
-            symbol,
+            key,
             ReferenceData {
                 rate: eval_index(prices, constants),
                 //TODO these should be the minimum found
