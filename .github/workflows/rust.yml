@@ -13,14 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - id: set-dirs
-        run: echo "::set-output name=dir::$(find ./contracts/ -name Cargo.toml | jq -R -s -c 'split("\n")[:-1]')"
+        run: echo "::set-output name=dir::$(find ./contracts/ -name Cargo.toml | jq -R -s -c 'split(\"\n\")[:-1]')"
 
   build:
     runs-on: ubuntu-latest
-    needs: [find_contracts] # Depends on previous job
+    needs: [find_contracts]
     strategy:
       matrix:
-        dir: ${{fromJson(needs.find_contracts.outputs.dir)}} # List matrix strategy from directories dynamically
+        dir: ${{fromJson(needs.find_contracts.outputs.dir)}}
     steps:
       - uses: actions/checkout@v2
         with:
