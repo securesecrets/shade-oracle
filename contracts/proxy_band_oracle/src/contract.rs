@@ -1,5 +1,3 @@
-use std::cell::Ref;
-
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{

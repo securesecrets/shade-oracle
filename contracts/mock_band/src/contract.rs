@@ -3,21 +3,12 @@ use serde::{Deserialize, Serialize};
 use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
-    StdError, StdResult, Storage, Uint128,
+    StdResult, Storage, Uint128,
 };
 use shade_oracles::storage::Map;
 use shade_oracles::{
     common::ResponseStatus,
 };
-
-/*
-#[derive(Serialize, Deserialize, Default, JsonSchema)]
-pub struct SavedBandData {
-    pub rate: Uint128,
-    pub last_updated_base: u64,
-    pub last_updated_quote: u64,
-}
-*/
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 
@@ -53,7 +44,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 
 pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
+    _env: Env,
     base_symbol: String,
     quote_symbol: String,
     rate: Uint128,
