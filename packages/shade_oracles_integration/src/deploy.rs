@@ -26,58 +26,16 @@ use shade_oracles_integration::contract_helpers::{
 
 fn main() -> Result<()> {
     let user_a = account_address(HOOMP_KEY).unwrap_or_default();
+    let band = Contract::new(BAND.to_string(), BAND_HASH.to_string());
 
     println!("Account A: {}", user_a.blue());
 
-    deploy(user_a)?;
+    let oracle_router = deploy_router(user_a.clone(), band)?;
+    deploy_silk(user_a, oracle_router)?;
     Ok(())
 }
 
-fn deploy_test(user_a: String) -> Result<()> {
-
-    let band = Contract::new(BAND.to_string(), BAND_HASH.to_string());
-
-    println!("Deploying Band Oracle.");
-    let scrt_oracle = ProxyBandOracleContract::new(
-        user_a.clone(),
-        "USD",
-        band.clone(),
-        Some(HOOMP_KEY),
-        Some("band_oracle"),
-    )?;
-
-    println!("Deploying oracle router and configuring it.");
-    let router = OracleRouterContract::new(
-        &router::InitMsg {
-            owner: HumanAddr(user_a.clone()),
-            default_oracle: scrt_oracle.as_contract(),
-        },
-        Some(HOOMP_KEY),
-        Some("oracle_router"),
-    )?;
-
-    println!("Deploying hardcoded SHD oracle.");
-
-    let shd_oracle = ProxyBandOracleContract::new(
-        user_a.clone(),
-        "USD",
-        band,
-        Some(HOOMP_KEY),
-        Some("hardcoded-shd-oracle"),
-    )?;
-
-    println!("Adding hardcoded SHD oracle to router.");
-    router.update_registry(
-        RegistryOperation::Add {
-            oracle: shd_oracle.as_contract(),
-            key: "SHD".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?;
-
-    let shd_rate = router.query_price("SHD".to_string())?.price.rate;
-    println!("Router price of SHD: {}", shd_rate);
-
+fn deploy_silk(user_a: String, router: OracleRouterContract) -> Result<()> {
     println!("Deploying SILK oracle.");
 
     let silk_oracle = IndexOracleContract::new(
@@ -108,21 +66,79 @@ fn deploy_test(user_a: String) -> Result<()> {
         Some("silk-oracle"),
     )?;
 
-    println!("Adding SILK oracle to router.");
-    router.update_registry(
-        RegistryOperation::Add {
-            oracle: silk_oracle.as_contract(),
-            key: "SILK".to_string(),
+    match router.query_oracle("SILK".to_string()) {
+        Ok(_) => {
+            println!("Replacing the SILK oracle with a new one.");
+            router.update_registry(
+                RegistryOperation::Replace {
+                    oracle: silk_oracle.as_contract(),
+                    key: "SILK".to_string(),
+                },
+                Some(HOOMP_KEY),
+            )?;
         },
-        Some(HOOMP_KEY),
-    )?;
+        Err(_) => {
+            println!("Adding SILK oracle to router.");
+            router.update_registry(
+                RegistryOperation::Add {
+                    oracle: silk_oracle.as_contract(),
+                    key: "SILK".to_string(),
+                },
+                Some(HOOMP_KEY),
+            )?;
+        },
+    }
+
+    let silk_rate = router.query_price("SILK".to_string())?.price.rate;
+    println!("Router price of SILK: {}", silk_rate);
 
     Ok(())
 }
 
-fn deploy(user_a: String) -> Result<()> {
+fn deploy_router(user_a: String, band: Contract) -> Result<OracleRouterContract> {
 
-    let band = Contract::new(BAND.to_string(), BAND_HASH.to_string());
+    println!("Deploying Band Oracle.");
+    let scrt_oracle = ProxyBandOracleContract::new(
+        user_a.clone(),
+        "USD",
+        band.clone(),
+        Some(HOOMP_KEY),
+        Some("band_oracle"),
+    )?;
+
+    println!("Deploying hardcoded SHD oracle.");
+
+    let shd_oracle = ProxyBandOracleContract::new(
+        user_a.clone(),
+        "USD",
+        band,
+        Some(HOOMP_KEY),
+        Some("hardcoded-shd-oracle"),
+    )?;
+    
+    println!("Deploying oracle router and configuring it.");
+    let router = OracleRouterContract::new(
+        &router::InitMsg {
+            owner: HumanAddr(user_a.clone()),
+            default_oracle: scrt_oracle.as_contract(),
+        },
+        Some(HOOMP_KEY),
+        Some("oracle_router"),
+    )?;
+
+    println!("Updating registry to point to hardcoded SHD oracle.");
+    let txn = router.update_registry(
+        RegistryOperation::Add {
+            oracle: shd_oracle.as_contract(),
+            key: "SHD".to_string(),
+        },
+        Some(HOOMP_KEY),
+    )?.txhash;
+
+    Ok(router)
+}
+
+fn deploy(user_a: String, band: Contract, router: OracleRouterContract) -> Result<()> {
 
     let staking_derivative = Contract::new(STKD_SCRT.to_string(), STKD_SCRT_HASH.to_string());
 
@@ -201,45 +217,6 @@ fn deploy(user_a: String) -> Result<()> {
         RegistryOperation::Replace {
             oracle: stkd_scrt_scrt_lp_oracle.as_contract(),
             key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?;
-
-    println!("Deploying SILK oracle.");
-
-    let silk_oracle = IndexOracleContract::new(
-        &index_oracle::InitMsg {
-            admins: None,
-            router: router.as_contract(),
-            symbol: "SILK".to_string(),
-            basket: vec![
-                ("USD", 39_33 * 10u128.pow(14)), //  39.32%
-                ("CNY", 7_13 * 10u128.pow(14)), //  7.13%
-                ("EUR", 15_97 * 10u128.pow(14)), // 15.97%
-                ("JPY", 7_64 * 10u128.pow(14)), //  7.64%
-                ("GBP", 3_40 * 10u128.pow(14)), //  3.4%
-                ("CAD", 4_58 * 10u128.pow(14)), //  4.58%
-                ("KRW", 1_53 * 10u128.pow(14)), //  1.53%
-                ("AUD", 2_32 * 10u128.pow(14)), //  2.32%
-                ("IDR", 2_50 * 10u128.pow(14)), //  2.5%
-                ("CHF", 4_44 * 10u128.pow(14)), //  4.44%
-                ("SEK", 0_84 * 10u128.pow(14)), //  0.84%
-                ("NOK", 0_82 * 10u128.pow(14)), //  0.82%
-                ("SGD", 2_50 * 10u128.pow(14)), //  2.5%
-                ("XAU", 5_00 * 10u128.pow(14)), //  5.0%
-                ("WBTC", 2_00 * 10u128.pow(14)), //  2.0%
-            ].into_iter().map(|(sym, w)| (sym.to_string(), Uint128(w))).collect(),
-            target: Uint128(1_05 * 10u128.pow(16)), // $1.05
-        },
-        Some(HOOMP_KEY),
-        Some("silk-oracle"),
-    )?;
-
-    println!("Adding SILK oracle to router.");
-    router.update_registry(
-        RegistryOperation::Add {
-            oracle: silk_oracle.as_contract(),
-            key: "SILK".to_string(),
         },
         Some(HOOMP_KEY),
     )?;
