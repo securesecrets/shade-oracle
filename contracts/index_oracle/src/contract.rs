@@ -210,14 +210,14 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
 
     let mut price_data = HashMap::new();
     for (oracle, symbols) in oracle_data {
-        let prices: Vec<OraclePrice> = common::QueryMsg::GetPrices { symbols }.query(
+        let prices: Vec<OraclePrice> = common::QueryMsg::GetPrices { keys: symbols }.query(
             &deps.querier,
             oracle.code_hash,
             oracle.address,
         )?;
 
         for oracle_price in prices {
-            price_data.insert(oracle_price.symbol.clone(), oracle_price.price.rate);
+            price_data.insert(oracle_price.key.clone(), oracle_price.price.rate);
         }
     }
 
@@ -334,34 +334,6 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-pub fn eval_basket<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    basket: HashMap<String, Uint128>,
-) -> StdResult<Uint128> {
-
-    let config = CONFIG.load(&deps.storage)?;
-
-    let symbols = basket.keys().cloned().collect();
-
-    let mut weight_sum = Uint512::zero();
-    let mut index_price = Uint512::zero();
-
-    for price in query_prices(&config.router, &deps.querier, symbols)? {
-        index_price += Uint512::from(price.price.rate.u128()) * Uint512::from(basket.get(&price.symbol).unwrap().u128())
-                / Uint512::from(10u128.pow(18));
-    }
-
-    Ok(Uint128(
-        secret_cosmwasm_math_compat::Uint128::try_from(
-            index_price
-                .checked_mul(Uint512::from(10u128.pow(18)))?
-                .checked_div(weight_sum)?,
-        )?
-        .u128(),
-    ))
-}
-
->>>>>>> a4df5af (renamed to index oracle, refactored with HashMap)
 fn try_query_config<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<Config> {

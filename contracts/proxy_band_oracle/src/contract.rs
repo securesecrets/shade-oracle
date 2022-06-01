@@ -20,6 +20,7 @@ use cosmwasm_std::{
     Extern, HandleResponse, HumanAddr, 
     InitResponse, Querier, QueryResult,
     StdError, StdResult, Storage,
+    Uint128,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 
