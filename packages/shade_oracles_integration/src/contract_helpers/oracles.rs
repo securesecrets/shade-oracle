@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
     band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
-    earn as earn_v1_oracle, lp as lp_oracle, router,
+    earn as earn_v1_oracle, lp as lp_oracle, router, index_oracle,
 };
 use cosmwasm_std::{Uint128, HumanAddr};
 
@@ -240,5 +240,49 @@ impl EarnV1OracleContract {
         };
         let info = Self::wrap_init(&msg, account_key, name)?;
         Ok(EarnV1OracleContract { info })
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct IndexOracleContract {
+    pub info: NetContract,
+}
+
+impl OracleContract for IndexOracleContract {}
+impl TestableContract for IndexOracleContract {
+    fn get_info(&self) -> &NetContract {
+        &self.info
+    }
+    fn get_file() -> &'static str {
+        INDEX_ORACLE_FILE
+    }
+}
+
+impl IndexOracleContract {
+    pub fn new(
+        msg: &index_oracle::InitMsg,
+        account_key: Option<&str>,
+        name: Option<&str>,
+    ) -> Result<Self> {
+        let info = Self::wrap_init(msg, account_key, name)?;
+        Ok(IndexOracleContract { info })
+    }
+
+    pub fn query_config(&self, key: String) -> Result<index_oracle::Config> {
+        query_contract(self.get_info(), index_oracle::QueryMsg::GetPrice { key })
+    }
+
+    pub fn query_basket(&self) -> Result<index_oracle::QueryAnswer> {
+        query_contract(self.get_info(), index_oracle::QueryMsg::Basket { })
+    }
+
+    pub fn update_config(&self, admins: Option<Vec<HumanAddr>>, router: Option<Contract>, sender_key: Option<&str>) -> Result<GasLog> {
+        let msg = index_oracle::HandleMsg::UpdateConfig { admins, router };
+        self.wrap_handle(&msg, sender_key)
+    }
+
+    pub fn mod_basket(&self, basket: Vec<(String, Uint128)>, sender_key: Option<&str>) -> Result<GasLog> {
+        let msg = index_oracle::HandleMsg::ModBasket { basket };
+        self.wrap_handle(&msg, sender_key)
     }
 }

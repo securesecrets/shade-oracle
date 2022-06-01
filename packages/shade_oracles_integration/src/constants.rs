@@ -13,6 +13,7 @@ pub const SIENNASWAP_LP_SPOT_ORACLE_FILE: &str = "../../compiled/siennaswap_lp_s
 pub const SHADE_STAKING_DERIVATIVE_ORACLE_FILE: &str =
     "../../compiled/shade_staking_derivative_oracle.wasm.gz";
 pub const EARN_V1_ORACLE_FILE: &str = "../../compiled/earn_v1_oracle.wasm.gz";
+pub const INDEX_ORACLE_FILE: &str = "../../compiled/index_oracle.wasm.gz";
 
 // Default executer & admin address for testing
 pub const USER_A_KEY: &str = "a";

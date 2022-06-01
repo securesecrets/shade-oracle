@@ -4,6 +4,7 @@ use crate::{
 use cosmwasm_std::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use secret_toolkit::utils::Query;
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -59,6 +60,10 @@ pub enum QueryMsg {
     GetPrices {
         keys: Vec<String>,
     },
+}
+
+impl Query for QueryMsg {
+    const BLOCK_SIZE: usize = 256;
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
