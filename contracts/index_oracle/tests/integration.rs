@@ -177,24 +177,22 @@ fn basic_index_test(
     match ensemble.query(
         index_oracle.address.clone(),
         &index_oracle::QueryMsg::GetPrice {
-            symbol: symbol.clone()
+            key: symbol.clone()
         }
-    ) {
-        Ok(b) => {
-            let resp: OraclePrice = from_binary(&b).ok().unwrap();
-
+    ).unwrap() {
+        OraclePrice { key, price } => {
             let mut err = Uint128::zero();
-            if resp.price.rate > expected {
-                err = (resp.price.rate - expected).ok().unwrap();
+            if price.rate > expected {
+                err = (price.rate - expected).ok().unwrap();
             }
             else {
-                err = (expected - resp.price.rate).ok().unwrap();
+                err = (expected - price.rate).ok().unwrap();
             }
             let acceptable = expected.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", resp.price.rate, expected);
+            assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", price.rate, expected);
         },
-        Err(e) => assert!(false, "Failed to query index {}", e.to_string()),
+        _ => assert!(false, "Failed to query index"),
     };
 }
 
@@ -447,24 +445,22 @@ fn mod_index_test(
     match ensemble.query(
         index_oracle.address.clone(),
         &index_oracle::QueryMsg::GetPrice {
-            symbol: symbol.clone()
+            key: symbol.clone()
         }
-    ) {
-        Ok(b) => {
-            let resp: OraclePrice = from_binary(&b).ok().unwrap();
-
+    ).unwrap() {
+        OraclePrice { key, price } => {
             let mut err = Uint128::zero();
-            if resp.price.rate > expected_initial {
-                err = (resp.price.rate - expected_initial).ok().unwrap();
+            if price.rate > expected_initial {
+                err = (price.rate - expected_initial).ok().unwrap();
             }
             else {
-                err = (expected_initial - resp.price.rate).ok().unwrap();
+                err = (expected_initial - price.rate).ok().unwrap();
             }
             let acceptable = expected_initial.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", resp.price.rate, expected_initial);
+            assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", price.rate, expected_initial);
         },
-        Err(e) => assert!(false, "Failed to query index {}", e.to_string()),
+        _ => assert!(false, "Failed to query index"),
     };
 
     /* TODO
@@ -493,24 +489,22 @@ fn mod_index_test(
     match ensemble.query(
         index_oracle.address.clone(),
         &index_oracle::QueryMsg::GetPrice {
-            symbol: symbol.clone()
+            key: symbol.clone()
         }
-    ) {
-        Ok(b) => {
-            let resp: OraclePrice = from_binary(&b).ok().unwrap();
-
+    ).unwrap() {
+        OraclePrice { key, price } => {
             let mut err = Uint128::zero();
-            if resp.price.rate > expected_final {
-                err = (resp.price.rate - expected_final).ok().unwrap();
+            if price.rate > expected_final {
+                err = (price.rate - expected_final).ok().unwrap();
             }
             else {
-                err = (expected_final - resp.price.rate).ok().unwrap();
+                err = (expected_final - price.rate).ok().unwrap();
             }
             let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "Price change check failed price: {}, expected: {}, exceeds acceptable error", resp.price.rate, expected_final);
+            assert!(err <= acceptable, "Price change check failed price: {}, expected: {}, exceeds acceptable error", price.rate, expected_final);
         },
-        Err(e) => assert!(false, "Failed to query index {}", e.to_string()),
+        _ => assert!(false, "Failed to query index"),
     };
 
     // Update basket
@@ -543,24 +537,22 @@ fn mod_index_test(
     match ensemble.query(
         index_oracle.address.clone(),
         &index_oracle::QueryMsg::GetPrice {
-            symbol: symbol.clone()
+            key: symbol.clone()
         }
-    ) {
-        Ok(b) => {
-            let resp: OraclePrice = from_binary(&b).ok().unwrap();
-
+    ).unwrap() {
+        OraclePrice { key, price } => {
             let mut err = Uint128::zero();
-            if resp.price.rate > expected_final {
-                err = (resp.price.rate - expected_final).ok().unwrap();
+            if price.rate > expected_final {
+                err = (price.rate - expected_final).ok().unwrap();
             }
             else {
-                err = (expected_final - resp.price.rate).ok().unwrap();
+                err = (expected_final - price.rate).ok().unwrap();
             }
             let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "Post-Mod price: {}, expected: {}, exceeds acceptable error", resp.price.rate, expected_final);
+            assert!(err <= acceptable, "Post-Mod price: {}, expected: {}, exceeds acceptable error", price.rate, expected_final);
         },
-        Err(e) => assert!(false, "Failed to query index {}", e.to_string()),
+        _ => assert!(false, "Failed to query index"),
     };
 }
 

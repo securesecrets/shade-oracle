@@ -1,7 +1,6 @@
 use cosmwasm_std::{
     to_binary,
     Api,
-    Binary,
     Env,
     Extern,
     HandleResponse,
@@ -332,7 +331,7 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     key: String,
-) -> StdResult<Binary> {
+) -> StdResult<OraclePrice> {
 
     if key != SYMBOL.load(&deps.storage)? {
         return Err(StdError::generic_err(format!("Missing price feed for {}", key)));
@@ -342,15 +341,13 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let (symbols, _): (Vec<String>, Vec<Uint128>) = constants.clone().into_iter().unzip();
     let prices = fetch_prices(deps, symbols.clone())?;
 
-    to_binary(
-        &OraclePrice::new(
-            key,
-            ReferenceData {
-                rate: eval_index(prices, constants),
-                //TODO these should be the minimum found
-                last_updated_base: 0,
-                last_updated_quote: 0,
-            }
-        )
-    )
+    Ok(OraclePrice::new(
+        key,
+        ReferenceData {
+            rate: eval_index(prices, constants),
+            //TODO these should be the minimum found
+            last_updated_base: 0,
+            last_updated_quote: 0,
+        }
+    ))
 }
