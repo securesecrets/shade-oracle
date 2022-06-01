@@ -62,8 +62,8 @@ pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
 
     MOCK_DATA.save(&mut deps.storage, (base_symbol, quote_symbol), &ReferenceData {
         rate,
-        last_updated_base: 0,
-        last_updated_quote: 0,
+        last_updated_base: last_updated.unwrap_or(0),
+        last_updated_quote: last_updated.unwrap_or(0),
     })?;
 
     Ok(HandleResponse {
