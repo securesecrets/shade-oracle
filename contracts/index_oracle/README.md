@@ -37,6 +37,13 @@ Updates config of proxy band oracle contract.
 | admins       | Vec<HumanAddr> | List of admins has ability to adjust config        | yes      |
 | router       | Contract    | Oracle router contract                                | yes      |
 
+#### ModBasket
+##### Request
+Adjusts basket by removing 0 weights, adding or updating others & recalculating constants to match current price
+| Name         | Type     | Description                                              | optional |
+|--------------|----------|----------------------------------------------------------|----------|
+| basket     | Vec<(String, Uint128)> | Basket modificaitions                        | yes      |
+
 ## User
 
 ### Queries
@@ -65,6 +72,16 @@ Gets the asset price from the band contract.
     "last_updated_quote": "u64 of the block time"
   }
 }
+```
+
+#### Basket
+Gets the current basket as a list of (symbol, weight, constant)
+##### Response
+```json
+[
+  (symbol, weight, constant),
+  ...
+]
 ```
 
 ## Contract
