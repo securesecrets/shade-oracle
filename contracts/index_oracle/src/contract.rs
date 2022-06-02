@@ -76,7 +76,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::generic_err(format!("Weights must add to 100%, {}", weight_sum)));
     }
 
-    let prices = fetch_prices(deps, symbols)?;
+    let prices = fetch_prices(deps, &config, symbols)?;
     let constants = build_constants(msg.basket.clone(), prices, msg.target);
 
     let mut full_basket: Vec<(String, Uint128, Uint128)> = msg.basket.into_iter().map(|(sym, w)| (sym.clone(), w, constants[&sym])).collect();
@@ -154,15 +154,14 @@ fn eval_index(
 
 fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
+    config: &Config,
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, Uint128>> {
 
-    let config = CONFIG.load(&deps.storage)?;
-
     let oracles: Vec<router::OracleResponse> = router::QueryMsg::GetOracles { keys: symbols }.query(
         &deps.querier,
-        config.router.code_hash,
-        config.router.address,
+        config.router.code_hash.clone(),
+        config.router.address.clone(),
     )?;
 
     let mut oracle_data: HashMap<Contract, Vec<String>> = HashMap::new();
@@ -235,7 +234,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
 
     let basket = BASKET.load(&deps.storage)?;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
-    let mut prices = fetch_prices(deps, symbols.clone())?;
+    let mut prices = fetch_prices(deps, &config, symbols.clone())?;
     // target previous price
     let target = eval_index(prices.clone(), basket.clone());
 
@@ -277,7 +276,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::generic_err("Weights must add to 100%"));
     }
 
-    prices.extend(fetch_prices(deps, new_symbols)?);
+    prices.extend(fetch_prices(deps, &config, new_symbols)?);
 
     let constants = build_constants(weights.clone(), prices.clone(), target);
 
@@ -297,7 +296,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
 fn try_query_config<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<Config> {
-    Ok(CONFIG.load(&deps.storage)?)
+    CONFIG.load(&deps.storage)
 }
 
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
@@ -309,9 +308,11 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::generic_err(format!("Missing price feed for {}", key)));
     }
 
+    let config = CONFIG.load(&deps.storage)?;
+
     let basket = BASKET.load(&deps.storage)?;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
-    let prices = fetch_prices(deps, symbols.clone())?;
+    let prices = fetch_prices(deps, &config, symbols)?;
 
     Ok(OraclePrice::new(
         key,
