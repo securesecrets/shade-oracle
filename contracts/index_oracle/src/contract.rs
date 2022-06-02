@@ -14,16 +14,15 @@ use cosmwasm_std::{
     QueryResult,
 };
 use secret_cosmwasm_math_compat::{self as compat, Uint512};
-use secret_toolkit::utils::{Query, pad_query_result, pad_handle_result};
+use secret_toolkit::utils::{pad_query_result, pad_handle_result};
 
 use std::collections::HashMap;
 
 use shade_oracles::{
     common::{
-        self,
         OraclePrice, Contract,
         ResponseStatus, BLOCK_SIZE,
-        //querier::query_prices,
+        querier::query_prices,
     },
     band::ReferenceData,
     storage::Item,
@@ -31,7 +30,7 @@ use shade_oracles::{
         InitMsg, HandleMsg, HandleAnswer, QueryMsg, QueryAnswer,
         Config,
     },
-    router,
+    router::querier::query_oracles,
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -158,11 +157,15 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, Uint128>> {
 
-    let oracles: Vec<router::OracleResponse> = router::QueryMsg::GetOracles { keys: symbols }.query(
-        &deps.querier,
-        config.router.code_hash.clone(),
-        config.router.address.clone(),
-    )?;
+    let oracles = match query_oracles(&config.router, &deps.querier , symbols.clone()) {
+        Ok(oracles) => oracles,
+        Err(e) => {
+            return Err(StdError::generic_err(
+                    format!("Failed to query {} from routern, '{}'", 
+                            symbols.clone().iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
+                            e.to_string())))
+        }
+    };
 
     let mut oracle_data: HashMap<Contract, Vec<String>> = HashMap::new();
     for oracle in oracles {
@@ -171,15 +174,21 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
 
     let mut price_data = HashMap::new();
     for (oracle, symbols) in oracle_data {
-        let prices: Vec<OraclePrice> = common::QueryMsg::GetPrices { keys: symbols }.query(
-            &deps.querier,
-            oracle.code_hash,
-            oracle.address,
-        )?;
-
-        for oracle_price in prices {
-            price_data.insert(oracle_price.key.clone(), oracle_price.price.rate);
+        match query_prices(&oracle, &deps.querier, symbols.clone()) {
+            Ok(prices) => {
+                for oracle_price in prices {
+                    price_data.insert(oracle_price.key.clone(), oracle_price.price.rate);
+                }
+            },
+            Err(e) => {
+                return Err(StdError::generic_err(
+                        format!("Failed to query {} from oracle {}, '{}'", 
+                                symbols.clone().iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
+                                oracle.address.as_str(),
+                                e.to_string())))
+            }
         }
+
     }
 
     Ok(price_data)
