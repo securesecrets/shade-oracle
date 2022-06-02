@@ -20,7 +20,7 @@ pub mod secretswap {
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
-        pub factory: Contract,
+        pub pair: Contract,
     }
 
     // We define a custom struct for each query response
@@ -28,7 +28,7 @@ pub mod secretswap {
     #[serde(rename_all = "snake_case")]
     pub struct ConfigResponse {
         pub owner: HumanAddr,
-        pub factory: Contract,
+        pub pair: Contract,
         pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
@@ -53,7 +53,7 @@ pub mod siennaswap {
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
-        pub factory: Contract,
+        pub exchange: Contract,
     }
 
     // We define a custom struct for each query response
@@ -65,7 +65,7 @@ pub mod siennaswap {
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
-        pub factory: Contract,
+        pub exchange: Contract,
         pub enabled: bool,
     }
 
@@ -74,7 +74,7 @@ pub mod siennaswap {
     pub enum SiennaSwapQueryResponse {
         PairInfo {
             liquidity_token: Contract,
-            factory: Contract,
+            exchange: Contract,
             pair: SiennaSwapPair,
             amount_0: Uint128,
             amount_1: Uint128,
