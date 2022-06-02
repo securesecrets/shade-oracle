@@ -25,7 +25,7 @@ pub struct State {
     pub symbol_0: String,
     pub symbol_1: String,
     pub router: CanonicalContract,
-    pub factory: CanonicalContract,
+    pub exchange: CanonicalContract,
     pub lp_token: CanonicalContract,
     pub token0_decimals: u8,
     pub token1_decimals: u8,
@@ -44,11 +44,11 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         code_hash: msg.router.code_hash,
     };
 
-    let factory: CanonicalContract = CanonicalContract {
+    let exchange: CanonicalContract = CanonicalContract {
         address: deps
             .api
-            .canonical_address(&msg.factory.address)?,
-        code_hash: msg.factory.code_hash.clone(),
+            .canonical_address(&msg.exchange.address)?,
+        code_hash: msg.exchange.code_hash.clone(),
     };
 
     let mut token0: Contract = Contract {
@@ -62,8 +62,8 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let pair_info_response: SiennaSwapQueryResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: msg.factory.address.clone(),
-            callback_code_hash: msg.factory.code_hash.clone(),
+            contract_addr: msg.exchange.address.clone(),
+            callback_code_hash: msg.exchange.code_hash.clone(),
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
 
@@ -72,7 +72,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     match pair_info_response {
         SiennaSwapQueryResponse::PairInfo {
             liquidity_token,
-            factory: _,
+            exchange: _,
             pair,
             amount_0: _,
             amount_1: _,
@@ -124,7 +124,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         symbol_0: msg.symbol_0,
         symbol_1: msg.symbol_1,
         router,
-        factory,
+        exchange,
         lp_token,
         token0_decimals,
         token1_decimals,
@@ -190,7 +190,7 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
         symbol_0: state.symbol_0,
         symbol_1: state.symbol_1,
         router: state.router.as_human(&deps.api)?,
-        factory: state.factory.as_human(&deps.api)?,
+        exchange: state.exchange.as_human(&deps.api)?,
         enabled: common.enabled,
         supported_key: state.supported_key,
     })
@@ -222,8 +222,8 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     let pair_info_response: SiennaSwapQueryResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: deps.api.human_address(&state.factory.address)?,
-            callback_code_hash: state.factory.code_hash,
+            contract_addr: deps.api.human_address(&state.exchange.address)?,
+            callback_code_hash: state.exchange.code_hash,
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
 
@@ -233,7 +233,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     match pair_info_response {
         SiennaSwapQueryResponse::PairInfo {
             liquidity_token: _,
-            factory: _,
+            exchange: _,
             pair: _,
             amount_0,
             amount_1,
