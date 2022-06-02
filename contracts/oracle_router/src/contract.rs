@@ -2,7 +2,7 @@ use crate::{
     registry::{batch_update_registry, get_price, update_registry, get_prices},
     state::*,
 };
-use shade_oracles::{common::BLOCK_SIZE, router::*};
+use shade_oracles::{common::{BLOCK_SIZE, Contract}, router::*};
 use cosmwasm_std::{
         to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
         StdError, StdResult, Storage,
@@ -74,14 +74,14 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 })
             }
             QueryMsg::GetOracle { key } => {
-                let oracle = ORACLES.load(&deps.storage, key.clone())?;
+                let oracle = get_oracle(&deps.storage, &key)?;
                 to_binary(&OracleResponse { oracle, key })
             }
             QueryMsg::GetPrice { key } => get_price(deps, key),
             QueryMsg::GetOracles { keys } => {
                 let mut oracles = vec![];
                 for key in keys {
-                    let oracle = ORACLES.load(&deps.storage, key.clone())?;
+                    let oracle = get_oracle(&deps.storage, &key)?; 
                     oracles.push(OracleResponse { key, oracle })
                 }
                 to_binary(&oracles)
@@ -90,4 +90,16 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
         },
         BLOCK_SIZE,
     )
+}
+
+pub fn get_oracle (
+    storage: &impl Storage,
+    key: &str,
+) -> StdResult<Contract> {
+    let config = CONFIG.load(storage)?;
+
+    match ORACLES.may_load(storage, key.to_string())? {
+        Some(contract) => Ok(contract),
+        None => Ok(config.default_oracle),
+    }     
 }

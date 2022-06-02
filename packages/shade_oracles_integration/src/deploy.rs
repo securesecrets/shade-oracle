@@ -31,11 +31,20 @@ fn main() -> Result<()> {
     println!("Account A: {}", user_a.blue());
 
     let oracle_router = deploy_router(user_a.clone(), band)?;
-    deploy_silk(user_a, oracle_router)?;
+    let silk_oracle = deploy_silk(user_a)?;
+    let shd_oracle = deploy_shd(user_a, band)?;
+    let stkd_scrt_oracle = deploy_stkd_scrt(user_a, oracle_router.as_contract())?;
+    let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a, oracle_router.as_contract())?;
+    
+    oracle_router.update_oracle(HOOMP_KEY, "SILK", silk_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "SHD", shd_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT/SCRT SiennaSwap LP", silk_oracle.as_contract())?;
+
     Ok(())
 }
 
-fn deploy_silk(user_a: String, router: OracleRouterContract) -> Result<()> {
+fn deploy_silk(user_a: String) -> Result<IndexOracleContract> {
     println!("Deploying SILK oracle.");
 
     let silk_oracle = IndexOracleContract::new(
@@ -66,33 +75,7 @@ fn deploy_silk(user_a: String, router: OracleRouterContract) -> Result<()> {
         Some("silk-oracle"),
     )?;
 
-    match router.query_oracle("SILK".to_string()) {
-        Ok(_) => {
-            println!("Replacing the SILK oracle with a new one.");
-            router.update_registry(
-                RegistryOperation::Replace {
-                    oracle: silk_oracle.as_contract(),
-                    key: "SILK".to_string(),
-                },
-                Some(HOOMP_KEY),
-            )?;
-        },
-        Err(_) => {
-            println!("Adding SILK oracle to router.");
-            router.update_registry(
-                RegistryOperation::Add {
-                    oracle: silk_oracle.as_contract(),
-                    key: "SILK".to_string(),
-                },
-                Some(HOOMP_KEY),
-            )?;
-        },
-    }
-
-    let silk_rate = router.query_price("SILK".to_string())?.price.rate;
-    println!("Router price of SILK: {}", silk_rate);
-
-    Ok(())
+    Ok(silk_oracle)
 }
 
 fn deploy_router(user_a: String, band: Contract) -> Result<OracleRouterContract> {
@@ -106,6 +89,21 @@ fn deploy_router(user_a: String, band: Contract) -> Result<OracleRouterContract>
         Some("band_oracle"),
     )?;
 
+    println!("Deploying oracle router.");
+    let router = OracleRouterContract::new(
+        &router::InitMsg {
+            owner: HumanAddr(user_a.clone()),
+            default_oracle: scrt_oracle.as_contract(),
+        },
+        Some(HOOMP_KEY),
+        Some("oracle_router"),
+    )?;
+
+    Ok(router)
+}
+
+fn deploy_shd(user_a: String, band: Contract) -> Result<(ProxyBandOracleContract)> {
+
     println!("Deploying hardcoded SHD oracle.");
 
     let shd_oracle = ProxyBandOracleContract::new(
@@ -115,66 +113,11 @@ fn deploy_router(user_a: String, band: Contract) -> Result<OracleRouterContract>
         Some(HOOMP_KEY),
         Some("hardcoded-shd-oracle"),
     )?;
-    
-    println!("Deploying oracle router and configuring it.");
-    let router = OracleRouterContract::new(
-        &router::InitMsg {
-            owner: HumanAddr(user_a.clone()),
-            default_oracle: scrt_oracle.as_contract(),
-        },
-        Some(HOOMP_KEY),
-        Some("oracle_router"),
-    )?;
-
-    println!("Updating registry to point to hardcoded SHD oracle.");
-    let txn = router.update_registry(
-        RegistryOperation::Add {
-            oracle: shd_oracle.as_contract(),
-            key: "SHD".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?.txhash;
-
-    Ok(router)
+    Ok(shd_oracle)  
 }
 
-fn deploy(user_a: String, band: Contract, router: OracleRouterContract) -> Result<()> {
-
+fn deploy_stkd_scrt(user_a: String, router: Contract) -> Result<ShadeStakingDerivativeOracleContract> {
     let staking_derivative = Contract::new(STKD_SCRT.to_string(), STKD_SCRT_HASH.to_string());
-
-    let sienna_stkd_scrt_scrt_lp = Contract::new(STKD_SCRT_SCRT_POOL.to_string(), STKD_SCRT_SCRT_POOL_HASH.to_string());
-
-    println!("Deploying Band Oracle.");
-    let scrt_oracle = ProxyBandOracleContract::new(
-        user_a.clone(),
-        "USD",
-        band,
-        Some(HOOMP_KEY),
-        Some("band_oracle"),
-    )?;
-
-    println!("Deploying oracle router and configuring it.");
-    let router = OracleRouterContract::new(
-        &router::InitMsg {
-            owner: HumanAddr(user_a.clone()),
-            default_oracle: scrt_oracle.as_contract(),
-        },
-        Some(HOOMP_KEY),
-        Some("oracle_router"),
-    )?;
-
-    println!("Updating registry.");
-    let txn = router.update_registry(
-        RegistryOperation::Add {
-            oracle: scrt_oracle.as_contract(),
-            key: "SCRT".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?.txhash;
-    println!("Completed tx: {}", txn);
-
-    let scrt_rate = router.query_price("SCRT".to_string())?.price.rate;
-    println!("Router price of SCRT: {}", scrt_rate);
 
     println!("Deploying stkd-SCRT oracle.");
     let stkd_scrt_oracle = ShadeStakingDerivativeOracleContract::new(
@@ -183,20 +126,18 @@ fn deploy(user_a: String, band: Contract, router: OracleRouterContract) -> Resul
             supported_key: "stkd-SCRT".to_string(),
             underlying_symbol: "SCRT".to_string(),
             staking_derivative,
-            router: router.as_contract(),
+            router,
         },
         Some(HOOMP_KEY),
         Some("stkd_scrt_oracle"),
     )?;
 
-    println!("Registering stkd-SCRT oracle to router.");
-    router.update_registry(
-        RegistryOperation::Add {
-            oracle: stkd_scrt_oracle.as_contract(),
-            key: "stkd-SCRT".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?;
+    Ok(stkd_scrt_oracle)
+}
+
+fn deploy_stkd_scrt_scrt_lp(user_a: String, router: Contract) -> Result<SiennaswapSpotLpOracleContract> {
+
+    let sienna_stkd_scrt_scrt_lp = Contract::new(STKD_SCRT_SCRT_POOL.to_string(), STKD_SCRT_SCRT_POOL_HASH.to_string());
 
     println!("Deploying stkd-SCRT / SCRT Siennaswap LP oracle.");
     let stkd_scrt_scrt_lp_oracle = SiennaswapSpotLpOracleContract::new(
@@ -204,7 +145,7 @@ fn deploy(user_a: String, band: Contract, router: OracleRouterContract) -> Resul
             owner: HumanAddr(user_a),
             symbol_0: "stkd-SCRT".to_string(),
             symbol_1: "SCRT".to_string(),
-            router: router.as_contract(),
+            router,
             factory: sienna_stkd_scrt_scrt_lp,
             supported_key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
         },
@@ -212,14 +153,5 @@ fn deploy(user_a: String, band: Contract, router: OracleRouterContract) -> Resul
         Some("stkd_scrt_scrt_lp_oracle"),
     )?;
 
-    println!("Registering stkd-SCRT/SCRT oracle to router.");
-    router.update_registry(
-        RegistryOperation::Replace {
-            oracle: stkd_scrt_scrt_lp_oracle.as_contract(),
-            key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?;
-
-    Ok(())
+    Ok(stkd_scrt_scrt_lp_oracle)
 }

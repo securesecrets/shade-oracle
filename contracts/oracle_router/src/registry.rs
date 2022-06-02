@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::state::*;
+use crate::{state::*, contract::get_oracle};
 use shade_oracles::common::{Contract, OraclePrice};
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
@@ -32,10 +32,7 @@ pub fn get_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     key: String,
 ) -> StdResult<Binary> {
-    let oracle = match ORACLES.may_load(&deps.storage, key.clone())? {
-        Some(oracle) => oracle,
-        None => CONFIG.load(&deps.storage)?.default_oracle,
-    };
+    let oracle = get_oracle(&deps.storage, &key)?;
 
     to_binary(&query_price(&oracle, &deps.querier, key)?)
 }
@@ -49,10 +46,7 @@ pub fn get_prices<S: Storage, A: Api, Q: Querier>(
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
 
     for current_key in keys {
-        let oracle = match ORACLES.may_load(&deps.storage, current_key.clone())? {
-            Some(oracle) => oracle,
-            None => CONFIG.load(&deps.storage)?.default_oracle,
-        };
+        let oracle = get_oracle(&deps.storage, &current_key)?;
         
         // Get the current vector of symbols at that oracle and add the current key to it
         map.entry(oracle).or_insert(vec![]).push(current_key);
