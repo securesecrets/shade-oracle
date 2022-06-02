@@ -31,7 +31,7 @@ pub struct State {
     pub symbol_0: String,
     pub symbol_1: String,
     pub router: CanonicalContract,
-    pub factory: CanonicalContract,
+    pub pair: CanonicalContract,
     pub lp_token: CanonicalContract,
     pub token0_decimals: u8,
     pub token1_decimals: u8,
@@ -53,11 +53,11 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         code_hash: msg.router.code_hash,
     };
 
-    let factory: CanonicalContract = CanonicalContract {
+    let pair: CanonicalContract = CanonicalContract {
         address: deps
             .api
-            .canonical_address(&HumanAddr(msg.factory.address.clone()))?,
-        code_hash: msg.factory.code_hash.clone(),
+            .canonical_address(&HumanAddr(msg.pair.address.clone()))?,
+        code_hash: msg.pair.code_hash.clone(),
     };
 
     let mut token0: Contract = Contract {
@@ -71,8 +71,8 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let pair_info: SecretSwapPairInfo =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: HumanAddr::from(msg.factory.address),
-            callback_code_hash: msg.factory.code_hash,
+            contract_addr: HumanAddr::from(msg.pair.address),
+            callback_code_hash: msg.pair.code_hash,
             msg: to_binary(&SecretSwapPairQueryMsg::Pair {})?,
         }))?;
     let lp_token = CanonicalContract {
@@ -120,7 +120,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         symbol_0: msg.symbol_0,
         symbol_1: msg.symbol_1,
         router,
-        factory,
+        pair,
         lp_token,
         token0_decimals,
         token1_decimals,
@@ -144,8 +144,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                 symbol_0,
                 symbol_1,
                 router,
-                factory,
-            } => try_update_config(deps, env, owner, symbol_0, symbol_1, router, factory),
+                pair,
+            } => try_update_config(deps, env, owner, symbol_0, symbol_1, router, pair),
         },
         BLOCK_SIZE,
     )
@@ -158,7 +158,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     symbol_0: Option<String>,
     symbol_1: Option<String>,
     router: Option<Contract>,
-    factory: Option<Contract>,
+    pair: Option<Contract>,
 ) -> StdResult<HandleResponse> {
     let mut state: State = State::new_json(&deps.storage)?;
 
@@ -186,12 +186,12 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
         state.symbol_1 = symbol_1;
     }
 
-    if let Some(factory) = factory {
-        let factory = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(factory.address))?,
-            code_hash: factory.code_hash,
+    if let Some(pair) = pair {
+        let pair = CanonicalContract {
+            address: deps.api.canonical_address(&HumanAddr(pair.address))?,
+            code_hash: pair.code_hash,
         };
-        state.factory = factory;
+        state.pair = pair;
     }
 
     state.save_json(&mut deps.storage)?;
@@ -225,7 +225,7 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
         symbol_0: state.symbol_0,
         symbol_1: state.symbol_1,
         router: state.router.as_human(&deps.api)?,
-        factory: state.factory.as_human(&deps.api)?,
+        pair: state.pair.as_human(&deps.api)?,
     })
 }
 
@@ -251,8 +251,8 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     let pair_info: SecretSwapPoolResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: deps.api.human_address(&state.factory.address)?,
-            callback_code_hash: state.factory.code_hash,
+            contract_addr: deps.api.human_address(&state.pair.address)?,
+            callback_code_hash: state.pair.code_hash,
             msg: to_binary(&SecretSwapPairQueryMsg::Pool {})?,
         }))?;
     let reserve0 = pair_info.assets[0].amount;

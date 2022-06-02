@@ -146,7 +146,7 @@ fn deploy_stkd_scrt_scrt_lp(user_a: String, router: Contract) -> Result<Siennasw
             symbol_0: "stkd-SCRT".to_string(),
             symbol_1: "SCRT".to_string(),
             router,
-            factory: sienna_stkd_scrt_scrt_lp,
+            exchange: sienna_stkd_scrt_scrt_lp,
             supported_key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
         },
         Some(HOOMP_KEY),
