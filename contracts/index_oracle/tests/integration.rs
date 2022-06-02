@@ -1,17 +1,9 @@
 use std::collections::HashMap;
-use cosmwasm_std::{
-    coins, from_binary, to_binary,
-    Extern, HumanAddr, StdError,
-    Binary, StdResult, HandleResponse, Env,
-    InitResponse, Uint128,
-};
+use cosmwasm_std::{ HumanAddr, Uint128 };
 
 use fadroma::{
     ContractLink, 
-    ensemble::{
-       MockEnv, MockDeps, 
-       ContractHarness, ContractEnsemble,
-    },
+    ensemble::{ MockEnv, ContractEnsemble },
 };
 
 use shade_oracles_ensemble::harness::{
@@ -22,7 +14,7 @@ use shade_oracles_ensemble::harness::{
 };
 
 use shade_oracles::{
-    common::{self, Contract, OraclePrice},
+    common::{Contract, OraclePrice},
     band::{self, proxy},
     router,
     index_oracle,
@@ -180,7 +172,7 @@ fn basic_index_test(
             key: symbol.clone()
         }
     ).unwrap() {
-        OraclePrice { key, price } => {
+        OraclePrice { key: _, price } => {
             let mut err = Uint128::zero();
             if price.rate > expected {
                 err = (price.rate - expected).ok().unwrap();
@@ -192,7 +184,6 @@ fn basic_index_test(
 
             assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", price.rate, expected);
         },
-        _ => assert!(false, "Failed to query index"),
     };
 }
 
@@ -448,7 +439,7 @@ fn mod_index_test(
             key: symbol.clone()
         }
     ).unwrap() {
-        OraclePrice { key, price } => {
+        OraclePrice { key: _, price } => {
             let mut err = Uint128::zero();
             if price.rate > expected_initial {
                 err = (price.rate - expected_initial).ok().unwrap();
@@ -460,7 +451,6 @@ fn mod_index_test(
 
             assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", price.rate, expected_initial);
         },
-        _ => assert!(false, "Failed to query index"),
     };
 
     /* TODO
@@ -492,7 +482,7 @@ fn mod_index_test(
             key: symbol.clone()
         }
     ).unwrap() {
-        OraclePrice { key, price } => {
+        OraclePrice { key: _, price } => {
             let mut err = Uint128::zero();
             if price.rate > expected_final {
                 err = (price.rate - expected_final).ok().unwrap();
@@ -504,7 +494,6 @@ fn mod_index_test(
 
             assert!(err <= acceptable, "Price change check failed price: {}, expected: {}, exceeds acceptable error", price.rate, expected_final);
         },
-        _ => assert!(false, "Failed to query index"),
     };
 
     // Update basket
@@ -540,7 +529,7 @@ fn mod_index_test(
             key: symbol.clone()
         }
     ).unwrap() {
-        OraclePrice { key, price } => {
+        OraclePrice { key: _, price } => {
             let mut err = Uint128::zero();
             if price.rate > expected_final {
                 err = (price.rate - expected_final).ok().unwrap();
@@ -552,7 +541,6 @@ fn mod_index_test(
 
             assert!(err <= acceptable, "Post-Mod price: {}, expected: {}, exceeds acceptable error", price.rate, expected_final);
         },
-        _ => assert!(false, "Failed to query index"),
     };
 }
 
