@@ -87,32 +87,6 @@ pub mod querier {
     use super::QueryMsg;
     use super::*;
 
-    /// Gets the price returned by the oracle stored at key
-    pub fn query_price(
-        contract: &Contract,
-        querier: &impl Querier,
-        key: String,
-    ) -> StdResult<OraclePrice> {
-        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetPrice { key })?,
-        }))
-    }
-
-    /// Gets the prices returned by the oracles stored at that key
-    pub fn query_prices(
-        contract: &Contract,
-        querier: &impl Querier,
-        keys: Vec<String>,
-    ) -> StdResult<Vec<OraclePrice>> {
-        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetPrices { keys })?,
-        }))
-    }
-
     // Gets the oracle contract stored at key
     pub fn query_oracle(
         contract: &Contract,
@@ -125,5 +99,18 @@ pub mod querier {
             msg: to_binary(&QueryMsg::GetOracle { key })?,
         }))?;
         Ok(resp.oracle)
+    }
+
+    pub fn query_oracles(
+        contract: &Contract,
+        querier: &impl Querier,
+        keys: Vec<String>,
+    ) -> StdResult<Vec<OracleResponse>> {
+        let resp: Result<Vec<OracleResponse>, _> = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: contract.address.clone(),
+            callback_code_hash: contract.code_hash.clone(),
+            msg: to_binary(&QueryMsg::GetOracles { keys })?,
+        }));
+        resp
     }
 }

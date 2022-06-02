@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
     band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
-    earn as earn_v1_oracle, lp as lp_oracle, router, index_oracle,
+    earn as earn_v1_oracle, lp as lp_oracle, router::{self, RegistryOperation}, index_oracle,
 };
 use cosmwasm_std::{Uint128, HumanAddr};
 
@@ -67,6 +67,36 @@ impl OracleRouterContract {
     ) -> Result<GasLog> {
         let msg = router::HandleMsg::BatchUpdateRegistry { operations };
         self.wrap_handle(&msg, sender_key)
+    }
+
+    pub fn update_oracle(
+        &self,
+        sender_key: &str, 
+        symbol: &str, 
+        new_oracle: Contract
+    ) -> Result<()> {
+        println!("Updating oracle at {}.", symbol);
+        match self.query_oracle(symbol.to_string()) {
+            Ok(_) => {
+                self.update_registry(
+                    RegistryOperation::Replace {
+                        oracle: new_oracle,
+                        key: symbol.to_string(),
+                    },
+                    Some(sender_key),
+                )?;
+            },
+            Err(_) => {
+                self.update_registry(
+                    RegistryOperation::Add {
+                        oracle: new_oracle,
+                        key: symbol.to_string(),
+                    },
+                    Some(sender_key),
+                )?;
+            },
+        }
+        Ok(())
     }
 }
 

@@ -24,8 +24,8 @@ pub const HOOMP_KEY: &str = "hoomp";
 pub const BACKEND: &str = "test";
 
 pub mod testnet {
-    pub const BAND: &str = "secret1ulxxh6erkmk4p6cjehz58cqspw3qjuedrsxp8f";
-    pub const BAND_HASH: &str = "DC6FF596E1CD83B84A6FFBD857576D7693D89A826471D58E16349015E412A3D3";
+    pub const BAND: &str = "secret14swdnnllsfvtnvwmtvnvcj2zu0njsl9cdkk5xp";
+    pub const BAND_HASH: &str = "00230665FA8DC8BB3706567CF0A61F282EDC34D2F7DF56192B2891FD9CD27B06";
     pub const STKD_SCRT: &str = "secret15kuyl5e74fp3xqfzctn3gff0lxw44k4utqpzyw";
     pub const STKD_SCRT_HASH: &str =
         "F6BE719B3C6FEB498D3554CA0398EB6B7E7DB262ACB33F84A8F12106DA6BBB09";
