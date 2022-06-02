@@ -1,8 +1,10 @@
 use fadroma::platform::Uint128;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use cosmwasm_std::HumanAddr;
 
 use crate::common::Contract;
+use secret_toolkit::utils::Query;
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -28,11 +30,15 @@ pub enum SiennaSwapExchangeQueryMsg {
     PairInfo,
 }
 
+impl Query for SiennaSwapExchangeQueryMsg {
+    const BLOCK_SIZE: usize = 256;
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SiennaDexTokenType {
     CustomToken {
-        contract_addr: String,
+        contract_addr: HumanAddr,
         token_code_hash: String,
     },
     NativeToken {
