@@ -30,27 +30,27 @@ fn main() -> Result<()> {
 
     println!("Account A: {}", user_a.blue());
 
-    let oracle_router = deploy_router(user_a.clone(), band)?;
-    let silk_oracle = deploy_silk(user_a)?;
-    let shd_oracle = deploy_shd(user_a, band)?;
-    let stkd_scrt_oracle = deploy_stkd_scrt(user_a, oracle_router.as_contract())?;
+    let oracle_router = deploy_router(user_a.clone(), band.clone())?;
+    let silk_oracle = deploy_silk(user_a.clone(), oracle_router.as_contract())?;
+    let shd_oracle = deploy_shd(user_a.clone(), band.clone())?;
+    let stkd_scrt_oracle = deploy_stkd_scrt(user_a.clone(), oracle_router.as_contract())?;
     let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a, oracle_router.as_contract())?;
     
     oracle_router.update_oracle(HOOMP_KEY, "SILK", silk_oracle.as_contract())?;
     oracle_router.update_oracle(HOOMP_KEY, "SHD", shd_oracle.as_contract())?;
     oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
-    oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT/SCRT SiennaSwap LP", silk_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT/SCRT SiennaSwap LP", stkd_scrt_scrt_lp_oracle.as_contract())?;
 
     Ok(())
 }
 
-fn deploy_silk(user_a: String) -> Result<IndexOracleContract> {
+fn deploy_silk(user_a: String, router: Contract) -> Result<IndexOracleContract> {
     println!("Deploying SILK oracle.");
 
     let silk_oracle = IndexOracleContract::new(
         &index_oracle::InitMsg {
             admins: None,
-            router: router.as_contract(),
+            router,
             symbol: "SILK".to_string(),
             basket: vec![
                 ("USD", 39_33 * 10u128.pow(14)), //  39.32%
