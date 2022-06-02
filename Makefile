@@ -14,7 +14,7 @@ rm ./$(1).wasm
 endef
 
 # ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle 
-ORACLES = index_oracle 
+ORACLES = index_oracle oracle_router
 CONTRACTS = ${ORACLES} mock_band
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
