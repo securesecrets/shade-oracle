@@ -126,4 +126,17 @@ pub mod querier {
         }))?;
         Ok(resp.oracle)
     }
+
+    pub fn query_oracles(
+        contract: &Contract,
+        querier: &impl Querier,
+        keys: Vec<String>,
+    ) -> StdResult<Vec<OracleResponse>> {
+        let resp: Result<Vec<OracleResponse>, _> = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: contract.address.clone(),
+            callback_code_hash: contract.code_hash.clone(),
+            msg: to_binary(&QueryMsg::GetOracles { keys })?,
+        }));
+        resp
+    }
 }
