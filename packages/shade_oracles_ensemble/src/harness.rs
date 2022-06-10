@@ -33,6 +33,10 @@ use siennaswap_lp_oracle;
 pub struct SiennaSwapLp;
 implement_harness!(SiennaSwapLp, siennaswap_lp_oracle);
 
+use siennaswap_market_oracle;
+pub struct SiennaMarketOracle;
+implement_harness!(SiennaMarketOracle, sienna_market_oracle);
+
 use mock_band;
 pub struct MockBand;
 implement_harness!(MockBand, mock_band);
@@ -48,3 +52,4 @@ implement_harness!(IndexOracle, index_oracle);
 use oracle_router;
 pub struct OracleRouter;
 implement_harness!(OracleRouter, oracle_router);
+

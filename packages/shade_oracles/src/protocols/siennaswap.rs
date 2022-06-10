@@ -28,6 +28,7 @@ pub struct SiennaSwapPairInfo {
 #[serde(rename_all = "snake_case")]
 pub enum SiennaSwapExchangeQueryMsg {
     PairInfo,
+    SwapSimulation { offer: TokenTypeAmount },
 }
 
 impl Query for SiennaSwapExchangeQueryMsg {
@@ -44,4 +45,25 @@ pub enum SiennaDexTokenType {
     NativeToken {
         denom: String,
     },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct TokenTypeAmount {
+    pub amount: Uint128,
+    pub token: SiennaDexTokenType,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct SwapSimulation {
+    pub offer: TokenTypeAmount,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct SimulationResponse {
+    pub return_amount: Uint128,
+    pub spread_amount: Uint128,
+    pub commission_amount: Uint128,
 }
