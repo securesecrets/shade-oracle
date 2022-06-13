@@ -9,9 +9,12 @@ use shade_oracles::{
         OraclePrice
     },
     protocols::siennaswap::{
+        Pair,
         SiennaDexTokenType, 
         SiennaSwapExchangeQueryMsg, 
         SiennaSwapPairInfoResponse,
+        TokenTypeAmount,
+        SimulationResponse,
     },
     router::querier::query_oracle,
     storage::Item,
@@ -37,10 +40,14 @@ use secret_toolkit::{
 
 const CONFIG: Item<Config> = Item::new("config");
 
-const PRIMARY_TOKEN: Item<TokenInfo> = Item::new("primary");
-const BASE_TOKEN: Item<TokenInfo> = Item::new("base");
-const PRIMARY_INFO: Item<TokenInfo> = Item::new("primary");
-const BASE_INFO: Item<TokenInfo> = Item::new("base");
+const PRIMARY_TOKEN: Item<Contract> = Item::new("primary_token");
+//const BASE_TOKEN: Item<Contract> = Item::new("base_token");
+const PRIMARY_INFO: Item<TokenInfo> = Item::new("primary_info");
+const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
+
+pub fn normalize_price(amount: Uint128, decimals: u8) -> Uint128 {
+    (amount.u128() * 10u128.pow(18u32 - u32::try_from(decimals).unwrap())).into()
+}
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -55,8 +62,10 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
             msg.pair.address.clone(),
         )?;
 
-    let tokens: [Contract; 2] = pair_info_response.pair_info.pair
-        .into_iter()
+    let tokens: [Contract; 2] = vec![
+        pair_info_response.pair_info.pair.token_0, 
+        pair_info_response.pair_info.pair.token_1,
+    ].iter()
         .filter_map(|t| match t {
             SiennaDexTokenType::CustomToken {
                 contract_addr, token_code_hash,
@@ -72,7 +81,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .unwrap();
 
     let token_infos: [TokenInfo; 2] = tokens
-        .into_iter()
+        .iter()
         .map(|t| query_token_info(&t, &deps.querier)
                     .ok()
                     .unwrap()
@@ -117,9 +126,15 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
                     config.base_peg, config.router.address, e.to_string())));
     };
 
+    /*
+    return Err(StdError::generic_err(format!("primary token contract {}, {}", tokens[primary_i].address, tokens[primary_i].code_hash)));
+    */
+
     CONFIG.save(&mut deps.storage, &config)?;
+    PRIMARY_TOKEN.save(&mut deps.storage, &tokens[primary_i].clone())?;
+    //BASE_TOKEN.save(&mut deps.storage, &tokens[base_i].clone())?;
     PRIMARY_INFO.save(&mut deps.storage, &token_infos[primary_i])?;
-    BASE_INFO.save(&mut deps.storage, &token_infos[primary_i])?;
+    BASE_INFO.save(&mut deps.storage, &token_infos[base_i])?;
 
     Ok(InitResponse::default())
 }
@@ -197,15 +212,16 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<OraclePrice> {
     let config = CONFIG.load(&deps.storage)?;
 
-    let primary_token = PRIMARY_TOKEN.load(&deps.storage)?;
+    let primary_token: Contract = PRIMARY_TOKEN.load(&deps.storage)?;
+    //return Err(StdError::generic_err("here"));
     //let base_token = BASE_TOKEN.load(&deps.storage)?;
 
     let primary_info = PRIMARY_INFO.load(&deps.storage)?;
 
     // Simulate trade 1 primary -> 1 base
-    let mut exchange_rate = SiennaSwapExchangeQueryMsg {
+    let sim: SimulationResponse = SiennaSwapExchangeQueryMsg::SwapSimulation {
         offer: TokenTypeAmount {
-            amount: 10u128.pow(primary_info.decimals),
+            amount: Uint128(10u128.pow(primary_info.decimals.into())),
             token: SiennaDexTokenType::CustomToken {
                 contract_addr: primary_token.address,
                 token_code_hash: primary_token.code_hash,
@@ -215,17 +231,17 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         &deps.querier,
         config.pair.code_hash.clone(),
         config.pair.address.clone(),
-    );
+    )?;
 
     // Normalize to 'rate * 10^18'
     let base_info = BASE_INFO.load(&deps.storage)?;
-    exchange_rate = exchange_rate * 10u128.pow(18 - base_info.decimals);
+    let exchange_rate = normalize_price(sim.return_amount, base_info.decimals);
 
     // Query router for base_peg/USD
     let base_usd_price = query_price(&config.router, &deps.querier, config.base_peg.clone())?;
 
     // Translate price to primary/USD
-    let price = band_usd_price.multiply_ratio(exchange_rate, 10u128.pow(18));
+    let price = base_usd_price.price.rate.multiply_ratio(exchange_rate, 10u128.pow(18));
 
     Ok(OraclePrice::new(key,
         ReferenceData {

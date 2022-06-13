@@ -14,7 +14,10 @@ rm ./$(1).wasm
 endef
 
 ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle siennaswap_market_oracle
-CONTRACTS = ${ORACLES} mock_band
+
+CONTRACTS = ${ORACLES} mock_band mock_sienna_pair
+
+PKGS = shade_oracles shade_oracles_ensemble shade_oracles_integration
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
 
@@ -58,6 +61,9 @@ test-%: %
 $(CONTRACTS): setup
 	(cd ${contracts_dir}/$@; ${build-release})
 	@$(MAKE) $(addprefix compress-,$(@))
+
+$(PKGS):
+	(cd packages/$@; ${build-release})
 
 setup: $(compiled_dir) $(checksum_dir) $(sub_dirs)
 

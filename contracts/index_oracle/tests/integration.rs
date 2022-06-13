@@ -165,7 +165,6 @@ fn basic_index_test(
         ),
     ).unwrap();
 
-    // Not sure why this query wont let me unwrap
     match ensemble.query(
         index_oracle.address.clone(),
         &index_oracle::QueryMsg::GetPrice {

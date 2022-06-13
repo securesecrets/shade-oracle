@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use cosmwasm_std::{ HumanAddr, Uint128 };
+use cosmwasm_std::{ HumanAddr, Uint128, to_binary };
 
 use fadroma::{
     ContractLink, 
@@ -11,18 +11,18 @@ use shade_oracles_ensemble::harness::{
     OracleRouter,
     ProxyBandOracle,
     SiennaMarketOracle,
-};
-
-use contract_harness::{
     MockSiennaPair,
+    Snip20,
 };
 
 use shade_oracles::{
     common::{Contract, OraclePrice},
     band::{self, proxy},
     router,
-    sienna_market_oracle,
+    siennaswap_market_oracle,
 };
+
+use mock_sienna_pair::contract as mock_sienna_pair;
 
 fn basic_market_test(
     symbol: String, 
@@ -30,10 +30,10 @@ fn basic_market_test(
     prices: HashMap<String, Uint128>,
     primary_symbol: String,
     primary_pool: Uint128,
-    primary_decimals: Uint128,
+    primary_decimals: u32,
     base_symbol: String,
     base_pool: Uint128,
-    base_decimals: Uint128,
+    base_decimals: u32,
     expected: Uint128,
 ) {
     let mut ensemble = ContractEnsemble::new(50);
@@ -43,6 +43,7 @@ fn basic_market_test(
     let reg_mock_band = ensemble.register(Box::new(MockBand));
     let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
     let reg_sienna_pair = ensemble.register(Box::new(MockSiennaPair));
+    let reg_snip20 = ensemble.register(Box::new(Snip20));
 
     let band = ensemble.instantiate(
         reg_mock_band.id,
@@ -94,6 +95,7 @@ fn basic_market_test(
     ).unwrap();
 
 
+    /*
     let mut operations = vec![];
 
     for (sym, _) in prices.clone() {
@@ -118,6 +120,7 @@ fn basic_market_test(
             router.clone(),
         ),
     ).unwrap();
+    */
 
     // Configure mock band prices
     for (sym, price) in prices.clone() {
@@ -135,17 +138,87 @@ fn basic_market_test(
         ).unwrap();
     }
 
+    // Setup tokens
+    let primary_token = ensemble
+        .instantiate(
+            reg_snip20.id,
+            &snip20_reference_impl::msg::InitMsg {
+                name: "Primary".into(),
+                admin: Some("admin".into()),
+                symbol: primary_symbol,
+                decimals: primary_decimals as u8,
+                initial_balances: None,
+                prng_seed: to_binary("").ok().unwrap(),
+                config: None,
+            },
+            MockEnv::new("admin", ContractLink {
+                address: HumanAddr("primary_token".into()),
+                code_hash: reg_snip20.code_hash.clone(),
+            }),
+        )
+        .unwrap();
+
+    let base_token = ensemble
+        .instantiate(
+            reg_snip20.id,
+            &snip20_reference_impl::msg::InitMsg {
+                name: "Base".into(),
+                admin: Some("admin".into()),
+                symbol: base_symbol,
+                decimals: base_decimals as u8,
+                initial_balances: None,
+                prng_seed: to_binary("").ok().unwrap(),
+                config: None,
+            },
+            MockEnv::new("admin", ContractLink {
+                address: HumanAddr("base_token".into()),
+                code_hash: reg_snip20.code_hash.clone(),
+            }),
+        )
+        .unwrap();
+
+    let sienna_pair = ensemble.instantiate(
+        reg_sienna_pair.id,
+        &mock_sienna_pair::InitMsg { },
+        MockEnv::new(
+            "admin",
+            ContractLink {
+                address: HumanAddr("sienna_pair".into()),
+                code_hash: reg_sienna_pair.code_hash.clone(),
+            }
+        )
+    ).unwrap();
+
+    ensemble.execute(
+        &mock_sienna_pair::HandleMsg::MockPool {
+            token_a: Contract {
+                address: primary_token.address,
+                code_hash: primary_token.code_hash,
+            },
+            amount_a: primary_pool,
+            token_b: Contract {
+                address: base_token.address,
+                code_hash: base_token.code_hash,
+            },
+            amount_b: base_pool,
+        },
+        MockEnv::new(
+            "admin",
+            sienna_pair.clone(),
+        ),
+    ).unwrap();
+
     let market_oracle = ensemble.instantiate(
         reg_market_oracle.id,
-        &sienna_market_oracle::InitMsg {
+        &siennaswap_market_oracle::InitMsg {
             admins: None,
             router: Contract {
                 address: router.address.clone(),
                 code_hash: router.code_hash.clone(),
             },
             pair: Contract {
-                address: pair.address.clone(),
-                code_hash: pair.code_hash.clone(),
+                address: sienna_pair.address.clone(),
+                code_hash: sienna_pair.code_hash.clone(),
             },
             symbol: symbol.clone(),
             base_peg: base_peg.clone(),
@@ -154,7 +227,7 @@ fn basic_market_test(
             "admin",
             ContractLink {
                 address: HumanAddr("market".into()),
-                code_hash: market_oracle.code_hash.clone(),
+                code_hash: reg_market_oracle.code_hash.clone(),
             }
         )
     ).unwrap();
@@ -178,11 +251,11 @@ fn basic_market_test(
 
     match ensemble.query(
         market_oracle.address.clone(),
-        &market_oracle::QueryMsg::GetPrice {
+        &siennaswap_market_oracle::QueryMsg::GetPrice {
             key: symbol.clone()
-        }
+        },
     ).unwrap() {
-        OraclePrice { key: _, price } => assert_eq!(expected, price, "Expected: {} Got: {}", expected, price),
+        OraclePrice { key: _, price } => assert_eq!(expected, price.rate, "Expected: {} Got: {}", expected, price.rate),
     };
 }
 
@@ -201,10 +274,10 @@ macro_rules! basic_market_tests {
                     prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
                     primary_symbol.to_string(),
                     Uint128(primary_pool),
-                    Uint128(primary_decimals),
+                    primary_decimals,
                     base_symbol.to_string(),
                     Uint128(base_pool),
-                    Uint128(base_decimals),
+                    base_decimals,
                     Uint128(expected),
                 );
             }
@@ -217,30 +290,30 @@ basic_market_tests! {
         "USDT",
         None,
         vec![
-            ("USDT", 10u128.pow(18)), // 1$
-            ("USDC", 10u128.pow(18)), // 1$
+            ("USDT", 10u128.pow(18)), // $1
+            ("USDC", 10u128.pow(18)), // $1
         ],
         "USDT",
-        10u128.pow(100),
+        10u128.pow(10),
         6,
         "USDC",
-        10u128.pow(100), // $1
+        10u128.pow(10),
         6,
-        10u128.pow(18),
+        0_999901 * 10u128.pow(12), // ~$.99 (slippage)
     ),
     usd_stables_diff_decimals: (
         "USDT",
         None,
         vec![
-            ("USDT", 10u128.pow(18)), // 1$
-            ("USDC", 10u128.pow(18)), // 1$
+            ("USDT", 10u128.pow(18)), // $1
+            ("USDC", 10u128.pow(18)), // $1
         ],
         "USDT",
-        10u128.pow(100),
+        10u128.pow(16),
         13,
         "USDC",
-        10u128.pow(100), // $1
+        10u128.pow(21),
         18,
-        10u128.pow(18),
+        999000999000999001, // ~$.99 (slippage)
     ),
 }

@@ -26,4 +26,7 @@ serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
 cosmwasm-schema = "0.10.1"
-contract_harness = { version = "0.1.0", git = "ssh://github.com/securesecrets/shade.git", branch = "lp-shade-swap"}
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = ["scrt", "backtraces"] }
+shade-oracles-ensemble = { path = "../../packages/shade_oracles_ensemble" }
+snip20-reference-impl = { git = "ssh://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
+mock-sienna-pair = { path = "../mock_sienna_pair" }
