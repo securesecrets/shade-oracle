@@ -1,22 +1,18 @@
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{
+        normalize_price,
         querier::{query_price, query_token_info},
         BLOCK_SIZE, Contract, 
         ResponseStatus, 
-        throw_unsupported_symbol_error,
-        HandleStatusAnswer, 
         OraclePrice
     },
     protocols::siennaswap::{
-        Pair,
         SiennaDexTokenType, 
         SiennaSwapExchangeQueryMsg, 
         SiennaSwapPairInfoResponse,
         TokenTypeAmount,
         SimulationResponse,
     },
-    router::querier::query_oracle,
     storage::Item,
     band::ReferenceData,
     siennaswap_market_oracle::{
@@ -31,7 +27,7 @@ use cosmwasm_std::{
     HumanAddr, InitResponse,
     Querier, QueryResult, 
     StdError, StdResult, Storage, 
-    Uint128, Binary,
+    Uint128,
 };
 use secret_toolkit::{
     utils::{Query, pad_handle_result, pad_query_result},
@@ -44,10 +40,6 @@ const PRIMARY_TOKEN: Item<Contract> = Item::new("primary_token");
 //const BASE_TOKEN: Item<Contract> = Item::new("base_token");
 const PRIMARY_INFO: Item<TokenInfo> = Item::new("primary_info");
 const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
-
-pub fn normalize_price(amount: Uint128, decimals: u8) -> Uint128 {
-    (amount.u128() * 10u128.pow(18u32 - u32::try_from(decimals).unwrap())).into()
-}
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -82,7 +74,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let token_infos: [TokenInfo; 2] = tokens
         .iter()
-        .map(|t| query_token_info(&t, &deps.querier)
+        .map(|t| query_token_info(t, &deps.querier)
                     .ok()
                     .unwrap()
                     .token_info
@@ -123,7 +115,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     if let Err(e) = query_price(&config.router, &deps.querier, config.base_peg.clone()) {
         return Err(StdError::generic_err(format!(
                     "Failed to query base_peg {} from router {}; {}", 
-                    config.base_peg, config.router.address, e.to_string())));
+                    config.base_peg, config.router.address, e)));
     };
 
     /*

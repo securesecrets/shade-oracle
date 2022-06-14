@@ -1,4 +1,4 @@
-use crate::{common::Contract};
+use crate::{common::{Contract, normalize_price}};
 use cosmwasm_std::*;
 use fadroma::Uint256;
 use schemars::JsonSchema;
@@ -122,8 +122,8 @@ pub fn get_lp_token_spot_price(
     total_supply: u128,
     lp_token_decimals: u8,
 ) -> StdResult<u128> {
-    let normalized_reserve1 = Uint256::from(a.reserve * 10u128.pow((18 - a.decimals).into()));
-    let normalized_reserve2 = Uint256::from(b.reserve * 10u128.pow((18 - b.decimals).into()));
+    let normalized_reserve1 = Uint256::from(normalize_price(Uint128(a.reserve), a.decimals));
+    let normalized_reserve2 = Uint256::from(normalize_price(Uint128(b.reserve), b.decimals));
     let normalized_supply =
         Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
     let safe_price_a = Uint256::from(a.price);
@@ -143,8 +143,8 @@ pub fn get_fair_lp_token_price(
     total_supply: u128,
     lp_token_decimals: u8,
 ) -> StdResult<u128> {
-    let normalized_reserve1 = Uint256::from(a.reserve * 10u128.pow((18 - a.decimals).into()));
-    let normalized_reserve2 = Uint256::from(b.reserve * 10u128.pow((18 - b.decimals).into()));
+    let normalized_reserve1 = Uint256::from(normalize_price(Uint128(a.reserve), a.decimals));
+    let normalized_reserve2 = Uint256::from(normalize_price(Uint128(b.reserve), b.decimals));
     let normalized_supply =
         Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
     let r = normalized_reserve1
