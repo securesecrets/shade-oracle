@@ -20,6 +20,7 @@ use shade_oracles::{
         HandleMsg, HandleAnswer,
         QueryMsg,
     },
+    router::querier::query_oracle,
 };
 use cosmwasm_std::{
     to_binary, Api, Env, 
@@ -230,7 +231,8 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let exchange_rate = normalize_price(sim.return_amount, base_info.decimals);
 
     // Query router for base_peg/USD
-    let base_usd_price = query_price(&config.router, &deps.querier, config.base_peg.clone())?;
+    let oracle = query_oracle(&config.router, &deps.querier, config.base_peg.clone())?;
+    let base_usd_price = query_price(&oracle, &deps.querier, config.base_peg.clone())?;
 
     // Translate price to primary/USD
     let price = base_usd_price.price.rate.multiply_ratio(exchange_rate, 10u128.pow(18));
