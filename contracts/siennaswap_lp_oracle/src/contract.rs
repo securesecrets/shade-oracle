@@ -76,7 +76,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     if let SiennaDexTokenType::CustomToken {
         contract_addr,
         token_code_hash,
-    } = &pair_info.pair[0]
+    } = &pair_info.pair.token_0
     {
         token0.address = HumanAddr(contract_addr.to_string());
         token0.code_hash = token_code_hash.to_string();
@@ -88,7 +88,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     if let SiennaDexTokenType::CustomToken {
         contract_addr,
         token_code_hash,
-    } = &pair_info.pair[1]
+    } = &pair_info.pair.token_1
     {
         token1.address = HumanAddr(contract_addr.to_string());
         token1.code_hash = token_code_hash.to_string();

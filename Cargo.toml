@@ -10,6 +10,8 @@ members = [
   "contracts/siennaswap_lp_oracle",
   "contracts/shade_staking_derivative_oracle",
   "contracts/siennaswap_lp_spot_oracle",
+  "contracts/siennaswap_market_oracle",
+  "contracts/mock_sienna_pair",
 ]
 
 [profile.release]

@@ -130,6 +130,31 @@ impl TestableContract for ProxyBandOracleContract {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct SiennaMarketOracleContract {
+    pub info: NetContract,
+}
+impl OracleContract for SiennaMarketOracleContract {}
+impl TestableContract for SiennaMarketOracleContract {
+    fn get_info(&self) -> &NetContract {
+        &self.info
+    }
+    fn get_file() -> &'static str {
+        SIENNA_MARKET_ORACLE_FILE
+    }
+}
+
+impl SiennaMarketOracleContract {
+    pub fn new(
+        msg: &shade_oracles::siennaswap_market_oracle::InitMsg,
+        account_key: Option<&str>,
+        name: Option<&str>,
+    ) -> Result<Self> {
+        let info = Self::wrap_init(msg, account_key, name)?;
+        Ok(SiennaMarketOracleContract { info })
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct SiennaswapSpotLpOracleContract {
     pub info: NetContract,
 }

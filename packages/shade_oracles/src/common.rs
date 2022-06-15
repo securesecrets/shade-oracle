@@ -79,6 +79,10 @@ pub fn throw_unsupported_symbol_error(key: String) -> StdError {
     StdError::generic_err(format!("{} is not supported as a key.", key))
 }
 
+pub fn normalize_price(amount: Uint128, decimals: u8) -> Uint128 {
+    (amount.u128() * 10u128.pow(18u32 - u32::try_from(decimals).unwrap())).into()
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct CanonicalContract {
