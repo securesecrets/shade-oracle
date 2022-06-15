@@ -25,6 +25,7 @@ pub const HOOMP_KEY: &str = "hoomp";
 pub const BACKEND: &str = "test";
 
 pub mod testnet {
+
     pub const BAND: &str = "secret14swdnnllsfvtnvwmtvnvcj2zu0njsl9cdkk5xp";
     pub const BAND_HASH: &str = "00230665FA8DC8BB3706567CF0A61F282EDC34D2F7DF56192B2891FD9CD27B06";
     pub const STKD_SCRT: &str = "secret15kuyl5e74fp3xqfzctn3gff0lxw44k4utqpzyw";
@@ -34,8 +35,6 @@ pub mod testnet {
     pub const STKD_SCRT_SCRT_POOL_HASH: &str =
         "33EAC42C44EE69ACFE1F56CE7B14FE009A7B611E86F275D7AF2D32DD0D33D5A9";
 
-    pub const SIENNA_SHD_SSCRT_PAIR = Contract { 
-        address: "secret1pak8feexy97myp22pjkxmsp5p8dmlkp4mkfxsl",
-        code_hash: "33eac42c44ee69acfe1f56ce7b14fe009a7b611e86f275d7af2d32dd0d33d5a9",
-    };
+    pub const SIENNA_SHD_SSCRT_PAIR: &str = "secret1pak8feexy97myp22pjkxmsp5p8dmlkp4mkfxsl";
+    pub const SIENNA_SHD_SSCRT_PAIR_HASH: &str = "33eac42c44ee69acfe1f56ce7b14fe009a7b611e86f275d7af2d32dd0d33d5a9";
 }

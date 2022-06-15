@@ -143,6 +143,17 @@ impl TestableContract for SiennaMarketOracleContract {
     }
 }
 
+impl SiennaMarketOracleContract {
+    pub fn new(
+        msg: &shade_oracles::siennaswap_market_oracle::InitMsg,
+        account_key: Option<&str>,
+        name: Option<&str>,
+    ) -> Result<Self> {
+        let info = Self::wrap_init(msg, account_key, name)?;
+        Ok(SiennaMarketOracleContract { info })
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct SiennaswapSpotLpOracleContract {
     pub info: NetContract,
