@@ -130,6 +130,20 @@ impl TestableContract for ProxyBandOracleContract {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct SiennaMarketOracleContract {
+    pub info: NetContract,
+}
+impl OracleContract for SiennaMarketOracleContract {}
+impl TestableContract for SiennaMarketOracleContract {
+    fn get_info(&self) -> &NetContract {
+        &self.info
+    }
+    fn get_file() -> &'static str {
+        SIENNA_MARKET_ORACLE_FILE
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct SiennaswapSpotLpOracleContract {
     pub info: NetContract,
 }

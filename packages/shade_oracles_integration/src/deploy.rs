@@ -20,6 +20,7 @@ use shade_oracles_integration::contract_helpers::{
         BandContract, EarnV1OracleContract, OracleContract, OracleRouterContract,
         ProxyBandOracleContract, SiennaswapSpotLpOracleContract,
         ShadeStakingDerivativeOracleContract, IndexOracleContract,
+        SiennaMarketOracleContract,
     },
     TestableContract,
 };
@@ -102,16 +103,20 @@ fn deploy_router(user_a: String, band: Contract) -> Result<OracleRouterContract>
     Ok(router)
 }
 
-fn deploy_shd(user_a: String, band: Contract) -> Result<(ProxyBandOracleContract)> {
+fn deploy_shd(user_a: String, router: Contract) -> Result<(SiennaMarketOracleContract)> {
 
-    println!("Deploying hardcoded SHD oracle.");
+    println!("Deploying SHD oracle looking at Sienna SHD/SSCRT base pegged to SCRT.");
 
-    let shd_oracle = ProxyBandOracleContract::new(
-        user_a.clone(),
-        "USD",
-        band,
+    let shd_oracle = SiennaMarketOracleContract::new(
+        &siennaswap_market_oracle::InitMsg {
+            admins: None,
+            router,
+            pair: SIENNA_SHD_SSCRT_PAIR,
+            symbol: "SHD".into(),
+            base_peg: "SCRT",
+        },
         Some(HOOMP_KEY),
-        Some("hardcoded-shd-oracle"),
+        Some("sienna-market-shd-oracle"),
     )?;
     Ok(shd_oracle)  
 }

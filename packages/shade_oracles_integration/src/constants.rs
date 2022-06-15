@@ -14,6 +14,7 @@ pub const SHADE_STAKING_DERIVATIVE_ORACLE_FILE: &str =
     "../../compiled/shade_staking_derivative_oracle.wasm.gz";
 pub const EARN_V1_ORACLE_FILE: &str = "../../compiled/earn_v1_oracle.wasm.gz";
 pub const INDEX_ORACLE_FILE: &str = "../../compiled/index_oracle.wasm.gz";
+pub const SIENNA_MARKET_ORACLE_FILE: &str = "../../compiled/siennaswap_market_oracle.wasm.gz";
 
 // Default executer & admin address for testing
 pub const USER_A_KEY: &str = "a";
@@ -32,4 +33,9 @@ pub mod testnet {
     pub const STKD_SCRT_SCRT_POOL: &str = "secret132xpyzj9eussjgukx9srwseh7mgm3d2g4d34pt";
     pub const STKD_SCRT_SCRT_POOL_HASH: &str =
         "33EAC42C44EE69ACFE1F56CE7B14FE009A7B611E86F275D7AF2D32DD0D33D5A9";
+
+    pub const SIENNA_SHD_SSCRT_PAIR = Contract { 
+        address: "secret1pak8feexy97myp22pjkxmsp5p8dmlkp4mkfxsl",
+        code_hash: "33eac42c44ee69acfe1f56ce7b14fe009a7b611e86f275d7af2d32dd0d33d5a9",
+    };
 }

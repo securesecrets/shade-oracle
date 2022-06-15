@@ -57,13 +57,3 @@ pub enum QueryMsg {
     },
     GetConfig { },
 }
-
-/*
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum QueryAnswer {
-    Basket {
-        basket: Vec<(String, Uint128, Uint128)>,
-    },
-}
-*/
