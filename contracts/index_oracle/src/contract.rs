@@ -13,7 +13,7 @@ use cosmwasm_std::{
     Uint128,
     QueryResult,
 };
-use secret_cosmwasm_math_compat::{self as compat, Uint512};
+use cosmwasm_math_compat::{self as compat, Uint512};
 use secret_toolkit::utils::{pad_query_result, pad_handle_result};
 
 use std::collections::HashMap;
