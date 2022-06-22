@@ -80,34 +80,6 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             token_b,
             amount_b,
         } => {
-            /*
-            PAIR_INFO.save(&mut deps.storage, &PairInfoResponse {
-                liquidity_token: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                factory: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                pair: TokenPair(
-                    TokenType::CustomToken {
-                        contract_addr: token_a.address,
-                        token_code_hash: token_a.code_hash,
-                    },
-                    TokenType::CustomToken {
-                        contract_addr: token_b.address,
-                        token_code_hash: token_b.code_hash,
-                    },
-                ),
-                amount_0: amount_a,
-                amount_1: amount_b,
-                total_liquidity: Uint128::zero(),
-                contract_version: 0u32,
-            })?;
-            */
-
-            //assert!(false, "PRE SAVE");
             PAIR_INFO.save(&mut deps.storage, &(
                 TokenType::CustomToken {
                     contract_addr: token_a.address,
@@ -121,9 +93,6 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                 amount_b,
             ))?;
 
-            //PAIR_INFO.save(&mut deps.storage, &pair_info)?;
-            //assert!(false, "POST SAVE");
-
             Ok(HandleResponse::default())
         }
     }
@@ -136,7 +105,24 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
     msg: ShadeSwapQueryMsg,
 ) -> StdResult<Binary> {
     match msg {
-        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(&deps.storage)?),
+        ShadeSwapQueryMsg::GetPairInfo => {
+            let (token_0, token_1, amount_0, amount_1) = PAIR_INFO.load(&deps.storage)?;
+            to_binary(&PairInfoResponse {
+                liquidity_token: ContractLink {
+                    address: HumanAddr("".to_string()),
+                    code_hash: "".to_string(),
+                },
+                factory: ContractLink {
+                    address: HumanAddr("".to_string()),
+                    code_hash: "".to_string(),
+                },
+                pair: TokenPair(token_0, token_1),
+                amount_0,
+                amount_1,
+                total_liquidity: Uint128::zero(),
+                contract_version: 0u32,
+            })
+        }
         ShadeSwapQueryMsg::GetEstimatedPrice { offer } => {
             //TODO: check swap doesnt exceed pool size
 
