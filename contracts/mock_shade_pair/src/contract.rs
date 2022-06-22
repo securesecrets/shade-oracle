@@ -19,6 +19,7 @@ use secret_toolkit::utils::InitCallback;
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::Contract,
+    storage::Item,
     protocols::shadeswap::{
         TokenType,
         TokenPair,
@@ -46,15 +47,7 @@ impl InitCallback for InitMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-pub static PAIR_INFO: &[u8] = b"pair_info";
-
-pub fn pair_info_r<S: Storage>(storage: &S) -> ReadonlySingleton<S, PairInfoResponse> {
-    singleton_read(storage, PAIR_INFO)
-}
-
-pub fn pair_info_w<S: Storage>(storage: &mut S) -> Singleton<S, PairInfoResponse> {
-    singleton(storage, PAIR_INFO)
-}
+const PAIR_INFO: Item<PairInfoResponse> = Item::new("pair_info");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     _deps: &mut Extern<S, A, Q>,
@@ -87,14 +80,14 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             token_b,
             amount_b,
         } => {
-            let pair_info = PairInfoResponse {
+            PAIR_INFO.save(&mut deps.storage, &PairInfoResponse {
                 liquidity_token: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
+                    address: HumanAddr("addr".to_string()),
+                    code_hash: "hash".to_string(),
                 },
                 factory: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
+                    address: HumanAddr("addr".to_string()),
+                    code_hash: "hash".to_string(),
                 },
                 pair: TokenPair(
                     TokenType::CustomToken {
@@ -109,11 +102,12 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                 amount_0: amount_a,
                 amount_1: amount_b,
                 total_liquidity: Uint128::zero(),
-                contract_version: 0,
-            };
+                contract_version: 0u32,
+            })?;
 
-            pair_info_w(&mut deps.storage).save(&pair_info)?;
-            assert!(false, "INCONTRACT");
+            //assert!(false, "PRE SAVE");
+            //PAIR_INFO.save(&mut deps.storage, &pair_info)?;
+            //assert!(false, "POST SAVE");
 
             Ok(HandleResponse::default())
         }
@@ -127,7 +121,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
     msg: ShadeSwapQueryMsg,
 ) -> StdResult<Binary> {
     match msg {
-        ShadeSwapQueryMsg::GetPairInfo => to_binary(&pair_info_r(&deps.storage).load()?),
+        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(&deps.storage)?),
         ShadeSwapQueryMsg::GetEstimatedPrice { offer } => {
             //TODO: check swap doesnt exceed pool size
 
@@ -144,9 +138,9 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 }
             };
 
-            let pair_info = pair_info_r(&deps.storage).load()?;
+            let pair_info = PAIR_INFO.load(&deps.storage)?;
 
-            match pair_info.pair.0{
+            match pair_info.pair.0 {
                 TokenType::CustomToken {
                     contract_addr,
                     token_code_hash: _,
@@ -166,7 +160,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 }
             };
 
-            match pair_info.pair.1{
+            match pair_info.pair.1 {
                 TokenType::CustomToken {
                     contract_addr,
                     token_code_hash: _,
