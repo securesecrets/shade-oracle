@@ -180,7 +180,6 @@ fn basic_market_test(
         ),
     ).unwrap();
 
-    //assert!(false, "before market");
     let market_oracle = ensemble.instantiate(
         reg_market_oracle.id,
         &shadeswap_market_oracle::InitMsg {
@@ -204,7 +203,6 @@ fn basic_market_test(
             }
         )
     ).unwrap().instance;
-    //assert!(false, "after market");
 
     // Configure router w/ market oracle
     ensemble.execute(
