@@ -181,7 +181,7 @@ fn basic_market_test(
             shade_pair.clone(),
         ),
     ).unwrap();
-    assert!(false, "HERE2");
+    //assert!(false, "HERE2");
 
     let market_oracle = ensemble.instantiate(
         reg_market_oracle.id,
