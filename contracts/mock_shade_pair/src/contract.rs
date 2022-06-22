@@ -47,7 +47,7 @@ impl InitCallback for InitMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-const PAIR_INFO: Item<(TokenType<HumanAddr>, TokenType<HumanAddr>, Uint128, Uint128)> = Item::new("pair_info");
+const PAIR_INFO: Item<PairInfoResponse> = Item::new("pair_info");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     _deps: &mut Extern<S, A, Q>,
@@ -80,18 +80,30 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             token_b,
             amount_b,
         } => {
-            PAIR_INFO.save(&mut deps.storage, &(
-                TokenType::CustomToken {
-                    contract_addr: token_a.address,
-                    token_code_hash: token_a.code_hash,
+            PAIR_INFO.save(&mut deps.storage, &PairInfoResponse {
+                liquidity_token: ContractLink {
+                    address: HumanAddr("".to_string()),
+                    code_hash: "".to_string(),
                 },
-                TokenType::CustomToken {
-                    contract_addr: token_b.address,
-                    token_code_hash: token_b.code_hash,
+                factory: ContractLink {
+                    address: HumanAddr("".to_string()),
+                    code_hash: "".to_string(),
                 },
-                amount_a,
-                amount_b,
-            ))?;
+                pair: TokenPair(
+                    TokenType::CustomToken {
+                        contract_addr: token_a.address,
+                        token_code_hash: token_a.code_hash,
+                    },
+                    TokenType::CustomToken {
+                        contract_addr: token_b.address,
+                        token_code_hash: token_b.code_hash,
+                    },
+                ),
+                amount_0: amount_a,
+                amount_1: amount_b,
+                total_liquidity: Uint128::zero(),
+                contract_version: 0,
+            })?;
 
             Ok(HandleResponse::default())
         }
@@ -105,24 +117,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
     msg: ShadeSwapQueryMsg,
 ) -> StdResult<Binary> {
     match msg {
-        ShadeSwapQueryMsg::GetPairInfo => {
-            let (token_0, token_1, amount_0, amount_1) = PAIR_INFO.load(&deps.storage)?;
-            to_binary(&PairInfoResponse {
-                liquidity_token: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                factory: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                pair: TokenPair(token_0, token_1),
-                amount_0,
-                amount_1,
-                total_liquidity: Uint128::zero(),
-                contract_version: 0u32,
-            })
-        }
+        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(&deps.storage)?),
         ShadeSwapQueryMsg::GetEstimatedPrice { offer } => {
             //TODO: check swap doesnt exceed pool size
 
@@ -139,22 +134,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 }
             };
 
-            let (token_0, token_1, amount_0, amount_1) = PAIR_INFO.load(&deps.storage)?;
-            let pair_info = PairInfoResponse {
-                liquidity_token: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                factory: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                pair: TokenPair(token_0, token_1),
-                amount_0,
-                amount_1,
-                total_liquidity: Uint128::zero(),
-                contract_version: 0u32,
-            };
+            let pair_info = PAIR_INFO.load(&deps.storage)?;
 
             match pair_info.pair.0 {
                 TokenType::CustomToken {
