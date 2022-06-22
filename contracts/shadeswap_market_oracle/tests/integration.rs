@@ -10,8 +10,8 @@ use shade_oracles_ensemble::harness::{
     MockBand,
     OracleRouter,
     ProxyBandOracle,
-    SiennaMarketOracle,
-    MockSiennaPair,
+    ShadeMarketOracle,
+    MockShadePair,
     Snip20,
 };
 
@@ -19,10 +19,10 @@ use shade_oracles::{
     common::{Contract, OraclePrice},
     band::{self, proxy},
     router,
-    siennaswap_market_oracle,
+    shadeswap_market_oracle,
 };
 
-use mock_sienna_pair::contract as mock_sienna_pair;
+use mock_shade_pair::contract as mock_shade_pair;
 
 fn basic_market_test(
     symbol: String, 
@@ -39,10 +39,10 @@ fn basic_market_test(
     let mut ensemble = ContractEnsemble::new(50);
 
     let reg_router = ensemble.register(Box::new(OracleRouter));
-    let reg_market_oracle = ensemble.register(Box::new(SiennaMarketOracle));
+    let reg_market_oracle = ensemble.register(Box::new(ShadeMarketOracle));
     let reg_mock_band = ensemble.register(Box::new(MockBand));
     let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
-    let reg_sienna_pair = ensemble.register(Box::new(MockSiennaPair));
+    let reg_shade_pair = ensemble.register(Box::new(MockShadePair));
     let reg_snip20 = ensemble.register(Box::new(Snip20));
 
     let band = ensemble.instantiate(
@@ -93,34 +93,6 @@ fn basic_market_test(
             }
         )
     ).unwrap().instance;
-
-
-    /*
-    let mut operations = vec![];
-
-    for (sym, _) in prices.clone() {
-        operations.push(
-            router::RegistryOperation::Add {
-                oracle: Contract {
-                    address: band_proxy.address.clone(),
-                    code_hash: band_proxy.code_hash.clone(),
-                },
-                key: sym,
-            }
-        );
-    }
-
-    // Configure BAND symbols on router
-    ensemble.execute(
-        &router::HandleMsg::BatchUpdateRegistry {
-            operations,
-        },
-        MockEnv::new(
-            "admin",
-            router.clone(),
-        ),
-    ).unwrap();
-    */
 
     // Configure mock band prices
     for (sym, price) in prices.clone() {
@@ -177,20 +149,22 @@ fn basic_market_test(
         )
         .unwrap().instance;
 
-    let sienna_pair = ensemble.instantiate(
-        reg_sienna_pair.id,
-        &mock_sienna_pair::InitMsg { },
+    let shade_pair = ensemble.instantiate(
+        reg_shade_pair.id,
+        &mock_shade_pair::InitMsg { },
         MockEnv::new(
             "admin",
             ContractLink {
-                address: HumanAddr("sienna_pair".into()),
-                code_hash: reg_sienna_pair.code_hash.clone(),
+                address: HumanAddr("shade_pair".into()),
+                code_hash: reg_shade_pair.code_hash.clone(),
             }
         )
     ).unwrap().instance;
 
+    //assert!(false, "HERE");
+
     ensemble.execute(
-        &mock_sienna_pair::HandleMsg::MockPool {
+        &mock_shade_pair::HandleMsg::MockPool {
             token_a: Contract {
                 address: primary_token.address,
                 code_hash: primary_token.code_hash,
@@ -204,21 +178,22 @@ fn basic_market_test(
         },
         MockEnv::new(
             "admin",
-            sienna_pair.clone(),
+            shade_pair.clone(),
         ),
     ).unwrap();
+    assert!(false, "HERE2");
 
     let market_oracle = ensemble.instantiate(
         reg_market_oracle.id,
-        &siennaswap_market_oracle::InitMsg {
+        &shadeswap_market_oracle::InitMsg {
             admins: None,
             router: Contract {
                 address: router.address.clone(),
                 code_hash: router.code_hash.clone(),
             },
             pair: Contract {
-                address: sienna_pair.address.clone(),
-                code_hash: sienna_pair.code_hash.clone(),
+                address: shade_pair.address.clone(),
+                code_hash: shade_pair.code_hash.clone(),
             },
             symbol: symbol.clone(),
             base_peg: base_peg.clone(),
@@ -251,7 +226,7 @@ fn basic_market_test(
 
     match ensemble.query(
         market_oracle.address.clone(),
-        &siennaswap_market_oracle::QueryMsg::GetPrice {
+        &shadeswap_market_oracle::QueryMsg::GetPrice {
             key: symbol.clone()
         },
     ).unwrap() {

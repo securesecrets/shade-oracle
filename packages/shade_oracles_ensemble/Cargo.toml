@@ -27,13 +27,15 @@ quote = "1.0.8"
 
 mock-band = { path = "../../contracts/mock_band" }
 mock-sienna-pair = { path = "../../contracts/mock_sienna_pair" }
+mock-shade-pair = { path = "../../contracts/mock_shade_pair" }
 proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
 shade-staking-derivative-oracle = { path = "../../contracts/shade_staking_derivative_oracle" }
 siennaswap-lp-oracle = { path = "../../contracts/siennaswap_lp_oracle" }
 siennaswap-lp-spot-oracle = { path = "../../contracts/siennaswap_lp_spot_oracle" }
 siennaswap-market-oracle = { path = "../../contracts/siennaswap_market_oracle" }
+shadeswap-market-oracle = { path = "../../contracts/shadeswap_market_oracle" }
 oracle-router = { path = "../../contracts/oracle_router" }
 index-oracle = { path = "../../contracts/index_oracle" }
 snip20-reference-impl = { git = "ssh://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
 
-fadroma = { branch = "v100", git = "https://github.com/hackbg/fadroma.git" }
+fadroma = { branch = "v100", git = "https://github.com/hackbg/fadroma.git", features = ["ensemble"] }

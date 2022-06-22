@@ -1,6 +1,6 @@
 use crate::{common::{Contract, normalize_price}};
 use cosmwasm_std::*;
-use fadroma::Uint256;
+use fadroma::math::Uint256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

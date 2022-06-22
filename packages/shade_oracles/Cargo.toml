@@ -26,4 +26,4 @@ serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 snafu = { version = "0.6.3" }
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-storage-plus", tag = "v1.0.0", optional = true }
-fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = [] }
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = ["math", "snip20-impl"] }
