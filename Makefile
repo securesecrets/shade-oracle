@@ -13,9 +13,9 @@ cat ./$(1).wasm | gzip -n -9 > ${compiled_dir}/$(1).wasm.gz
 rm ./$(1).wasm
 endef
 
-ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle siennaswap_market_oracle
+ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle siennaswap_market_oracle shadeswap_market_oracle
 
-CONTRACTS = ${ORACLES} mock_band mock_sienna_pair
+CONTRACTS = ${ORACLES} mock_band mock_sienna_pair mock_shade_pair
 
 PKGS = shade_oracles shade_oracles_ensemble shade_oracles_integration
 

@@ -1,10 +1,9 @@
-use std::{hash::{Hash}};
-
+use std::hash::Hash;
 use crate::{
     band::ReferenceData,
 };
 use cosmwasm_std::*;
-use fadroma::Uint256;
+use fadroma::math::Uint256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize}; 
 use secret_toolkit::utils::Query;
