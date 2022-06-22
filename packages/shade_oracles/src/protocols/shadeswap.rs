@@ -1,12 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
-use cosmwasm_std::{HumanAddr, Uint128, StdResult, CanonicalAddr, Api, Querier};
-use fadroma::{
-    scrt::{
-        ContractLink,
-        addr::{Canonize, Humanize},
-    },
-};
+use cosmwasm_std::{HumanAddr, Uint128};
+use fadroma::scrt::ContractLink;
 
 use secret_toolkit::utils::Query;
 
