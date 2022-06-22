@@ -14,7 +14,6 @@ use cosmwasm_std::{
     Uint128,
 };
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
-use secret_cosmwasm_math_compat as compat;
 use schemars::JsonSchema;
 use secret_toolkit::utils::{InitCallback, Query};
 use serde::{Deserialize, Serialize};
