@@ -5,7 +5,7 @@ use shade_oracles::{
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use cosmwasm_std::{
     to_binary, Api, Env, Extern, HandleResponse, InitResponse,
-    Querier, QueryResult, StdResult, Storage, Uint128, Binary, StdError,
+    Querier, QueryResult, StdResult, Storage, Binary, StdError,
 };
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
@@ -139,17 +139,17 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     )?;
 
     let staking_derivative_price_precision =
-        Uint128(get_precision(state.token_decimals).clamp_u128()?);
+        get_precision(state.token_decimals);
 
     let price = underlying_price
-        .price
+        .data
         .rate
         .multiply_ratio(staking_derivative_price, staking_derivative_price_precision);
 
     let response = ReferenceData {
         rate: price,
-        last_updated_base: underlying_price.price.last_updated_base,
-        last_updated_quote: underlying_price.price.last_updated_quote,
+        last_updated_base: underlying_price.data.last_updated_base,
+        last_updated_quote: underlying_price.data.last_updated_quote,
     };
     to_binary(&OraclePrice::new(key, response))
 }

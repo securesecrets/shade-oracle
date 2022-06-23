@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use cosmwasm_std::{ HumanAddr, Uint128, to_binary };
-
+use cosmwasm_std::{ HumanAddr, to_binary };
+use cosmwasm_math_compat::Uint128;
 use fadroma::{
     scrt::ContractLink, 
     ensemble::{ MockEnv, ContractEnsemble },
@@ -227,7 +227,7 @@ fn basic_market_test(
             key: symbol.clone()
         },
     ).unwrap() {
-        OraclePrice { key: _, price } => assert_eq!(expected, price.rate, "Expected: {} Got: {}", expected, price.rate),
+        OraclePrice { key: _, data } => assert_eq!(expected, data.rate, "Expected: {} Got: {}", expected, data.rate),
     };
 }
 
@@ -243,14 +243,14 @@ macro_rules! basic_market_tests {
                 basic_market_test(
                     symbol.to_string(), 
                     base_peg,
-                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
+                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128::from(p))).collect(),
                     primary_symbol.to_string(),
-                    Uint128(primary_pool),
+                    Uint128::from(primary_pool),
                     primary_decimals,
                     base_symbol.to_string(),
-                    Uint128(base_pool),
+                    Uint128::from(base_pool),
                     base_decimals,
-                    Uint128(expected),
+                    Uint128::from(expected)
                 );
             }
         )*
@@ -271,7 +271,7 @@ basic_market_tests! {
         "USDC",
         10u128.pow(10),
         6,
-        0_999901 * 10u128.pow(12), // ~$.99 (slippage)
+        999901 * 10u128.pow(12), // ~$.99 (slippage)
     ),
     usd_stables_diff_decimals: (
         "USDT",
@@ -286,7 +286,7 @@ basic_market_tests! {
         "USDC",
         10u128.pow(21),
         18,
-        999000999000999001, // ~$.99 (slippage)
+        999000999000999001u128, // ~$.99 (slippage)
     ),
     shd_sscrt_mainnet_test: (
         "SHD",
@@ -296,11 +296,11 @@ basic_market_tests! {
         ],
 
         "SHD",
-        10253_22 * 10u128.pow(6),
+        1_025_322 * 10u128.pow(6),
         8,
 
         "SSCRT",
-        86770_13 * 10u128.pow(4),
+        8_677_013 * 10u128.pow(4),
         6,
 
         8_289_060_794_625 * 10u128.pow(6), // ~$8.28

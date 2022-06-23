@@ -12,7 +12,8 @@ use shade_oracles::{
     common::{self, Contract},
     protocols,
 };
-use cosmwasm_std::{HumanAddr, Uint128};
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr};
 use shade_oracles_integration::constants::testnet::*;
 use shade_oracles_integration::constants::*;
 use shade_oracles_integration::contract_helpers::{
@@ -44,7 +45,7 @@ fn main() -> Result<()> {
     //oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT/SCRT SiennaSwap LP", stkd_scrt_scrt_lp_oracle.as_contract())?;
     let shd_price = oracle_router.query_price("SHD".to_string());
     match shd_price {
-        Ok(price) =>     println!("SHD Price is: {}", price.price.rate),
+        Ok(price) =>     println!("SHD Price is: {}", price.data.rate),
         Err(err) => println!("{}", err),
     }
     Ok(())
@@ -74,8 +75,8 @@ fn deploy_silk(user_a: String, router: Contract) -> Result<IndexOracleContract> 
                 ("SGD", 2_50 * 10u128.pow(14)), //  2.5%
                 ("XAU", 5_00 * 10u128.pow(14)), //  5.0%
                 ("WBTC", 2_00 * 10u128.pow(14)), //  2.0%
-            ].into_iter().map(|(sym, w)| (sym.to_string(), Uint128(w))).collect(),
-            target: Uint128(1_05 * 10u128.pow(16)), // $1.05
+            ].into_iter().map(|(sym, w)| (sym.to_string(), Uint128::from(w))).collect(),
+            target: Uint128::from(1_05 * 10u128.pow(16)), // $1.05
         },
         Some(HOOMP_KEY),
         Some("silk-oracle"),

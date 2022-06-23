@@ -1,7 +1,8 @@
 use crate::{common::{Contract, ResponseStatus}};
-use cosmwasm_std::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr};
 
 pub mod shade {
 
@@ -44,6 +45,8 @@ pub mod shade {
     }
 
     pub mod querier {
+        use cosmwasm_std::{Querier, StdResult, QueryRequest, WasmQuery, to_binary};
+
         use super::*;
 
         #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

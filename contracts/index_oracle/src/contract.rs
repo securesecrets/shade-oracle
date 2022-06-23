@@ -10,13 +10,12 @@ use cosmwasm_std::{
     StdError,
     Storage,
     HumanAddr,
-    Uint128,
     QueryResult,
 };
-use cosmwasm_math_compat::{self as compat, Uint512};
+use cosmwasm_math_compat::{Uint128, Uint512};
 use secret_toolkit::utils::{pad_query_result, pad_handle_result};
 
-use std::collections::HashMap;
+use std::{collections::HashMap, cmp::min};
 
 use shade_oracles::{
     common::{
@@ -126,44 +125,52 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
 
 fn build_constants(
     weights: Vec<(String, Uint128)>,
-    prices: HashMap<String, Uint128>,
+    prices: HashMap<String, ReferenceData>,
     target: Uint128,
 ) -> HashMap<String, Uint128> {
 
     let mut constants: HashMap<String, Uint128> = HashMap::new();
 
     for (sym, weight) in weights {
-        constants.insert(sym.clone(), weight.multiply_ratio(target, prices[&sym]));
+        constants.insert(sym.clone(), weight.multiply_ratio(target, prices[&sym].rate));
     }
     constants
 }
 
 fn eval_index(
-    prices: HashMap<String, Uint128>,
+    prices: HashMap<String, ReferenceData>,
     basket: Vec<(String, Uint128, Uint128)>,
-) -> Uint128 {
+) -> ReferenceData {
 
     let mut index_price = Uint512::zero();
+    let mut last_updated_base = 0u64;
+    let mut last_updated_quote = 0u64;
 
     for (sym, _, constant) in basket {
-        index_price += Uint512::from(prices[&sym].u128()) * Uint512::from(constant.u128()) / Uint512::from(10u128.pow(18));
+        index_price += Uint512::from(prices[&sym].rate.u128()) * Uint512::from(constant.u128()) / Uint512::from(10u128.pow(18));
+        last_updated_base = min(last_updated_base, prices[&sym].last_updated_base);
+        last_updated_quote = min(last_updated_quote, prices[&sym].last_updated_quote);
     }
-    Uint128(compat::Uint128::try_from(index_price).ok().unwrap().u128())
+    ReferenceData {
+        rate: Uint128::try_from(index_price).ok().unwrap(),
+        last_updated_base,
+        last_updated_quote,
+    }
 }
 
 fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     config: &Config,
     symbols: Vec<String>,
-) -> StdResult<HashMap<String, Uint128>> {
+) -> StdResult<HashMap<String, ReferenceData>> {
 
     let oracles = match query_oracles(&config.router, &deps.querier , symbols.clone()) {
         Ok(oracles) => oracles,
         Err(e) => {
             return Err(StdError::generic_err(
                     format!("Failed to query {} from routern, '{}'", 
-                            symbols.clone().iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
-                            e.to_string())))
+                            symbols.iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
+                            e)))
         }
     };
 
@@ -177,15 +184,15 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
         match query_prices(&oracle, &deps.querier, symbols.clone()) {
             Ok(prices) => {
                 for oracle_price in prices {
-                    price_data.insert(oracle_price.key.clone(), oracle_price.price.rate);
+                    price_data.insert(oracle_price.key.clone(), oracle_price.data);
                 }
             },
             Err(e) => {
                 return Err(StdError::generic_err(
                         format!("Failed to query {} from oracle {}, '{}'", 
-                                symbols.clone().iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
+                                symbols.iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
                                 oracle.address.as_str(),
-                                e.to_string())))
+                                e)))
             }
         }
 
@@ -287,7 +294,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
 
     prices.extend(fetch_prices(deps, &config, new_symbols)?);
 
-    let constants = build_constants(weights.clone(), prices.clone(), target);
+    let constants = build_constants(weights.clone(), prices.clone(), target.rate);
 
     // Recalculate the constants
     let new_basket: Vec<(String, Uint128, Uint128)> = weights.into_iter().map(|(sym, w)| (sym.clone(), w, constants[&sym])).collect();
@@ -322,14 +329,10 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let basket = BASKET.load(&deps.storage)?;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
     let prices = fetch_prices(deps, &config, symbols)?;
+    let index = eval_index(prices, basket);
 
     Ok(OraclePrice::new(
         key,
-        ReferenceData {
-            rate: eval_index(prices, basket),
-            //TODO these should be the minimum found
-            last_updated_base: 0,
-            last_updated_quote: 0,
-        }
+        index,
     ))
 }

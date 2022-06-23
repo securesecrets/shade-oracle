@@ -28,8 +28,8 @@ use cosmwasm_std::{
     HumanAddr, InitResponse,
     Querier, QueryResult, 
     StdError, StdResult, Storage, 
-    Uint128,
 };
+use cosmwasm_math_compat::{Uint128};
 use secret_toolkit::{
     utils::{Query, pad_handle_result, pad_query_result},
     snip20::TokenInfo,
@@ -214,7 +214,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     // Simulate trade 1 primary -> 1 base
     let sim: SimulationResponse = SiennaSwapExchangeQueryMsg::SwapSimulation {
         offer: TokenTypeAmount {
-            amount: Uint128(10u128.pow(primary_info.decimals.into())),
+            amount: Uint128::from(10u128.pow(primary_info.decimals.into())),
             token: SiennaDexTokenType::CustomToken {
                 contract_addr: primary_token.address,
                 token_code_hash: primary_token.code_hash,
@@ -232,16 +232,16 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     // Query router for base_peg/USD
     let oracle = query_oracle(&config.router, &deps.querier, config.base_peg.clone())?;
-    let base_usd_price = query_price(&oracle, &deps.querier, config.base_peg.clone())?;
+    let base_usd_price = query_price(&oracle, &deps.querier, config.base_peg)?;
 
     // Translate price to primary/USD
-    let price = base_usd_price.price.rate.multiply_ratio(exchange_rate, 10u128.pow(18));
+    let price = base_usd_price.data.rate.multiply_ratio(exchange_rate, 10u128.pow(18));
 
     Ok(OraclePrice::new(key,
         ReferenceData {
             rate: price,
-            last_updated_base: 0,
-            last_updated_quote: 0,
+            last_updated_base: base_usd_price.data.last_updated_base,
+            last_updated_quote: base_usd_price.data.last_updated_quote,
         }
     ))
 }

@@ -3,9 +3,8 @@ use crate::common::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{
-    Uint128, HumanAddr,
-};
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

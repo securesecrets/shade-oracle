@@ -26,11 +26,9 @@ snafu = { version = "0.6.3" }
 shade-oracles = { path = "../../packages/shade_oracles" }
 cosmwasm-std = { version = "0.10", package = "secret-cosmwasm-std" }
 cosmwasm-math-compat = { branch = "dev", git = "https://github.com/securesecrets/shade.git" }
-fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = ["scrt", "math"] }
-
 secret-toolkit = { version = "0.2" }
 
 [dev_dependencies]
 cosmwasm-schema = { git = "https://github.com/enigmampc/SecretNetwork", tag = "v1.0.4-debug-print" }
-fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = ["scrt", "backtraces"] }
+fadroma = { branch = "v100", git = "https://github.com/hackbg/fadroma.git", features = ["ensemble"] }
 shade-oracles-ensemble = { path = "../../packages/shade_oracles_ensemble" }
