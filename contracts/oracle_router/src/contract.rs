@@ -1,5 +1,5 @@
 use crate::{
-    registry::{batch_update_registry, get_price, update_registry, get_prices},
+    registry::{batch_update_registry, get_price, update_registry, get_prices, resolve_alias},
     state::*,
 };
 use shade_oracles::{common::{BLOCK_SIZE, Contract}, router::*};
@@ -97,8 +97,8 @@ pub fn get_oracle (
     key: &str,
 ) -> StdResult<Contract> {
     let config = CONFIG.load(storage)?;
-
-    match ORACLES.may_load(storage, key.to_string())? {
+    let resolved_key = resolve_alias(storage, key.to_string())?;
+    match ORACLES.may_load(storage, resolved_key)? {
         Some(contract) => Ok(contract),
         None => Ok(config.default_oracle),
     }     
