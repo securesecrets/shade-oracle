@@ -35,14 +35,15 @@ fn main() -> Result<()> {
 
     let oracle_router = deploy_router(user_a.clone(), band.clone())?;
     let shd_oracle = deploy_shd(user_a.clone(), oracle_router.as_contract())?;
-    //let silk_oracle = deploy_silk(user_a.clone(), oracle_router.as_contract())?;
-    //let stkd_scrt_oracle = deploy_stkd_scrt(user_a.clone(), oracle_router.as_contract())?;
-    //let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a, oracle_router.as_contract())?;
+    let silk_oracle = deploy_silk(user_a.clone(), oracle_router.as_contract())?;
+    let stkd_scrt_oracle = deploy_stkd_scrt(user_a.clone(), oracle_router.as_contract())?;
+    let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a, oracle_router.as_contract())?;
     
-    //oracle_router.update_oracle(HOOMP_KEY, "SILK", silk_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "SILK", silk_oracle.as_contract())?;
     oracle_router.update_oracle(HOOMP_KEY, "SHD", shd_oracle.as_contract())?;
-    //oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
-    //oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT/SCRT SiennaSwap LP", stkd_scrt_scrt_lp_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT/SCRT SiennaSwap LP", stkd_scrt_scrt_lp_oracle.as_contract())?;
+    oracle_router.update_registry(RegistryOperation::UpdateAlias { alias: "SSCRT".to_string(), key: "SCRT".to_string() }, Some(HOOMP_KEY))?;
     let shd_price = oracle_router.query_price("SHD".to_string());
     match shd_price {
         Ok(price) =>     println!("SHD Price is: {}", price.data.rate),

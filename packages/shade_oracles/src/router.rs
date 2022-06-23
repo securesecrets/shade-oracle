@@ -21,6 +21,7 @@ pub enum RegistryOperation {
     Remove { key: String },
     Replace { oracle: Contract, key: String },
     Add { oracle: Contract, key: String },
+    UpdateAlias { alias: String, key: String },
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
