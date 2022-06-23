@@ -17,9 +17,9 @@ use cosmwasm_std::{
     to_binary, Binary, Api, Env, 
     Extern, HandleResponse, HumanAddr, 
     InitResponse, Querier, QueryResult,
-    StdError, StdResult, Storage,
-    Uint128,
+    StdError, StdResult, Storage
 };
+use cosmwasm_math_compat::Uint128;
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 
 /// state of the auction
@@ -150,7 +150,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let state = STATE.load(&deps.storage)?;
 
     if key == "SHD" {
-        return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128(13450000000000000000), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
+        return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128::from(13450000000000000000u128), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
     }
 
     let band_response: ReferenceData = BandQuery::GetReferenceData {

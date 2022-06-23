@@ -3,10 +3,10 @@ use crate::{
     band::ReferenceData,
 };
 use cosmwasm_std::*;
-use fadroma::math::Uint256;
+use cosmwasm_math_compat::{Uint128, Uint256};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize}; 
-use secret_toolkit::utils::Query;
+use secret_toolkit::utils::{HandleCallback, Query};
 
 pub const BLOCK_SIZE: usize = 256;
 
@@ -29,6 +29,10 @@ pub enum HandleMsg {
     SetStatus { enabled: bool },
 }
 
+impl HandleCallback for HandleMsg {
+    const BLOCK_SIZE: usize = 256;
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct HandleStatusAnswer {
@@ -40,12 +44,12 @@ pub struct HandleStatusAnswer {
 #[serde(rename_all = "snake_case")]
 pub struct OraclePrice {
     pub key: String,
-    pub price: ReferenceData,
+    pub data: ReferenceData,
 }
 
 impl OraclePrice {
     pub fn new(key: String, reference_data: ReferenceData) -> Self {
-        OraclePrice { key, price: reference_data }
+        OraclePrice { key, data: reference_data }
     }
 }
 
@@ -70,8 +74,8 @@ impl Contract {
 }
 
 
-pub fn get_precision(factor: u8) -> Uint256 {
-    Uint256::from(10u128.pow(factor.into()))
+pub fn get_precision(factor: u8) -> Uint128 {
+    Uint128::from(10u128.pow(factor.into()))
 }
 
 pub fn throw_unsupported_symbol_error(key: String) -> StdError {
@@ -110,6 +114,27 @@ impl CanonicalContract {
     }
 }
 
+pub fn sqrt(value: Uint256) -> StdResult<Uint256> {
+    let mut z = Uint256::zero();
+
+    if value.gt(&Uint256::from(3u128)) {
+        z = value;
+        let mut x = value.checked_div(Uint256::from(2u128))?.checked_add(Uint256::from(1u128))?;
+
+        while x.lt(&z) {
+            z = x;
+            x = value
+                .checked_div(x)?
+                .checked_add(x)?
+                .checked_div(Uint256::from(2u128))?;
+        }
+    } else if !value.is_zero() {
+        z = Uint256::from(1u128);
+    }
+
+    Ok(z)
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum ResponseStatus {
     Success,
@@ -142,13 +167,7 @@ impl CommonOracleConfig {
 
 pub mod querier {
     use super::*;
-    use fadroma::snip20_impl::msg as snip20;
-    use secret_toolkit::snip20::TokenInfoResponse;
-
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-    pub struct Balance {
-        pub amount: Uint128,
-    }
+    use secret_toolkit::snip20::{QueryMsg as Snip20QueryMsg, Balance, AuthenticatedQueryResponse, TokenInfoResponse};
 
     pub fn query_price(
         contract: &Contract,
@@ -181,7 +200,7 @@ pub mod querier {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&snip20::QueryMsg::TokenInfo {})?,
+            msg: to_binary(&Snip20QueryMsg::TokenInfo {})?,
         }))
     }
 
@@ -191,14 +210,14 @@ pub mod querier {
         address: HumanAddr,
         key: String,
     ) -> StdResult<Balance> {
-        let answer: snip20::QueryAnswer = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        let answer: AuthenticatedQueryResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
             callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&snip20::QueryMsg::Balance { address, key })?,
+            msg: to_binary(&Snip20QueryMsg::Balance { address, key })?,
         }))?;
         match answer {
-            snip20::QueryAnswer::Balance { amount } => Ok(Balance { amount }),
-            snip20::QueryAnswer::ViewingKeyError { msg } => Err(StdError::generic_err(msg)),
+            AuthenticatedQueryResponse::Balance { amount } => Ok(Balance { amount }),
+            AuthenticatedQueryResponse::ViewingKeyError { msg } => Err(StdError::generic_err(msg)),
             _ => Err(StdError::generic_err(
                 "Invalid response to query token balance.",
             )),

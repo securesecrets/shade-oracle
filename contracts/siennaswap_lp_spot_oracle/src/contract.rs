@@ -14,7 +14,7 @@ use shade_oracles::{
 };
 use cosmwasm_std::{
     to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse,
-    Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery, Binary,
+    Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, WasmQuery, Binary,
 };
 use secret_toolkit::utils::{pad_query_result, pad_handle_result};
 use std::cmp::min;
@@ -252,22 +252,20 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     let a = FairLpPriceInfo {
         reserve: reserve0.u128(),
-        price: price0.price.rate.u128(),
+        price: price0.data.rate.u128(),
         decimals: state.token0_decimals,
     };
 
     let b = FairLpPriceInfo {
         reserve: reserve1.u128(),
-        price: price1.price.rate.u128(),
+        price: price1.data.rate.u128(),
         decimals: state.token1_decimals,
     };
 
-    let price = get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals);
-
     let data = ReferenceData {
-        rate: Uint128(price.unwrap()),
-        last_updated_base: min(price0.price.last_updated_base, price1.price.last_updated_base),
-        last_updated_quote: min(price0.price.last_updated_quote, price1.price.last_updated_quote),
+        rate: get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals)?,
+        last_updated_base: min(price0.data.last_updated_base, price1.data.last_updated_base),
+        last_updated_quote: min(price0.data.last_updated_quote, price1.data.last_updated_quote),
     };
     to_binary(&OraclePrice::new(key, data))
 }

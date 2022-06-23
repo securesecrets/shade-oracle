@@ -2,7 +2,8 @@ use crate::{
     common::{ResponseStatus, Contract},
 };
 use secret_toolkit::utils::Query;
-use cosmwasm_std::*;
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr, Storage, Querier, Api, Extern, StdResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +42,7 @@ pub enum BandQuery {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReferenceData {
-    pub rate: cosmwasm_std::Uint128,
+    pub rate: Uint128,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
 }

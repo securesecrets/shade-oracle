@@ -11,9 +11,8 @@ use cosmwasm_std::{
     StdError,
     StdResult,
     Storage,
-    Uint128,
 };
-use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
+use cosmwasm_math_compat::Uint128;
 use schemars::JsonSchema;
 use secret_toolkit::utils::InitCallback;
 use serde::{Deserialize, Serialize};
@@ -35,8 +34,8 @@ pub fn pool_take_amount(
     give_pool: Uint128,
     take_pool: Uint128,
 ) -> Uint128 {
-    Uint128(
-        take_pool.u128() - give_pool.u128() * take_pool.u128() / (give_pool + give_amount).u128(),
+    Uint128::from(
+        take_pool.u128() - give_pool.u128() * take_pool.u128() / (give_pool + give_amount).u128()
     )
 }
 
@@ -176,7 +175,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 }
             };
 
-            return Err(StdError::generic_err("Failed to match offer token"));
+            Err(StdError::generic_err("Failed to match offer token"))
         }
     }
 }

@@ -1,7 +1,7 @@
-//use fadroma::math::Uint128;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{HumanAddr, Uint128};
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr};
 
 use crate::common::Contract;
 use secret_toolkit::utils::Query;

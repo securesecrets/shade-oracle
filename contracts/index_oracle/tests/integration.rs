@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use cosmwasm_std::{ HumanAddr, Uint128 };
-
+use cosmwasm_std::{ HumanAddr };
+use cosmwasm_math_compat::Uint128;
 use fadroma::{
-    ContractLink, 
+    scrt::ContractLink, 
     ensemble::{ MockEnv, ContractEnsemble },
 };
 
@@ -45,7 +45,7 @@ fn basic_index_test(
                 code_hash: reg_mock_band.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
     let band_proxy = ensemble.instantiate(
         reg_mock_band_proxy.id,
@@ -64,7 +64,7 @@ fn basic_index_test(
                 code_hash: reg_mock_band.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
 
     let router = ensemble.instantiate(
@@ -83,7 +83,7 @@ fn basic_index_test(
                 code_hash: reg_router.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
 
     let mut operations = vec![];
@@ -146,7 +146,7 @@ fn basic_index_test(
                 code_hash: reg_index_oracle.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
     // Configure router w/ index oracle
     ensemble.execute(
@@ -165,24 +165,23 @@ fn basic_index_test(
         ),
     ).unwrap();
 
-    match ensemble.query(
+    let OraclePrice { key: _, data } = ensemble.query(
         index_oracle.address.clone(),
         &index_oracle::QueryMsg::GetPrice {
             key: symbol.clone()
         }
-    ).unwrap() {
-        OraclePrice { key: _, price } => {
-            let mut err = Uint128::zero();
-            if price.rate > expected {
-                err = (price.rate - expected).ok().unwrap();
-            }
-            else {
-                err = (expected - price.rate).ok().unwrap();
-            }
-            let acceptable = expected.multiply_ratio(error, 10u128.pow(18));
+    ).unwrap();
+    {
+        let mut err = Uint128::zero();
+        if data.rate > expected {
+            err = (data.rate - expected);
+        }
+        else {
+            err = (expected - data.rate);
+        }
+        let acceptable = expected.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", price.rate, expected);
-        },
+        assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", data.rate, expected);
     };
 }
 
@@ -194,11 +193,11 @@ macro_rules! basic_index_tests {
                 let (symbol, basket, prices, target, expected, error) = $value;
                 basic_index_test(
                     symbol.to_string(), 
-                    basket.into_iter().map(|(sym, w)| (sym.to_string(), Uint128(w))).collect(),
-                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
-                    Uint128(target),
-                    Uint128(expected),
-                    Uint128(error),
+                    basket.into_iter().map(|(sym, w)| (sym.to_string(), Uint128::from(w))).collect(),
+                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128::from(p))).collect(),
+                    Uint128::from(target),
+                    Uint128::from(expected),
+                    Uint128::from(error),
                 );
             }
         )*
@@ -242,11 +241,11 @@ basic_index_tests! {
             ("USD", 39_33 * 10u128.pow(14)), //  39.32%
             ("CNY", 7_13 * 10u128.pow(14)), //  7.13%
             ("EUR", 15_97 * 10u128.pow(14)), // 15.97%
-            ("JPY", 7_64 * 10u128.pow(14)), //  7.64%
+            ("JPY", 764 * 10u128.pow(14)), //  7.64%
             ("GBP", 3_40 * 10u128.pow(14)), //  3.4%
             ("CAD", 4_58 * 10u128.pow(14)), //  4.58%
             ("KRW", 1_53 * 10u128.pow(14)), //  1.53%
-            ("AUD", 2_32 * 10u128.pow(14)), //  2.32%
+            ("AUD", 232 * 10u128.pow(14)), //  2.32%
             ("IDR", 2_50 * 10u128.pow(14)), //  2.5%
             ("CHF", 4_44 * 10u128.pow(14)), //  4.44%
             ("SEK", 0_84 * 10u128.pow(14)), //  0.84%
@@ -311,7 +310,7 @@ fn mod_index_test(
                 code_hash: reg_mock_band.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
     let band_proxy = ensemble.instantiate(
         reg_mock_band_proxy.id,
@@ -330,7 +329,7 @@ fn mod_index_test(
                 code_hash: reg_mock_band.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
 
     let router = ensemble.instantiate(
@@ -349,7 +348,7 @@ fn mod_index_test(
                 code_hash: reg_router.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
 
     let mut operations = vec![];
@@ -412,7 +411,7 @@ fn mod_index_test(
                 code_hash: reg_index_oracle.code_hash.clone(),
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
     // Configure router w/ index oracle
     ensemble.execute(
@@ -438,17 +437,17 @@ fn mod_index_test(
             key: symbol.clone()
         }
     ).unwrap() {
-        OraclePrice { key: _, price } => {
+        OraclePrice { key: _, data } => {
             let mut err = Uint128::zero();
-            if price.rate > expected_initial {
-                err = (price.rate - expected_initial).ok().unwrap();
+            if data.rate > expected_initial {
+                err = (data.rate - expected_initial);
             }
             else {
-                err = (expected_initial - price.rate).ok().unwrap();
+                err = (expected_initial - data.rate);
             }
             let acceptable = expected_initial.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", price.rate, expected_initial);
+            assert!(err <= acceptable, "price: {}, expected: {}, exceeds acceptable error", data.rate, expected_initial);
         },
     };
 
@@ -481,17 +480,17 @@ fn mod_index_test(
             key: symbol.clone()
         }
     ).unwrap() {
-        OraclePrice { key: _, price } => {
+        OraclePrice { key: _, data } => {
             let mut err = Uint128::zero();
-            if price.rate > expected_final {
-                err = (price.rate - expected_final).ok().unwrap();
+            if data.rate > expected_final {
+                err = (data.rate - expected_final);
             }
             else {
-                err = (expected_final - price.rate).ok().unwrap();
+                err = (expected_final - data.rate);
             }
             let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "Price change check failed price: {}, expected: {}, exceeds acceptable error", price.rate, expected_final);
+            assert!(err <= acceptable, "Price change check failed price: {}, expected: {}, exceeds acceptable error", data.rate, expected_final);
         },
     };
 
@@ -528,17 +527,17 @@ fn mod_index_test(
             key: symbol.clone()
         }
     ).unwrap() {
-        OraclePrice { key: _, price } => {
+        OraclePrice { key: _, data } => {
             let mut err = Uint128::zero();
-            if price.rate > expected_final {
-                err = (price.rate - expected_final).ok().unwrap();
+            if data.rate > expected_final {
+                err = (data.rate - expected_final);
             }
             else {
-                err = (expected_final - price.rate).ok().unwrap();
+                err = (expected_final - data.rate);
             }
             let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(err <= acceptable, "Post-Mod price: {}, expected: {}, exceeds acceptable error", price.rate, expected_final);
+            assert!(err <= acceptable, "Post-Mod price: {}, expected: {}, exceeds acceptable error", data.rate, expected_final);
         },
     };
 }
@@ -552,15 +551,15 @@ macro_rules! mod_index_tests {
 
                 mod_index_test(
                     symbol.to_string(), 
-                    basket.into_iter().map(|(sym, w)| (sym.to_string(), Uint128(w))).collect(),
-                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
-                    new_prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
-                    mod_basket.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
-                    expected_weights.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
-                    Uint128(target),
-                    Uint128(expected_initial),
-                    Uint128(expected_final),
-                    Uint128(error),
+                    basket.into_iter().map(|(sym, w)| (sym.to_string(), Uint128::from(w))).collect(),
+                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128::from(p))).collect(),
+                    new_prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128::from(p))).collect(),
+                    mod_basket.into_iter().map(|(sym, p)| (sym.to_string(), Uint128::from(p))).collect(),
+                    expected_weights.into_iter().map(|(sym, p)| (sym.to_string(), Uint128::from(p))).collect(),
+                    Uint128::from(target),
+                    Uint128::from(expected_initial),
+                    Uint128::from(expected_final),
+                    Uint128::from(error),
                 );
             }
         )*

@@ -6,8 +6,8 @@ use shade_oracles::{
     band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
     earn as earn_v1_oracle, lp as lp_oracle, router::{self, RegistryOperation}, index_oracle,
 };
-use cosmwasm_std::{Uint128, HumanAddr};
-
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr};
 use super::{GasLog, TestableContract};
 
 #[derive(Serialize, Deserialize)]
