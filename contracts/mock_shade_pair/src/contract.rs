@@ -27,7 +27,7 @@ use shade_oracles::{
         EstimatedPriceResponse,
     },
 };
-use fadroma::scrt::ContractLink;
+use fadroma::prelude::ContractLink;
 
 pub fn pool_take_amount(
     give_amount: Uint128,

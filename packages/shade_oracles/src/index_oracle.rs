@@ -4,19 +4,17 @@ use crate::common::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{HumanAddr};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Config {
-    pub admins: Vec<HumanAddr>,
     pub router: Contract,
+    pub enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct InitMsg {
-    pub admins: Option<Vec<HumanAddr>>,
     pub router: Contract,
     pub symbol: String,
     pub basket: Vec<(String, Uint128)>, //HashMap<String, Uint128>,
@@ -32,8 +30,8 @@ pub enum HandleMsg {
         basket: Vec<(String, Uint128)>,
     },
     UpdateConfig {
-        admins: Option<Vec<HumanAddr>>,
         router: Option<Contract>,
+        enabled: Option<bool>,
     },
 }
 

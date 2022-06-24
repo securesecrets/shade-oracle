@@ -4,7 +4,7 @@ use shade_oracles::{
         querier::{query_price, query_token_info},
         BLOCK_SIZE, Contract, 
         ResponseStatus, 
-        OraclePrice
+        OraclePrice,
     },
     protocols::siennaswap::{
         SiennaDexTokenType, 
@@ -20,7 +20,7 @@ use shade_oracles::{
         HandleMsg, HandleAnswer,
         QueryMsg,
     },
-    router::querier::query_oracle,
+    router::querier::{query_oracle, verify_admin},
 };
 use cosmwasm_std::{
     to_binary, Api, Env, 
@@ -38,13 +38,12 @@ use secret_toolkit::{
 const CONFIG: Item<Config> = Item::new("config");
 
 const PRIMARY_TOKEN: Item<Contract> = Item::new("primary_token");
-//const BASE_TOKEN: Item<Contract> = Item::new("base_token");
 const PRIMARY_INFO: Item<TokenInfo> = Item::new("primary_info");
 const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
+    _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
 
@@ -95,15 +94,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let base_i = token_infos.iter().position(|t| t.symbol != msg.symbol).unwrap();
 
     let config = Config {
-        admins: match msg.admins {
-            Some(mut admins) => {
-                if !admins.contains(&env.message.sender) {
-                    admins.push(env.message.sender);
-                }
-                admins
-            },
-            None => vec![env.message.sender],
-        },
         router: msg.router,
         pair: msg.pair,
         symbol: msg.symbol.clone(),
@@ -111,6 +101,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
             Some(p) => p,
             None => token_infos[base_i].symbol.clone(),
         },
+        enabled: true,
     };
 
     if let Err(e) = query_price(&config.router, &deps.querier, config.base_peg.clone()) {
@@ -119,13 +110,8 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
                     config.base_peg, config.router.address, e)));
     };
 
-    /*
-    return Err(StdError::generic_err(format!("primary token contract {}, {}", tokens[primary_i].address, tokens[primary_i].code_hash)));
-    */
-
     CONFIG.save(&mut deps.storage, &config)?;
     PRIMARY_TOKEN.save(&mut deps.storage, &tokens[primary_i].clone())?;
-    //BASE_TOKEN.save(&mut deps.storage, &tokens[base_i].clone())?;
     PRIMARY_INFO.save(&mut deps.storage, &token_infos[primary_i])?;
     BASE_INFO.save(&mut deps.storage, &token_infos[base_i])?;
 
@@ -140,8 +126,9 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     pad_handle_result(
         match msg {
             HandleMsg::UpdateConfig { 
-                admins, router,
-            } => try_update_config(deps, &env, admins, router),
+                router,
+                enabled,
+            } => try_update_config(deps, &env, router, enabled),
         },
         BLOCK_SIZE,
     )
@@ -150,25 +137,14 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 fn try_update_config<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: &Env,
-    admins: Option<Vec<HumanAddr>>,
     router: Option<Contract>,
+    enabled: Option<bool>,
 ) -> StdResult<HandleResponse> {
 
     let mut config = CONFIG.load(&deps.storage)?;
-
-    if !config.admins.contains(&env.message.sender) {
-        return Err(StdError::unauthorized());
-    }
-
-    if let Some(admins) = admins {
-        if !admins.is_empty() {
-            config.admins = admins;
-        }
-    }
-
-    if let Some(router) = router {
-        config.router = router;
-    }
+    verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
+    config.router = router.unwrap_or(config.router);
+    config.enabled = enabled.unwrap_or(config.enabled);
 
     CONFIG.save(&mut deps.storage, &config)?;
 
@@ -205,10 +181,11 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<OraclePrice> {
     let config = CONFIG.load(&deps.storage)?;
 
-    let primary_token: Contract = PRIMARY_TOKEN.load(&deps.storage)?;
-    //return Err(StdError::generic_err("here"));
-    //let base_token = BASE_TOKEN.load(&deps.storage)?;
+    if !config.enabled {
+        return Err(StdError::generic_err("Deprecated oracle."));
+    }
 
+    let primary_token: Contract = PRIMARY_TOKEN.load(&deps.storage)?;
     let primary_info = PRIMARY_INFO.load(&deps.storage)?;
 
     // Simulate trade 1 primary -> 1 base

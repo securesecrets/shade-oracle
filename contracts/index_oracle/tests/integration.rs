@@ -2,15 +2,19 @@ use std::collections::HashMap;
 use cosmwasm_std::{ HumanAddr };
 use cosmwasm_math_compat::Uint128;
 use fadroma::{
-    scrt::ContractLink, 
+    core::ContractLink, 
     ensemble::{ MockEnv, ContractEnsemble },
 };
 
-use shade_oracles_ensemble::harness::{
+use shade_oracles_ensemble::{
+    helpers::setup_admin,
+    harness::{
     MockBand,
     IndexOracle,
     OracleRouter,
     ProxyBandOracle,
+    AdminAuth,
+    }
 };
 
 use shade_oracles::{
@@ -50,7 +54,6 @@ fn basic_index_test(
     let band_proxy = ensemble.instantiate(
         reg_mock_band_proxy.id,
         &proxy::InitMsg {
-            owner: HumanAddr("admin".into()),
             band: Contract {
                 address: band.address.clone(),
                 code_hash: band.code_hash.clone(),
@@ -75,6 +78,7 @@ fn basic_index_test(
                 address: band_proxy.address.clone(),
                 code_hash: band_proxy.code_hash.clone(),
             },
+            admin_auth: todo!(),
         },
         MockEnv::new(
             "admin",

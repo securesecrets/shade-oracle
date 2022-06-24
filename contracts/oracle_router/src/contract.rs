@@ -3,47 +3,49 @@ use crate::{
     state::*,
 };
 use shade_oracles::{common::{BLOCK_SIZE, Contract}, router::*};
+use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse };
 use cosmwasm_std::{
         to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
-        StdError, StdResult, Storage,
+        StdError, StdResult, Storage, HumanAddr,
 };
-use secret_toolkit::utils::{pad_handle_result, pad_query_result};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    _env: Env,
+    env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
     let config = Config {
-        owner: msg.owner,
+        admin_auth: msg.admin_auth,
         default_oracle: msg.default_oracle,
+        address: env.contract.address,
     };
     CONFIG.save(&mut deps.storage, &config)?;
-    Ok(InitResponse::default())
-}
+    Ok(InitResponse {
+        messages: vec![],
+        log: vec![],
+    })}
 
 pub fn handle<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
+    is_admin(deps, env.message.sender.clone())?;
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig { owner, default_oracle } => {
-                is_owner(&deps.storage, &env)?;
+            HandleMsg::UpdateConfig { default_oracle, admin_auth } => {
                 CONFIG.update(&mut deps.storage, |mut new_config| -> StdResult<_> {
-                    new_config.owner = owner.unwrap_or(new_config.owner);
+                    new_config.admin_auth = admin_auth.unwrap_or(new_config.admin_auth);
                     new_config.default_oracle = default_oracle.unwrap_or(new_config.default_oracle);
                     Ok(new_config)
                 })?;
                 Ok(HandleResponse::default())
             }
             HandleMsg::UpdateRegistry { operation } => {
-                is_owner(&deps.storage, &env)?;
                 update_registry(deps, env, operation)
             }
             HandleMsg::BatchUpdateRegistry { operations } => {
-                is_owner(&deps.storage, &env)?;
                 batch_update_registry(deps, env, operations)
             }
         },
@@ -51,12 +53,15 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     )
 }
 
-fn is_owner(storage: &impl Storage, env: &Env) -> StdResult<()> {
-    let config = CONFIG.load(storage)?;
-    if env.message.sender != config.owner {
-        Err(StdError::unauthorized())
-    } else {
-        Ok(())
+fn is_admin<S: Storage, A: Api, Q: Querier>(
+    deps: &Extern<S, A, Q>,
+    user: HumanAddr,
+) -> StdResult<()> {
+    let config = CONFIG.load(&deps.storage)?;
+    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission { contract_address: config.address.to_string(), admin_address: user.to_string() }.query(&deps.querier, config.admin_auth.code_hash, config.admin_auth.address)?;
+    match resp.error_msg {
+        Some(err) => Err(StdError::generic_err(err)),
+        None => Ok(()),
     }
 }
 
@@ -68,10 +73,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
         match msg {
             QueryMsg::GetConfig {} => {
                 let config = CONFIG.load(&deps.storage)?;
-                to_binary(&ConfigResponse {
-                    owner: config.owner,
-                    default_oracle: config.default_oracle,
-                })
+                to_binary(&config)
             }
             QueryMsg::GetOracle { key } => {
                 let oracle = get_oracle(&deps.storage, &key)?;
@@ -87,6 +89,12 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 to_binary(&oracles)
             },
             QueryMsg::GetPrices { keys } => get_prices(deps, keys),
+            QueryMsg::VerifyAdmin { user } => {
+                match is_admin(deps, user) {
+                    Ok(_) => to_binary(&VerifyAdminResponse { is_admin: true }),
+                    Err(_) => to_binary(&VerifyAdminResponse { is_admin: false }),
+                }
+            },
         },
         BLOCK_SIZE,
     )

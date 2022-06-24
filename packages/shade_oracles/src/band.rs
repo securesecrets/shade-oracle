@@ -3,7 +3,7 @@ use crate::{
 };
 use secret_toolkit::utils::Query;
 use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{HumanAddr, Storage, Querier, Api, Extern, StdResult};
+use cosmwasm_std::{Storage, Querier, Api, Extern, StdResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -89,15 +89,14 @@ pub mod proxy {
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
     pub struct InitMsg {
-        pub owner: HumanAddr,
+        pub admin_auth: Contract,
         pub band: Contract,
         pub quote_symbol: String,
     }
 
-    // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-    pub struct ConfigResponse {
-        pub owner: HumanAddr,
+    pub struct Config {
+        pub admin_auth: Contract,
         pub band: Contract,
         pub quote_symbol: String,
         pub enabled: bool,
@@ -107,8 +106,7 @@ pub mod proxy {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum HandleMsg {
-        SetStatus { enabled: bool },
-        UpdateConfig { owner: Option<HumanAddr>, band: Option<Contract>, quote_symbol: Option<String>, },
+        UpdateConfig { enabled: Option<bool>, admin_auth: Option<Contract>, band: Option<Contract>, quote_symbol: Option<String>, },
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]

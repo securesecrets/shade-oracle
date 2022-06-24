@@ -1,33 +1,23 @@
 use shade_oracles::{
-    common::{querier::query_token_info, CommonOracleConfig},
-    common::{ResponseStatus, BLOCK_SIZE, Contract}, band::ReferenceData, storage::Item,
+    common::{querier::query_token_info},
+    common::{ResponseStatus, BLOCK_SIZE}, band::ReferenceData, storage::Item, router::querier::verify_admin,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use cosmwasm_std::{
     to_binary, Api, Env, Extern, HandleResponse, InitResponse,
     Querier, QueryResult, StdResult, Storage, Binary, StdError,
 };
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{get_precision, querier::{query_price}, throw_unsupported_symbol_error, QueryMsg, OraclePrice},
     router::querier::query_oracle,
     staking_derivative::shade::{
         querier::query_price as query_derivative_price,
-        {ConfigResponse, InitMsg, HandleMsg, HandleStatusAnswer},
+        {Config, InitMsg, HandleMsg, HandleStatusAnswer},
     },
 };
 
-#[derive(Serialize, Deserialize)]
-pub struct State {
-    pub supported_key: String,
-    pub underlying_symbol: String,
-    pub router: Contract,
-    pub staking_derivative: Contract,
-    pub token_decimals: u8,
-}
-
-const CONFIG: Item<CommonOracleConfig> = Item::new("config");
-const STATE: Item<State> = Item::new("state");
+const CONFIG: Item<Config> = Item::new("config");
+const TOKEN_DECIMALS: Item<u8> = Item::new("token_decimals");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -39,30 +29,26 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .token_info
         .decimals;
 
-    let state: State = State {
+    let config = Config {
         supported_key: msg.supported_key,
         underlying_symbol: msg.underlying_symbol,
         router: msg.router,
         staking_derivative: msg.staking_derivative,
-        token_decimals,
+        enabled: true,
     };
 
-    let config = CommonOracleConfig { owner: msg.owner, enabled: true };
-
-    STATE.save(&mut deps.storage, &state)?;
+    TOKEN_DECIMALS.save(&mut deps.storage, &token_decimals)?;
     CONFIG.save(&mut deps.storage, &config)?;
 
     Ok(InitResponse::default())
 }
 
-/* CONFIG UPDATE NEEDS TO BE FIXED */
 pub fn handle<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
-        // TODO: Add handle for set status
         match msg {
             HandleMsg::SetStatus { enabled } => try_update_status(deps, &env, enabled),
         },
@@ -75,7 +61,8 @@ fn try_update_status<S: Storage, A: Api, Q: Querier>(
     env: &Env,
     enabled: bool,
 ) -> StdResult<HandleResponse> {
-    CONFIG.load(&deps.storage)?.is_owner(env)?;
+    let config = CONFIG.load(&deps.storage)?;
+    verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
     let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
         config.enabled = enabled;
         Ok(config)
@@ -90,7 +77,7 @@ fn try_update_status<S: Storage, A: Api, Q: Querier>(
 pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
+            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
             QueryMsg::GetPrice { key } => try_query_price(deps, key),
             QueryMsg::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
         },
@@ -98,48 +85,33 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     )
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-) -> StdResult<ConfigResponse> {
-    let state = STATE.load(&deps.storage)?;
-    let config = CONFIG.load(&deps.storage)?;
-
-    Ok(ConfigResponse {
-        owner: config.owner,
-        router: state.router,
-        staking_derivative: state.staking_derivative,
-        supported_key: state.supported_key,
-        underlying_symbol: state.underlying_symbol,
-        enabled: config.enabled,
-    })
-}
-
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     key: String,
 ) -> StdResult<Binary> {
-    let state = STATE.load(&deps.storage)?;
+    let config = CONFIG.load(&deps.storage)?;
+    let token_decimals = TOKEN_DECIMALS.load(&deps.storage)?;
 
-    if key != state.supported_key {
+    if key != config.supported_key {
         return Err(throw_unsupported_symbol_error(key));
     }
 
     let underlying_oracle = query_oracle(
-        &state.router,
+        &config.router,
         &deps.querier,
-        state.underlying_symbol.clone(),
+        config.underlying_symbol.clone(),
     )?;
 
     // price of underlying asset to 10^18.
-    let underlying_price = query_price(&underlying_oracle, &deps.querier, state.underlying_symbol)?;
+    let underlying_price = query_price(&underlying_oracle, &deps.querier, config.underlying_symbol)?;
 
     let staking_derivative_price = query_derivative_price(
-        &state.staking_derivative,
+        &config.staking_derivative,
         &deps.querier,
     )?;
 
     let staking_derivative_price_precision =
-        get_precision(state.token_decimals);
+        get_precision(token_decimals);
 
     let price = underlying_price
         .data

@@ -15,7 +15,6 @@ pub mod secretswap {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
-        pub owner: HumanAddr,
         pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
@@ -26,8 +25,7 @@ pub mod secretswap {
     // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
-    pub struct ConfigResponse {
-        pub owner: HumanAddr,
+    pub struct Config {
         pub pair: Contract,
         pub supported_key: String,
         pub symbol_0: String,
@@ -48,7 +46,6 @@ pub mod siennaswap {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
-        pub owner: HumanAddr,
         pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
@@ -59,14 +56,19 @@ pub mod siennaswap {
     // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
-    pub struct ConfigResponse {
-        pub owner: HumanAddr,
+    pub struct Config {
         pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
         pub router: Contract,
         pub exchange: Contract,
         pub enabled: bool,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum HandleMsg {
+        UpdateConfig { enabled: Option<bool> }
     }
 
     #[derive(Serialize, Deserialize, JsonSchema)]

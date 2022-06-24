@@ -68,3 +68,7 @@ implement_harness!(Snip20, snip20_reference_impl);
 use mock_shade_pair;
 pub struct MockShadePair;
 implement_harness!(MockShadePair, mock_shade_pair);
+
+use admin;
+pub struct AdminAuth;
+implement_harness!(AdminAuth, admin);
