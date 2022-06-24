@@ -2,16 +2,16 @@ use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{
         Contract, ResponseStatus, CommonOracleConfig, 
-        HandleStatusAnswer, OraclePrice, QueryMsg, BLOCK_SIZE
+        OraclePrice, QueryMsg, BLOCK_SIZE
     }, 
     band::{
         ReferenceData, BandQuery,
         proxy::{
             HandleMsg, HandleAnswer,
-            ConfigResponse, InitMsg,
+            Config, InitMsg,
         }
     },
-    storage::Item,
+    storage::Item, router::querier::verify_admin,
 };
 use cosmwasm_std::{
     to_binary, Binary, Api, Env, 
@@ -22,16 +22,7 @@ use cosmwasm_std::{
 use cosmwasm_math_compat::Uint128;
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 
-/// state of the auction
-#[derive(Serialize, Deserialize)]
-pub struct State {
-    pub band: Contract,
-    /// Price in which requests will be quoted in
-    pub quote_symbol: String,
-}
-
-const CONFIG: Item<CommonOracleConfig> = Item::new("config");
-const STATE: Item<State> = Item::new("band-state");
+const CONFIG: Item<Config> = Item::new("config");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -39,18 +30,14 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
 
-    let state = State {
+    let config = Config {
+        admin_auth: msg.admin_auth,
         band: msg.band,
         quote_symbol: msg.quote_symbol,
-    };
-
-    let common = CommonOracleConfig {
-        owner: msg.owner,
         enabled: true,
     };
 
-    STATE.save(&mut deps.storage, &state)?;
-    CONFIG.save(&mut deps.storage, &common)?;
+    CONFIG.save(&mut deps.storage, &config)?;
 
     Ok(InitResponse::default())
 }
@@ -61,44 +48,28 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     let response: Result<HandleResponse, StdError> = match msg {
-        HandleMsg::SetStatus { enabled, } => try_update_status(deps, &env, enabled),
         HandleMsg::UpdateConfig {
-            owner,
             band,
             quote_symbol,
-        } => try_update_config(deps, env, owner, band, quote_symbol),
+            enabled,
+            admin_auth,
+        } => try_update_config(deps, env, band, quote_symbol, enabled, admin_auth),
     };
     pad_handle_result(response, BLOCK_SIZE)
-}
-
-fn try_update_status<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: &Env,
-    enabled: bool,
-) -> StdResult<HandleResponse> {
-    CONFIG.load(&deps.storage)?.is_owner(env)?;
-    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
-        config.enabled = enabled;
-        Ok(config)
-    })?;
-    Ok(HandleResponse {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleStatusAnswer { status: ResponseStatus::Success, enabled: new_config.enabled, })?),
-    })
 }
 
 fn try_update_config<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
-    owner: Option<HumanAddr>,
     band: Option<Contract>,
     quote_symbol: Option<String>,
+    enabled: Option<bool>,
+    admin_auth: Option<Contract>,
 ) -> StdResult<HandleResponse> {
     let config = CONFIG.load(&deps.storage)?;
     config.is_owner(&env)?;
 
-    STATE.update(&mut deps.storage, |mut state| -> StdResult<_> {
+    CONFIG.update(&mut deps.storage, |mut state| -> StdResult<_> {
         state.band = band.unwrap_or(state.band);
         state.quote_symbol = quote_symbol.unwrap_or(state.quote_symbol);
         Ok(state)

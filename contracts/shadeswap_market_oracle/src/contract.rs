@@ -20,7 +20,7 @@ use shade_oracles::{
         HandleMsg, HandleAnswer,
         QueryMsg,
     },
-    router::querier::query_oracle,
+    router::querier::{query_oracle, verify_admin},
 };
 use cosmwasm_std::{
     to_binary, Api, Env, 
@@ -38,7 +38,6 @@ use secret_toolkit::{
 const CONFIG: Item<Config> = Item::new("config");
 
 const PRIMARY_TOKEN: Item<Contract> = Item::new("primary_token");
-//const BASE_TOKEN: Item<Contract> = Item::new("base_token");
 const PRIMARY_INFO: Item<TokenInfo> = Item::new("primary_info");
 const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
 
@@ -95,15 +94,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let base_i = token_infos.iter().position(|t| t.symbol != msg.symbol).unwrap();
 
     let config = Config {
-        admins: match msg.admins {
-            Some(mut admins) => {
-                if !admins.contains(&env.message.sender) {
-                    admins.push(env.message.sender);
-                }
-                admins
-            },
-            None => vec![env.message.sender],
-        },
         router: msg.router,
         pair: msg.pair,
         symbol: msg.symbol.clone(),
@@ -119,13 +109,8 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
                     config.base_peg, config.router.address, e)));
     };
 
-    /*
-    return Err(StdError::generic_err(format!("primary token contract {}, {}", tokens[primary_i].address, tokens[primary_i].code_hash)));
-    */
-
     CONFIG.save(&mut deps.storage, &config)?;
     PRIMARY_TOKEN.save(&mut deps.storage, &tokens[primary_i].clone())?;
-    //BASE_TOKEN.save(&mut deps.storage, &tokens[base_i].clone())?;
     PRIMARY_INFO.save(&mut deps.storage, &token_infos[primary_i])?;
     BASE_INFO.save(&mut deps.storage, &token_infos[base_i])?;
 
@@ -140,8 +125,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     pad_handle_result(
         match msg {
             HandleMsg::UpdateConfig { 
-                admins, router,
-            } => try_update_config(deps, &env, admins, router),
+                router,
+            } => try_update_config(deps, &env, router),
         },
         BLOCK_SIZE,
     )
@@ -150,24 +135,20 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 fn try_update_config<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: &Env,
-    admins: Option<Vec<HumanAddr>>,
     router: Option<Contract>,
+    enabled: Option<bool>,
 ) -> StdResult<HandleResponse> {
 
     let mut config = CONFIG.load(&deps.storage)?;
 
-    if !config.admins.contains(&env.message.sender) {
-        return Err(StdError::unauthorized());
-    }
-
-    if let Some(admins) = admins {
-        if !admins.is_empty() {
-            config.admins = admins;
-        }
-    }
+    verify_admin(&config.router, &deps.querier, env.message.sender)?;
 
     if let Some(router) = router {
         config.router = router;
+    }
+
+    if let Some(enabled) = enabled {
+        config.enabled = enabled;
     }
 
     CONFIG.save(&mut deps.storage, &config)?;

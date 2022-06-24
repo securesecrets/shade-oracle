@@ -1,4 +1,4 @@
-use crate::{common::{Contract, ResponseStatus}};
+use crate::{common::{Contract}};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cosmwasm_math_compat::Uint128;
@@ -11,7 +11,6 @@ pub mod shade {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
-        pub owner: HumanAddr,
         pub supported_key: String,
         pub underlying_symbol: String,
         pub staking_derivative: Contract,
@@ -21,8 +20,7 @@ pub mod shade {
     // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
-    pub struct ConfigResponse {
-        pub owner: HumanAddr,
+    pub struct Config {
         pub supported_key: String,
         pub underlying_symbol: String,        
         pub router: Contract,
@@ -34,14 +32,7 @@ pub mod shade {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum HandleMsg {
-        SetStatus { enabled: bool },
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub struct HandleStatusAnswer {
-        pub status: ResponseStatus,
-        pub enabled: bool,
+        UpdateConfig { enabled: Option<bool> },
     }
 
     pub mod querier {

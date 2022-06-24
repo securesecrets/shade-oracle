@@ -1,12 +1,11 @@
 use std::hash::Hash;
-use crate::{
-    band::ReferenceData,
-};
+use crate::band::ReferenceData;
 use cosmwasm_std::*;
 use cosmwasm_math_compat::{Uint128, Uint256};
+use fadroma::prelude::ContractLink;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize}; 
-use secret_toolkit::utils::{HandleCallback, Query};
+use secret_toolkit::utils::{Query};
 
 pub const BLOCK_SIZE: usize = 256;
 
@@ -20,24 +19,6 @@ pub enum QueryMsg {
 
 impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
-}
-
-/// Every HandleMsg for each specific oracle type should include this
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleMsg {
-    SetStatus { enabled: bool },
-}
-
-impl HandleCallback for HandleMsg {
-    const BLOCK_SIZE: usize = 256;
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct HandleStatusAnswer {
-    pub status: ResponseStatus,
-    pub enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
@@ -63,6 +44,10 @@ pub struct Contract {
 impl Contract {
     pub fn new(address: String, code_hash: String) -> Self {
         Contract { address: HumanAddr(address), code_hash }
+    }
+
+    pub fn new_link(link: ContractLink<HumanAddr>) -> Self {
+        Contract { address: link.address, code_hash: link.code_hash }
     }
 
     pub fn as_canonical(&self, api: &impl Api) -> Result<CanonicalContract, StdError> {
@@ -224,3 +209,4 @@ pub mod querier {
         }
     }
 }
+

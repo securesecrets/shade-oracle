@@ -6,13 +6,16 @@ use fadroma::{
     ensemble::{ MockEnv, ContractEnsemble },
 };
 
-use shade_oracles_ensemble::harness::{
+use shade_oracles_ensemble::{
+    helpers::{setup_core},
+    harness::{
     MockBand,
     OracleRouter,
     ProxyBandOracle,
     SiennaMarketOracle,
     MockSiennaPair,
-    Snip20,
+    Snip20, AdminAuth,
+    }
 };
 
 use shade_oracles::{
@@ -38,89 +41,15 @@ fn basic_market_test(
 ) {
     let mut ensemble = ContractEnsemble::new(50);
 
-    let reg_router = ensemble.register(Box::new(OracleRouter));
     let reg_market_oracle = ensemble.register(Box::new(SiennaMarketOracle));
-    let reg_mock_band = ensemble.register(Box::new(MockBand));
-    let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
     let reg_sienna_pair = ensemble.register(Box::new(MockSiennaPair));
     let reg_snip20 = ensemble.register(Box::new(Snip20));
 
-    let band = ensemble.instantiate(
-        reg_mock_band.id,
-        &band::InitMsg { },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
-    let band_proxy = ensemble.instantiate(
-        reg_mock_band_proxy.id,
-        &proxy::InitMsg {
-            owner: HumanAddr("admin".into()),
-            band: Contract {
-                address: band.address.clone(),
-                code_hash: band.code_hash.clone(),
-            },
-            quote_symbol: "USD".to_string(),
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band_proxy".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
-    let router = ensemble.instantiate(
-        reg_router.id,
-        &router::InitMsg {
-            owner: HumanAddr("admin".into()),
-            default_oracle: Contract {
-                address: band_proxy.address.clone(),
-                code_hash: band_proxy.code_hash.clone(),
-            },
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("router".into()),
-                code_hash: reg_router.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
-
-    /*
-    let mut operations = vec![];
-
-    for (sym, _) in prices.clone() {
-        operations.push(
-            router::RegistryOperation::Add {
-                oracle: Contract {
-                    address: band_proxy.address.clone(),
-                    code_hash: band_proxy.code_hash.clone(),
-                },
-                key: sym,
-            }
-        );
-    }
-
-    // Configure BAND symbols on router
-    ensemble.execute(
-        &router::HandleMsg::BatchUpdateRegistry {
-            operations,
-        },
-        MockEnv::new(
-            "admin",
-            router.clone(),
-        ),
-    ).unwrap();
-    */
+    let oracle_core = setup_core(ensemble);
+    let band = oracle_core.band;
+    let band_proxy = oracle_core.band_proxy;
+    let admin_auth = oracle_core.admin_auth;
+    let router = oracle_core.router;
 
     // Configure mock band prices
     for (sym, price) in prices.clone() {
@@ -211,7 +140,6 @@ fn basic_market_test(
     let market_oracle = ensemble.instantiate(
         reg_market_oracle.id,
         &siennaswap_market_oracle::InitMsg {
-            admins: None,
             router: Contract {
                 address: router.address.clone(),
                 code_hash: router.code_hash.clone(),

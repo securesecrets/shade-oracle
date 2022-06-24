@@ -10,7 +10,15 @@ use secret_toolkit::utils::Query;
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "snake_case")]
 pub struct InitMsg {
-    pub owner: HumanAddr,
+    pub admin_auth: Contract,
+    pub default_oracle: Contract,
+}
+
+#[derive(Serialize, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Config {
+    pub address: HumanAddr,
+    pub admin_auth: Contract,
     pub default_oracle: Contract,
 }
 
@@ -28,7 +36,7 @@ pub enum RegistryOperation {
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum HandleMsg {
-    UpdateConfig { owner: Option<HumanAddr>, default_oracle: Option<Contract> },
+    UpdateConfig { admin_auth: Option<Contract>, default_oracle: Option<Contract> },
     UpdateRegistry { operation: RegistryOperation },
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
 }
@@ -61,6 +69,9 @@ pub enum QueryMsg {
     GetPrices {
         keys: Vec<String>,
     },
+    VerifyAdmin {
+        user: HumanAddr,
+    }
 }
 
 impl Query for QueryMsg {
@@ -69,16 +80,15 @@ impl Query for QueryMsg {
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct ConfigResponse {
-    pub owner: HumanAddr,
-    pub default_oracle: Contract,
+pub struct OracleResponse {
+    pub key: String,
+    pub oracle: Contract,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct OracleResponse {
-    pub key: String,
-    pub oracle: Contract,
+pub struct VerifyAdminResponse {
+    pub is_admin: bool,
 }
 
 pub mod querier {
@@ -113,5 +123,22 @@ pub mod querier {
             msg: to_binary(&QueryMsg::GetOracles { keys })?,
         }));
         resp
+    }
+
+    pub fn verify_admin(
+        contract: &Contract,
+        querier: &impl Querier,
+        user: HumanAddr,
+    ) -> StdResult<()> {
+        let resp: VerifyAdminResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: contract.address.clone(),
+            callback_code_hash: contract.code_hash.clone(),
+            msg: to_binary(&QueryMsg::VerifyAdmin { user })?,
+        }))?;
+        if resp.is_admin {
+            Ok(())
+        } else {
+            Err(StdError::unauthorized())
+        }
     }
 }

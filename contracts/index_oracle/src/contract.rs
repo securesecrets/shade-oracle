@@ -9,7 +9,6 @@ use cosmwasm_std::{
     StdResult,
     StdError,
     Storage,
-    HumanAddr,
     QueryResult,
 };
 use cosmwasm_math_compat::{Uint128, Uint512};
@@ -29,7 +28,7 @@ use shade_oracles::{
         InitMsg, HandleMsg, HandleAnswer, QueryMsg, QueryAnswer,
         Config,
     },
-    router::querier::query_oracles,
+    router::querier::{query_oracles, verify_admin},
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -39,21 +38,13 @@ const BASKET: Item<Vec<(String, Uint128, Uint128)>> = Item::new("basket");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
+    _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
 
     let config = Config {
-        admins: match msg.admins {
-            Some(mut a) => {
-                if !a.contains(&env.message.sender) {
-                    a.push(env.message.sender);
-                }
-                a
-            }
-            None => vec![env.message.sender],
-        },
         router: msg.router,
+        enabled: true,
     };
 
     CONFIG.save(&mut deps.storage, &config)?;
@@ -93,9 +84,9 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     pad_handle_result(
         match msg {
             HandleMsg::UpdateConfig {
-                admins,
                 router,
-            } => try_update_config(deps, env, admins, router),
+                enabled,
+            } => try_update_config(deps, env, router, enabled),
             HandleMsg::ModBasket { basket, .. } => mod_basket(deps, env, basket),
         }, BLOCK_SIZE)
 }
@@ -204,25 +195,17 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
 fn try_update_config<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
-    admins: Option<Vec<HumanAddr>>,
     router: Option<Contract>,
+    enabled: Option<bool>,
 ) -> StdResult<HandleResponse> {
 
     let config = CONFIG.load(&deps.storage)?;
 
-    if !config.admins.contains(&env.message.sender) {
-        return Err(StdError::unauthorized());
-    }
+    verify_admin(&config.router, &deps.querier, env.message.sender)?;
 
     CONFIG.save(&mut deps.storage, &Config {
-        admins: match admins {
-            Some(a) => a,
-            None => config.admins
-        },
-        router: match router {
-            Some(r) => r,
-            None => config.router,
-        },
+        router: router.unwrap_or(config.router),
+        enabled: enabled.unwrap_or(config.enabled),
     })?;
 
     Ok(HandleResponse {
@@ -242,9 +225,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
 
     let config = CONFIG.load(&deps.storage)?;
 
-    if !config.admins.contains(&env.message.sender) {
-        return Err(StdError::unauthorized());
-    }
+    verify_admin(&config.router, &deps.querier, env.message.sender)?;
 
     let self_symbol = SYMBOL.load(&deps.storage)?;
 
