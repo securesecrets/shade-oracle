@@ -72,7 +72,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     match pair_info_response {
         SiennaSwapQueryResponse::PairInfo {
             liquidity_token,
-            exchange: _,
+            factory: _,
             pair,
             amount_0: _,
             amount_1: _,
@@ -233,7 +233,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     match pair_info_response {
         SiennaSwapQueryResponse::PairInfo {
             liquidity_token: _,
-            exchange: _,
+            factory: _,
             pair: _,
             amount_0,
             amount_1,
