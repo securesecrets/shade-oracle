@@ -74,7 +74,7 @@ pub mod siennaswap {
     pub enum SiennaSwapQueryResponse {
         PairInfo {
             liquidity_token: Contract,
-            exchange: Contract,
+            factory: Contract,
             pair: SiennaSwapPair,
             amount_0: Uint128,
             amount_1: Uint128,
