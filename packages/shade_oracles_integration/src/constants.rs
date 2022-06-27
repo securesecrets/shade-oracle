@@ -37,6 +37,6 @@ pub mod testnet {
 
     pub const SIENNA_SHD_SSCRT_PAIR: &str = "secret1pak8feexy97myp22pjkxmsp5p8dmlkp4mkfxsl";
     pub const SIENNA_SHD_SSCRT_PAIR_HASH: &str = "33eac42c44ee69acfe1f56ce7b14fe009a7b611e86f275d7af2d32dd0d33d5a9";
-    pub const ADMIN_AUTH: &str = "";
-    pub const ADMIN_AUTH_HASH: &str = "";
+    pub const ADMIN_AUTH: &str = "secret15l3p2sc6v22levjgwk3d856gljpaary28jefzt";
+    pub const ADMIN_AUTH_HASH: &str = "1bfa6a48b1b6fccdc823a80aea3dac198d91baf5a62f5858ae4c6bc7b4ca5abd";
 }
