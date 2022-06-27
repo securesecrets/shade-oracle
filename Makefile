@@ -14,8 +14,10 @@ rm ./$(1).wasm
 endef
 
 ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle siennaswap_market_oracle shadeswap_market_oracle index_oracle
+# ORACLES = oracle_router
+MOCKS = mock_band mock_sienna_pair mock_shade_pair
 
-CONTRACTS = ${ORACLES} mock_band mock_sienna_pair mock_shade_pair
+CONTRACTS = ${ORACLES} ${MOCKS}
 
 PKGS = shade_oracles shade_oracles_ensemble shade_oracles_integration
 
