@@ -127,7 +127,7 @@ pub mod querier {
         ValidateAdminPermissionResponse, QueryMsg as AdminQueryMsg
     };
 
-    fn _query_price(
+    pub fn query_oracle_price(
         oracle: &Contract,
         querier: &impl Querier,
         key: String,
@@ -144,10 +144,10 @@ pub mod querier {
         key: String,
     ) -> StdResult<OraclePrice> {
         let oracle_resp: OracleResponse = RouterQueryMsg::GetOracle { key: key.clone() }.query(querier, router.code_hash.clone(), router.address.clone())?;
-        _query_price(&oracle_resp.oracle, querier, key)
+        query_oracle_price(&oracle_resp.oracle, querier, key)
     }
 
-    fn _query_prices(
+    pub fn query_oracle_prices(
         oracle: &Contract,
         querier: &impl Querier,
         keys: Vec<String>,
@@ -174,10 +174,10 @@ pub mod querier {
     
         for (oracle, keys) in map {
             if keys.len() == 1 {
-                let queried_price = _query_price(&oracle, querier, keys[0].clone())?;
+                let queried_price = query_oracle_price(&oracle, querier, keys[0].clone())?;
                 prices.push(queried_price);
             } else {
-                let mut queried_prices = _query_prices(&oracle, querier, keys)?;
+                let mut queried_prices = query_oracle_prices(&oracle, querier, keys)?;
                 prices.append(&mut queried_prices);
             }
         }
