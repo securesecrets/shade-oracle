@@ -67,47 +67,10 @@ pub mod siennaswap {
 
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
-    pub enum HandleMsg {
-        UpdateConfig { enabled: Option<bool> }
-    }
-
-    #[derive(Serialize, Deserialize, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum SiennaSwapQueryResponse {
-        PairInfo {
-            liquidity_token: Contract,
-            factory: Contract,
-            pair: SiennaSwapPair,
-            amount_0: Uint128,
-            amount_1: Uint128,
-            total_liquidity: Uint128,
-            contract_version: u32,
-        },
-    }
-
-    #[derive(Serialize, Deserialize, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub struct SiennaSwapPair {
-        pub token_0: SiennaDexTokenType,
-        pub token_1: SiennaDexTokenType,
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum SiennaSwapExchangeQueryMsg {
-        PairInfo,
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum SiennaDexTokenType {
-        CustomToken {
-            contract_addr: String,
-            token_code_hash: String,
-        },
-        NativeToken {
-            denom: String,
-        },
+    pub struct PairData {
+        pub lp_token: Contract,
+        pub token0_decimals: u8,
+        pub token1_decimals: u8,
     }
 }
 

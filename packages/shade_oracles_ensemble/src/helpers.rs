@@ -1,15 +1,18 @@
 use cosmwasm_std::HumanAddr;
-use fadroma::{ensemble::{self, ContractEnsemble}, core::ContractLink};
-use shade_oracles::common::Contract;
+use fadroma::{ensemble::{ContractEnsemble, MockEnv}, core::ContractLink};
+use shade_oracles::{common::Contract, band::{self, proxy}, router};
+
+use crate::harness::{OracleRouter, MockBand, ProxyBandOracle, AdminAuth};
 
 pub struct OracleEnsembleCore {
     pub band: ContractLink<HumanAddr>,
     pub band_proxy: ContractLink<HumanAddr>,
     pub router: ContractLink<HumanAddr>,
     pub admin_auth: ContractLink<HumanAddr>,
+    pub ensemble: ContractEnsemble,
 }
 
-pub fn setup_core(ensemble: ContractEnsemble) -> OracleEnsembleCore {
+pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
     let reg_router = ensemble.register(Box::new(OracleRouter));
     let reg_mock_band = ensemble.register(Box::new(MockBand));
     let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
@@ -22,7 +25,7 @@ pub fn setup_core(ensemble: ContractEnsemble) -> OracleEnsembleCore {
             "admin",
             ContractLink {
                 address: HumanAddr("admin_auth".into()),
-                code_hash: reg_admin_auth.code_hash.clone(),
+                code_hash: reg_admin_auth.code_hash,
             }
         )
     ).unwrap().instance;
@@ -47,13 +50,13 @@ pub fn setup_core(ensemble: ContractEnsemble) -> OracleEnsembleCore {
                 code_hash: band.code_hash.clone(),
             },
             quote_symbol: "USD".to_string(),
-            router: Contract::new_link(admin_auth),
+            admin_auth: Contract::new_link(admin_auth.clone()),
         },
         MockEnv::new(
             "admin",
             ContractLink {
                 address: HumanAddr("band_proxy".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
+                code_hash: reg_mock_band.code_hash,
             }
         )
     ).unwrap().instance;
@@ -65,20 +68,20 @@ pub fn setup_core(ensemble: ContractEnsemble) -> OracleEnsembleCore {
                 address: band_proxy.address.clone(),
                 code_hash: band_proxy.code_hash.clone(),
             },
-            admin_auth: todo!(),
+            admin_auth: Contract::new_link(admin_auth.clone()),
         },
         MockEnv::new(
             "admin",
             ContractLink {
                 address: HumanAddr("router".into()),
-                code_hash: reg_router.code_hash.clone(),
+                code_hash: reg_router.code_hash,
             }
         )
     ).unwrap().instance;
 
     ensemble.execute(
         &shade_admin::admin::HandleMsg::AddContract {
-            contract_address: router.address.clone(),
+            contract_address: router.address.to_string(),
         },
         MockEnv::new(
             "admin", 
@@ -87,7 +90,25 @@ pub fn setup_core(ensemble: ContractEnsemble) -> OracleEnsembleCore {
     ).unwrap();
 
     ensemble.execute(
-        &shade_admin::admin::HandleMsg::AddAuthorization { contract_address: router.address.clone(), admin_address: "admin".to_string() },
+        &shade_admin::admin::HandleMsg::AddAuthorization { contract_address: router.address.to_string(), admin_address: "admin".to_string() },
+        MockEnv::new(
+            "admin",
+            admin_auth.clone(),
+        )
+    ).unwrap();
+
+    ensemble.execute(
+        &shade_admin::admin::HandleMsg::AddContract {
+            contract_address: band_proxy.address.to_string(),
+        },
+        MockEnv::new(
+            "admin", 
+            admin_auth.clone(),
+        ),
+    ).unwrap();
+
+    ensemble.execute(
+        &shade_admin::admin::HandleMsg::AddAuthorization { contract_address: band_proxy.address.to_string(), admin_address: "admin".to_string() },
         MockEnv::new(
             "admin",
             admin_auth.clone(),
@@ -99,5 +120,6 @@ pub fn setup_core(ensemble: ContractEnsemble) -> OracleEnsembleCore {
         band_proxy,
         router,
         admin_auth,
+        ensemble,
     }
 }

@@ -1,10 +1,11 @@
 use shade_oracles::{
     common::{
         normalize_price,
-        querier::{query_price, query_token_info},
+        querier::{query_price, query_token_info, verify_admin},
         BLOCK_SIZE, Contract, 
         ResponseStatus, 
         OraclePrice,
+        HandleAnswer, QueryMsg, is_disabled
     },
     protocols::siennaswap::{
         SiennaDexTokenType, 
@@ -17,10 +18,8 @@ use shade_oracles::{
     band::ReferenceData,
     siennaswap_market_oracle::{
         Config, InitMsg,
-        HandleMsg, HandleAnswer,
-        QueryMsg,
+        HandleMsg,
     },
-    router::querier::{query_oracle, verify_admin},
 };
 use cosmwasm_std::{
     to_binary, Api, Env, 
@@ -180,10 +179,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     key: String,
 ) -> StdResult<OraclePrice> {
     let config = CONFIG.load(&deps.storage)?;
-
-    if !config.enabled {
-        return Err(StdError::generic_err("Deprecated oracle."));
-    }
+    is_disabled(config.enabled)?;
 
     let primary_token: Contract = PRIMARY_TOKEN.load(&deps.storage)?;
     let primary_info = PRIMARY_INFO.load(&deps.storage)?;
@@ -208,8 +204,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let exchange_rate = normalize_price(sim.return_amount, base_info.decimals);
 
     // Query router for base_peg/USD
-    let oracle = query_oracle(&config.router, &deps.querier, config.base_peg.clone())?;
-    let base_usd_price = query_price(&oracle, &deps.querier, config.base_peg)?;
+    let base_usd_price = query_price(&config.router, &deps.querier, config.base_peg)?;
 
     // Translate price to primary/USD
     let price = base_usd_price.data.rate.multiply_ratio(exchange_rate, 10u128.pow(18));

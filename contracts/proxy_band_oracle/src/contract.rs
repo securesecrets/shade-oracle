@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{
-        Contract, ResponseStatus, CommonOracleConfig, 
-        OraclePrice, QueryMsg, BLOCK_SIZE
+        Contract, ResponseStatus, 
+        OraclePrice, QueryMsg, BLOCK_SIZE, is_disabled
     }, 
     band::{
         ReferenceData, BandQuery,
@@ -11,11 +10,12 @@ use shade_oracles::{
             Config, InitMsg,
         }
     },
-    storage::Item, router::querier::verify_admin,
+    storage::Item,
 };
+use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
 use cosmwasm_std::{
     to_binary, Binary, Api, Env, 
-    Extern, HandleResponse, HumanAddr, 
+    Extern, HandleResponse, 
     InitResponse, Querier, QueryResult,
     StdError, StdResult, Storage
 };
@@ -67,16 +67,17 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     admin_auth: Option<Contract>,
 ) -> StdResult<HandleResponse> {
     let config = CONFIG.load(&deps.storage)?;
-    config.is_owner(&env)?;
-
-    CONFIG.update(&mut deps.storage, |mut state| -> StdResult<_> {
-        state.band = band.unwrap_or(state.band);
-        state.quote_symbol = quote_symbol.unwrap_or(state.quote_symbol);
-        Ok(state)
-    })?;
+    
+    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission { contract_address: env.contract.address.to_string(), admin_address: env.message.sender.to_string() }.query(&deps.querier, config.admin_auth.code_hash.clone(), config.admin_auth.address)?;
+    if resp.error_msg.is_some() {
+        return Err(StdError::unauthorized());
+    }
 
     CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
-        config.owner = owner.unwrap_or(config.owner);
+        config.band = band.unwrap_or(config.band);
+        config.quote_symbol = quote_symbol.unwrap_or(config.quote_symbol);
+        config.enabled = enabled.unwrap_or(config.enabled);
+        config.admin_auth = admin_auth.unwrap_or(config.admin_auth);
         Ok(config)
     })?;
 
@@ -91,34 +92,19 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 
 pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
     let response = match msg {
-        QueryMsg::GetConfig {} => try_query_config(deps),
+        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
         QueryMsg::GetPrice { key } => try_query_price(deps, key),
         QueryMsg::GetPrices { keys } => try_query_prices(deps, keys),
     };
     pad_query_result(response, BLOCK_SIZE)
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-) -> StdResult<Binary> {
-    let state = STATE.load(&deps.storage)?;
-    let common = CONFIG.load(&deps.storage)?;
-
-    to_binary(&ConfigResponse {
-        owner: common.owner,
-        band: state.band,
-        quote_symbol: state.quote_symbol,
-        enabled: common.enabled,
-    })
-}
-
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     key: String,
 ) -> StdResult<Binary> {
-    CONFIG.load(&deps.storage)?.is_enabled()?;
-
-    let state = STATE.load(&deps.storage)?;
+    let config = CONFIG.load(&deps.storage)?;
+    is_disabled(config.enabled)?;
 
     if key == "SHD" {
         return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128::from(13450000000000000000u128), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
@@ -126,12 +112,12 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
 
     let band_response: ReferenceData = BandQuery::GetReferenceData {
         base_symbol: key.clone(),
-        quote_symbol: state.quote_symbol,
+        quote_symbol: config.quote_symbol,
     }
     .query(
         &deps.querier,
-        state.band.code_hash,
-        state.band.address,
+        config.band.code_hash,
+        config.band.address,
     )?;
 
     to_binary(&OraclePrice::new(key, band_response))
@@ -141,16 +127,15 @@ fn try_query_prices<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     keys: Vec<String>,
 ) -> StdResult<Binary> {
-    CONFIG.load(&deps.storage)?.is_enabled()?;
+    let config = CONFIG.load(&deps.storage)?;
+    is_disabled(config.enabled)?;
 
-    let state = STATE.load(&deps.storage)?;
-
-    let quote_symbols = vec![state.quote_symbol; keys.len()];
+    let quote_symbols = vec![config.quote_symbol; keys.len()];
 
     let band_response: Vec<ReferenceData> = BandQuery::GetReferenceDataBulk {
         base_symbols: keys.clone(),
         quote_symbols,
-    }.query(&deps.querier, state.band.code_hash, state.band.address)?;
+    }.query(&deps.querier, config.band.code_hash, config.band.address)?;
 
     let mut prices: Vec<OraclePrice> = vec![];
     for (index, key) in keys.iter().enumerate() {

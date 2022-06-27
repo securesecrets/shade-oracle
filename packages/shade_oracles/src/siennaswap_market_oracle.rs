@@ -1,5 +1,5 @@
 use crate::common::{
-    Contract, ResponseStatus,
+    Contract,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -32,24 +32,4 @@ pub enum HandleMsg {
         router: Option<Contract>,
         enabled: Option<bool>,
     },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleAnswer {
-    UpdateConfig {
-        status: ResponseStatus,
-    },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum QueryMsg {
-    GetPrice {
-        key: String,
-    },
-    GetPrices {
-        keys: Vec<String>,
-    },
-    GetConfig { },
 }

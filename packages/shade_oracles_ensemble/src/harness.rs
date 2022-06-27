@@ -1,5 +1,5 @@
 use cosmwasm_std::{from_binary, Binary, Env, HandleResponse, InitResponse, StdResult};
-use fadroma::ensemble::{ContractHarness, MockDeps, MockEnv};
+use fadroma::ensemble::{ContractHarness, MockDeps};
 
 #[macro_export]
 macro_rules! implement_harness {

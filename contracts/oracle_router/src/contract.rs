@@ -89,11 +89,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 to_binary(&oracles)
             },
             QueryMsg::GetPrices { keys } => get_prices(deps, keys),
-            QueryMsg::VerifyAdmin { user } => {
-                match is_admin(deps, user) {
-                    Ok(_) => to_binary(&VerifyAdminResponse { is_admin: true }),
-                    Err(_) => to_binary(&VerifyAdminResponse { is_admin: false }),
-                }
+            QueryMsg::GetAdminAuth { } => {
+                to_binary(&AdminAuthResponse { admin_auth: CONFIG.load(&deps.storage)?.admin_auth })
             },
         },
         BLOCK_SIZE,
