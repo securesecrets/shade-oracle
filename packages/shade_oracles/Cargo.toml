@@ -22,6 +22,8 @@ cosmwasm-schema = "0.10.1"
 cosmwasm-math-compat = { branch = "dev", git = "https://github.com/securesecrets/shade.git" }
 schemars = { version = "0.7" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
+shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
+shade-protocol = { git = "https://github.com/securesecrets/shade?branch=dev" }
 
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }

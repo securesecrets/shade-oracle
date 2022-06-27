@@ -28,13 +28,6 @@ pub mod shade {
         pub enabled: bool,
     }
 
-    /// Every HandleMsg for each specific oracle type should include this
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleMsg {
-        UpdateConfig { enabled: Option<bool> },
-    }
-
     pub mod querier {
         use cosmwasm_std::{Querier, StdResult, QueryRequest, WasmQuery, to_binary};
 
@@ -95,7 +88,7 @@ pub mod shade {
             },
         }
         /// Returns the price of 1 derivative token in underlying token (6 decimals)
-        pub fn query_price(contract: &Contract, querier: &impl Querier) -> StdResult<Uint128> {
+        pub fn query_derivative_price(contract: &Contract, querier: &impl Querier) -> StdResult<Uint128> {
             let resp: StakingDerivativeQueryAnswer =
                 querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
                     contract_addr: contract.address.clone(),

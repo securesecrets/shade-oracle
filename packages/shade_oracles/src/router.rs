@@ -69,9 +69,7 @@ pub enum QueryMsg {
     GetPrices {
         keys: Vec<String>,
     },
-    VerifyAdmin {
-        user: HumanAddr,
-    }
+    GetAdminAuth { }
 }
 
 impl Query for QueryMsg {
@@ -87,58 +85,6 @@ pub struct OracleResponse {
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct VerifyAdminResponse {
-    pub is_admin: bool,
-}
-
-pub mod querier {
-    use crate::common::*;
-    use cosmwasm_std::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
-
-    use super::QueryMsg;
-    use super::*;
-
-    // Gets the oracle contract stored at key
-    pub fn query_oracle(
-        contract: &Contract,
-        querier: &impl Querier,
-        key: String,
-    ) -> StdResult<Contract> {
-        let resp: OracleResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetOracle { key })?,
-        }))?;
-        Ok(resp.oracle)
-    }
-
-    pub fn query_oracles(
-        contract: &Contract,
-        querier: &impl Querier,
-        keys: Vec<String>,
-    ) -> StdResult<Vec<OracleResponse>> {
-        let resp: Result<Vec<OracleResponse>, _> = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetOracles { keys })?,
-        }));
-        resp
-    }
-
-    pub fn verify_admin(
-        contract: &Contract,
-        querier: &impl Querier,
-        user: HumanAddr,
-    ) -> StdResult<()> {
-        let resp: VerifyAdminResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::VerifyAdmin { user })?,
-        }))?;
-        if resp.is_admin {
-            Ok(())
-        } else {
-            Err(StdError::unauthorized())
-        }
-    }
+pub struct AdminAuthResponse {
+    pub admin_auth: Contract,
 }

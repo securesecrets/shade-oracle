@@ -1,5 +1,10 @@
+pub use shade_protocol::{
+    utils::generic_response::ResponseStatus
+};
 use std::hash::Hash;
-use crate::band::ReferenceData;
+use crate::{
+    band::ReferenceData,
+};
 use cosmwasm_std::*;
 use cosmwasm_math_compat::{Uint128, Uint256};
 use fadroma::prelude::ContractLink;
@@ -9,6 +14,9 @@ use secret_toolkit::utils::{Query};
 
 pub const BLOCK_SIZE: usize = 256;
 
+/// Default Query API for all oracles.
+/// 
+/// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -19,6 +27,19 @@ pub enum QueryMsg {
 
 impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum HandleMsg {
+    UpdateConfig { enabled: bool },
+}
+
+/// Default HandleAnswer for oracles if only HandleMsg implemented is UpdateConfig.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum HandleAnswer {
+    UpdateConfig { status: ResponseStatus },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
@@ -49,13 +70,6 @@ impl Contract {
     pub fn new_link(link: ContractLink<HumanAddr>) -> Self {
         Contract { address: link.address, code_hash: link.code_hash }
     }
-
-    pub fn as_canonical(&self, api: &impl Api) -> Result<CanonicalContract, StdError> {
-        Ok(CanonicalContract {
-            address: api.canonical_address(&self.address.clone())?,
-            code_hash: self.code_hash.clone(),
-        })
-    }
 }
 
 
@@ -71,31 +85,11 @@ pub fn normalize_price(amount: Uint128, decimals: u8) -> Uint128 {
     (amount.u128() * 10u128.pow(18u32 - u32::try_from(decimals).unwrap())).into()
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct CanonicalContract {
-    pub address: CanonicalAddr,
-    pub code_hash: String,
-}
-
-impl CanonicalContract {
-    pub fn as_human(&self, api: &impl Api) -> Result<Contract, StdError> {
-        Ok(Contract {
-            address: api.human_address(&self.address)?,
-            code_hash: self.code_hash.clone(),
-        })
-    }
-
-    pub fn is_sender<S: Storage, A: Api, Q: Querier>(
-        &self,
-        deps: &mut Extern<S, A, Q>,
-        env: &Env,
-    ) -> StdResult<()> {
-        if deps.api.canonical_address(&env.message.sender)? != self.address {
-            Err(StdError::Unauthorized { backtrace: None })
-        } else {
-            Ok(())
-        }
+pub fn is_disabled(enabled: bool) -> StdResult<()> {
+    if !enabled {
+        Err(StdError::generic_err("Deprecated oracle."))
+    } else {
+        Ok(())
     }
 }
 
@@ -120,62 +114,89 @@ pub fn sqrt(value: Uint256) -> StdResult<Uint256> {
     Ok(z)
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub enum ResponseStatus {
-    Success,
-    Failure,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct CommonOracleConfig {
-    pub owner: HumanAddr,
-    pub enabled: bool,
-}
-
-impl CommonOracleConfig {
-    pub fn is_owner(&self, env: &Env) -> StdResult<&Self> {
-        if env.message.sender != self.owner {
-            Err(StdError::unauthorized())
-        } else {
-            Ok(self)
-        }
-    }
-
-    pub fn is_enabled(&self) -> StdResult<&Self> {
-        if self.enabled {
-            Ok(self)
-        } else {
-            Err(StdError::generic_err("This oracle has been disabled."))
-        }
-    }
-}
-
 pub mod querier {
+    use std::collections::HashMap;
+
+    use crate::router::{
+        QueryMsg as RouterQueryMsg, OracleResponse,
+        AdminAuthResponse
+    };
     use super::*;
     use secret_toolkit::snip20::{QueryMsg as Snip20QueryMsg, Balance, AuthenticatedQueryResponse, TokenInfoResponse};
+    use shade_admin::admin::{
+        ValidateAdminPermissionResponse, QueryMsg as AdminQueryMsg
+    };
 
-    pub fn query_price(
-        contract: &Contract,
+    fn _query_price(
+        oracle: &Contract,
         querier: &impl Querier,
         key: String,
     ) -> StdResult<OraclePrice> {
-        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetPrice { key })?,
-        }))
+        QueryMsg::GetPrice { key }.query(querier, oracle.code_hash.clone(), oracle.address.clone())
     }
 
-    pub fn query_prices(
-        contract: &Contract,
+    /// Gets the oracle for the key from the router & calls GetPrice on it.
+    /// 
+    /// Has a query depth of 1.
+    pub fn query_price(
+        router: &Contract,
+        querier: &impl Querier,
+        key: String,
+    ) -> StdResult<OraclePrice> {
+        let oracle_resp: OracleResponse = RouterQueryMsg::GetOracle { key: key.clone() }.query(querier, router.code_hash.clone(), router.address.clone())?;
+        _query_price(&oracle_resp.oracle, querier, key)
+    }
+
+    fn _query_prices(
+        oracle: &Contract,
         querier: &impl Querier,
         keys: Vec<String>,
     ) -> StdResult<Vec<OraclePrice>> {
-        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetPrices { keys })?,
-        }))
+        QueryMsg::GetPrices { keys }.query(querier, oracle.code_hash.clone(), oracle.address.clone())
+    }
+    
+    /// Groups the keys by their respective oracles and sends bulk GetPrices queries to each of those oracles.
+    /// 
+    /// Done to reduce impact on query depth.
+    pub fn query_prices(
+        router: &Contract,
+        querier: &impl Querier,
+        keys: Vec<String>,
+    ) -> StdResult<Vec<OraclePrice>> {
+        let oracle_resps: Vec<OracleResponse> = RouterQueryMsg::GetOracles { keys }.query(querier, router.code_hash.clone(), router.address.clone())?;
+        let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
+        let mut prices: Vec<OraclePrice> = vec![];
+
+        for resp in oracle_resps {
+            // Get the current vector of symbols at that oracle and add the current key to it
+            map.entry(resp.oracle).or_insert(vec![]).push(resp.key);
+        }
+    
+        for (oracle, keys) in map {
+            if keys.len() == 1 {
+                let queried_price = _query_price(&oracle, querier, keys[0].clone())?;
+                prices.push(queried_price);
+            } else {
+                let mut queried_prices = _query_prices(&oracle, querier, keys)?;
+                prices.append(&mut queried_prices);
+            }
+        }
+        Ok(prices)
+    }
+
+    /// Gets the admin auth contract from the router and uses it to check if the user is an admin for the router.
+    pub fn verify_admin(
+        contract: &Contract,
+        querier: &impl Querier,
+        user: HumanAddr,
+    ) -> StdResult<()> {
+        let get_admin_auth_req: AdminAuthResponse = RouterQueryMsg::GetAdminAuth {  }.query(querier, contract.code_hash.clone(), contract.address.clone())?; 
+        let admin_auth = get_admin_auth_req.admin_auth;
+        let is_admin_req: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission { contract_address: contract.address.to_string(), admin_address: user.to_string() }.query(querier, admin_auth.code_hash, admin_auth.address)?;
+        match is_admin_req.error_msg {
+            Some(err) => Err(StdError::generic_err(err)),
+            None => Ok(()),
+        }
     }
 
     pub fn query_token_info(

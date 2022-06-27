@@ -1,19 +1,19 @@
 use shade_oracles::{
-    common::{querier::query_token_info},
-    common::{ResponseStatus, BLOCK_SIZE}, band::ReferenceData, storage::Item, router::querier::verify_admin,
+    common::{
+        querier::{verify_admin, query_token_info, query_price},
+        HandleAnswer, HandleMsg, QueryMsg,
+        ResponseStatus, BLOCK_SIZE, throw_unsupported_symbol_error, get_precision, OraclePrice
+    }, 
+    band::ReferenceData, storage::Item,
+    staking_derivative::shade::{
+        querier::query_derivative_price,
+        {Config, InitMsg},
+    },
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use cosmwasm_std::{
     to_binary, Api, Env, Extern, HandleResponse, InitResponse,
     Querier, QueryResult, StdResult, Storage, Binary, StdError,
-};
-use shade_oracles::{
-    common::{get_precision, querier::{query_price}, throw_unsupported_symbol_error, QueryMsg, OraclePrice},
-    router::querier::query_oracle,
-    staking_derivative::shade::{
-        querier::query_price as query_derivative_price,
-        {Config, InitMsg, HandleMsg, HandleStatusAnswer},
-    },
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -50,27 +50,27 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
         match msg {
-            HandleMsg::SetStatus { enabled } => try_update_status(deps, &env, enabled),
+            HandleMsg::UpdateConfig { enabled } => try_update_config(deps, &env, enabled),
         },
         BLOCK_SIZE,
     )
 }
 
-fn try_update_status<S: Storage, A: Api, Q: Querier>(
+fn try_update_config<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: &Env,
     enabled: bool,
 ) -> StdResult<HandleResponse> {
     let config = CONFIG.load(&deps.storage)?;
     verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
-    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+    CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
         config.enabled = enabled;
         Ok(config)
     })?;
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleStatusAnswer { status: ResponseStatus::Success, enabled: new_config.enabled, })?),
+        data: Some(to_binary(&HandleAnswer::UpdateConfig { status: ResponseStatus::Success })?),
     })
 }
 
@@ -96,14 +96,8 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         return Err(throw_unsupported_symbol_error(key));
     }
 
-    let underlying_oracle = query_oracle(
-        &config.router,
-        &deps.querier,
-        config.underlying_symbol.clone(),
-    )?;
-
     // price of underlying asset to 10^18.
-    let underlying_price = query_price(&underlying_oracle, &deps.querier, config.underlying_symbol)?;
+    let underlying_price = query_price(&config.router, &deps.querier, config.underlying_symbol)?;
 
     let staking_derivative_price = query_derivative_price(
         &config.staking_derivative,

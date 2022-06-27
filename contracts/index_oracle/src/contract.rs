@@ -20,7 +20,7 @@ use shade_oracles::{
     common::{
         OraclePrice, Contract,
         ResponseStatus, BLOCK_SIZE,
-        querier::query_prices,
+        querier::{verify_admin, query_prices},
     },
     band::ReferenceData,
     storage::Item,
@@ -28,7 +28,6 @@ use shade_oracles::{
         InitMsg, HandleMsg, HandleAnswer, QueryMsg, QueryAnswer,
         Config,
     },
-    router::querier::{query_oracles, verify_admin},
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -154,41 +153,21 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     config: &Config,
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, ReferenceData>> {
-
-    let oracles = match query_oracles(&config.router, &deps.querier , symbols.clone()) {
-        Ok(oracles) => oracles,
+    let mut price_data = HashMap::new();
+    match query_prices(&config.router, &deps.querier, symbols.clone()) {
+        Ok(prices) => {
+            for oracle_price in prices {
+                price_data.insert(oracle_price.key.clone(), oracle_price.data);
+            }
+        },
         Err(e) => {
             return Err(StdError::generic_err(
-                    format!("Failed to query {} from routern, '{}'", 
+                    format!("Failed to query {} from router {}, '{}'", 
                             symbols.iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
+                            config.router.address.as_str(),
                             e)))
         }
-    };
-
-    let mut oracle_data: HashMap<Contract, Vec<String>> = HashMap::new();
-    for oracle in oracles {
-        oracle_data.entry(oracle.oracle).or_insert(vec![]).push(oracle.key);
     }
-
-    let mut price_data = HashMap::new();
-    for (oracle, symbols) in oracle_data {
-        match query_prices(&oracle, &deps.querier, symbols.clone()) {
-            Ok(prices) => {
-                for oracle_price in prices {
-                    price_data.insert(oracle_price.key.clone(), oracle_price.data);
-                }
-            },
-            Err(e) => {
-                return Err(StdError::generic_err(
-                        format!("Failed to query {} from oracle {}, '{}'", 
-                                symbols.iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
-                                oracle.address.as_str(),
-                                e)))
-            }
-        }
-
-    }
-
     Ok(price_data)
 }
 

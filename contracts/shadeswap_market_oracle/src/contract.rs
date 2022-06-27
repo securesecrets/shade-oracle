@@ -1,10 +1,10 @@
 use shade_oracles::{
     common::{
         normalize_price,
-        querier::{query_price, query_token_info},
+        querier::{query_token_info, verify_admin, query_price},
         BLOCK_SIZE, Contract, 
         ResponseStatus, 
-        OraclePrice
+        OraclePrice, HandleAnswer, QueryMsg
     },
     protocols::shadeswap::{
         TokenType, 
@@ -17,10 +17,8 @@ use shade_oracles::{
     band::ReferenceData,
     shadeswap_market_oracle::{
         Config, InitMsg,
-        HandleMsg, HandleAnswer,
-        QueryMsg,
+        HandleMsg
     },
-    router::querier::{query_oracle, verify_admin},
 };
 use cosmwasm_std::{
     to_binary, Api, Env, 
@@ -43,7 +41,7 @@ const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    env: Env,
+    _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
 
@@ -101,6 +99,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
             Some(p) => p,
             None => token_infos[base_i].symbol.clone(),
         },
+        enabled: true,
     };
 
     if let Err(e) = query_price(&config.router, &deps.querier, config.base_peg.clone()) {
@@ -126,7 +125,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
         match msg {
             HandleMsg::UpdateConfig { 
                 router,
-            } => try_update_config(deps, &env, router),
+                enabled,
+            } => try_update_config(deps, &env, router, enabled),
         },
         BLOCK_SIZE,
     )
@@ -141,7 +141,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 
     let mut config = CONFIG.load(&deps.storage)?;
 
-    verify_admin(&config.router, &deps.querier, env.message.sender)?;
+    verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
 
     if let Some(router) = router {
         config.router = router;
@@ -187,8 +187,6 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let config = CONFIG.load(&deps.storage)?;
 
     let primary_token: Contract = PRIMARY_TOKEN.load(&deps.storage)?;
-    //return Err(StdError::generic_err("here"));
-    //let base_token = BASE_TOKEN.load(&deps.storage)?;
 
     let primary_info = PRIMARY_INFO.load(&deps.storage)?;
 
@@ -212,8 +210,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let exchange_rate = normalize_price(sim.estimated_price, base_info.decimals);
 
     // Query router for base_peg/USD
-    let oracle = query_oracle(&config.router, &deps.querier, config.base_peg.clone())?;
-    let base_usd_price = query_price(&oracle, &deps.querier, config.base_peg)?;
+    let base_usd_price = query_price(&config.router, &deps.querier, config.base_peg)?;
 
     // Translate price to primary/USD
     let price = base_usd_price.data.rate.multiply_ratio(exchange_rate, 10u128.pow(18));

@@ -7,19 +7,15 @@ use fadroma::{
 };
 
 use shade_oracles_ensemble::{
-    helpers::setup_admin,
+    helpers::{setup_core},
     harness::{
-    MockBand,
     IndexOracle,
-    OracleRouter,
-    ProxyBandOracle,
-    AdminAuth,
     }
 };
 
 use shade_oracles::{
     common::{Contract, OraclePrice},
-    band::{self, proxy},
+    band::{self},
     router,
     index_oracle,
 };
@@ -34,61 +30,13 @@ fn basic_index_test(
 ) {
     let mut ensemble = ContractEnsemble::new(50);
 
-    let reg_router = ensemble.register(Box::new(OracleRouter));
     let reg_index_oracle = ensemble.register(Box::new(IndexOracle));
-    let reg_mock_band = ensemble.register(Box::new(MockBand));
-    let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
 
-    let band = ensemble.instantiate(
-        reg_mock_band.id,
-        &band::InitMsg { },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
-    let band_proxy = ensemble.instantiate(
-        reg_mock_band_proxy.id,
-        &proxy::InitMsg {
-            band: Contract {
-                address: band.address.clone(),
-                code_hash: band.code_hash.clone(),
-            },
-            quote_symbol: "USD".to_string(),
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band_proxy".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
-
-    let router = ensemble.instantiate(
-        reg_router.id,
-        &router::InitMsg {
-            owner: HumanAddr("admin".into()),
-            default_oracle: Contract {
-                address: band_proxy.address.clone(),
-                code_hash: band_proxy.code_hash.clone(),
-            },
-            admin_auth: todo!(),
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("router".into()),
-                code_hash: reg_router.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
+    let oracle_core = setup_core(ensemble);
+    let band = oracle_core.band;
+    let band_proxy = oracle_core.band_proxy;
+    let router = oracle_core.router;
+    let mut ensemble = oracle_core.ensemble;
 
     let mut operations = vec![];
 
@@ -134,7 +82,6 @@ fn basic_index_test(
     let index_oracle = ensemble.instantiate(
         reg_index_oracle.id,
         &index_oracle::InitMsg {
-            admins: None,
             router: Contract {
                 address: router.address.clone(),
                 code_hash: router.code_hash.clone(),
@@ -285,6 +232,7 @@ basic_index_tests! {
 /* - Setup oracle with symbol, basket, prices, & target -- check against expected_initial
  * - Change to new_prices & apply mod_basket changes -- check against expected_final
  */
+#[allow(clippy::too_many_arguments)]
 fn mod_index_test(
     symbol: String, 
     basket: Vec<(String, Uint128)>,
@@ -299,61 +247,13 @@ fn mod_index_test(
 ) {
     let mut ensemble = ContractEnsemble::new(50);
 
-    let reg_router = ensemble.register(Box::new(OracleRouter));
     let reg_index_oracle = ensemble.register(Box::new(IndexOracle));
-    let reg_mock_band = ensemble.register(Box::new(MockBand));
-    let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
 
-    let band = ensemble.instantiate(
-        reg_mock_band.id,
-        &band::InitMsg { },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
-    let band_proxy = ensemble.instantiate(
-        reg_mock_band_proxy.id,
-        &proxy::InitMsg {
-            owner: HumanAddr("admin".into()),
-            band: Contract {
-                address: band.address.clone(),
-                code_hash: band.code_hash.clone(),
-            },
-            quote_symbol: "USD".to_string(),
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band_proxy".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
-
-    let router = ensemble.instantiate(
-        reg_router.id,
-        &router::InitMsg {
-            owner: HumanAddr("admin".into()),
-            default_oracle: Contract {
-                address: band_proxy.address.clone(),
-                code_hash: band_proxy.code_hash.clone(),
-            },
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("router".into()),
-                code_hash: reg_router.code_hash.clone(),
-            }
-        )
-    ).unwrap().instance;
-
+    let oracle_core = setup_core(ensemble);
+    let band = oracle_core.band;
+    let band_proxy = oracle_core.band_proxy;
+    let router = oracle_core.router;
+    let mut ensemble = oracle_core.ensemble;
 
     let mut operations = vec![];
 
@@ -399,7 +299,6 @@ fn mod_index_test(
     let index_oracle = ensemble.instantiate(
         reg_index_oracle.id,
         &index_oracle::InitMsg {
-            admins: None,
             router: Contract {
                 address: router.address.clone(),
                 code_hash: router.code_hash.clone(),
