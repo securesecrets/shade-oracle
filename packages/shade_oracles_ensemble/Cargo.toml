@@ -40,4 +40,4 @@ snip20-reference-impl = { git = "ssh://github.com/scrtlabs/snip20-reference-impl
 admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
 
 shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
-fadroma = { branch = "v100", git = "https://github.com/hackbg/fadroma.git", features = ["ensemble"] }
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = ["scrt", "backtraces"] }
