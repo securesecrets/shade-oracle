@@ -1,7 +1,7 @@
 use shade_oracles::{
     common::{
         normalize_price,
-        querier::{query_band_price, query_token_info, verify_admin},
+        querier::{query_band_price, query_token_info, verify_admin, query_price},
         BLOCK_SIZE, Contract, 
         ResponseStatus, 
         OraclePrice,
@@ -101,6 +101,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
             None => token_infos[base_i].symbol.clone(),
         },
         enabled: true,
+        only_band: msg.only_band,
     };
 
     if let Err(e) = query_band_price(&config.router, &deps.querier, config.base_peg.clone()) {
@@ -127,7 +128,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             HandleMsg::UpdateConfig { 
                 router,
                 enabled,
-            } => try_update_config(deps, &env, router, enabled),
+                only_band,
+            } => try_update_config(deps, &env, router, enabled, only_band),
         },
         BLOCK_SIZE,
     )
@@ -138,12 +140,14 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     env: &Env,
     router: Option<Contract>,
     enabled: Option<bool>,
+    only_band: Option<bool>,
 ) -> StdResult<HandleResponse> {
 
     let mut config = CONFIG.load(&deps.storage)?;
     verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
     config.router = router.unwrap_or(config.router);
     config.enabled = enabled.unwrap_or(config.enabled);
+    config.only_band = only_band.unwrap_or(config.only_band);
 
     CONFIG.save(&mut deps.storage, &config)?;
 
@@ -204,8 +208,12 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let exchange_rate = normalize_price(sim.return_amount, base_info.decimals);
 
     // Query router for base_peg/USD
-    let base_usd_price = query_band_price(&config.router, &deps.querier, config.base_peg)?;
-
+    let base_usd_price = if config.only_band {
+        query_band_price(&config.router, &deps.querier, config.base_peg)?
+    } else {
+        query_price(&config.router, &deps.querier, config.base_peg)?
+    };
+ 
     // Translate price to primary/USD
     let price = base_usd_price.data.rate.multiply_ratio(exchange_rate, 10u128.pow(18));
 

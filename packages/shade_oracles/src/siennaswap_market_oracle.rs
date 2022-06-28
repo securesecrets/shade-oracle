@@ -11,6 +11,7 @@ pub struct Config {
     pub pair: Contract,
     pub symbol: String,
     pub base_peg: String,
+    pub only_band: bool,
     pub enabled: bool,
 }
 
@@ -20,6 +21,7 @@ pub struct InitMsg {
     pub router: Contract,
     pub pair: Contract,
     pub symbol: String,
+    pub only_band: bool,
     pub base_peg: Option<String>,
 }
 
@@ -30,6 +32,7 @@ pub enum HandleMsg {
     // all others are added or changed
     UpdateConfig {
         router: Option<Contract>,
+        only_band: Option<bool>,
         enabled: Option<bool>,
     },
 }
