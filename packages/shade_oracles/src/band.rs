@@ -2,7 +2,8 @@ use crate::{
     common::{ResponseStatus, Contract},
 };
 use secret_toolkit::utils::Query;
-use cosmwasm_std::*;
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{Querier, StdResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +42,7 @@ pub enum BandQuery {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReferenceData {
-    pub rate: cosmwasm_std::Uint128,
+    pub rate: Uint128,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
 }
@@ -55,8 +56,8 @@ impl Query for BandQuery {
     const BLOCK_SIZE: usize = 256;
 }
 
-pub fn reference_data<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn reference_data(
+    querier: &impl Querier,
     base_symbol: String,
     quote_symbol: String,
     band: Contract,
@@ -65,11 +66,11 @@ pub fn reference_data<S: Storage, A: Api, Q: Querier>(
         base_symbol,
         quote_symbol,
     }
-    .query(&deps.querier, band.code_hash, band.address)
+    .query(querier, band.code_hash, band.address)
 }
 
-pub fn reference_data_bulk<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn reference_data_bulk(
+    querier: &impl Querier,
     base_symbols: Vec<String>,
     quote_symbols: Vec<String>,
     band: Contract,
@@ -78,7 +79,7 @@ pub fn reference_data_bulk<S: Storage, A: Api, Q: Querier>(
         base_symbols,
         quote_symbols,
     }
-    .query(&deps.querier, band.code_hash, band.address)
+    .query(querier, band.code_hash, band.address)
 }
 
 pub mod proxy {
@@ -88,15 +89,14 @@ pub mod proxy {
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
     pub struct InitMsg {
-        pub owner: HumanAddr,
+        pub admin_auth: Contract,
         pub band: Contract,
         pub quote_symbol: String,
     }
 
-    // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-    pub struct ConfigResponse {
-        pub owner: HumanAddr,
+    pub struct Config {
+        pub admin_auth: Contract,
         pub band: Contract,
         pub quote_symbol: String,
         pub enabled: bool,
@@ -106,8 +106,7 @@ pub mod proxy {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum HandleMsg {
-        SetStatus { enabled: bool },
-        UpdateConfig { owner: Option<HumanAddr>, band: Option<Contract>, quote_symbol: Option<String>, },
+        UpdateConfig { enabled: Option<bool>, admin_auth: Option<Contract>, band: Option<Contract>, quote_symbol: Option<String>, },
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]

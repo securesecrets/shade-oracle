@@ -1,7 +1,8 @@
-use crate::{common::{Contract, ResponseStatus}};
-use cosmwasm_std::*;
+use crate::{common::{Contract}};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr};
 
 pub mod shade {
 
@@ -10,7 +11,6 @@ pub mod shade {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InitMsg {
-        pub owner: HumanAddr,
         pub supported_key: String,
         pub underlying_symbol: String,
         pub staking_derivative: Contract,
@@ -20,8 +20,7 @@ pub mod shade {
     // We define a custom struct for each query response
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
-    pub struct ConfigResponse {
-        pub owner: HumanAddr,
+    pub struct Config {
         pub supported_key: String,
         pub underlying_symbol: String,        
         pub router: Contract,
@@ -29,21 +28,9 @@ pub mod shade {
         pub enabled: bool,
     }
 
-    /// Every HandleMsg for each specific oracle type should include this
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub enum HandleMsg {
-        SetStatus { enabled: bool },
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    pub struct HandleStatusAnswer {
-        pub status: ResponseStatus,
-        pub enabled: bool,
-    }
-
     pub mod querier {
+        use cosmwasm_std::{Querier, StdResult, QueryRequest, WasmQuery, to_binary};
+
         use super::*;
 
         #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -101,7 +88,7 @@ pub mod shade {
             },
         }
         /// Returns the price of 1 derivative token in underlying token (6 decimals)
-        pub fn query_price(contract: &Contract, querier: &impl Querier) -> StdResult<Uint128> {
+        pub fn query_derivative_price(contract: &Contract, querier: &impl Querier) -> StdResult<Uint128> {
             let resp: StakingDerivativeQueryAnswer =
                 querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
                     contract_addr: contract.address.clone(),

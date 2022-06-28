@@ -1,29 +1,30 @@
 use std::collections::HashMap;
-use cosmwasm_std::{ HumanAddr, Uint128, to_binary };
-
+use cosmwasm_std::{ HumanAddr, to_binary };
+use cosmwasm_math_compat::Uint128;
 use fadroma::{
-    ContractLink, 
+    prelude::ContractLink, 
     ensemble::{ MockEnv, ContractEnsemble },
 };
 
-use shade_oracles_ensemble::harness::{
-    MockBand,
-    OracleRouter,
-    ProxyBandOracle,
+use shade_oracles_ensemble::{
+    helpers::{setup_core},
+    harness::{
     SiennaMarketOracle,
     MockSiennaPair,
     Snip20,
+    }
 };
 
 use shade_oracles::{
-    common::{Contract, OraclePrice},
-    band::{self, proxy},
+    common::{Contract, OraclePrice, self},
+    band::{self},
     router,
     siennaswap_market_oracle,
 };
 
 use mock_sienna_pair::contract as mock_sienna_pair;
 
+#[allow(clippy::too_many_arguments)]
 fn basic_market_test(
     symbol: String, 
     base_peg: Option<String>,
@@ -38,92 +39,17 @@ fn basic_market_test(
 ) {
     let mut ensemble = ContractEnsemble::new(50);
 
-    let reg_router = ensemble.register(Box::new(OracleRouter));
     let reg_market_oracle = ensemble.register(Box::new(SiennaMarketOracle));
-    let reg_mock_band = ensemble.register(Box::new(MockBand));
-    let reg_mock_band_proxy = ensemble.register(Box::new(ProxyBandOracle));
     let reg_sienna_pair = ensemble.register(Box::new(MockSiennaPair));
     let reg_snip20 = ensemble.register(Box::new(Snip20));
 
-    let band = ensemble.instantiate(
-        reg_mock_band.id,
-        &band::InitMsg { },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap();
-
-    let band_proxy = ensemble.instantiate(
-        reg_mock_band_proxy.id,
-        &proxy::InitMsg {
-            owner: HumanAddr("admin".into()),
-            band: Contract {
-                address: band.address.clone(),
-                code_hash: band.code_hash.clone(),
-            },
-            quote_symbol: "USD".to_string(),
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("band_proxy".into()),
-                code_hash: reg_mock_band.code_hash.clone(),
-            }
-        )
-    ).unwrap();
-
-    let router = ensemble.instantiate(
-        reg_router.id,
-        &router::InitMsg {
-            owner: HumanAddr("admin".into()),
-            default_oracle: Contract {
-                address: band_proxy.address.clone(),
-                code_hash: band_proxy.code_hash.clone(),
-            },
-        },
-        MockEnv::new(
-            "admin",
-            ContractLink {
-                address: HumanAddr("router".into()),
-                code_hash: reg_router.code_hash.clone(),
-            }
-        )
-    ).unwrap();
-
-
-    /*
-    let mut operations = vec![];
-
-    for (sym, _) in prices.clone() {
-        operations.push(
-            router::RegistryOperation::Add {
-                oracle: Contract {
-                    address: band_proxy.address.clone(),
-                    code_hash: band_proxy.code_hash.clone(),
-                },
-                key: sym,
-            }
-        );
-    }
-
-    // Configure BAND symbols on router
-    ensemble.execute(
-        &router::HandleMsg::BatchUpdateRegistry {
-            operations,
-        },
-        MockEnv::new(
-            "admin",
-            router.clone(),
-        ),
-    ).unwrap();
-    */
+    let oracle_core = setup_core(ensemble);
+    let band = oracle_core.band;
+    let router = oracle_core.router;
+    let mut ensemble = oracle_core.ensemble;
 
     // Configure mock band prices
-    for (sym, price) in prices.clone() {
+    for (sym, price) in prices {
         ensemble.execute(
             &band::HandleMsg::UpdateSymbolPrice {
                 base_symbol: sym,
@@ -156,7 +82,7 @@ fn basic_market_test(
                 code_hash: reg_snip20.code_hash.clone(),
             }),
         )
-        .unwrap();
+        .unwrap().instance;
 
     let base_token = ensemble
         .instantiate(
@@ -172,10 +98,10 @@ fn basic_market_test(
             },
             MockEnv::new("admin", ContractLink {
                 address: HumanAddr("base_token".into()),
-                code_hash: reg_snip20.code_hash.clone(),
+                code_hash: reg_snip20.code_hash,
             }),
         )
-        .unwrap();
+        .unwrap().instance;
 
     let sienna_pair = ensemble.instantiate(
         reg_sienna_pair.id,
@@ -184,10 +110,10 @@ fn basic_market_test(
             "admin",
             ContractLink {
                 address: HumanAddr("sienna_pair".into()),
-                code_hash: reg_sienna_pair.code_hash.clone(),
+                code_hash: reg_sienna_pair.code_hash,
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
     ensemble.execute(
         &mock_sienna_pair::HandleMsg::MockPool {
@@ -211,26 +137,25 @@ fn basic_market_test(
     let market_oracle = ensemble.instantiate(
         reg_market_oracle.id,
         &siennaswap_market_oracle::InitMsg {
-            admins: None,
             router: Contract {
                 address: router.address.clone(),
                 code_hash: router.code_hash.clone(),
             },
             pair: Contract {
                 address: sienna_pair.address.clone(),
-                code_hash: sienna_pair.code_hash.clone(),
+                code_hash: sienna_pair.code_hash,
             },
             symbol: symbol.clone(),
-            base_peg: base_peg.clone(),
+            base_peg,
         },
         MockEnv::new(
             "admin",
             ContractLink {
                 address: HumanAddr("market".into()),
-                code_hash: reg_market_oracle.code_hash.clone(),
+                code_hash: reg_market_oracle.code_hash,
             }
         )
-    ).unwrap();
+    ).unwrap().instance;
 
     // Configure router w/ market oracle
     ensemble.execute(
@@ -245,18 +170,17 @@ fn basic_market_test(
         },
         MockEnv::new(
             "admin",
-            router.clone(),
+            router,
         ),
     ).unwrap();
 
-    match ensemble.query(
-        market_oracle.address.clone(),
-        &siennaswap_market_oracle::QueryMsg::GetPrice {
-            key: symbol.clone()
+    let OraclePrice { key: _, data } = ensemble.query(
+        market_oracle.address,
+        &common::QueryMsg::GetPrice {
+            key: symbol
         },
-    ).unwrap() {
-        OraclePrice { key: _, price } => assert_eq!(expected, price.rate, "Expected: {} Got: {}", expected, price.rate),
-    };
+    ).unwrap();
+    assert_eq!(expected, data.rate, "Expected: {} Got: {}", expected, data.rate);
 }
 
 macro_rules! basic_market_tests {
@@ -271,14 +195,14 @@ macro_rules! basic_market_tests {
                 basic_market_test(
                     symbol.to_string(), 
                     base_peg,
-                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128(p))).collect(),
+                    prices.into_iter().map(|(sym, p)| (sym.to_string(), Uint128::from(p))).collect(),
                     primary_symbol.to_string(),
-                    Uint128(primary_pool),
+                    Uint128::from(primary_pool),
                     primary_decimals,
                     base_symbol.to_string(),
-                    Uint128(base_pool),
+                    Uint128::from(base_pool),
                     base_decimals,
-                    Uint128(expected),
+                    Uint128::from(expected),
                 );
             }
         )*
@@ -314,7 +238,7 @@ basic_market_tests! {
         "USDC",
         10u128.pow(21),
         18,
-        999000999000999001, // ~$.99 (slippage)
+        999000999000999001u128, // ~$.99 (slippage)
     ),
     shd_sscrt_mainnet_test: (
         "SHD",

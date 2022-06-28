@@ -4,10 +4,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
     band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
-    earn as earn_v1_oracle, lp as lp_oracle, router::{self, RegistryOperation}, index_oracle,
+    earn as earn_v1_oracle, lp as lp_oracle, router::{self, RegistryOperation, UpdateConfig}, index_oracle,
 };
-use cosmwasm_std::{Uint128, HumanAddr};
-
+use cosmwasm_math_compat::Uint128;
 use super::{GasLog, TestableContract};
 
 #[derive(Serialize, Deserialize)]
@@ -34,8 +33,8 @@ impl OracleRouterContract {
         Ok(OracleRouterContract { info })
     }
 
-    pub fn query_config(&self, key: String) -> Result<router::ConfigResponse> {
-        query_contract(self.get_info(), router::QueryMsg::GetOracle { key })
+    pub fn query_config(&self) -> Result<router::Config> {
+        query_contract(self.get_info(), router::QueryMsg::GetConfig { })
     }
 
     pub fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
@@ -46,8 +45,8 @@ impl OracleRouterContract {
         query_contract(self.get_info(), router::QueryMsg::GetOracle { key })
     }
 
-    pub fn update_config(&self, owner: Option<HumanAddr>, default_oracle: Option<Contract>, sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = router::HandleMsg::UpdateConfig { owner, default_oracle };
+    pub fn update_config(&self, config: UpdateConfig, sender_key: Option<&str>) -> Result<GasLog> {
+        let msg = router::HandleMsg::UpdateConfig { config };
         self.wrap_handle(&msg, sender_key)
     }
 
@@ -242,16 +241,16 @@ impl BandContract {
 
 impl ProxyBandOracleContract {
     pub fn new(
-        owner: String,
+        admin_auth: Contract,
         quote_symbol: &str,
         band: Contract,
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
         let msg = proxy_band_oracle::InitMsg {
-            owner: HumanAddr::from(owner),
             quote_symbol: quote_symbol.to_string(),
             band,
+            admin_auth,
         };
         let info = Self::wrap_init(&msg, account_key, name)?;
         Ok(ProxyBandOracleContract { info })
@@ -331,8 +330,8 @@ impl IndexOracleContract {
         query_contract(self.get_info(), index_oracle::QueryMsg::Basket { })
     }
 
-    pub fn update_config(&self, admins: Option<Vec<HumanAddr>>, router: Option<Contract>, sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = index_oracle::HandleMsg::UpdateConfig { admins, router };
+    pub fn update_config(&self, router: Option<Contract>, enabled: Option<bool>, sender_key: Option<&str>) -> Result<GasLog> {
+        let msg = index_oracle::HandleMsg::UpdateConfig { router, enabled };
         self.wrap_handle(&msg, sender_key)
     }
 
