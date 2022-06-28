@@ -1,6 +1,6 @@
 use shade_oracles::{
     common::{
-        querier::{verify_admin, query_token_info, query_price},
+        querier::{verify_admin, query_token_info, query_band_price},
         HandleAnswer, HandleMsg, QueryMsg,
         ResponseStatus, BLOCK_SIZE, throw_unsupported_symbol_error, get_precision, OraclePrice
     }, 
@@ -97,7 +97,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     }
 
     // price of underlying asset to 10^18.
-    let underlying_price = query_price(&config.router, &deps.querier, config.underlying_symbol)?;
+    let underlying_price = query_band_price(&config.router, &deps.querier, config.underlying_symbol)?;
 
     let staking_derivative_price = query_derivative_price(
         &config.staking_derivative,

@@ -17,7 +17,7 @@ use cosmwasm_std::{
 use secret_toolkit::utils::{pad_query_result, pad_handle_result};
 use std::cmp::min;
 
-const PAIR: Item<PairData> = Item::new("config");
+const PAIR: Item<PairData> = Item::new("pair");
 const CONFIG: Item<Config> = Item::new("config");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(

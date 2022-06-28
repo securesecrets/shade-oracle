@@ -1,7 +1,7 @@
 use shade_oracles::{
     common::{
         normalize_price,
-        querier::{query_price, query_token_info, verify_admin},
+        querier::{query_band_price, query_token_info, verify_admin},
         BLOCK_SIZE, Contract, 
         ResponseStatus, 
         OraclePrice,
@@ -103,7 +103,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         enabled: true,
     };
 
-    if let Err(e) = query_price(&config.router, &deps.querier, config.base_peg.clone()) {
+    if let Err(e) = query_band_price(&config.router, &deps.querier, config.base_peg.clone()) {
         return Err(StdError::generic_err(format!(
                     "Failed to query base_peg {} from router {}; {}", 
                     config.base_peg, config.router.address, e)));
@@ -204,7 +204,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let exchange_rate = normalize_price(sim.return_amount, base_info.decimals);
 
     // Query router for base_peg/USD
-    let base_usd_price = query_price(&config.router, &deps.querier, config.base_peg)?;
+    let base_usd_price = query_band_price(&config.router, &deps.querier, config.base_peg)?;
 
     // Translate price to primary/USD
     let price = base_usd_price.data.rate.multiply_ratio(exchange_rate, 10u128.pow(18));
