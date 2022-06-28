@@ -1,0 +1,33 @@
+[package]
+name = "shadeswap-market-oracle"
+version = "0.1.0"
+authors = ["DrPresident <jacksonswenson@securesecrets.org"]
+edition = "2021"
+
+exclude = [
+  "contract.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+backtraces = ["cosmwasm-std/backtraces"]
+
+[dependencies]
+cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
+cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
+cosmwasm-math-compat = { branch = "dev", git = "https://github.com/securesecrets/shade.git" }
+secret-toolkit = { version = "0.2", features = ["permit"] }
+shade-oracles = { path = "../../packages/shade_oracles" }
+schemars = "0.7"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+
+[dev-dependencies]
+cosmwasm-schema = "0.10.1"
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = ["scrt", "backtraces"] }
+shade-oracles-ensemble = { path = "../../packages/shade_oracles_ensemble" }
+snip20-reference-impl = { git = "ssh://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
+mock-shade-pair = { path = "../mock_shade_pair" }

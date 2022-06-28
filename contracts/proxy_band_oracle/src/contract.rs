@@ -1,37 +1,28 @@
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::{
-        Contract, ResponseStatus, CommonOracleConfig, 
-        HandleStatusAnswer, OraclePrice, QueryMsg, BLOCK_SIZE
+        Contract, ResponseStatus, 
+        OraclePrice, QueryMsg, BLOCK_SIZE, is_disabled
     }, 
     band::{
         ReferenceData, BandQuery,
         proxy::{
             HandleMsg, HandleAnswer,
-            ConfigResponse, InitMsg,
-        }
+            Config, InitMsg,
+        }, reference_data, reference_data_bulk
     },
     storage::Item,
 };
+use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
 use cosmwasm_std::{
     to_binary, Binary, Api, Env, 
-    Extern, HandleResponse, HumanAddr, 
+    Extern, HandleResponse, 
     InitResponse, Querier, QueryResult,
-    StdError, StdResult, Storage,
-    Uint128,
+    StdError, StdResult, Storage
 };
+use cosmwasm_math_compat::Uint128;
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 
-/// state of the auction
-#[derive(Serialize, Deserialize)]
-pub struct State {
-    pub band: Contract,
-    /// Price in which requests will be quoted in
-    pub quote_symbol: String,
-}
-
-const CONFIG: Item<CommonOracleConfig> = Item::new("config");
-const STATE: Item<State> = Item::new("band-state");
+const CONFIG: Item<Config> = Item::new("config");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -39,18 +30,14 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
 
-    let state = State {
+    let config = Config {
+        admin_auth: msg.admin_auth,
         band: msg.band,
         quote_symbol: msg.quote_symbol,
-    };
-
-    let common = CommonOracleConfig {
-        owner: msg.owner,
         enabled: true,
     };
 
-    STATE.save(&mut deps.storage, &state)?;
-    CONFIG.save(&mut deps.storage, &common)?;
+    CONFIG.save(&mut deps.storage, &config)?;
 
     Ok(InitResponse::default())
 }
@@ -61,51 +48,36 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     let response: Result<HandleResponse, StdError> = match msg {
-        HandleMsg::SetStatus { enabled, } => try_update_status(deps, &env, enabled),
         HandleMsg::UpdateConfig {
-            owner,
             band,
             quote_symbol,
-        } => try_update_config(deps, env, owner, band, quote_symbol),
+            enabled,
+            admin_auth,
+        } => try_update_config(deps, env, band, quote_symbol, enabled, admin_auth),
     };
     pad_handle_result(response, BLOCK_SIZE)
-}
-
-fn try_update_status<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: &Env,
-    enabled: bool,
-) -> StdResult<HandleResponse> {
-    CONFIG.load(&deps.storage)?.is_owner(env)?;
-    let new_config = CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
-        config.enabled = enabled;
-        Ok(config)
-    })?;
-    Ok(HandleResponse {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleStatusAnswer { status: ResponseStatus::Success, enabled: new_config.enabled, })?),
-    })
 }
 
 fn try_update_config<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
-    owner: Option<HumanAddr>,
     band: Option<Contract>,
     quote_symbol: Option<String>,
+    enabled: Option<bool>,
+    admin_auth: Option<Contract>,
 ) -> StdResult<HandleResponse> {
     let config = CONFIG.load(&deps.storage)?;
-    config.is_owner(&env)?;
-
-    STATE.update(&mut deps.storage, |mut state| -> StdResult<_> {
-        state.band = band.unwrap_or(state.band);
-        state.quote_symbol = quote_symbol.unwrap_or(state.quote_symbol);
-        Ok(state)
-    })?;
+    
+    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission { contract_address: env.contract.address.to_string(), admin_address: env.message.sender.to_string() }.query(&deps.querier, config.admin_auth.code_hash.clone(), config.admin_auth.address)?;
+    if resp.error_msg.is_some() {
+        return Err(StdError::unauthorized());
+    }
 
     CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
-        config.owner = owner.unwrap_or(config.owner);
+        config.band = band.unwrap_or(config.band);
+        config.quote_symbol = quote_symbol.unwrap_or(config.quote_symbol);
+        config.enabled = enabled.unwrap_or(config.enabled);
+        config.admin_auth = admin_auth.unwrap_or(config.admin_auth);
         Ok(config)
     })?;
 
@@ -120,48 +92,25 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 
 pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
     let response = match msg {
-        QueryMsg::GetConfig {} => try_query_config(deps),
+        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
         QueryMsg::GetPrice { key } => try_query_price(deps, key),
         QueryMsg::GetPrices { keys } => try_query_prices(deps, keys),
     };
     pad_query_result(response, BLOCK_SIZE)
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-) -> StdResult<Binary> {
-    let state = STATE.load(&deps.storage)?;
-    let common = CONFIG.load(&deps.storage)?;
-
-    to_binary(&ConfigResponse {
-        owner: common.owner,
-        band: state.band,
-        quote_symbol: state.quote_symbol,
-        enabled: common.enabled,
-    })
-}
-
 fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     key: String,
 ) -> StdResult<Binary> {
-    CONFIG.load(&deps.storage)?.is_enabled()?;
-
-    let state = STATE.load(&deps.storage)?;
+    let config = CONFIG.load(&deps.storage)?;
+    is_disabled(config.enabled)?;
 
     if key == "SHD" {
-        return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128(13450000000000000000), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
+        return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128::from(13450000000000000000u128), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
     }
 
-    let band_response: ReferenceData = BandQuery::GetReferenceData {
-        base_symbol: key.clone(),
-        quote_symbol: state.quote_symbol,
-    }
-    .query(
-        &deps.querier,
-        state.band.code_hash,
-        state.band.address,
-    )?;
+    let band_response = reference_data(&deps.querier, key.clone(), config.quote_symbol.clone(), config.band)?;
 
     to_binary(&OraclePrice::new(key, band_response))
 }
@@ -170,16 +119,12 @@ fn try_query_prices<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     keys: Vec<String>,
 ) -> StdResult<Binary> {
-    CONFIG.load(&deps.storage)?.is_enabled()?;
+    let config = CONFIG.load(&deps.storage)?;
+    is_disabled(config.enabled)?;
 
-    let state = STATE.load(&deps.storage)?;
+    let quote_symbols = vec![config.quote_symbol; keys.len()];
 
-    let quote_symbols = vec![state.quote_symbol; keys.len()];
-
-    let band_response: Vec<ReferenceData> = BandQuery::GetReferenceDataBulk {
-        base_symbols: keys.clone(),
-        quote_symbols,
-    }.query(&deps.querier, state.band.code_hash, state.band.address)?;
+    let band_response = reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, config.band)?;
 
     let mut prices: Vec<OraclePrice> = vec![];
     for (index, key) in keys.iter().enumerate() {

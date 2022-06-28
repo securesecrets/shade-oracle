@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
-    StdResult, Storage, Uint128,
+    StdResult, Storage,
 };
+use cosmwasm_math_compat::Uint128;
 use shade_oracles::storage::Map;
 use shade_oracles::{
     common::ResponseStatus,

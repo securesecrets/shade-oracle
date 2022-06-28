@@ -21,9 +21,14 @@ cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
 cosmwasm-schema = "0.10.1"
 schemars = { version = "0.7" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
-
+shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 snafu = { version = "0.6.3" }
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-storage-plus", tag = "v1.0.0", optional = true }
-fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = [] }
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100" }
+
+cosmwasm-math-compat = { git = "https://github.com/securesecrets/shade", branch = "dev" }
+# shade-protocol = { git = "https://github.com/securesecrets/shade?dev" }
+# Switch to the bottom when building on Linux. For some reason, needs the one above for it to work on Mac
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "dev" }

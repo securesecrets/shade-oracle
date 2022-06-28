@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use crate::{state::*, contract::get_oracle};
-use shade_oracles::common::{Contract, OraclePrice};
+use shade_oracles::{
+    common::{Contract, OraclePrice, querier::{query_oracle_price, query_oracle_prices}},
+    router::*
+};
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
 };
-use shade_oracles::{common::querier::{query_price, query_prices}, router::*};
 
 pub fn update_registry<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -32,9 +34,10 @@ pub fn get_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     key: String,
 ) -> StdResult<Binary> {
-    let oracle = get_oracle(&deps.storage, &key)?;
+    let resolved_key = resolve_alias(&deps.storage, key)?;
+    let oracle = get_oracle(&deps.storage, &resolved_key)?;
 
-    to_binary(&query_price(&oracle, &deps.querier, key)?)
+    to_binary(&query_oracle_price(&oracle, &deps.querier, resolved_key)?)
 }
 
 /// Builds bulk queries using the keys given.
@@ -46,24 +49,38 @@ pub fn get_prices<S: Storage, A: Api, Q: Querier>(
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
 
     for current_key in keys {
-        let oracle = get_oracle(&deps.storage, &current_key)?;
+        let resolved_key = resolve_alias(&deps.storage, current_key.clone())?;
+        let oracle = get_oracle(&deps.storage, &resolved_key)?;
         
         // Get the current vector of symbols at that oracle and add the current key to it
-        map.entry(oracle).or_insert(vec![]).push(current_key);
+        map.entry(oracle).or_insert(vec![]).push(resolved_key);
     }
 
     let mut prices: Vec<OraclePrice> = vec![];
 
     for (key, value) in map {
         if value.len() == 1 {
-            let queried_price = query_price(&key, &deps.querier, value[0].clone())?;
+            let queried_price = query_oracle_price(&key, &deps.querier, value[0].clone())?;
             prices.push(queried_price);
         } else {
-            let mut queried_prices = query_prices(&key, &deps.querier, value)?;
+            let mut queried_prices = query_oracle_prices(&key, &deps.querier, value)?;
             prices.append(&mut queried_prices);
         }
     }
     to_binary(&prices)
+}
+
+pub fn resolve_alias(
+    storage: &impl Storage,
+    alias: String,
+) -> StdResult<String> {
+    match ALIASES.may_load(storage, alias.clone()) {
+        Ok(key) => match key {
+            Some(key) => Ok(key),
+            None => Ok(alias),
+        },
+        Err(_) => Err(StdError::generic_err("Failed to fetch from the ALIASES storage.")),
+    }
 }
 
 fn resolve_registry_operation(
@@ -93,5 +110,14 @@ fn resolve_registry_operation(
             })?;
             Ok(())
         }
+        RegistryOperation::UpdateAlias { alias, key } => {
+            ALIASES.update(storage, alias, |old_key| -> StdResult<_> {
+                match old_key {
+                    Some(_) => Ok(key),
+                    None => Ok(key),
+                }
+            })?;
+            Ok(())
+        },
     }
 }

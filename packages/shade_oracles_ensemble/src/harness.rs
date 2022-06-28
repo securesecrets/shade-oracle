@@ -37,6 +37,10 @@ use siennaswap_market_oracle;
 pub struct SiennaMarketOracle;
 implement_harness!(SiennaMarketOracle, siennaswap_market_oracle);
 
+use shadeswap_market_oracle;
+pub struct ShadeMarketOracle;
+implement_harness!(ShadeMarketOracle, shadeswap_market_oracle);
+
 use mock_band;
 pub struct MockBand;
 implement_harness!(MockBand, mock_band);
@@ -60,3 +64,11 @@ implement_harness!(OracleRouter, oracle_router);
 use snip20_reference_impl;
 pub struct Snip20;
 implement_harness!(Snip20, snip20_reference_impl);
+
+use mock_shade_pair;
+pub struct MockShadePair;
+implement_harness!(MockShadePair, mock_shade_pair);
+
+use admin;
+pub struct AdminAuth;
+implement_harness!(AdminAuth, admin);

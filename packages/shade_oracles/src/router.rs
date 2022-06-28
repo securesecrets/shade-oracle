@@ -10,8 +10,33 @@ use secret_toolkit::utils::Query;
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "snake_case")]
 pub struct InitMsg {
-    pub owner: HumanAddr,
+    pub admin_auth: Contract,
     pub default_oracle: Contract,
+    pub band: Contract,
+    pub quote_symbol: String,
+}
+
+#[derive(Serialize, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub struct Config {
+    pub address: HumanAddr,
+    pub admin_auth: Contract,
+    pub default_oracle: Contract,
+    pub band: Contract,
+    pub quote_symbol: String,
+    pub enabled: bool,
+}
+
+#[derive(Serialize, Debug, Deserialize, Clone, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub struct UpdateConfig {
+    pub admin_auth: Option<Contract>,
+    pub default_oracle: Option<Contract>,
+    pub band: Option<Contract>,
+    pub quote_symbol: Option<String>,
+    pub enabled: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -21,13 +46,14 @@ pub enum RegistryOperation {
     Remove { key: String },
     Replace { oracle: Contract, key: String },
     Add { oracle: Contract, key: String },
+    UpdateAlias { alias: String, key: String },
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum HandleMsg {
-    UpdateConfig { owner: Option<HumanAddr>, default_oracle: Option<Contract> },
+    UpdateConfig { config: UpdateConfig },
     UpdateRegistry { operation: RegistryOperation },
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
 }
@@ -60,17 +86,11 @@ pub enum QueryMsg {
     GetPrices {
         keys: Vec<String>,
     },
+    GetAdminAuth { }
 }
 
 impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
-}
-
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct ConfigResponse {
-    pub owner: HumanAddr,
-    pub default_oracle: Contract,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -80,37 +100,8 @@ pub struct OracleResponse {
     pub oracle: Contract,
 }
 
-pub mod querier {
-    use crate::common::*;
-    use cosmwasm_std::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
-
-    use super::QueryMsg;
-    use super::*;
-
-    // Gets the oracle contract stored at key
-    pub fn query_oracle(
-        contract: &Contract,
-        querier: &impl Querier,
-        key: String,
-    ) -> StdResult<Contract> {
-        let resp: OracleResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetOracle { key })?,
-        }))?;
-        Ok(resp.oracle)
-    }
-
-    pub fn query_oracles(
-        contract: &Contract,
-        querier: &impl Querier,
-        keys: Vec<String>,
-    ) -> StdResult<Vec<OracleResponse>> {
-        let resp: Result<Vec<OracleResponse>, _> = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&QueryMsg::GetOracles { keys })?,
-        }));
-        resp
-    }
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct AdminAuthResponse {
+    pub admin_auth: Contract,
 }

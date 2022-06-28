@@ -1,7 +1,7 @@
-use fadroma::platform::Uint128;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::HumanAddr;
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{HumanAddr};
 
 use crate::common::Contract;
 use secret_toolkit::utils::Query;
@@ -23,7 +23,6 @@ pub struct SiennaSwapPairInfo {
     pub total_liquidity: Uint128,
     pub contract_version: u32,
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
