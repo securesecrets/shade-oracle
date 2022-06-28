@@ -53,7 +53,7 @@ pub fn get_prices<S: Storage, A: Api, Q: Querier>(
         let oracle = get_oracle(&deps.storage, &resolved_key)?;
         
         // Get the current vector of symbols at that oracle and add the current key to it
-        map.entry(oracle).or_insert(vec![]).push(current_key);
+        map.entry(oracle).or_insert(vec![]).push(resolved_key);
     }
 
     let mut prices: Vec<OraclePrice> = vec![];

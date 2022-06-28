@@ -20,8 +20,8 @@ use cosmwasm_math_compat::Uint128;
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use std::cmp::min;
 
-const PAIR: Item<PairData> = Item::new("config");
-const CONFIG: Item<Config> = Item::new("common");
+const PAIR: Item<PairData> = Item::new("pair");
+const CONFIG: Item<Config> = Item::new("config");
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
