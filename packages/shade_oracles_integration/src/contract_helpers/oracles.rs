@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
     band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
-    earn as earn_v1_oracle, lp as lp_oracle, router::{self, RegistryOperation}, index_oracle,
+    earn as earn_v1_oracle, lp as lp_oracle, router::{self, RegistryOperation, UpdateConfig}, index_oracle,
 };
 use cosmwasm_math_compat::Uint128;
 use super::{GasLog, TestableContract};
@@ -45,8 +45,8 @@ impl OracleRouterContract {
         query_contract(self.get_info(), router::QueryMsg::GetOracle { key })
     }
 
-    pub fn update_config(&self, admin_auth: Option<Contract>, default_oracle: Option<Contract>, sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = router::HandleMsg::UpdateConfig { admin_auth, default_oracle };
+    pub fn update_config(&self, config: UpdateConfig, sender_key: Option<&str>) -> Result<GasLog> {
+        let msg = router::HandleMsg::UpdateConfig { config };
         self.wrap_handle(&msg, sender_key)
     }
 

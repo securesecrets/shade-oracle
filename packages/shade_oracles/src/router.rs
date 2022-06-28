@@ -12,14 +12,31 @@ use secret_toolkit::utils::Query;
 pub struct InitMsg {
     pub admin_auth: Contract,
     pub default_oracle: Contract,
+    pub band: Contract,
+    pub quote_symbol: String,
 }
 
 #[derive(Serialize, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub address: HumanAddr,
     pub admin_auth: Contract,
     pub default_oracle: Contract,
+    pub band: Contract,
+    pub quote_symbol: String,
+    pub enabled: bool,
+}
+
+#[derive(Serialize, Debug, Deserialize, Clone, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub struct UpdateConfig {
+    pub admin_auth: Option<Contract>,
+    pub default_oracle: Option<Contract>,
+    pub band: Option<Contract>,
+    pub quote_symbol: Option<String>,
+    pub enabled: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -36,7 +53,7 @@ pub enum RegistryOperation {
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum HandleMsg {
-    UpdateConfig { admin_auth: Option<Contract>, default_oracle: Option<Contract> },
+    UpdateConfig { config: UpdateConfig },
     UpdateRegistry { operation: RegistryOperation },
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
 }
