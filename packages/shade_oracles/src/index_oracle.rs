@@ -9,6 +9,7 @@ use cosmwasm_math_compat::Uint128;
 #[serde(rename_all = "snake_case")]
 pub struct Config {
     pub router: Contract,
+    pub only_band: bool,
     pub enabled: bool,
 }
 
@@ -19,6 +20,7 @@ pub struct InitMsg {
     pub symbol: String,
     pub basket: Vec<(String, Uint128)>, //HashMap<String, Uint128>,
     pub target: Uint128,
+    pub only_band: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -32,6 +34,7 @@ pub enum HandleMsg {
     UpdateConfig {
         router: Option<Contract>,
         enabled: Option<bool>,
+        only_band: Option<bool>,
     },
 }
 
