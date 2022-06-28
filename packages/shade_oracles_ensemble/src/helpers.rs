@@ -69,6 +69,8 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
                 code_hash: band_proxy.code_hash.clone(),
             },
             admin_auth: Contract::new_link(admin_auth.clone()),
+            band: Contract::new(band.address.to_string(), band.code_hash.clone()),
+            quote_symbol: "USD".to_string(),
         },
         MockEnv::new(
             "admin",

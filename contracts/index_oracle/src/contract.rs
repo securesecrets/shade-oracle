@@ -20,7 +20,7 @@ use shade_oracles::{
     common::{
         OraclePrice, Contract,
         ResponseStatus, BLOCK_SIZE,
-        querier::{verify_admin, query_prices},
+        querier::{verify_admin, query_prices, query_band_prices},
     },
     band::ReferenceData,
     storage::Item,
@@ -154,7 +154,7 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, ReferenceData>> {
     let mut price_data = HashMap::new();
-    match query_prices(&config.router, &deps.querier, symbols.clone()) {
+    match query_band_prices(&config.router, &deps.querier, symbols.clone()) {
         Ok(prices) => {
             for oracle_price in prices {
                 price_data.insert(oracle_price.key.clone(), oracle_price.data);

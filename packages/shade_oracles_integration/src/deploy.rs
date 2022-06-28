@@ -100,6 +100,8 @@ fn deploy_router(_user_a: String, band: Contract) -> Result<OracleRouterContract
         &router::InitMsg {
             admin_auth,
             default_oracle: scrt_oracle.as_contract(),
+            band,
+            quote_symbol: "USD".to_string(),
         },
         Some(HOOMP_KEY),
         Some("oracle_router"),

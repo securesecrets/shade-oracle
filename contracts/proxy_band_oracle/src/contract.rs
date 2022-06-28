@@ -8,7 +8,7 @@ use shade_oracles::{
         proxy::{
             HandleMsg, HandleAnswer,
             Config, InitMsg,
-        }
+        }, reference_data, reference_data_bulk
     },
     storage::Item,
 };
@@ -110,15 +110,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128::from(13450000000000000000u128), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
     }
 
-    let band_response: ReferenceData = BandQuery::GetReferenceData {
-        base_symbol: key.clone(),
-        quote_symbol: config.quote_symbol,
-    }
-    .query(
-        &deps.querier,
-        config.band.code_hash,
-        config.band.address,
-    )?;
+    let band_response = reference_data(&deps.querier, key.clone(), config.quote_symbol.clone(), config.band)?;
 
     to_binary(&OraclePrice::new(key, band_response))
 }
@@ -132,10 +124,7 @@ fn try_query_prices<S: Storage, A: Api, Q: Querier>(
 
     let quote_symbols = vec![config.quote_symbol; keys.len()];
 
-    let band_response: Vec<ReferenceData> = BandQuery::GetReferenceDataBulk {
-        base_symbols: keys.clone(),
-        quote_symbols,
-    }.query(&deps.querier, config.band.code_hash, config.band.address)?;
+    let band_response = reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, config.band)?;
 
     let mut prices: Vec<OraclePrice> = vec![];
     for (index, key) in keys.iter().enumerate() {

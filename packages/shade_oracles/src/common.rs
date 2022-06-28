@@ -117,10 +117,11 @@ pub fn sqrt(value: Uint256) -> StdResult<Uint256> {
 pub mod querier {
     use std::collections::HashMap;
 
-    use crate::router::{
+    use crate::{router::{
         QueryMsg as RouterQueryMsg, OracleResponse,
-        AdminAuthResponse
-    };
+        AdminAuthResponse,
+        Config as RouterConfig,
+    }, band::{reference_data_bulk, reference_data}};
     use super::*;
     use secret_toolkit::snip20::{QueryMsg as Snip20QueryMsg, Balance, AuthenticatedQueryResponse, TokenInfoResponse};
     use shade_admin::admin::{
@@ -181,6 +182,33 @@ pub mod querier {
                 prices.append(&mut queried_prices);
             }
         }
+        Ok(prices)
+    }
+
+    pub fn query_band_price(
+        router: &Contract,
+        querier: &impl Querier,
+        key: String
+    ) -> StdResult<OraclePrice> {
+        let config: RouterConfig = RouterQueryMsg::GetConfig {  }.query(querier, router.code_hash.clone(), router.address.clone())?;
+        let band_response = reference_data(querier, key.clone(), config.quote_symbol.clone(), config.band)?;
+        Ok(OraclePrice::new(key, band_response))
+    }
+
+    pub fn query_band_prices(
+        router: &Contract,
+        querier: &impl Querier,
+        keys: Vec<String>
+    ) -> StdResult<Vec<OraclePrice>> {
+        let config: RouterConfig = RouterQueryMsg::GetConfig {  }.query(querier, router.code_hash.clone(), router.address.clone())?;
+        let quote_symbols = vec![config.quote_symbol; keys.len()];
+
+        let band_response = reference_data_bulk(querier, keys.clone(), quote_symbols, config.band)?;
+        
+        let mut prices: Vec<OraclePrice> = vec![];
+        for (index, key) in keys.iter().enumerate() {
+            prices.push(OraclePrice::new(key.to_string(), band_response[index].clone()));
+        };
         Ok(prices)
     }
 

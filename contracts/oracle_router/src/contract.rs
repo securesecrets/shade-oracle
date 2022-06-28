@@ -19,6 +19,9 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         admin_auth: msg.admin_auth,
         default_oracle: msg.default_oracle,
         address: env.contract.address,
+        band: msg.band,
+        quote_symbol: msg.quote_symbol,
+        enabled: true,
     };
     CONFIG.save(&mut deps.storage, &config)?;
     Ok(InitResponse {
@@ -34,10 +37,12 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     is_admin(deps, env.message.sender.clone())?;
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig { default_oracle, admin_auth } => {
+            HandleMsg::UpdateConfig { config } => {
                 CONFIG.update(&mut deps.storage, |mut new_config| -> StdResult<_> {
-                    new_config.admin_auth = admin_auth.unwrap_or(new_config.admin_auth);
-                    new_config.default_oracle = default_oracle.unwrap_or(new_config.default_oracle);
+                    new_config.admin_auth = config.admin_auth.unwrap_or(new_config.admin_auth);
+                    new_config.default_oracle = config.default_oracle.unwrap_or(new_config.default_oracle);
+                    new_config.band = config.band.unwrap_or(new_config.band);
+                    new_config.quote_symbol = config.quote_symbol.unwrap_or(new_config.quote_symbol);
                     Ok(new_config)
                 })?;
                 Ok(HandleResponse::default())

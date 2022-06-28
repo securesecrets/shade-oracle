@@ -3,7 +3,7 @@ use crate::{
 };
 use secret_toolkit::utils::Query;
 use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{Storage, Querier, Api, Extern, StdResult};
+use cosmwasm_std::{Querier, StdResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -56,8 +56,8 @@ impl Query for BandQuery {
     const BLOCK_SIZE: usize = 256;
 }
 
-pub fn reference_data<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn reference_data(
+    querier: &impl Querier,
     base_symbol: String,
     quote_symbol: String,
     band: Contract,
@@ -66,11 +66,11 @@ pub fn reference_data<S: Storage, A: Api, Q: Querier>(
         base_symbol,
         quote_symbol,
     }
-    .query(&deps.querier, band.code_hash, band.address)
+    .query(querier, band.code_hash, band.address)
 }
 
-pub fn reference_data_bulk<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn reference_data_bulk(
+    querier: &impl Querier,
     base_symbols: Vec<String>,
     quote_symbols: Vec<String>,
     band: Contract,
@@ -79,7 +79,7 @@ pub fn reference_data_bulk<S: Storage, A: Api, Q: Querier>(
         base_symbols,
         quote_symbols,
     }
-    .query(&deps.querier, band.code_hash, band.address)
+    .query(querier, band.code_hash, band.address)
 }
 
 pub mod proxy {
