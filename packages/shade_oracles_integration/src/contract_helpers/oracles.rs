@@ -330,8 +330,8 @@ impl IndexOracleContract {
         query_contract(self.get_info(), index_oracle::QueryMsg::Basket { })
     }
 
-    pub fn update_config(&self, router: Option<Contract>, enabled: Option<bool>, sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = index_oracle::HandleMsg::UpdateConfig { router, enabled };
+    pub fn update_config(&self, router: Option<Contract>, enabled: Option<bool>, only_band: Option<bool>,  sender_key: Option<&str>) -> Result<GasLog> {
+        let msg = index_oracle::HandleMsg::UpdateConfig { router, enabled, only_band };
         self.wrap_handle(&msg, sender_key)
     }
 

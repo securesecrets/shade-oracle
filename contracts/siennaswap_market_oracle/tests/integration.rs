@@ -147,6 +147,7 @@ fn basic_market_test(
             },
             symbol: symbol.clone(),
             base_peg,
+            only_band: true,
         },
         MockEnv::new(
             "admin",

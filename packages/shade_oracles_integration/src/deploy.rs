@@ -74,6 +74,7 @@ fn deploy_silk(_user_a: String, router: Contract) -> Result<IndexOracleContract>
                 ("WBTC", 2_00 * 10u128.pow(14)), //  2.0%
             ].into_iter().map(|(sym, w)| (sym.to_string(), Uint128::from(w))).collect(),
             target: Uint128::from(1_05 * 10u128.pow(16)), // $1.05
+            only_band: true,
         },
         Some(HOOMP_KEY),
         Some("silk-oracle"),
@@ -120,6 +121,7 @@ fn deploy_shd(user_a: String, router: Contract) -> Result<(SiennaMarketOracleCon
             pair: sienna_scrt_shd,
             symbol: "SHD".into(),
             base_peg: Some("SCRT".to_string()),
+            only_band: true,
         },
         Some(HOOMP_KEY),
         Some("sienna-market-shd-oracle"),
