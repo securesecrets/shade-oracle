@@ -89,6 +89,7 @@ fn basic_index_test(
             symbol: symbol.clone(),
             target,
             basket,
+            only_band: true,
         },
         MockEnv::new(
             "admin",
@@ -306,6 +307,7 @@ fn mod_index_test(
             symbol: symbol.clone(),
             target,
             basket,
+            only_band: true,
         },
         MockEnv::new(
             "admin",

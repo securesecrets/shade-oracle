@@ -100,6 +100,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
             None => token_infos[base_i].symbol.clone(),
         },
         enabled: true,
+        only_band: msg.only_band,
     };
 
     if let Err(e) = query_band_price(&config.router, &deps.querier, config.base_peg.clone()) {
@@ -126,7 +127,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             HandleMsg::UpdateConfig { 
                 router,
                 enabled,
-            } => try_update_config(deps, &env, router, enabled),
+                only_band,
+            } => try_update_config(deps, &env, router, enabled, only_band),
         },
         BLOCK_SIZE,
     )
@@ -137,6 +139,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     env: &Env,
     router: Option<Contract>,
     enabled: Option<bool>,
+    only_band: Option<bool>,
 ) -> StdResult<HandleResponse> {
 
     let mut config = CONFIG.load(&deps.storage)?;
@@ -150,6 +153,8 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     if let Some(enabled) = enabled {
         config.enabled = enabled;
     }
+
+    config.only_band = only_band.unwrap_or(config.only_band);
 
     CONFIG.save(&mut deps.storage, &config)?;
 

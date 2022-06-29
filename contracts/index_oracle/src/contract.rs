@@ -44,6 +44,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let config = Config {
         router: msg.router,
         enabled: true,
+        only_band: msg.only_band,
     };
 
     CONFIG.save(&mut deps.storage, &config)?;
@@ -85,7 +86,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             HandleMsg::UpdateConfig {
                 router,
                 enabled,
-            } => try_update_config(deps, env, router, enabled),
+                only_band,
+            } => try_update_config(deps, env, router, enabled, only_band),
             HandleMsg::ModBasket { basket, .. } => mod_basket(deps, env, basket),
         }, BLOCK_SIZE)
 }
@@ -154,7 +156,12 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, ReferenceData>> {
     let mut price_data = HashMap::new();
-    match query_band_prices(&config.router, &deps.querier, symbols.clone()) {
+    let prices_resp = if config.only_band {
+        query_band_prices(&config.router, &deps.querier, symbols.clone())
+    } else {
+        query_prices(&config.router, &deps.querier, symbols.clone())
+    };
+    match prices_resp {
         Ok(prices) => {
             for oracle_price in prices {
                 price_data.insert(oracle_price.key.clone(), oracle_price.data);
@@ -176,6 +183,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     env: Env,
     router: Option<Contract>,
     enabled: Option<bool>,
+    only_band: Option<bool>,
 ) -> StdResult<HandleResponse> {
 
     let config = CONFIG.load(&deps.storage)?;
@@ -185,6 +193,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     CONFIG.save(&mut deps.storage, &Config {
         router: router.unwrap_or(config.router),
         enabled: enabled.unwrap_or(config.enabled),
+        only_band: only_band.unwrap_or(config.only_band),
     })?;
 
     Ok(HandleResponse {
