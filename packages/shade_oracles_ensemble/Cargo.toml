@@ -36,7 +36,7 @@ siennaswap-market-oracle = { path = "../../contracts/siennaswap_market_oracle" }
 shadeswap-market-oracle = { path = "../../contracts/shadeswap_market_oracle" }
 oracle-router = { path = "../../contracts/oracle_router" }
 index-oracle = { path = "../../contracts/index_oracle" }
-snip20-reference-impl = { git = "ssh://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
+snip20-reference-impl = { git = "https://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
 admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
 
 shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
