@@ -31,5 +31,5 @@ secret-toolkit = { version = "0.2" }
 
 [dev_dependencies]
 cosmwasm-schema = { git = "https://github.com/enigmampc/SecretNetwork", tag = "v1.0.4-debug-print" }
-fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = ["ensemble"] }
+fadroma = { branch = "v100", commit = 76867e0, git = "https://github.com/hackbg/fadroma.git", features =  ["ensemble"]  }
 shade-oracles-ensemble = { path = "../../packages/shade_oracles_ensemble" }
