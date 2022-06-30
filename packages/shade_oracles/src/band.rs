@@ -1,10 +1,8 @@
-use crate::{
-    common::{ResponseStatus, Contract},
-};
-use secret_toolkit::utils::Query;
+use crate::common::{Contract, ResponseStatus};
 use cosmwasm_math_compat::Uint128;
 use cosmwasm_std::{Querier, StdResult};
 use schemars::JsonSchema;
+use secret_toolkit::utils::Query;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -106,12 +104,17 @@ pub mod proxy {
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum HandleMsg {
-        UpdateConfig { enabled: Option<bool>, admin_auth: Option<Contract>, band: Option<Contract>, quote_symbol: Option<String>, },
+        UpdateConfig {
+            enabled: Option<bool>,
+            admin_auth: Option<Contract>,
+            band: Option<Contract>,
+            quote_symbol: Option<String>,
+        },
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum HandleAnswer {
-        UpdateConfig { status: ResponseStatus }
+        UpdateConfig { status: ResponseStatus },
     }
 }

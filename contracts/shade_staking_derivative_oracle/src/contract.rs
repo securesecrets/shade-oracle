@@ -1,19 +1,21 @@
+use cosmwasm_std::{
+    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult,
+    StdError, StdResult, Storage,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
+    band::ReferenceData,
     common::{
-        querier::{verify_admin, query_token_info, query_band_price},
-        HandleAnswer, HandleMsg, QueryMsg,
-        ResponseStatus, BLOCK_SIZE, throw_unsupported_symbol_error, get_precision, OraclePrice
-    }, 
-    band::ReferenceData, storage::Item,
+        get_precision,
+        querier::{query_band_price, query_token_info, verify_admin},
+        throw_unsupported_symbol_error, HandleAnswer, HandleMsg, OraclePrice, QueryMsg,
+        ResponseStatus, BLOCK_SIZE,
+    },
     staking_derivative::shade::{
         querier::query_derivative_price,
         {Config, InitMsg},
     },
-};
-use secret_toolkit::utils::{pad_handle_result, pad_query_result};
-use cosmwasm_std::{
-    to_binary, Api, Env, Extern, HandleResponse, InitResponse,
-    Querier, QueryResult, StdResult, Storage, Binary, StdError,
+    storage::Item,
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -24,7 +26,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-
     let token_decimals = query_token_info(&msg.staking_derivative, &deps.querier)?
         .token_info
         .decimals;
@@ -70,7 +71,9 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig { status: ResponseStatus::Success })?),
+        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+            status: ResponseStatus::Success,
+        })?),
     })
 }
 
@@ -97,15 +100,13 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     }
 
     // price of underlying asset to 10^18.
-    let underlying_price = query_band_price(&config.router, &deps.querier, config.underlying_symbol)?;
+    let underlying_price =
+        query_band_price(&config.router, &deps.querier, config.underlying_symbol)?;
 
-    let staking_derivative_price = query_derivative_price(
-        &config.staking_derivative,
-        &deps.querier,
-    )?;
+    let staking_derivative_price =
+        query_derivative_price(&config.staking_derivative, &deps.querier)?;
 
-    let staking_derivative_price_precision =
-        get_precision(token_decimals);
+    let staking_derivative_price_precision = get_precision(token_decimals);
 
     let price = underlying_price
         .data

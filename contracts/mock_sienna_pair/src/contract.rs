@@ -1,41 +1,24 @@
+use cosmwasm_math_compat::Uint128;
 use cosmwasm_std::{
-    to_binary,
-    Api,
-    Binary,
-    Env,
-    Extern,
-    HandleResponse,
-    HumanAddr,
-    InitResponse,
-    Querier,
-    StdError,
-    StdResult,
-    Storage,
+    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+    StdError, StdResult, Storage,
 };
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use schemars::JsonSchema;
-use secret_toolkit::utils::{InitCallback};
+use secret_toolkit::utils::InitCallback;
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::Contract,
     protocols::siennaswap::{
+        Pair, SiennaDexTokenType as TokenType, SiennaSwapExchangeQueryMsg as PairQuery,
+        SiennaSwapPairInfo as PairInfo, SiennaSwapPairInfoResponse as PairInfoResponse,
         SimulationResponse,
-        Pair,
-        SiennaSwapPairInfo as PairInfo,
-        SiennaDexTokenType as TokenType,
-        SiennaSwapExchangeQueryMsg as PairQuery,
-        SiennaSwapPairInfoResponse as PairInfoResponse,
     },
 };
-use cosmwasm_math_compat::Uint128;
 
-pub fn pool_take_amount(
-    give_amount: Uint128,
-    give_pool: Uint128,
-    take_pool: Uint128,
-) -> Uint128 {
+pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
     Uint128::from(
-        take_pool.u128() - give_pool.u128() * take_pool.u128() / (give_pool + give_amount).u128()
+        take_pool.u128() - give_pool.u128() * take_pool.u128() / (give_pool + give_amount).u128(),
     )
 }
 

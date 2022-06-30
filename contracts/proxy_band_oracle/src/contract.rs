@@ -1,26 +1,18 @@
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{
+    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult,
+    StdError, StdResult, Storage,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
+use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
 use shade_oracles::{
-    common::{
-        Contract, ResponseStatus, 
-        OraclePrice, QueryMsg, BLOCK_SIZE, is_disabled
-    }, 
     band::{
-        ReferenceData, BandQuery,
-        proxy::{
-            HandleMsg, HandleAnswer,
-            Config, InitMsg,
-        }, reference_data, reference_data_bulk
+        proxy::{Config, HandleAnswer, HandleMsg, InitMsg},
+        reference_data, reference_data_bulk, BandQuery, ReferenceData,
     },
+    common::{is_disabled, Contract, OraclePrice, QueryMsg, ResponseStatus, BLOCK_SIZE},
     storage::Item,
 };
-use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
-use cosmwasm_std::{
-    to_binary, Binary, Api, Env, 
-    Extern, HandleResponse, 
-    InitResponse, Querier, QueryResult,
-    StdError, StdResult, Storage
-};
-use cosmwasm_math_compat::Uint128;
-use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 
 const CONFIG: Item<Config> = Item::new("config");
 
@@ -29,7 +21,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-
     let config = Config {
         admin_auth: msg.admin_auth,
         band: msg.band,
@@ -67,8 +58,16 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     admin_auth: Option<Contract>,
 ) -> StdResult<HandleResponse> {
     let config = CONFIG.load(&deps.storage)?;
-    
-    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission { contract_address: env.contract.address.to_string(), admin_address: env.message.sender.to_string() }.query(&deps.querier, config.admin_auth.code_hash.clone(), config.admin_auth.address)?;
+
+    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {
+        contract_address: env.contract.address.to_string(),
+        admin_address: env.message.sender.to_string(),
+    }
+    .query(
+        &deps.querier,
+        config.admin_auth.code_hash.clone(),
+        config.admin_auth.address,
+    )?;
     if resp.error_msg.is_some() {
         return Err(StdError::unauthorized());
     }
@@ -107,10 +106,22 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     is_disabled(config.enabled)?;
 
     if key == "SHD" {
-        return to_binary(&OraclePrice::new(key, ReferenceData { rate: Uint128::from(13450000000000000000u128), last_updated_base: 1654019032, last_updated_quote: 1654019032 }))
+        return to_binary(&OraclePrice::new(
+            key,
+            ReferenceData {
+                rate: Uint128::from(13450000000000000000u128),
+                last_updated_base: 1654019032,
+                last_updated_quote: 1654019032,
+            },
+        ));
     }
 
-    let band_response = reference_data(&deps.querier, key.clone(), config.quote_symbol.clone(), config.band)?;
+    let band_response = reference_data(
+        &deps.querier,
+        key.clone(),
+        config.quote_symbol.clone(),
+        config.band,
+    )?;
 
     to_binary(&OraclePrice::new(key, band_response))
 }
@@ -124,12 +135,16 @@ fn try_query_prices<S: Storage, A: Api, Q: Querier>(
 
     let quote_symbols = vec![config.quote_symbol; keys.len()];
 
-    let band_response = reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, config.band)?;
+    let band_response =
+        reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, config.band)?;
 
     let mut prices: Vec<OraclePrice> = vec![];
     for (index, key) in keys.iter().enumerate() {
-        prices.push(OraclePrice::new(key.to_string(), band_response[index].clone()));
-    };
+        prices.push(OraclePrice::new(
+            key.to_string(),
+            band_response[index].clone(),
+        ));
+    }
 
     to_binary(&prices)
 }

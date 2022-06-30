@@ -2,14 +2,14 @@ use crate::{
     constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY},
     utils::generate_label,
 };
+use cosmwasm_std::HumanAddr;
 use secretcli::{
     cli_types::NetContract,
     secretcli::{test_contract_handle, test_inst_init},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use shade_oracles::{common::Contract};
-use cosmwasm_std::HumanAddr;
+use shade_oracles::common::Contract;
 
 pub mod oracles;
 

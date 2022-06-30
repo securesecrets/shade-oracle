@@ -1,33 +1,20 @@
-use cosmwasm_std::{
-    to_binary,
-    Api,
-    Env,
-    Extern,
-    HandleResponse,
-    InitResponse,
-    Querier,
-    StdResult,
-    StdError,
-    Storage,
-    QueryResult,
-};
 use cosmwasm_math_compat::{Uint128, Uint512};
-use secret_toolkit::utils::{pad_query_result, pad_handle_result};
+use cosmwasm_std::{
+    to_binary, Api, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult, StdError,
+    StdResult, Storage,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 
-use std::{collections::HashMap, cmp::min};
+use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    common::{
-        OraclePrice, Contract,
-        ResponseStatus, BLOCK_SIZE,
-        querier::{verify_admin, query_prices, query_band_prices},
-    },
     band::ReferenceData,
-    storage::Item,
-    index_oracle::{
-        InitMsg, HandleMsg, HandleAnswer, QueryMsg, QueryAnswer,
-        Config,
+    common::{
+        querier::{query_band_prices, query_prices, verify_admin},
+        Contract, OraclePrice, ResponseStatus, BLOCK_SIZE,
     },
+    index_oracle::{Config, HandleAnswer, HandleMsg, InitMsg, QueryAnswer, QueryMsg},
+    storage::Item,
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -40,7 +27,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-
     let config = Config {
         router: msg.router,
         enabled: true,
@@ -57,18 +43,28 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let symbols: Vec<String> = msg.basket.clone().into_iter().map(|(sym, _)| sym).collect();
 
     if symbols.contains(&msg.symbol) {
-        return Err(StdError::generic_err(format!("Recursive symbol {}", msg.symbol)));
+        return Err(StdError::generic_err(format!(
+            "Recursive symbol {}",
+            msg.symbol
+        )));
     }
 
     let weight_sum: u128 = msg.basket.clone().into_iter().map(|(_, w)| w.u128()).sum();
     if weight_sum != 10u128.pow(18) {
-        return Err(StdError::generic_err(format!("Weights must add to 100%, {}", weight_sum)));
+        return Err(StdError::generic_err(format!(
+            "Weights must add to 100%, {}",
+            weight_sum
+        )));
     }
 
     let prices = fetch_prices(deps, &config, symbols)?;
     let constants = build_constants(msg.basket.clone(), prices, msg.target);
 
-    let mut full_basket: Vec<(String, Uint128, Uint128)> = msg.basket.into_iter().map(|(sym, w)| (sym.clone(), w, constants[&sym])).collect();
+    let mut full_basket: Vec<(String, Uint128, Uint128)> = msg
+        .basket
+        .into_iter()
+        .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
+        .collect();
     full_basket.sort();
 
     BASKET.save(&mut deps.storage, &full_basket)?;
@@ -89,7 +85,9 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                 only_band,
             } => try_update_config(deps, env, router, enabled, only_band),
             HandleMsg::ModBasket { basket, .. } => mod_basket(deps, env, basket),
-        }, BLOCK_SIZE)
+        },
+        BLOCK_SIZE,
+    )
 }
 
 pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
@@ -106,13 +104,13 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
                     prices.push(try_query_price(deps, key)?);
                 }
                 to_binary(&prices)
-            },
-            QueryMsg::Basket { } => {
-                to_binary(&QueryAnswer::Basket {
-                    basket: BASKET.load(&deps.storage)?,
-                })
-            },
-        }, BLOCK_SIZE)
+            }
+            QueryMsg::Basket {} => to_binary(&QueryAnswer::Basket {
+                basket: BASKET.load(&deps.storage)?,
+            }),
+        },
+        BLOCK_SIZE,
+    )
 }
 
 fn build_constants(
@@ -120,11 +118,13 @@ fn build_constants(
     prices: HashMap<String, ReferenceData>,
     target: Uint128,
 ) -> HashMap<String, Uint128> {
-
     let mut constants: HashMap<String, Uint128> = HashMap::new();
 
     for (sym, weight) in weights {
-        constants.insert(sym.clone(), weight.multiply_ratio(target, prices[&sym].rate));
+        constants.insert(
+            sym.clone(),
+            weight.multiply_ratio(target, prices[&sym].rate),
+        );
     }
     constants
 }
@@ -133,13 +133,13 @@ fn eval_index(
     prices: HashMap<String, ReferenceData>,
     basket: Vec<(String, Uint128, Uint128)>,
 ) -> ReferenceData {
-
     let mut index_price = Uint512::zero();
     let mut last_updated_base = 0u64;
     let mut last_updated_quote = 0u64;
 
     for (sym, _, constant) in basket {
-        index_price += Uint512::from(prices[&sym].rate.u128()) * Uint512::from(constant.u128()) / Uint512::from(10u128.pow(18));
+        index_price += Uint512::from(prices[&sym].rate.u128()) * Uint512::from(constant.u128())
+            / Uint512::from(10u128.pow(18));
         last_updated_base = min(last_updated_base, prices[&sym].last_updated_base);
         last_updated_quote = min(last_updated_quote, prices[&sym].last_updated_quote);
     }
@@ -166,13 +166,17 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
             for oracle_price in prices {
                 price_data.insert(oracle_price.key.clone(), oracle_price.data);
             }
-        },
+        }
         Err(e) => {
-            return Err(StdError::generic_err(
-                    format!("Failed to query {} from router {}, '{}'", 
-                            symbols.iter().map(|sym| sym.to_string() + ",").collect::<String>(), 
-                            config.router.address.as_str(),
-                            e)))
+            return Err(StdError::generic_err(format!(
+                "Failed to query {} from router {}, '{}'",
+                symbols
+                    .iter()
+                    .map(|sym| sym.to_string() + ",")
+                    .collect::<String>(),
+                config.router.address.as_str(),
+                e
+            )))
         }
     }
     Ok(price_data)
@@ -185,16 +189,18 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     enabled: Option<bool>,
     only_band: Option<bool>,
 ) -> StdResult<HandleResponse> {
-
     let config = CONFIG.load(&deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender)?;
 
-    CONFIG.save(&mut deps.storage, &Config {
-        router: router.unwrap_or(config.router),
-        enabled: enabled.unwrap_or(config.enabled),
-        only_band: only_band.unwrap_or(config.only_band),
-    })?;
+    CONFIG.save(
+        &mut deps.storage,
+        &Config {
+            router: router.unwrap_or(config.router),
+            enabled: enabled.unwrap_or(config.enabled),
+            only_band: only_band.unwrap_or(config.only_band),
+        },
+    )?;
 
     Ok(HandleResponse {
         messages: vec![],
@@ -210,7 +216,6 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     env: Env,
     mod_basket: Vec<(String, Uint128)>,
 ) -> StdResult<HandleResponse> {
-
     let config = CONFIG.load(&deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender)?;
@@ -223,15 +228,18 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     // target previous price
     let target = eval_index(prices.clone(), basket.clone());
 
-    let mut weights: Vec<(String, Uint128)> = basket.into_iter().map(|(sym, w, _)| (sym, w)).collect();
+    let mut weights: Vec<(String, Uint128)> =
+        basket.into_iter().map(|(sym, w, _)| (sym, w)).collect();
     let mut new_symbols = vec![];
 
     // Update weights
     for (mod_sym, mod_weight) in mod_basket.into_iter() {
-
         // Disallow recursive symbols
         if mod_sym == self_symbol {
-            return Err(StdError::generic_err(format!("Recursive symbol {}", self_symbol)));
+            return Err(StdError::generic_err(format!(
+                "Recursive symbol {}",
+                self_symbol
+            )));
         }
 
         // gather new symbols for fetching
@@ -242,9 +250,11 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
         // remove previous weight
         if let Some(i) = weights.iter().position(|(sym, _)| *sym == mod_sym) {
             weights.remove(i);
-        }
-        else if mod_weight.is_zero() {
-            return Err(StdError::generic_err(format!("Cannot remove symbol that does not exist {}", mod_sym)));
+        } else if mod_weight.is_zero() {
+            return Err(StdError::generic_err(format!(
+                "Cannot remove symbol that does not exist {}",
+                mod_sym
+            )));
         }
 
         // add new/updated weights
@@ -257,7 +267,13 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     if weights.is_empty() {
         return Err(StdError::generic_err("Basket cannot be empty"));
     }
-    if weights.clone().into_iter().map(|(_, w)| w.u128()).sum::<u128>() != 10u128.pow(18) {
+    if weights
+        .clone()
+        .into_iter()
+        .map(|(_, w)| w.u128())
+        .sum::<u128>()
+        != 10u128.pow(18)
+    {
         return Err(StdError::generic_err("Weights must add to 100%"));
     }
 
@@ -266,7 +282,10 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     let constants = build_constants(weights.clone(), prices.clone(), target.rate);
 
     // Recalculate the constants
-    let new_basket: Vec<(String, Uint128, Uint128)> = weights.into_iter().map(|(sym, w)| (sym.clone(), w, constants[&sym])).collect();
+    let new_basket: Vec<(String, Uint128, Uint128)> = weights
+        .into_iter()
+        .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
+        .collect();
     BASKET.save(&mut deps.storage, &new_basket)?;
 
     Ok(HandleResponse {
@@ -278,9 +297,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-) -> StdResult<Config> {
+fn try_query_config<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResult<Config> {
     CONFIG.load(&deps.storage)
 }
 
@@ -288,9 +305,11 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     key: String,
 ) -> StdResult<OraclePrice> {
-
     if key != SYMBOL.load(&deps.storage)? {
-        return Err(StdError::generic_err(format!("Missing price feed for {}", key)));
+        return Err(StdError::generic_err(format!(
+            "Missing price feed for {}",
+            key
+        )));
     }
 
     let config = CONFIG.load(&deps.storage)?;
@@ -300,8 +319,5 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let prices = fetch_prices(deps, &config, symbols)?;
     let index = eval_index(prices, basket);
 
-    Ok(OraclePrice::new(
-        key,
-        index,
-    ))
+    Ok(OraclePrice::new(key, index))
 }

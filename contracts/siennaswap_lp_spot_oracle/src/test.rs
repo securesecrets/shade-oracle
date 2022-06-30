@@ -20,6 +20,10 @@ fn test_get_lp_token_spot_price() {
 
     let total_supply = 2000000;
 
-    let spot_lp_token_price = get_lp_token_spot_price(price_info_1, price_info_2, total_supply, 18).unwrap();
-    assert_eq!(Uint128::from(11164843826397921000000000000000u128), spot_lp_token_price)
+    let spot_lp_token_price =
+        get_lp_token_spot_price(price_info_1, price_info_2, total_supply, 18).unwrap();
+    assert_eq!(
+        Uint128::from(11164843826397921000000000000000u128),
+        spot_lp_token_price
+    )
 }

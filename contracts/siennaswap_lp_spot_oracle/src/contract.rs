@@ -1,20 +1,26 @@
+use cosmwasm_std::{
+    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+    QueryRequest, QueryResult, StdError, StdResult, Storage, WasmQuery,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
-    common::{throw_unsupported_symbol_error, BLOCK_SIZE, Contract, querier::{query_token_info, query_prices, verify_admin}, OraclePrice, QueryMsg, ResponseStatus, HandleAnswer, is_disabled, HandleMsg},
+    band::ReferenceData,
+    common::{
+        is_disabled,
+        querier::{query_prices, query_token_info, verify_admin},
+        throw_unsupported_symbol_error, Contract, HandleAnswer, HandleMsg, OraclePrice, QueryMsg,
+        ResponseStatus, BLOCK_SIZE,
+    },
     lp::{
         get_lp_token_spot_price,
-        siennaswap::{
-            Config, InitMsg, PairData,
-        },
+        siennaswap::{Config, InitMsg, PairData},
         FairLpPriceInfo,
     },
+    protocols::siennaswap::{
+        SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
+    },
     storage::Item,
-    band::ReferenceData, protocols::siennaswap::{SiennaSwapPairInfoResponse, SiennaSwapExchangeQueryMsg, SiennaDexTokenType},
 };
-use cosmwasm_std::{
-    to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse,
-    Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, WasmQuery, Binary,
-};
-use secret_toolkit::utils::{pad_query_result, pad_handle_result};
 use std::cmp::min;
 
 const PAIR: Item<PairData> = Item::new("pair");
@@ -25,7 +31,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-
     let mut token0 = Contract::new("a".to_string(), "b".to_string());
     let mut token1 = token0.clone();
 
@@ -116,7 +121,9 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig { status: ResponseStatus::Success })?),
+        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+            status: ResponseStatus::Success,
+        })?),
     })
 }
 
@@ -143,7 +150,11 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
         return Err(throw_unsupported_symbol_error(key));
     }
 
-    let prices = query_prices(&config.router, &deps.querier, vec![config.symbol_0, config.symbol_1])?;
+    let prices = query_prices(
+        &config.router,
+        &deps.querier,
+        vec![config.symbol_0, config.symbol_1],
+    )?;
     let (price0, price1) = (prices[0].clone(), prices[1].clone());
 
     let pair_info_response: SiennaSwapPairInfoResponse =
@@ -176,7 +187,10 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let data = ReferenceData {
         rate: get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals)?,
         last_updated_base: min(price0.data.last_updated_base, price1.data.last_updated_base),
-        last_updated_quote: min(price0.data.last_updated_quote, price1.data.last_updated_quote),
+        last_updated_quote: min(
+            price0.data.last_updated_quote,
+            price1.data.last_updated_quote,
+        ),
     };
     to_binary(&OraclePrice::new(key, data))
 }

@@ -1,8 +1,8 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize, Deserializer, Serializer};
 use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{HumanAddr};
+use cosmwasm_std::HumanAddr;
 use fadroma::prelude::ContractLink;
+use schemars::JsonSchema;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use secret_toolkit::utils::Query;
 
@@ -10,7 +10,7 @@ use secret_toolkit::utils::Query;
 #[serde(rename_all = "snake_case")]
 pub struct TokenAmount<A> {
     pub token: TokenType<A>,
-    pub amount: Uint128
+    pub amount: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -28,9 +28,9 @@ pub enum TokenType<A> {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct TokenPairAmount<A: Clone> {
-    pub pair:     TokenPair<A>,
+    pub pair: TokenPair<A>,
     pub amount_0: Uint128,
-    pub amount_1: Uint128
+    pub amount_1: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -59,7 +59,7 @@ pub struct PairInfoResponse {
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct EstimatedPriceResponse {
-    pub estimated_price: Uint128
+    pub estimated_price: Uint128,
 }
 
 #[derive(Clone, Debug, JsonSchema)]

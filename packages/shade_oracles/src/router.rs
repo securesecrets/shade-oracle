@@ -1,10 +1,8 @@
-use crate::{
-    common::{Contract, ResponseStatus},
-};
+use crate::common::{Contract, ResponseStatus};
 use cosmwasm_std::*;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use secret_toolkit::utils::Query;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -86,7 +84,7 @@ pub enum QueryMsg {
     GetPrices {
         keys: Vec<String>,
     },
-    GetAdminAuth { }
+    GetAdminAuth {},
 }
 
 impl Query for QueryMsg {

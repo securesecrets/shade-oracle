@@ -1,37 +1,25 @@
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{
+    to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
+    StdError, StdResult, Storage,
+};
+use secret_toolkit::{
+    snip20::TokenInfo,
+    utils::{pad_handle_result, pad_query_result, Query},
+};
 use shade_oracles::{
+    band::ReferenceData,
     common::{
-        normalize_price,
-        querier::{query_band_price, query_token_info, verify_admin, query_price},
-        BLOCK_SIZE, Contract, 
-        ResponseStatus, 
-        OraclePrice,
-        HandleAnswer, QueryMsg, is_disabled
+        is_disabled, normalize_price,
+        querier::{query_band_price, query_price, query_token_info, verify_admin},
+        Contract, HandleAnswer, OraclePrice, QueryMsg, ResponseStatus, BLOCK_SIZE,
     },
     protocols::siennaswap::{
-        SiennaDexTokenType, 
-        SiennaSwapExchangeQueryMsg, 
-        SiennaSwapPairInfoResponse,
-        TokenTypeAmount,
-        SimulationResponse,
+        SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
+        SimulationResponse, TokenTypeAmount,
     },
+    siennaswap_market_oracle::{Config, HandleMsg, InitMsg},
     storage::Item,
-    band::ReferenceData,
-    siennaswap_market_oracle::{
-        Config, InitMsg,
-        HandleMsg,
-    },
-};
-use cosmwasm_std::{
-    to_binary, Api, Env, 
-    Extern, HandleResponse, 
-    HumanAddr, InitResponse,
-    Querier, QueryResult, 
-    StdError, StdResult, Storage, 
-};
-use cosmwasm_math_compat::{Uint128};
-use secret_toolkit::{
-    utils::{Query, pad_handle_result, pad_query_result},
-    snip20::TokenInfo,
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -45,39 +33,36 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     _env: Env,
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
-
-    let pair_info_response: SiennaSwapPairInfoResponse =
-        SiennaSwapExchangeQueryMsg::PairInfo.query(
+    let pair_info_response: SiennaSwapPairInfoResponse = SiennaSwapExchangeQueryMsg::PairInfo
+        .query(
             &deps.querier,
             msg.pair.code_hash.clone(),
             msg.pair.address.clone(),
         )?;
 
     let tokens: [Contract; 2] = vec![
-        pair_info_response.pair_info.pair.token_0, 
+        pair_info_response.pair_info.pair.token_0,
         pair_info_response.pair_info.pair.token_1,
-    ].iter()
-        .filter_map(|t| match t {
-            SiennaDexTokenType::CustomToken {
-                contract_addr, token_code_hash,
-            } => Some(Contract {
-                address: HumanAddr(contract_addr.to_string()),
-                code_hash: token_code_hash.to_string(),
-            }),
-            _ => None,
-        })
-        .collect::<Vec<Contract>>()
-        .try_into()
-        .ok()
-        .unwrap();
+    ]
+    .iter()
+    .filter_map(|t| match t {
+        SiennaDexTokenType::CustomToken {
+            contract_addr,
+            token_code_hash,
+        } => Some(Contract {
+            address: HumanAddr(contract_addr.to_string()),
+            code_hash: token_code_hash.to_string(),
+        }),
+        _ => None,
+    })
+    .collect::<Vec<Contract>>()
+    .try_into()
+    .ok()
+    .unwrap();
 
     let token_infos: [TokenInfo; 2] = tokens
         .iter()
-        .map(|t| query_token_info(t, &deps.querier)
-                    .ok()
-                    .unwrap()
-                    .token_info
-        )
+        .map(|t| query_token_info(t, &deps.querier).ok().unwrap().token_info)
         .collect::<Vec<TokenInfo>>()
         .try_into()
         .ok()
@@ -86,11 +71,17 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let primary_i = match token_infos.iter().position(|t| t.symbol == msg.symbol) {
         Some(i) => i,
         None => {
-            return Err(StdError::generic_err(format!("Neither token matches {}", msg.symbol)));
+            return Err(StdError::generic_err(format!(
+                "Neither token matches {}",
+                msg.symbol
+            )));
         }
     };
 
-    let base_i = token_infos.iter().position(|t| t.symbol != msg.symbol).unwrap();
+    let base_i = token_infos
+        .iter()
+        .position(|t| t.symbol != msg.symbol)
+        .unwrap();
 
     let config = Config {
         router: msg.router,
@@ -106,8 +97,9 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     if let Err(e) = query_band_price(&config.router, &deps.querier, config.base_peg.clone()) {
         return Err(StdError::generic_err(format!(
-                    "Failed to query base_peg {} from router {}; {}", 
-                    config.base_peg, config.router.address, e)));
+            "Failed to query base_peg {} from router {}; {}",
+            config.base_peg, config.router.address, e
+        )));
     };
 
     CONFIG.save(&mut deps.storage, &config)?;
@@ -125,7 +117,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<HandleResponse> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig { 
+            HandleMsg::UpdateConfig {
                 router,
                 enabled,
                 only_band,
@@ -142,7 +134,6 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     enabled: Option<bool>,
     only_band: Option<bool>,
 ) -> StdResult<HandleResponse> {
-
     let mut config = CONFIG.load(&deps.storage)?;
     verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
     config.router = router.unwrap_or(config.router);
@@ -154,8 +145,8 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig { 
-            status: ResponseStatus::Success, 
+        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+            status: ResponseStatus::Success,
         })?),
     })
 }
@@ -166,13 +157,12 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
             QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
             QueryMsg::GetPrice { key } => to_binary(&try_query_price(deps, key)?),
             QueryMsg::GetPrices { keys } => {
-
                 let mut prices = vec![];
                 for key in keys {
                     prices.push(try_query_price(deps, key)?);
                 }
                 to_binary(&prices)
-            },
+            }
         },
         BLOCK_SIZE,
     )
@@ -196,8 +186,9 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
                 contract_addr: primary_token.address,
                 token_code_hash: primary_token.code_hash,
             },
-        }
-    }.query(
+        },
+    }
+    .query(
         &deps.querier,
         config.pair.code_hash.clone(),
         config.pair.address.clone(),
@@ -213,15 +204,19 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     } else {
         query_price(&config.router, &deps.querier, config.base_peg)?
     };
- 
-    // Translate price to primary/USD
-    let price = base_usd_price.data.rate.multiply_ratio(exchange_rate, 10u128.pow(18));
 
-    Ok(OraclePrice::new(key,
+    // Translate price to primary/USD
+    let price = base_usd_price
+        .data
+        .rate
+        .multiply_ratio(exchange_rate, 10u128.pow(18));
+
+    Ok(OraclePrice::new(
+        key,
         ReferenceData {
             rate: price,
             last_updated_base: base_usd_price.data.last_updated_base,
             last_updated_quote: base_usd_price.data.last_updated_quote,
-        }
+        },
     ))
 }

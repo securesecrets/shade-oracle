@@ -1,21 +1,17 @@
-pub use shade_protocol::{
-    utils::generic_response::ResponseStatus
-};
-use std::hash::Hash;
-use crate::{
-    band::ReferenceData,
-};
-use cosmwasm_std::*;
+use crate::band::ReferenceData;
 use cosmwasm_math_compat::{Uint128, Uint256};
+use cosmwasm_std::*;
 use fadroma::prelude::ContractLink;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize}; 
-use secret_toolkit::utils::{Query};
+use secret_toolkit::utils::Query;
+use serde::{Deserialize, Serialize};
+pub use shade_protocol::utils::generic_response::ResponseStatus;
+use std::hash::Hash;
 
 pub const BLOCK_SIZE: usize = 256;
 
 /// Default Query API for all oracles.
-/// 
+///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -51,7 +47,10 @@ pub struct OraclePrice {
 
 impl OraclePrice {
     pub fn new(key: String, reference_data: ReferenceData) -> Self {
-        OraclePrice { key, data: reference_data }
+        OraclePrice {
+            key,
+            data: reference_data,
+        }
     }
 }
 
@@ -64,14 +63,19 @@ pub struct Contract {
 
 impl Contract {
     pub fn new(address: String, code_hash: String) -> Self {
-        Contract { address: HumanAddr(address), code_hash }
+        Contract {
+            address: HumanAddr(address),
+            code_hash,
+        }
     }
 
     pub fn new_link(link: ContractLink<HumanAddr>) -> Self {
-        Contract { address: link.address, code_hash: link.code_hash }
+        Contract {
+            address: link.address,
+            code_hash: link.code_hash,
+        }
     }
 }
-
 
 pub fn get_precision(factor: u8) -> Uint128 {
     Uint128::from(10u128.pow(factor.into()))
@@ -98,7 +102,9 @@ pub fn sqrt(value: Uint256) -> StdResult<Uint256> {
 
     if value.gt(&Uint256::from(3u128)) {
         z = value;
-        let mut x = value.checked_div(Uint256::from(2u128))?.checked_add(Uint256::from(1u128))?;
+        let mut x = value
+            .checked_div(Uint256::from(2u128))?
+            .checked_add(Uint256::from(1u128))?;
 
         while x.lt(&z) {
             z = x;
@@ -117,16 +123,17 @@ pub fn sqrt(value: Uint256) -> StdResult<Uint256> {
 pub mod querier {
     use std::collections::HashMap;
 
-    use crate::{router::{
-        QueryMsg as RouterQueryMsg, OracleResponse,
-        AdminAuthResponse,
-        Config as RouterConfig,
-    }, band::{reference_data_bulk, reference_data}};
     use super::*;
-    use secret_toolkit::snip20::{QueryMsg as Snip20QueryMsg, Balance, AuthenticatedQueryResponse, TokenInfoResponse};
-    use shade_admin::admin::{
-        ValidateAdminPermissionResponse, QueryMsg as AdminQueryMsg
+    use crate::{
+        band::{reference_data, reference_data_bulk},
+        router::{
+            AdminAuthResponse, Config as RouterConfig, OracleResponse, QueryMsg as RouterQueryMsg,
+        },
     };
+    use secret_toolkit::snip20::{
+        AuthenticatedQueryResponse, Balance, QueryMsg as Snip20QueryMsg, TokenInfoResponse,
+    };
+    use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
 
     pub fn query_oracle_price(
         oracle: &Contract,
@@ -137,14 +144,18 @@ pub mod querier {
     }
 
     /// Gets the oracle for the key from the router & calls GetPrice on it.
-    /// 
+    ///
     /// Has a query depth of 1.
     pub fn query_price(
         router: &Contract,
         querier: &impl Querier,
         key: String,
     ) -> StdResult<OraclePrice> {
-        let oracle_resp: OracleResponse = RouterQueryMsg::GetOracle { key: key.clone() }.query(querier, router.code_hash.clone(), router.address.clone())?;
+        let oracle_resp: OracleResponse = RouterQueryMsg::GetOracle { key: key.clone() }.query(
+            querier,
+            router.code_hash.clone(),
+            router.address.clone(),
+        )?;
         query_oracle_price(&oracle_resp.oracle, querier, key)
     }
 
@@ -153,18 +164,26 @@ pub mod querier {
         querier: &impl Querier,
         keys: Vec<String>,
     ) -> StdResult<Vec<OraclePrice>> {
-        QueryMsg::GetPrices { keys }.query(querier, oracle.code_hash.clone(), oracle.address.clone())
+        QueryMsg::GetPrices { keys }.query(
+            querier,
+            oracle.code_hash.clone(),
+            oracle.address.clone(),
+        )
     }
-    
+
     /// Groups the keys by their respective oracles and sends bulk GetPrices queries to each of those oracles.
-    /// 
+    ///
     /// Done to reduce impact on query depth.
     pub fn query_prices(
         router: &Contract,
         querier: &impl Querier,
         keys: Vec<String>,
     ) -> StdResult<Vec<OraclePrice>> {
-        let oracle_resps: Vec<OracleResponse> = RouterQueryMsg::GetOracles { keys }.query(querier, router.code_hash.clone(), router.address.clone())?;
+        let oracle_resps: Vec<OracleResponse> = RouterQueryMsg::GetOracles { keys }.query(
+            querier,
+            router.code_hash.clone(),
+            router.address.clone(),
+        )?;
         let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
         let mut prices: Vec<OraclePrice> = vec![];
 
@@ -172,7 +191,7 @@ pub mod querier {
             // Get the current vector of symbols at that oracle and add the current key to it
             map.entry(resp.oracle).or_insert(vec![]).push(resp.key);
         }
-    
+
         for (oracle, keys) in map {
             if keys.len() == 1 {
                 let queried_price = query_oracle_price(&oracle, querier, keys[0].clone())?;
@@ -188,27 +207,43 @@ pub mod querier {
     pub fn query_band_price(
         router: &Contract,
         querier: &impl Querier,
-        key: String
+        key: String,
     ) -> StdResult<OraclePrice> {
-        let config: RouterConfig = RouterQueryMsg::GetConfig {  }.query(querier, router.code_hash.clone(), router.address.clone())?;
-        let band_response = reference_data(querier, key.clone(), config.quote_symbol.clone(), config.band)?;
+        let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(
+            querier,
+            router.code_hash.clone(),
+            router.address.clone(),
+        )?;
+        let band_response = reference_data(
+            querier,
+            key.clone(),
+            config.quote_symbol.clone(),
+            config.band,
+        )?;
         Ok(OraclePrice::new(key, band_response))
     }
 
     pub fn query_band_prices(
         router: &Contract,
         querier: &impl Querier,
-        keys: Vec<String>
+        keys: Vec<String>,
     ) -> StdResult<Vec<OraclePrice>> {
-        let config: RouterConfig = RouterQueryMsg::GetConfig {  }.query(querier, router.code_hash.clone(), router.address.clone())?;
+        let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(
+            querier,
+            router.code_hash.clone(),
+            router.address.clone(),
+        )?;
         let quote_symbols = vec![config.quote_symbol; keys.len()];
 
         let band_response = reference_data_bulk(querier, keys.clone(), quote_symbols, config.band)?;
-        
+
         let mut prices: Vec<OraclePrice> = vec![];
         for (index, key) in keys.iter().enumerate() {
-            prices.push(OraclePrice::new(key.to_string(), band_response[index].clone()));
-        };
+            prices.push(OraclePrice::new(
+                key.to_string(),
+                band_response[index].clone(),
+            ));
+        }
         Ok(prices)
     }
 
@@ -218,9 +253,18 @@ pub mod querier {
         querier: &impl Querier,
         user: HumanAddr,
     ) -> StdResult<()> {
-        let get_admin_auth_req: AdminAuthResponse = RouterQueryMsg::GetAdminAuth {  }.query(querier, contract.code_hash.clone(), contract.address.clone())?; 
+        let get_admin_auth_req: AdminAuthResponse = RouterQueryMsg::GetAdminAuth {}.query(
+            querier,
+            contract.code_hash.clone(),
+            contract.address.clone(),
+        )?;
         let admin_auth = get_admin_auth_req.admin_auth;
-        let is_admin_req: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission { contract_address: contract.address.to_string(), admin_address: user.to_string() }.query(querier, admin_auth.code_hash, admin_auth.address)?;
+        let is_admin_req: ValidateAdminPermissionResponse =
+            AdminQueryMsg::ValidateAdminPermission {
+                contract_address: contract.address.to_string(),
+                admin_address: user.to_string(),
+            }
+            .query(querier, admin_auth.code_hash, admin_auth.address)?;
         match is_admin_req.error_msg {
             Some(err) => Err(StdError::generic_err(err)),
             None => Ok(()),
@@ -244,11 +288,12 @@ pub mod querier {
         address: HumanAddr,
         key: String,
     ) -> StdResult<Balance> {
-        let answer: AuthenticatedQueryResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
-            msg: to_binary(&Snip20QueryMsg::Balance { address, key })?,
-        }))?;
+        let answer: AuthenticatedQueryResponse =
+            querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+                contract_addr: contract.address.clone(),
+                callback_code_hash: contract.code_hash.clone(),
+                msg: to_binary(&Snip20QueryMsg::Balance { address, key })?,
+            }))?;
         match answer {
             AuthenticatedQueryResponse::Balance { amount } => Ok(Balance { amount }),
             AuthenticatedQueryResponse::ViewingKeyError { msg } => Err(StdError::generic_err(msg)),
@@ -258,4 +303,3 @@ pub mod querier {
         }
     }
 }
-
