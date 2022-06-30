@@ -1,10 +1,10 @@
 use crate::contract::{handle, init, query, QueryMsg};
-use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
+use cosmwasm_math_compat::Uint128;
 use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env},
 };
-use cosmwasm_math_compat::Uint128;
+use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
 
 #[test]
 fn update_config() {

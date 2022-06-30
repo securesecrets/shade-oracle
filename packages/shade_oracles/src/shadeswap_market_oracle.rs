@@ -1,6 +1,4 @@
-use crate::common::{
-    Contract,
-};
+use crate::common::Contract;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

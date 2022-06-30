@@ -1,13 +1,17 @@
+use super::{GasLog, TestableContract};
 use crate::constants::*;
+use cosmwasm_math_compat::Uint128;
 use secretcli::{cli_types::NetContract, secretcli::query_contract};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
-    band, band::proxy as proxy_band_oracle, common as common_oracles, common::Contract,
-    earn as earn_v1_oracle, lp as lp_oracle, router::{self, RegistryOperation, UpdateConfig}, index_oracle,
+    band,
+    band::proxy as proxy_band_oracle,
+    common as common_oracles,
+    common::Contract,
+    earn as earn_v1_oracle, index_oracle, lp as lp_oracle,
+    router::{self, RegistryOperation, UpdateConfig},
 };
-use cosmwasm_math_compat::Uint128;
-use super::{GasLog, TestableContract};
 
 #[derive(Serialize, Deserialize)]
 pub struct OracleRouterContract {
@@ -34,7 +38,7 @@ impl OracleRouterContract {
     }
 
     pub fn query_config(&self) -> Result<router::Config> {
-        query_contract(self.get_info(), router::QueryMsg::GetConfig { })
+        query_contract(self.get_info(), router::QueryMsg::GetConfig {})
     }
 
     pub fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
@@ -70,9 +74,9 @@ impl OracleRouterContract {
 
     pub fn update_oracle(
         &self,
-        sender_key: &str, 
-        symbol: &str, 
-        new_oracle: Contract
+        sender_key: &str,
+        symbol: &str,
+        new_oracle: Contract,
     ) -> Result<()> {
         println!("Updating oracle at {}.", symbol);
         match self.query_oracle(symbol.to_string()) {
@@ -84,7 +88,7 @@ impl OracleRouterContract {
                     },
                     Some(sender_key),
                 )?;
-            },
+            }
             Err(_) => {
                 self.update_registry(
                     RegistryOperation::Add {
@@ -93,7 +97,7 @@ impl OracleRouterContract {
                     },
                     Some(sender_key),
                 )?;
-            },
+            }
         }
         Ok(())
     }
@@ -327,15 +331,29 @@ impl IndexOracleContract {
     }
 
     pub fn query_basket(&self) -> Result<index_oracle::QueryAnswer> {
-        query_contract(self.get_info(), index_oracle::QueryMsg::Basket { })
+        query_contract(self.get_info(), index_oracle::QueryMsg::Basket {})
     }
 
-    pub fn update_config(&self, router: Option<Contract>, enabled: Option<bool>, only_band: Option<bool>,  sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = index_oracle::HandleMsg::UpdateConfig { router, enabled, only_band };
+    pub fn update_config(
+        &self,
+        router: Option<Contract>,
+        enabled: Option<bool>,
+        only_band: Option<bool>,
+        sender_key: Option<&str>,
+    ) -> Result<GasLog> {
+        let msg = index_oracle::HandleMsg::UpdateConfig {
+            router,
+            enabled,
+            only_band,
+        };
         self.wrap_handle(&msg, sender_key)
     }
 
-    pub fn mod_basket(&self, basket: Vec<(String, Uint128)>, sender_key: Option<&str>) -> Result<GasLog> {
+    pub fn mod_basket(
+        &self,
+        basket: Vec<(String, Uint128)>,
+        sender_key: Option<&str>,
+    ) -> Result<GasLog> {
         let msg = index_oracle::HandleMsg::ModBasket { basket };
         self.wrap_handle(&msg, sender_key)
     }

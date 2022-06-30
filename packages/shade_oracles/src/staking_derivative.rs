@@ -1,8 +1,8 @@
-use crate::{common::{Contract}};
+use crate::common::Contract;
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::HumanAddr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{HumanAddr};
 
 pub mod shade {
 
@@ -22,14 +22,14 @@ pub mod shade {
     #[serde(rename_all = "snake_case")]
     pub struct Config {
         pub supported_key: String,
-        pub underlying_symbol: String,        
+        pub underlying_symbol: String,
         pub router: Contract,
         pub staking_derivative: Contract,
         pub enabled: bool,
     }
 
     pub mod querier {
-        use cosmwasm_std::{Querier, StdResult, QueryRequest, WasmQuery, to_binary};
+        use cosmwasm_std::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
 
         use super::*;
 
@@ -88,7 +88,10 @@ pub mod shade {
             },
         }
         /// Returns the price of 1 derivative token in underlying token (6 decimals)
-        pub fn query_derivative_price(contract: &Contract, querier: &impl Querier) -> StdResult<Uint128> {
+        pub fn query_derivative_price(
+            contract: &Contract,
+            querier: &impl Querier,
+        ) -> StdResult<Uint128> {
             let resp: StakingDerivativeQueryAnswer =
                 querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
                     contract_addr: contract.address.clone(),

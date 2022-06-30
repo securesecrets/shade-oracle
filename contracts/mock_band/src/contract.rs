@@ -1,15 +1,12 @@
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{
+    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdResult, Storage,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
-use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
-    StdResult, Storage,
-};
-use cosmwasm_math_compat::Uint128;
+use shade_oracles::common::ResponseStatus;
 use shade_oracles::storage::Map;
-use shade_oracles::{
-    common::ResponseStatus,
-};
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 
@@ -32,14 +29,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             quote_symbol,
             rate,
             last_updated,
-        } => update_symbol_price(
-            deps,
-            env,
-            base_symbol,
-            quote_symbol,
-            rate,
-            last_updated,
-        ),
+        } => update_symbol_price(deps, env, base_symbol, quote_symbol, rate, last_updated),
     }
 }
 
@@ -51,17 +41,22 @@ pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
     rate: Uint128,
     last_updated: Option<u64>,
 ) -> StdResult<HandleResponse> {
-
-    MOCK_DATA.save(&mut deps.storage, (base_symbol, quote_symbol), &ReferenceData {
-        rate,
-        last_updated_base: last_updated.unwrap_or(0),
-        last_updated_quote: last_updated.unwrap_or(0),
-    })?;
+    MOCK_DATA.save(
+        &mut deps.storage,
+        (base_symbol, quote_symbol),
+        &ReferenceData {
+            rate,
+            last_updated_base: last_updated.unwrap_or(0),
+            last_updated_quote: last_updated.unwrap_or(0),
+        },
+    )?;
 
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateSymbolPrice { status: ResponseStatus::Success })?),
+        data: Some(to_binary(&HandleAnswer::UpdateSymbolPrice {
+            status: ResponseStatus::Success,
+        })?),
     })
 }
 

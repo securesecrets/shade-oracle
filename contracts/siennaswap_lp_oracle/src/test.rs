@@ -21,5 +21,8 @@ fn test_get_fair_lp_token_price_1() {
     let total_supply = 9856618006458893260;
 
     let fair_lp_token_price = get_fair_lp_token_price(price_info_1, price_info_2, total_supply, 18);
-    assert_eq!(Uint128::from(21872892226771994653562412u128), fair_lp_token_price.unwrap())
+    assert_eq!(
+        Uint128::from(21872892226771994653562412u128),
+        fair_lp_token_price.unwrap()
+    )
 }

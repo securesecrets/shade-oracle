@@ -1,6 +1,6 @@
-use crate::{common::{Contract, normalize_price, sqrt}};
-use cosmwasm_std::*;
+use crate::common::{normalize_price, sqrt, Contract};
 use cosmwasm_math_compat::{Uint128, Uint256};
+use cosmwasm_std::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -87,7 +87,8 @@ pub fn get_lp_token_spot_price(
     total_supply: u128,
     lp_token_decimals: u8,
 ) -> StdResult<Uint128> {
-    let normalized_reserve1 = Uint256::from_uint128(normalize_price(Uint128::from(a.reserve), a.decimals));
+    let normalized_reserve1 =
+        Uint256::from_uint128(normalize_price(Uint128::from(a.reserve), a.decimals));
     let normalized_reserve2 = Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
     let normalized_supply =
         Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
@@ -112,10 +113,12 @@ pub fn get_fair_lp_token_price(
     let normalized_reserve2 = Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
     let normalized_supply =
         Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
-    let r = sqrt(normalized_reserve1
-        .checked_mul(normalized_reserve2)?)?;
+    let r = sqrt(normalized_reserve1.checked_mul(normalized_reserve2)?)?;
     let safe_price_a = Uint256::from(a.price);
     let safe_price_b = Uint256::from(b.price);
     let p = sqrt(safe_price_a.checked_mul(safe_price_b)?)?;
-    Ok(r.checked_mul(p)?.checked_div(normalized_supply)?.checked_mul(Uint256::from(2u128))?.try_into()?)
+    Ok(r.checked_mul(p)?
+        .checked_div(normalized_supply)?
+        .checked_mul(Uint256::from(2u128))?
+        .try_into()?)
 }

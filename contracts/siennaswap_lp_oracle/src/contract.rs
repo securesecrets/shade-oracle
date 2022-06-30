@@ -1,7 +1,14 @@
+use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{
+    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+    QueryRequest, QueryResult, StdError, StdResult, Storage, WasmQuery,
+};
+use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
+    band::ReferenceData,
     common::querier::{query_prices, query_token_info, verify_admin},
-    common::{BLOCK_SIZE, Contract, ResponseStatus, throw_unsupported_symbol_error},
-    common::{HandleMsg, HandleAnswer, OraclePrice, QueryMsg, is_disabled},
+    common::{is_disabled, HandleAnswer, HandleMsg, OraclePrice, QueryMsg},
+    common::{throw_unsupported_symbol_error, Contract, ResponseStatus, BLOCK_SIZE},
     lp::{
         get_fair_lp_token_price,
         siennaswap::{Config, InitMsg, PairData},
@@ -10,14 +17,8 @@ use shade_oracles::{
     protocols::siennaswap::{
         SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
     },
-    storage::Item, band::ReferenceData,
+    storage::Item,
 };
-use cosmwasm_std::{
-    to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse,
-    Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, WasmQuery, Binary,
-};
-use cosmwasm_math_compat::Uint128;
-use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use std::cmp::min;
 
 const PAIR: Item<PairData> = Item::new("pair");
@@ -89,7 +90,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     CONFIG.save(&mut deps.storage, &config)?;
     PAIR.save(&mut deps.storage, &pair)?;
 
-
     Ok(InitResponse::default())
 }
 
@@ -120,7 +120,9 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig { status: ResponseStatus::Success })?),
+        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+            status: ResponseStatus::Success,
+        })?),
     })
 }
 
@@ -129,7 +131,9 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
         match msg {
             QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
             QueryMsg::GetPrice { key } => try_query_price(deps, key),
-            QueryMsg::GetPrices { .. } => Err(StdError::generic_err("GetPrices method not supported.")),
+            QueryMsg::GetPrices { .. } => {
+                Err(StdError::generic_err("GetPrices method not supported."))
+            }
         },
         BLOCK_SIZE,
     )
@@ -146,8 +150,12 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     if key != config.supported_key {
         return Err(throw_unsupported_symbol_error(key));
     }
-    
-    let prices = query_prices(&config.router, &deps.querier, vec![config.symbol_0, config.symbol_1])?;
+
+    let prices = query_prices(
+        &config.router,
+        &deps.querier,
+        vec![config.symbol_0, config.symbol_1],
+    )?;
     let (price0, price1) = (prices[0].clone(), prices[1].clone());
 
     let pair_info_response: SiennaSwapPairInfoResponse =
@@ -182,7 +190,10 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let data = ReferenceData {
         rate: Uint128::from(u128::from_be_bytes(price.unwrap().to_be_bytes())),
         last_updated_base: min(price0.data.last_updated_base, price1.data.last_updated_base),
-        last_updated_quote: min(price0.data.last_updated_quote, price1.data.last_updated_quote),
+        last_updated_quote: min(
+            price0.data.last_updated_quote,
+            price1.data.last_updated_quote,
+        ),
     };
     to_binary(&OraclePrice::new(key, data))
 }

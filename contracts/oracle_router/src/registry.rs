@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
-use crate::{state::*, contract::get_oracle};
-use shade_oracles::{
-    common::{Contract, OraclePrice, querier::{query_oracle_price, query_oracle_prices}},
-    router::*
-};
+use crate::{contract::get_oracle, state::*};
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
+};
+use shade_oracles::{
+    common::{
+        querier::{query_oracle_price, query_oracle_prices},
+        Contract, OraclePrice,
+    },
+    router::*,
 };
 
 pub fn update_registry<S: Storage, A: Api, Q: Querier>(
@@ -51,7 +54,7 @@ pub fn get_prices<S: Storage, A: Api, Q: Querier>(
     for current_key in keys {
         let resolved_key = resolve_alias(&deps.storage, current_key.clone())?;
         let oracle = get_oracle(&deps.storage, &resolved_key)?;
-        
+
         // Get the current vector of symbols at that oracle and add the current key to it
         map.entry(oracle).or_insert(vec![]).push(resolved_key);
     }
@@ -70,16 +73,15 @@ pub fn get_prices<S: Storage, A: Api, Q: Querier>(
     to_binary(&prices)
 }
 
-pub fn resolve_alias(
-    storage: &impl Storage,
-    alias: String,
-) -> StdResult<String> {
+pub fn resolve_alias(storage: &impl Storage, alias: String) -> StdResult<String> {
     match ALIASES.may_load(storage, alias.clone()) {
         Ok(key) => match key {
             Some(key) => Ok(key),
             None => Ok(alias),
         },
-        Err(_) => Err(StdError::generic_err("Failed to fetch from the ALIASES storage.")),
+        Err(_) => Err(StdError::generic_err(
+            "Failed to fetch from the ALIASES storage.",
+        )),
     }
 }
 
@@ -92,21 +94,20 @@ fn resolve_registry_operation(
         RegistryOperation::Remove { key } => {
             ORACLES.remove(storage, key);
             Ok(())
-        },
+        }
         RegistryOperation::Replace { oracle, key } => {
-            ORACLES.update(storage, key, |_| -> StdResult<_> {
-                Ok(oracle)
-            })?;
+            ORACLES.update(storage, key, |_| -> StdResult<_> { Ok(oracle) })?;
             Ok(())
         }
         RegistryOperation::Add { oracle, key } => {
             ORACLES.update(storage, key.clone(), |old_oracle| -> StdResult<_> {
                 match old_oracle {
-                    Some(_) => Err(StdError::generic_err(format!("An oracle already exists at the key - {}.", key))),
-                    None => {
-                        Ok(oracle)
-                    }
-                }            
+                    Some(_) => Err(StdError::generic_err(format!(
+                        "An oracle already exists at the key - {}.",
+                        key
+                    ))),
+                    None => Ok(oracle),
+                }
             })?;
             Ok(())
         }
@@ -118,6 +119,6 @@ fn resolve_registry_operation(
                 }
             })?;
             Ok(())
-        },
+        }
     }
 }

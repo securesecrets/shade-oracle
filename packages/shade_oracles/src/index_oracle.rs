@@ -1,9 +1,7 @@
-use crate::common::{
-    Contract, ResponseStatus,
-};
+use crate::common::{Contract, ResponseStatus};
+use cosmwasm_math_compat::Uint128;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_math_compat::Uint128;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -41,12 +39,8 @@ pub enum HandleMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum HandleAnswer {
-    ModBasket {
-        status: ResponseStatus,
-    },
-    UpdateConfig {
-        status: ResponseStatus,
-    },
+    ModBasket { status: ResponseStatus },
+    UpdateConfig { status: ResponseStatus },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -54,14 +48,10 @@ pub enum HandleAnswer {
 pub enum QueryMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
-    GetPrice {
-        key: String,
-    },
-    GetPrices {
-        keys: Vec<String>,
-    },
-    GetConfig { },
-    Basket { },
+    GetPrice { key: String },
+    GetPrices { keys: Vec<String> },
+    GetConfig {},
+    Basket {},
     //Constants { },
 }
 

@@ -1,41 +1,23 @@
-use cosmwasm_std::{
-    to_binary,
-    Api,
-    Binary,
-    Env,
-    Extern,
-    HandleResponse,
-    HumanAddr,
-    InitResponse,
-    Querier,
-    StdError,
-    StdResult,
-    Storage,
-};
 use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::{
+    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+    StdError, StdResult, Storage,
+};
+use fadroma::prelude::ContractLink;
 use schemars::JsonSchema;
 use secret_toolkit::utils::InitCallback;
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::Contract,
-    storage::Item,
     protocols::shadeswap::{
-        TokenType,
-        TokenPair,
-        ShadeSwapQueryMsg,
-        PairInfoResponse,
-        EstimatedPriceResponse,
+        EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenPair, TokenType,
     },
+    storage::Item,
 };
-use fadroma::prelude::ContractLink;
 
-pub fn pool_take_amount(
-    give_amount: Uint128,
-    give_pool: Uint128,
-    take_pool: Uint128,
-) -> Uint128 {
+pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
     Uint128::from(
-        take_pool.u128() - give_pool.u128() * take_pool.u128() / (give_pool + give_amount).u128()
+        take_pool.u128() - give_pool.u128() * take_pool.u128() / (give_pool + give_amount).u128(),
     )
 }
 
@@ -79,30 +61,33 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             token_b,
             amount_b,
         } => {
-            PAIR_INFO.save(&mut deps.storage, &PairInfoResponse {
-                liquidity_token: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                factory: ContractLink {
-                    address: HumanAddr("".to_string()),
-                    code_hash: "".to_string(),
-                },
-                pair: TokenPair(
-                    TokenType::CustomToken {
-                        contract_addr: token_a.address,
-                        token_code_hash: token_a.code_hash,
+            PAIR_INFO.save(
+                &mut deps.storage,
+                &PairInfoResponse {
+                    liquidity_token: ContractLink {
+                        address: HumanAddr("".to_string()),
+                        code_hash: "".to_string(),
                     },
-                    TokenType::CustomToken {
-                        contract_addr: token_b.address,
-                        token_code_hash: token_b.code_hash,
+                    factory: ContractLink {
+                        address: HumanAddr("".to_string()),
+                        code_hash: "".to_string(),
                     },
-                ),
-                amount_0: amount_a,
-                amount_1: amount_b,
-                total_liquidity: Uint128::zero(),
-                contract_version: 0,
-            })?;
+                    pair: TokenPair(
+                        TokenType::CustomToken {
+                            contract_addr: token_a.address,
+                            token_code_hash: token_a.code_hash,
+                        },
+                        TokenType::CustomToken {
+                            contract_addr: token_b.address,
+                            token_code_hash: token_b.code_hash,
+                        },
+                    ),
+                    amount_0: amount_a,
+                    amount_1: amount_b,
+                    total_liquidity: Uint128::zero(),
+                    contract_version: 0,
+                },
+            )?;
 
             Ok(HandleResponse::default())
         }
