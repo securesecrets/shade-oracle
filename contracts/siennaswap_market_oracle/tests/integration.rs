@@ -1,6 +1,6 @@
 use cosmwasm_math_compat::Uint128;
 use cosmwasm_std::{to_binary, HumanAddr};
-use fadroma::{
+use shade_ensemble::{
     ensemble::{ContractEnsemble, MockEnv},
     prelude::ContractLink,
 };

@@ -1,7 +1,7 @@
 use crate::band::ReferenceData;
 use cosmwasm_math_compat::{Uint128, Uint256};
 use cosmwasm_std::*;
-use fadroma::prelude::ContractLink;
+use shade_ensemble::prelude::ContractLink;
 use schemars::JsonSchema;
 use secret_toolkit::utils::Query;
 use serde::{Deserialize, Serialize};

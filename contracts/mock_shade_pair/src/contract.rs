@@ -3,7 +3,7 @@ use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
     StdError, StdResult, Storage,
 };
-use fadroma::prelude::ContractLink;
+use shade_ensemble::prelude::ContractLink;
 use schemars::JsonSchema;
 use secret_toolkit::utils::InitCallback;
 use serde::{Deserialize, Serialize};
