@@ -1,6 +1,6 @@
 use cosmwasm_math_compat::Uint128;
 use cosmwasm_std::HumanAddr;
-use fadroma::prelude::ContractLink;
+use shade_ensemble::prelude::ContractLink;
 use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
