@@ -33,4 +33,4 @@ schemars = "0.7"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 snafu = { version = "0.6.3" }
 shade-oracles = { path = "../../packages/shade_oracles" }
-shade-ensemble = { branch = "develop", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }
+shade-ensemble = { commit = "4b514b1", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }
