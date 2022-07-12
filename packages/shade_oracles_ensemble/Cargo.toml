@@ -40,4 +40,4 @@ snip20-reference-impl = { git = "https://github.com/scrtlabs/snip20-reference-im
 admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
 
 shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
-shade-ensemble = { branch = "develop", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }
+shade-ensemble = { commit = "4b514b1", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }
