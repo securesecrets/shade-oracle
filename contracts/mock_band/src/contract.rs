@@ -1,6 +1,6 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, Response, InitResponse, Querier, StdResult, Storage,
+    to_binary, Api, Binary, Env, Deps, Response,  Querier, StdResult, Storage,
 };
 
 use shade_oracles::band::{HandleAnswer, ExecuteMsg, InstantiateMsg, ReferenceData};

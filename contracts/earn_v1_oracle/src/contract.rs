@@ -8,8 +8,8 @@ use shade_oracles::{
     protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
 };
 use cosmwasm_std::{
-    to_binary, Api, CanonicalAddr, Env, Extern, Response, Addr, InitResponse,
-    Querier, StdResult<QueryResponse>, StdError, StdResult, Storage, Uint128,
+    to_binary, Api, CanonicalAddr, Env, Deps, Response, Addr, InitResponse,
+    Querier, StdError, StdResult, Storage, Uint128,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{

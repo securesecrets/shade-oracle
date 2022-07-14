@@ -1,6 +1,6 @@
 use cosmwasm_std::{Uint128, Uint512};
 use cosmwasm_std::{
-    to_binary, Api, Env, Extern, Response, InitResponse, Querier, StdResult<QueryResponse>, StdError,
+    to_binary, Api, Env, Deps, Response, Querier, StdError,
     StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};

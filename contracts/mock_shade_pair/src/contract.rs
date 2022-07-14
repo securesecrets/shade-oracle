@@ -1,7 +1,7 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, Response, Addr, InitResponse, Querier,
-    StdError, StdResult, Storage,
+    to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
+   StdError, StdResult, Storage,
 };
 use shade_ensemble::prelude::ContractLink;
 use cosmwasm_schema::cw_serde;

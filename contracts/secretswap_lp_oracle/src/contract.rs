@@ -6,8 +6,8 @@ use shade_oracles::{
         AssetInfo, SecretSwapPairInfo, SecretSwapPairQueryMsg, SecretSwapPoolResponse,
     },
     scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, Response, Addr, InitResponse,
-        Querier, QueryRequest, StdResult<QueryResponse>, StdError, StdResult, Storage, Uint128, WasmQuery,
+        to_binary, Api, CanonicalAddr, Env, Deps, Response, Addr, InitResponse,
+        Querier, QueryRequest, StdError, StdResult, Storage, Uint128, WasmQuery,
         BLOCK_SIZE,
     },
     secret_toolkit::utils::{pad_handle_result, pad_query_result},

@@ -1,7 +1,7 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, Response, Addr, InitResponse, Querier,
-    QueryRequest, StdResult<QueryResponse>, StdError, StdResult, Storage, WasmQuery,
+    to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
+    QueryRequest, StdError, StdResult, Storage, WasmQuery,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{

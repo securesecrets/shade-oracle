@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{contract::get_oracle, state::*};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, Response, Querier, StdError, StdResult, Storage,
+    to_binary, Api, Binary, Env, Deps, Response, Querier, StdError, StdResult, Storage,
 };
 use shade_oracles::{
     common::{
