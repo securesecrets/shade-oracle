@@ -17,7 +17,7 @@ scrt = ["core"]
 # for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
 # in order for the build to work )
 core = ["storage"]
-storage = ["secret-storage-plus"]
+storage = ["shade-protocol/storage_plus"]
 # multi-test = ["secret-multi-test"]
 
 [dependencies]
@@ -29,11 +29,8 @@ schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 thiserror = "1.0"
 
-secret-toolkit = { version = "0.2", features = ["permit"] }
-shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
-secret-storage-plus = { git = "https://github.com/securesecrets/secret-storage-plus", tag = "v1.0.0", optional = true }
-shade-ensemble = { commit = "4b514b1", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20"] }
 
-# shade-protocol = { git = "https://github.com/securesecrets/shade?dev" }
-# Switch to the bottom when building on Linux. For some reason, needs the one above for it to work on Mac
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "dev" }
+secret-toolkit = { version = "0.2", features = ["permit"] }
+shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor" }
+shade-ensemble = { commit = "4b514b1", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }

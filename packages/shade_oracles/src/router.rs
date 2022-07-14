@@ -1,8 +1,7 @@
 use crate::common::{Contract, ResponseStatus};
 use cosmwasm_std::*;
 use cosmwasm_schema::cw_serde;
-use secret_toolkit::utils::Query;
-use serde::{Deserialize, Serialize};
+use shade_protocol::utils::Query;
 
 #[cw_serde]
 pub struct InstantiateMsg {
