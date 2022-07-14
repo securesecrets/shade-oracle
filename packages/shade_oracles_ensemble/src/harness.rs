@@ -1,4 +1,4 @@
-use cosmwasm_std::{from_binary, Binary, Env, Response, InitResponse, StdResult};
+use cosmwasm_std::{from_binary, Binary, Env, Response,  StdResult};
 use shade_ensemble::ensemble::{ContractHarness, MockDeps};
 
 #[macro_export]

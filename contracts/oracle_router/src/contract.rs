@@ -3,8 +3,8 @@ use crate::{
     state::*,
 };
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, Response, Addr, InitResponse, Querier,
-    StdError, StdResult, Storage,
+    to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
+   StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};

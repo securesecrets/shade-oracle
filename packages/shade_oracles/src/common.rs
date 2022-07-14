@@ -93,7 +93,7 @@ pub fn get_precision(factor: u8) -> Uint128 {
 }
 
 pub fn throw_unsupported_symbol_error(key: String) -> StdError {
-    StdError::generic_err(format!("{} is not supported as a key.", key))
+   StdError::generic_err(format!("{} is not supported as a key.", key))
 }
 
 pub fn normalize_price(amount: Uint128, decimals: u8) -> Uint128 {

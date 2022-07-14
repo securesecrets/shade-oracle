@@ -1,7 +1,7 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Env, Extern, Response, Addr, InitResponse, Querier, StdResult<QueryResponse>,
-    StdError, StdResult, Storage,
+    to_binary, Api, Env, Deps, Response, Addr,  Querier, 
+   StdError, StdResult, Storage,
 };
 use secret_toolkit::{
     snip20::TokenInfo,

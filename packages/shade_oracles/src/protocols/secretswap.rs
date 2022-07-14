@@ -1,7 +1,7 @@
 use core::fmt;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Api, CanonicalAddr, Extern, Addr, Querier, StdResult, Storage, Uint128};
+use cosmwasm_std::{CanonicalAddr, Deps, Addr, StdResult, Uint128};
 
 
 use crate::common::Contract;

@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, Response, InitResponse, Querier, StdResult<QueryResponse>,
-    StdError, StdResult, Storage,
+    to_binary, Api, Binary, Env, Deps, Response,  Querier, 
+   StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
