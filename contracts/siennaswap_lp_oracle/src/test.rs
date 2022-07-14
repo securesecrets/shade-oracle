@@ -1,4 +1,4 @@
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::Uint128;
 use shade_oracles::lp::{get_fair_lp_token_price, FairLpPriceInfo};
 
 #[test]

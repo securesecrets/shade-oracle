@@ -1,15 +1,13 @@
 use crate::common::{Contract, ResponseStatus};
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Uint128;
 use cosmwasm_std::{Querier, StdResult};
-use schemars::JsonSchema;
 use secret_toolkit::utils::Query;
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InitMsg {}
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum HandleMsg {
     UpdateSymbolPrice {
         base_symbol: String,
@@ -19,14 +17,12 @@ pub enum HandleMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum HandleAnswer {
     UpdateSymbolPrice { status: ResponseStatus },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum BandQuery {
     GetReferenceData {
         base_symbol: String,
@@ -38,14 +34,14 @@ pub enum BandQuery {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct ReferenceData {
     pub rate: Uint128,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct ReferenceDataBulk {
     pub data: Vec<ReferenceData>,
 }
@@ -85,14 +81,14 @@ pub mod proxy {
 
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[cw_serde]
     pub struct InitMsg {
         pub admin_auth: Contract,
         pub band: Contract,
         pub quote_symbol: String,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[cw_serde]
     pub struct Config {
         pub admin_auth: Contract,
         pub band: Contract,
@@ -101,8 +97,7 @@ pub mod proxy {
     }
 
     /// Every HandleMsg for each specific oracle type should include this
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub enum HandleMsg {
         UpdateConfig {
             enabled: Option<bool>,
@@ -112,8 +107,7 @@ pub mod proxy {
         },
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub enum HandleAnswer {
         UpdateConfig { status: ResponseStatus },
     }

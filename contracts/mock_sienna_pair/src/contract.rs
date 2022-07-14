@@ -1,10 +1,10 @@
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+    to_binary, Api, Binary, Env, Extern, HandleResponse, Addr, InitResponse, Querier,
     StdError, StdResult, Storage,
 };
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
-use schemars::JsonSchema;
+use cosmwasm_schema::cw_serde;
 use secret_toolkit::utils::InitCallback;
 use serde::{Deserialize, Serialize};
 use shade_oracles::{
@@ -22,7 +22,7 @@ pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uin
     )
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InitMsg {}
 
 impl InitCallback for InitMsg {
@@ -47,8 +47,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum HandleMsg {
     MockPool {
         token_a: Contract,
@@ -72,11 +71,11 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
         } => {
             let pair_info = PairInfo {
                 liquidity_token: Contract {
-                    address: HumanAddr("".to_string()),
+                    address: Addr("".to_string()),
                     code_hash: "".to_string(),
                 },
                 factory: Contract {
-                    address: HumanAddr("".to_string()),
+                    address: Addr("".to_string()),
                     code_hash: "".to_string(),
                 },
                 pair: Pair {

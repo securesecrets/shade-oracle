@@ -1,12 +1,10 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_binary, Querier, QueryRequest, StdError, StdResult, Uint128, WasmQuery};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+
 
 use crate::common::Contract;
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum QueryMsg {
     GetConfig { r#type: ConfigType },
     GetDepositForShares { amount: Uint128 },
@@ -16,33 +14,25 @@ pub enum QueryMsg {
     EstimateReinvestReward { timestamp: Option<Uint128> },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum ConfigType {
     General,
     Specific,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct DeveloperInfo {
     pub address: String,
     pub fee: Uint128,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct TreasuryInfo {
     pub address: String,
     pub fee: Uint128,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum QueryAnswer {
     DepositForShares { amount: Uint128 },
     SharesForDeposit { amount: Uint128 },
@@ -51,9 +41,7 @@ pub enum QueryAnswer {
     EstimatedReinvestReward { amount: Uint128 },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct GenericConfig {
     pub min_tokens_to_reinvest: Uint128,
     pub treasury_info: TreasuryInfo,
@@ -72,7 +60,7 @@ pub fn query_deposit_for_shares(
 ) -> StdResult<Uint128> {
     let result: QueryAnswer = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: contract.address.clone(),
-        callback_code_hash: contract.code_hash.clone(),
+        code_hash: contract.code_hash.clone(),
         msg: to_binary(&QueryMsg::GetDepositForShares { amount })?,
     }))?;
 
@@ -90,7 +78,7 @@ pub fn query_generic_config(
 ) -> StdResult<GenericConfig> {
     let config_response: GenericConfig = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: contract.address.clone(),
-        callback_code_hash: contract.code_hash.clone(),
+        code_hash: contract.code_hash.clone(),
         msg: to_binary(&QueryMsg::GetConfig {
             r#type: ConfigType::General,
         })?,

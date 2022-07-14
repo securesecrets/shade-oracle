@@ -1,18 +1,16 @@
 use crate::common::{Contract, ResponseStatus};
-use cosmwasm_math_compat::Uint128;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Uint128;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+
+#[cw_serde]
 pub struct Config {
     pub router: Contract,
     pub only_band: bool,
     pub enabled: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct InitMsg {
     pub router: Contract,
     pub symbol: String,
@@ -21,8 +19,7 @@ pub struct InitMsg {
     pub only_band: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum HandleMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
@@ -36,15 +33,13 @@ pub enum HandleMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum HandleAnswer {
     ModBasket { status: ResponseStatus },
     UpdateConfig { status: ResponseStatus },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
@@ -55,8 +50,7 @@ pub enum QueryMsg {
     //Constants { },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryAnswer {
     Basket {
         basket: Vec<(String, Uint128, Uint128)>,

@@ -1,4 +1,4 @@
-use cosmwasm_std::HumanAddr;
+use cosmwasm_std::Addr;
 use shade_ensemble::{
     core::ContractLink,
     ensemble::{ContractEnsemble, MockEnv},
@@ -12,10 +12,10 @@ use shade_oracles::{
 use crate::harness::{AdminAuth, MockBand, OracleRouter, ProxyBandOracle};
 
 pub struct OracleEnsembleCore {
-    pub band: ContractLink<HumanAddr>,
-    pub band_proxy: ContractLink<HumanAddr>,
-    pub router: ContractLink<HumanAddr>,
-    pub admin_auth: ContractLink<HumanAddr>,
+    pub band: ContractLink<Addr>,
+    pub band_proxy: ContractLink<Addr>,
+    pub router: ContractLink<Addr>,
+    pub admin_auth: ContractLink<Addr>,
     pub ensemble: ContractEnsemble,
 }
 
@@ -32,7 +32,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("admin_auth".into()),
+                    address: Addr("admin_auth".into()),
                     code_hash: reg_admin_auth.code_hash,
                 },
             ),
@@ -47,7 +47,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("band".into()),
+                    address: Addr("band".into()),
                     code_hash: reg_mock_band.code_hash.clone(),
                 },
             ),
@@ -69,7 +69,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("band_proxy".into()),
+                    address: Addr("band_proxy".into()),
                     code_hash: reg_mock_band.code_hash,
                 },
             ),
@@ -92,7 +92,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("router".into()),
+                    address: Addr("router".into()),
                     code_hash: reg_router.code_hash,
                 },
             ),

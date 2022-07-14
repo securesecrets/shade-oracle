@@ -8,7 +8,7 @@ use shade_oracles::{
     protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
 };
 use cosmwasm_std::{
-    to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+    to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, Addr, InitResponse,
     Querier, QueryResult, StdError, StdResult, Storage, Uint128,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
@@ -51,7 +51,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
-        owner: deps.api.canonical_address(&HumanAddr(msg.owner))?,
+        owner: deps.api.canonical_address(&Addr(msg.owner))?,
         deposit_token_oracle: underlying_oracle,
         deposit_token,
         share_token,
@@ -96,7 +96,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     }
 
     if let Some(owner) = owner {
-        state.owner = deps.api.canonical_address(&HumanAddr(owner))?;
+        state.owner = deps.api.canonical_address(&Addr(owner))?;
     }
 
     if let Some(deposit_token_oracle) = deposit_token_oracle {

@@ -1,9 +1,8 @@
+use cosmwasm_schema::cw_serde;
 use crate::common::Contract;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+
+#[cw_serde]
 pub struct InitMsg {
     pub owner: String,
     pub deposit_token_oracle: Contract,
@@ -11,8 +10,7 @@ pub struct InitMsg {
 }
 
 // We define a custom struct for each query response
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ConfigResponse {
     pub owner: String,
     pub deposit_token_oracle: Contract,

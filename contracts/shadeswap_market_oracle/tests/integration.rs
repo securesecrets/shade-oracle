@@ -1,5 +1,5 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{to_binary, HumanAddr};
+use cosmwasm_std::Uint128;
+use cosmwasm_std::{to_binary, Addr};
 use shade_ensemble::{
     ensemble::{ContractEnsemble, MockEnv},
     prelude::ContractLink,
@@ -74,7 +74,7 @@ fn basic_market_test(
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("primary_token".into()),
+                    address: Addr("primary_token".into()),
                     code_hash: reg_snip20.code_hash.clone(),
                 },
             ),
@@ -97,7 +97,7 @@ fn basic_market_test(
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("base_token".into()),
+                    address: Addr("base_token".into()),
                     code_hash: reg_snip20.code_hash.clone(),
                 },
             ),
@@ -112,7 +112,7 @@ fn basic_market_test(
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("shade_pair".into()),
+                    address: Addr("shade_pair".into()),
                     code_hash: reg_shade_pair.code_hash.clone(),
                 },
             ),
@@ -157,7 +157,7 @@ fn basic_market_test(
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("market".into()),
+                    address: Addr("market".into()),
                     code_hash: reg_market_oracle.code_hash.clone(),
                 },
             ),

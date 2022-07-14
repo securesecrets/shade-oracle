@@ -1,9 +1,8 @@
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::Uint128;
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdResult, Storage,
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+
 use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
 use shade_oracles::common::ResponseStatus;
 use shade_oracles::storage::Map;
@@ -60,8 +59,7 @@ pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryMsg {
     GetReferenceData {
         base_symbol: String,

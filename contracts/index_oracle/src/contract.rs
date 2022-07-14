@@ -1,4 +1,4 @@
-use cosmwasm_math_compat::{Uint128, Uint512};
+use cosmwasm_std::{Uint128, Uint512};
 use cosmwasm_std::{
     to_binary, Api, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult, StdError,
     StdResult, Storage,

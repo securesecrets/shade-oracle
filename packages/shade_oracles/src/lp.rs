@@ -1,8 +1,7 @@
 use crate::common::{normalize_price, sqrt, Contract};
-use cosmwasm_math_compat::{Uint128, Uint256};
+use cosmwasm_std::{Uint128, Uint256};
 use cosmwasm_std::*;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
 
 pub mod secretswap {
     use super::*;
@@ -12,8 +11,7 @@ pub mod secretswap {
     ///
     /// Factory - contract that mints the LP token for asset 0 & asset 1
     /// (SecretSwap - Pair | SiennaSwap - Exchange)
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub struct InitMsg {
         pub supported_key: String,
         pub symbol_0: String,
@@ -23,8 +21,7 @@ pub mod secretswap {
     }
 
     // We define a custom struct for each query response
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub struct Config {
         pub pair: Contract,
         pub supported_key: String,
@@ -43,8 +40,7 @@ pub mod siennaswap {
     ///
     /// Factory - contract that mints the LP token for asset 1 & asset 2
     /// (SecretSwap - Pair | SiennaSwap - Exchange)
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub struct InitMsg {
         pub supported_key: String,
         pub symbol_0: String,
@@ -54,8 +50,7 @@ pub mod siennaswap {
     }
 
     // We define a custom struct for each query response
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub struct Config {
         pub supported_key: String,
         pub symbol_0: String,
@@ -65,8 +60,7 @@ pub mod siennaswap {
         pub enabled: bool,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub struct PairData {
         pub lp_token: Contract,
         pub token0_decimals: u8,
