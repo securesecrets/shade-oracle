@@ -18,6 +18,8 @@ backtraces = ["shade-oracles/backtraces"]
 
 [dependencies]
 
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
+
 
 
