@@ -20,10 +20,9 @@ crate-type = ["cdylib", "rlib"]
 default = []
 
 [dependencies]
-schemars = "0.7"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+
 snafu = { version = "0.6.3" }
-shade-oracles = { path = "../../packages/shade_oracles" }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
 shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
 cosmwasm-std = { version = "0.10", package = "secret-cosmwasm-std" }
 secret-toolkit = { version = "0.2" }

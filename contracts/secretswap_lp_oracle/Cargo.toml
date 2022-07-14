@@ -17,9 +17,8 @@ default = []
 backtraces = ["shade-oracles/backtraces"]
 
 [dependencies]
-schemars = "0.7"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+
 snafu = { version = "0.6.3" }
 
-shade-oracles = { path = "../../packages/shade_oracles" }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
 
