@@ -30,5 +30,7 @@ cosmwasm-schema = "0.10.1"
 secret-toolkit = { version = "0.2" }
 
 snafu = { version = "0.6.3" }
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
+
 shade-ensemble = { commit = "4b514b1", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }

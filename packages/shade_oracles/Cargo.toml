@@ -12,13 +12,17 @@ default = ["storage"]
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
+# for packages that won't be built
+scrt = ["core"]
+# for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
+# in order for the build to work )
 core = ["storage"]
 storage = ["secret-storage-plus"]
 # multi-test = ["secret-multi-test"]
 
 [dependencies]
-# Core
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+# Core re-exports (no need to re-export cosmwasm-std because that has to be included in contracts for them to build)
 cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", commit = "1e05e7e" }
 schemars = "0.8.1"

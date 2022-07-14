@@ -51,43 +51,6 @@ impl OraclePrice {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct UnvalidatedContract {
-    pub address: String,
-    pub code_hash: String,
-}
-
-impl UnvalidatedContract {
-    pub fn validate(self, deps: Deps) -> StdResult<Contract> {
-        let valid_addr = deps.api.addr_validate(self.address.as_str())?;
-        Ok(Contract::new(valid_addr, self.code_hash.clone()))
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct Contract {
-    pub address: Addr,
-    pub code_hash: String,
-}
-
-impl Contract {
-    pub fn new(address: Addr, code_hash: String) -> Self {
-        Contract {
-            address,
-            code_hash,
-        }
-    }
-
-    pub fn new_link(link: ContractLink<Addr>) -> Self {
-        Contract {
-            address: link.address,
-            code_hash: link.code_hash,
-        }
-    }
-}
-
 pub fn get_precision(factor: u8) -> Uint128 {
     Uint128::from(10u128.pow(factor.into()))
 }
