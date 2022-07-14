@@ -26,11 +26,11 @@ impl Query for QueryMsg {
 }
 
 #[cw_serde]
-pub enum HandleMsg {
+pub enum ExecuteMsg {
     UpdateConfig { enabled: bool },
 }
 
-/// Default HandleAnswer for oracles if only HandleMsg implemented is UpdateConfig.
+/// Default HandleAnswer for oracles if only ExecuteMsg implemented is UpdateConfig.
 #[cw_serde]
 pub enum HandleAnswer {
     UpdateConfig { status: ResponseStatus },

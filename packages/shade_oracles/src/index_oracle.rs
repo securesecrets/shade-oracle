@@ -11,7 +11,7 @@ pub struct Config {
 }
 
 #[cw_serde]
-pub struct InitMsg {
+pub struct InstantiateMsg {
     pub router: Contract,
     pub symbol: String,
     pub basket: Vec<(String, Uint128)>, //HashMap<String, Uint128>,
@@ -20,7 +20,7 @@ pub struct InitMsg {
 }
 
 #[cw_serde]
-pub enum HandleMsg {
+pub enum ExecuteMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
     ModBasket {

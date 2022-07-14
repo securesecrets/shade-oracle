@@ -1,22 +1,22 @@
-use crate::contract::{handle, init, query, QueryMsg};
+use crate::contract::{execute, instantiate, query, QueryMsg};
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env},
 };
-use shade_oracles::band::{HandleMsg, InitMsg, ReferenceData};
+use shade_oracles::band::{ExecuteMsg, InstantiateMsg, ReferenceData};
 
 #[test]
 fn update_config() {
     let mut deps = mock_dependencies(20, &[]);
     let mock_coins = coins(1000, "earth");
     let env = mock_env("creator", &mock_coins);
-    let msg = InitMsg {};
-    let _res = init(&mut deps, env, msg).unwrap();
+    let msg = InstantiateMsg {};
+    let _res = instantiate(&mut deps, env, msg).unwrap();
 
     let time = 1000000u64;
     // update owner
-    let msg = HandleMsg::UpdateSymbolPrice {
+    let msg = ExecuteMsg::UpdateSymbolPrice {
         rate: Uint128::from(3_179_000_000_000_000_000u128),
         base_symbol: "ETH".to_string(),
         quote_symbol: "USD".to_string(),
@@ -24,7 +24,7 @@ fn update_config() {
     };
 
     let env = mock_env("owner0000", &mock_coins);
-    let res = handle(&mut deps, env, msg).unwrap();
+    let res = execute(&mut deps, env, msg).unwrap();
     assert_eq!(0, res.messages.len());
 
     // it worked, let's query the state

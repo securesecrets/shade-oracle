@@ -3,7 +3,7 @@ use crate::{
     state::*,
 };
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, Addr, InitResponse, Querier,
+    to_binary, Api, Binary, Env, Extern, Response, Addr, InitResponse, Querier,
     StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
@@ -13,10 +13,10 @@ use shade_oracles::{
     router::*,
 };
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    deps: DepsMut,
     env: Env,
-    msg: InitMsg,
+    msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     let config = Config {
         admin_auth: msg.admin_auth,
@@ -33,15 +33,16 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     is_admin(deps, env.message.sender.clone())?;
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig { config } => {
+            ExecuteMsg::UpdateConfig { config } => {
                 CONFIG.update(&mut deps.storage, |mut new_config| -> StdResult<_> {
                     new_config.admin_auth = config.admin_auth.unwrap_or(new_config.admin_auth);
                     new_config.default_oracle =
@@ -51,10 +52,10 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                         config.quote_symbol.unwrap_or(new_config.quote_symbol);
                     Ok(new_config)
                 })?;
-                Ok(HandleResponse::default())
+                Ok(Response::default())
             }
-            HandleMsg::UpdateRegistry { operation } => update_registry(deps, env, operation),
-            HandleMsg::BatchUpdateRegistry { operations } => {
+            ExecuteMsg::UpdateRegistry { operation } => update_registry(deps, env, operation),
+            ExecuteMsg::BatchUpdateRegistry { operations } => {
                 batch_update_registry(deps, env, operations)
             }
         },
@@ -62,8 +63,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     )
 }
 
-fn is_admin<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn is_admin(
+    deps: Deps,
     user: Addr,
 ) -> StdResult<()> {
     let config = CONFIG.load(&deps.storage)?;
@@ -82,8 +83,8 @@ fn is_admin<S: Storage, A: Api, Q: Querier>(
     }
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn query(
+    deps: Deps,
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     pad_query_result(

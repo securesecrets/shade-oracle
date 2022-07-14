@@ -6,8 +6,8 @@ use shade_oracles::{
         AssetInfo, SecretSwapPairInfo, SecretSwapPairQueryMsg, SecretSwapPoolResponse,
     },
     scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, Addr, InitResponse,
-        Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
+        to_binary, Api, CanonicalAddr, Env, Extern, Response, Addr, InitResponse,
+        Querier, QueryRequest, StdResult<QueryResponse>, StdError, StdResult, Storage, Uint128, WasmQuery,
         BLOCK_SIZE,
     },
     secret_toolkit::utils::{pad_handle_result, pad_query_result},
@@ -17,7 +17,7 @@ use shade_oracles::{
     common::{query_price, PriceResponse, QueryMsg},
     lp::{
         get_fair_lp_token_price,
-        secretswap::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
+        secretswap::{ConfigResponse, HandleAnswer, ExecuteMsg, InstantiateMsg},
         FairLpPriceInfo,
     },
     router::querier::query_oracle,
@@ -43,10 +43,11 @@ impl SingletonStorable for State {
     }
 }
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     let router: CanonicalContract = CanonicalContract {
         address: deps.api.canonical_address(&Addr(msg.router.address))?,
@@ -132,14 +133,15 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 }
 
 /* CONFIG UPDATE NEEDS TO BE FIXED */
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig {
+            ExecuteMsg::UpdateConfig {
                 owner,
                 symbol_0,
                 symbol_1,
@@ -151,15 +153,15 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+fn try_update_config(
+    deps: DepsMut,
     env: Env,
     owner: Option<String>,
     symbol_0: Option<String>,
     symbol_1: Option<String>,
     router: Option<Contract>,
     pair: Option<Contract>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     let mut state: State = State::new_json(&deps.storage)?;
 
     if deps.api.canonical_address(&env.message.sender)? != state.owner {
@@ -196,7 +198,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 
     state.save_json(&mut deps.storage)?;
 
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateConfig {
@@ -205,7 +207,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
@@ -215,8 +217,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     )
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_config(
+    deps: Deps,
 ) -> StdResult<ConfigResponse> {
     let state: State = State::new_json(&deps.storage)?;
 
@@ -229,8 +231,8 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_price(
+    deps: Deps,
 ) -> StdResult<PriceResponse> {
     let state: State = State::new_json(&deps.storage)?;
 

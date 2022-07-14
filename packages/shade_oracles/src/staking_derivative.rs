@@ -10,7 +10,7 @@ pub mod shade {
     use super::*;
 
     #[cw_serde]
-    pub struct InitMsg {
+    pub struct InstantiateMsg {
         pub supported_key: String,
         pub underlying_symbol: String,
         pub staking_derivative: Contract,

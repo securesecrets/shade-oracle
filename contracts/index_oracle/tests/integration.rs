@@ -47,7 +47,7 @@ fn basic_index_test(
     // Configure BAND symbols on router
     ensemble
         .execute(
-            &router::HandleMsg::BatchUpdateRegistry { operations },
+            &router::ExecuteMsg::BatchUpdateRegistry { operations },
             MockEnv::new("admin", router.clone()),
         )
         .unwrap();
@@ -56,7 +56,7 @@ fn basic_index_test(
     for (sym, price) in prices.clone() {
         ensemble
             .execute(
-                &band::HandleMsg::UpdateSymbolPrice {
+                &band::ExecuteMsg::UpdateSymbolPrice {
                     base_symbol: sym,
                     quote_symbol: "USD".to_string(),
                     rate: price,
@@ -70,7 +70,7 @@ fn basic_index_test(
     let index_oracle = ensemble
         .instantiate(
             reg_index_oracle.id,
-            &index_oracle::InitMsg {
+            &index_oracle::InstantiateMsg {
                 router: Contract {
                     address: router.address.clone(),
                     code_hash: router.code_hash.clone(),
@@ -94,7 +94,7 @@ fn basic_index_test(
     // Configure router w/ index oracle
     ensemble
         .execute(
-            &router::HandleMsg::UpdateRegistry {
+            &router::ExecuteMsg::UpdateRegistry {
                 operation: router::RegistryOperation::Add {
                     oracle: Contract {
                         address: index_oracle.address.clone(),
@@ -266,7 +266,7 @@ fn mod_index_test(
     // Configure BAND symbols on router
     ensemble
         .execute(
-            &router::HandleMsg::BatchUpdateRegistry { operations },
+            &router::ExecuteMsg::BatchUpdateRegistry { operations },
             MockEnv::new("admin", router.clone()),
         )
         .unwrap();
@@ -275,7 +275,7 @@ fn mod_index_test(
     for (sym, price) in prices.clone() {
         ensemble
             .execute(
-                &band::HandleMsg::UpdateSymbolPrice {
+                &band::ExecuteMsg::UpdateSymbolPrice {
                     base_symbol: sym,
                     quote_symbol: "USD".to_string(),
                     rate: price,
@@ -289,7 +289,7 @@ fn mod_index_test(
     let index_oracle = ensemble
         .instantiate(
             reg_index_oracle.id,
-            &index_oracle::InitMsg {
+            &index_oracle::InstantiateMsg {
                 router: Contract {
                     address: router.address.clone(),
                     code_hash: router.code_hash.clone(),
@@ -313,7 +313,7 @@ fn mod_index_test(
     // Configure router w/ index oracle
     ensemble
         .execute(
-            &router::HandleMsg::UpdateRegistry {
+            &router::ExecuteMsg::UpdateRegistry {
                 operation: router::RegistryOperation::Add {
                     oracle: Contract {
                         address: index_oracle.address.clone(),
@@ -364,7 +364,7 @@ fn mod_index_test(
     for (sym, price) in new_prices.clone() {
         ensemble
             .execute(
-                &band::HandleMsg::UpdateSymbolPrice {
+                &band::ExecuteMsg::UpdateSymbolPrice {
                     base_symbol: sym,
                     quote_symbol: "USD".to_string(),
                     rate: price,
@@ -406,7 +406,7 @@ fn mod_index_test(
     // Update basket
     ensemble
         .execute(
-            &index_oracle::HandleMsg::ModBasket { basket: mod_basket },
+            &index_oracle::ExecuteMsg::ModBasket { basket: mod_basket },
             MockEnv::new("admin", index_oracle.clone()),
         )
         .unwrap();

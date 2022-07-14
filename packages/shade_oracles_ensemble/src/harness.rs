@@ -1,21 +1,21 @@
-use cosmwasm_std::{from_binary, Binary, Env, HandleResponse, InitResponse, StdResult};
+use cosmwasm_std::{from_binary, Binary, Env, Response, InitResponse, StdResult};
 use shade_ensemble::ensemble::{ContractHarness, MockDeps};
 
 #[macro_export]
 macro_rules! implement_harness {
     ($x:ident, $s:ident) => {
         impl ContractHarness for $x {
-            fn init(&self, deps: &mut MockDeps, env: Env, msg: Binary) -> StdResult<InitResponse> {
-                $s::contract::init(deps, env, from_binary(&msg)?)
+            fn instantiate(&self, deps: &mut MockDeps, env: Env, msg: Binary) -> StdResult<InitResponse> {
+                $s::contract::instantiate(deps, env, from_binary(&msg)?)
             }
 
-            fn handle(
+            fn execute(
                 &self,
                 deps: &mut MockDeps,
                 env: Env,
                 msg: Binary,
-            ) -> StdResult<HandleResponse> {
-                $s::contract::handle(deps, env, from_binary(&msg)?)
+            ) -> StdResult<Response> {
+                $s::contract::execute(deps, env, from_binary(&msg)?)
             }
 
             fn query(&self, deps: &MockDeps, msg: Binary) -> StdResult<Binary> {

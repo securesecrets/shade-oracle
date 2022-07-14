@@ -1,29 +1,31 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdResult, Storage,
+    to_binary, Api, Binary, Env, Extern, Response, InitResponse, Querier, StdResult, Storage,
 };
 
-use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
+use shade_oracles::band::{HandleAnswer, ExecuteMsg, InstantiateMsg, ReferenceData};
 use shade_oracles::common::ResponseStatus;
 use shade_oracles::storage::Map;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    _deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    _deps: DepsMut,
     _env: Env,
-    _msg: InitMsg,
+    info: MessageInfo,
+    _msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     Ok(InitResponse::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     match msg {
-        HandleMsg::UpdateSymbolPrice {
+        ExecuteMsg::UpdateSymbolPrice {
             base_symbol,
             quote_symbol,
             rate,
@@ -32,14 +34,14 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     }
 }
 
-pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn update_symbol_price(
+    deps: DepsMut,
     _env: Env,
     base_symbol: String,
     quote_symbol: String,
     rate: Uint128,
     last_updated: Option<u64>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     MOCK_DATA.save(
         &mut deps.storage,
         (base_symbol, quote_symbol),
@@ -50,7 +52,7 @@ pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
         },
     )?;
 
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateSymbolPrice {
@@ -70,8 +72,8 @@ pub enum QueryMsg {
         quote_symbols: Vec<String>,
     },
 }
-pub fn query<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn query(
+    deps: Deps,
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     match msg {
@@ -93,8 +95,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
     }
 }
 
-fn query_saved_band_data<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn query_saved_band_data(
+    deps: Deps,
     base_symbol: String,
     quote_symbol: String,
 ) -> StdResult<Binary> {

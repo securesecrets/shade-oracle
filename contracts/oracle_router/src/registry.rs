@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{contract::get_oracle, state::*};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
+    to_binary, Api, Binary, Env, Extern, Response, Querier, StdError, StdResult, Storage,
 };
 use shade_oracles::{
     common::{
@@ -12,29 +12,29 @@ use shade_oracles::{
     router::*,
 };
 
-pub fn update_registry<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn update_registry(
+    deps: DepsMut,
     _env: Env,
     operation: RegistryOperation,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     resolve_registry_operation(&mut deps.storage, &deps.api, operation)?;
-    Ok(HandleResponse::default())
+    Ok(Response::default())
 }
 
-pub fn batch_update_registry<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn batch_update_registry(
+    deps: DepsMut,
     _env: Env,
     operations: Vec<RegistryOperation>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     for operation in operations {
         resolve_registry_operation(&mut deps.storage, &deps.api, operation)?;
     }
-    Ok(HandleResponse::default())
+    Ok(Response::default())
 }
 
 /// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.
-pub fn get_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn get_price(
+    deps: Deps,
     key: String,
 ) -> StdResult<Binary> {
     let resolved_key = resolve_alias(&deps.storage, key)?;
@@ -44,8 +44,8 @@ pub fn get_price<S: Storage, A: Api, Q: Querier>(
 }
 
 /// Builds bulk queries using the keys given.
-pub fn get_prices<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn get_prices(
+    deps: Deps,
     keys: Vec<String>,
 ) -> StdResult<Binary> {
     // Maps oracle to the symbols it is responsible for

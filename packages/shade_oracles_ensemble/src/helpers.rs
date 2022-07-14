@@ -28,7 +28,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
     let admin_auth = ensemble
         .instantiate(
             reg_admin_auth.id,
-            &shade_admin::admin::InitMsg {},
+            &shade_admin::admin::InstantiateMsg {},
             MockEnv::new(
                 "admin",
                 ContractLink {
@@ -43,7 +43,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
     let band = ensemble
         .instantiate(
             reg_mock_band.id,
-            &band::InitMsg {},
+            &band::InstantiateMsg {},
             MockEnv::new(
                 "admin",
                 ContractLink {
@@ -58,7 +58,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
     let band_proxy = ensemble
         .instantiate(
             reg_mock_band_proxy.id,
-            &proxy::InitMsg {
+            &proxy::InstantiateMsg {
                 band: Contract {
                     address: band.address.clone(),
                     code_hash: band.code_hash.clone(),
@@ -80,7 +80,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
     let router = ensemble
         .instantiate(
             reg_router.id,
-            &router::InitMsg {
+            &router::InstantiateMsg {
                 default_oracle: Contract {
                     address: band_proxy.address.clone(),
                     code_hash: band_proxy.code_hash.clone(),
@@ -102,7 +102,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
 
     ensemble
         .execute(
-            &shade_admin::admin::HandleMsg::AddContract {
+            &shade_admin::admin::ExecuteMsg::AddContract {
                 contract_address: router.address.to_string(),
             },
             MockEnv::new("admin", admin_auth.clone()),
@@ -111,7 +111,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
 
     ensemble
         .execute(
-            &shade_admin::admin::HandleMsg::AddAuthorization {
+            &shade_admin::admin::ExecuteMsg::AddAuthorization {
                 contract_address: router.address.to_string(),
                 admin_address: "admin".to_string(),
             },
@@ -121,7 +121,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
 
     ensemble
         .execute(
-            &shade_admin::admin::HandleMsg::AddContract {
+            &shade_admin::admin::ExecuteMsg::AddContract {
                 contract_address: band_proxy.address.to_string(),
             },
             MockEnv::new("admin", admin_auth.clone()),
@@ -130,7 +130,7 @@ pub fn setup_core(mut ensemble: ContractEnsemble) -> OracleEnsembleCore {
 
     ensemble
         .execute(
-            &shade_admin::admin::HandleMsg::AddAuthorization {
+            &shade_admin::admin::ExecuteMsg::AddAuthorization {
                 contract_address: band_proxy.address.to_string(),
                 admin_address: "admin".to_string(),
             },

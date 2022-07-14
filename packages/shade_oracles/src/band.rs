@@ -5,10 +5,10 @@ use cosmwasm_std::{Querier, StdResult};
 use secret_toolkit::utils::Query;
 
 #[cw_serde]
-pub struct InitMsg {}
+pub struct InstantiateMsg {}
 
 #[cw_serde]
-pub enum HandleMsg {
+pub enum ExecuteMsg {
     UpdateSymbolPrice {
         base_symbol: String,
         quote_symbol: String,
@@ -82,7 +82,7 @@ pub mod proxy {
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
     #[cw_serde]
-    pub struct InitMsg {
+    pub struct InstantiateMsg {
         pub admin_auth: Contract,
         pub band: Contract,
         pub quote_symbol: String,
@@ -96,9 +96,9 @@ pub mod proxy {
         pub enabled: bool,
     }
 
-    /// Every HandleMsg for each specific oracle type should include this
+    /// Every ExecuteMsg for each specific oracle type should include this
     #[cw_serde]
-    pub enum HandleMsg {
+    pub enum ExecuteMsg {
         UpdateConfig {
             enabled: Option<bool>,
             admin_auth: Option<Contract>,

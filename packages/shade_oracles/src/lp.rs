@@ -12,7 +12,7 @@ pub mod secretswap {
     /// Factory - contract that mints the LP token for asset 0 & asset 1
     /// (SecretSwap - Pair | SiennaSwap - Exchange)
     #[cw_serde]
-    pub struct InitMsg {
+    pub struct InstantiateMsg {
         pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,
@@ -41,7 +41,7 @@ pub mod siennaswap {
     /// Factory - contract that mints the LP token for asset 1 & asset 2
     /// (SecretSwap - Pair | SiennaSwap - Exchange)
     #[cw_serde]
-    pub struct InitMsg {
+    pub struct InstantiateMsg {
         pub supported_key: String,
         pub symbol_0: String,
         pub symbol_1: String,

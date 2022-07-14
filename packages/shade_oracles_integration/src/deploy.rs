@@ -59,7 +59,7 @@ fn deploy_silk(_user_a: String, router: Contract) -> Result<IndexOracleContract>
     println!("Deploying SILK oracle.");
 
     let silk_oracle = IndexOracleContract::new(
-        &index_oracle::InitMsg {
+        &index_oracle::InstantiateMsg {
             router,
             symbol: "SILK".to_string(),
             basket: vec![
@@ -106,7 +106,7 @@ fn deploy_router(_user_a: String, band: Contract) -> Result<OracleRouterContract
 
     println!("Deploying oracle router.");
     let router = OracleRouterContract::new(
-        &router::InitMsg {
+        &router::InstantiateMsg {
             admin_auth,
             default_oracle: scrt_oracle.as_contract(),
             band,
@@ -126,7 +126,7 @@ fn deploy_shd(user_a: String, router: Contract) -> Result<(SiennaMarketOracleCon
         SIENNA_SHD_SSCRT_PAIR_HASH.to_string(),
     );
     let shd_oracle = SiennaMarketOracleContract::new(
-        &siennaswap_market_oracle::InitMsg {
+        &siennaswap_market_oracle::InstantiateMsg {
             router,
             pair: sienna_scrt_shd,
             symbol: "SHD".into(),
@@ -147,7 +147,7 @@ fn deploy_stkd_scrt(
 
     println!("Deploying stkd-SCRT oracle.");
     let stkd_scrt_oracle = ShadeStakingDerivativeOracleContract::new(
-        &shd_stkd::InitMsg {
+        &shd_stkd::InstantiateMsg {
             supported_key: "stkd-SCRT".to_string(),
             underlying_symbol: "SCRT".to_string(),
             staking_derivative,
@@ -171,7 +171,7 @@ fn deploy_stkd_scrt_scrt_lp(
 
     println!("Deploying stkd-SCRT / SCRT Siennaswap LP oracle.");
     let stkd_scrt_scrt_lp_oracle = SiennaswapSpotLpOracleContract::new(
-        &SiennaSwapLpOracle::InitMsg {
+        &SiennaSwapLpOracle::InstantiateMsg {
             symbol_0: "stkd-SCRT".to_string(),
             symbol_1: "SCRT".to_string(),
             router,

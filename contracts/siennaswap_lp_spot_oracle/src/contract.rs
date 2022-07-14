@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, Addr, InitResponse, Querier,
-    QueryRequest, QueryResult, StdError, StdResult, Storage, WasmQuery,
+    to_binary, Api, Binary, Env, Extern, Response, Addr, InitResponse, Querier,
+    QueryRequest, StdResult<QueryResponse>, StdError, StdResult, Storage, WasmQuery,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
@@ -8,12 +8,12 @@ use shade_oracles::{
     common::{
         is_disabled,
         querier::{query_prices, query_token_info, verify_admin},
-        throw_unsupported_symbol_error, Contract, HandleAnswer, HandleMsg, OraclePrice, QueryMsg,
+        throw_unsupported_symbol_error, Contract, HandleAnswer, ExecuteMsg, OraclePrice, QueryMsg,
         ResponseStatus, BLOCK_SIZE,
     },
     lp::{
         get_lp_token_spot_price,
-        siennaswap::{Config, InitMsg, PairData},
+        siennaswap::{Config, InstantiateMsg, PairData},
         FairLpPriceInfo,
     },
     protocols::siennaswap::{
@@ -26,10 +26,11 @@ use std::cmp::min;
 const PAIR: Item<PairData> = Item::new("pair");
 const CONFIG: Item<Config> = Item::new("config");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     let mut token0 = Contract::new("a".to_string(), "b".to_string());
     let mut token1 = token0.clone();
@@ -94,31 +95,32 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig { enabled } => try_update_config(deps, &env, enabled),
+            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, &env, enabled),
         },
         BLOCK_SIZE,
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+fn try_update_config(
+    deps: DepsMut,
     env: &Env,
     enabled: bool,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     let config = CONFIG.load(&deps.storage)?;
     verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
     CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
         config.enabled = enabled;
         Ok(config)
     })?;
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateConfig {
@@ -127,7 +129,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
@@ -138,8 +140,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     )
 }
 
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_price(
+    deps: Deps,
     key: String,
 ) -> StdResult<Binary> {
     let config = CONFIG.load(&deps.storage)?;

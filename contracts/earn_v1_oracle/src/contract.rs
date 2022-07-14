@@ -8,13 +8,13 @@ use shade_oracles::{
     protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
 };
 use cosmwasm_std::{
-    to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, Addr, InitResponse,
-    Querier, QueryResult, StdError, StdResult, Storage, Uint128,
+    to_binary, Api, CanonicalAddr, Env, Extern, Response, Addr, InitResponse,
+    Querier, StdResult<QueryResponse>, StdError, StdResult, Storage, Uint128,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
     common::{query_price, PriceResponse, QueryMsg},
-    earn::{ConfigResponse, HandleAnswer, HandleMsg, InitMsg},
+    earn::{ConfigResponse, HandleAnswer, ExecuteMsg, InstantiateMsg},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -34,10 +34,11 @@ impl SingletonStorable for State {
     }
 }
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     let underlying_oracle = msg.deposit_token_oracle.as_canonical(&deps.api)?;
     let config = query_generic_config(&msg.strategy, &deps.querier)?;
@@ -65,14 +66,15 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig {
+            ExecuteMsg::UpdateConfig {
                 owner,
                 deposit_token_oracle,
                 strategy,
@@ -82,13 +84,13 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+fn try_update_config(
+    deps: DepsMut,
     env: Env,
     owner: Option<String>,
     deposit_token_oracle: Option<Contract>,
     strategy: Option<Contract>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     let mut state: State = State::new_json(&deps.storage)?;
 
     if deps.api.canonical_address(&env.message.sender)? != state.owner {
@@ -121,7 +123,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 
     state.save_json(&mut deps.storage)?;
 
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateConfig {
@@ -130,7 +132,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
@@ -140,8 +142,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     )
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_config(
+    deps: Deps,
 ) -> StdResult<ConfigResponse> {
     let state: State = State::new_json(&deps.storage)?;
 
@@ -154,8 +156,8 @@ fn try_query_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_price(
+    deps: Deps,
 ) -> StdResult<PriceResponse> {
     let state: State = State::new_json(&deps.storage)?;
 
