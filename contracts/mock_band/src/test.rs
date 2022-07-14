@@ -1,5 +1,5 @@
 use crate::contract::{handle, init, query, QueryMsg};
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::Uint128;
 use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env},

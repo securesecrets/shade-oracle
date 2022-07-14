@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+    to_binary, Api, Binary, Env, Extern, HandleResponse, Addr, InitResponse, Querier,
     QueryRequest, QueryResult, StdError, StdResult, Storage, WasmQuery,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
@@ -37,7 +37,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: msg.exchange.address.clone(),
-            callback_code_hash: msg.exchange.code_hash.clone(),
+            code_hash: msg.exchange.code_hash.clone(),
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
     let pair_info = pair_info_response.pair_info;
@@ -47,7 +47,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         token_code_hash,
     } = &pair_info.pair.token_0
     {
-        token0.address = HumanAddr(contract_addr.to_string());
+        token0.address = Addr(contract_addr.to_string());
         token0.code_hash = token_code_hash.to_string();
     } else {
         return Err(StdError::generic_err(
@@ -59,7 +59,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         token_code_hash,
     } = &pair_info.pair.token_1
     {
-        token1.address = HumanAddr(contract_addr.to_string());
+        token1.address = Addr(contract_addr.to_string());
         token1.code_hash = token_code_hash.to_string();
     } else {
         return Err(StdError::generic_err(
@@ -160,7 +160,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: config.exchange.address.clone(),
-            callback_code_hash: config.exchange.code_hash,
+            code_hash: config.exchange.code_hash,
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
 

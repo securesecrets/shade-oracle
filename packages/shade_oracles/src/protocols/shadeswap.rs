@@ -1,20 +1,18 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::HumanAddr;
+use cosmwasm_std::Uint128;
+use cosmwasm_std::Addr;
 use shade_ensemble::prelude::ContractLink;
-use schemars::JsonSchema;
+use cosmwasm_schema::cw_serde;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use secret_toolkit::utils::Query;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct TokenAmount<A> {
     pub token: TokenType<A>,
     pub amount: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum TokenType<A> {
     CustomToken {
         contract_addr: A,
@@ -25,39 +23,35 @@ pub enum TokenType<A> {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct TokenPairAmount<A: Clone> {
     pub pair: TokenPair<A>,
     pub amount_0: Uint128,
     pub amount_1: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ShadeSwapQueryMsg {
     GetPairInfo,
-    GetEstimatedPrice { offer: TokenAmount<HumanAddr> },
+    GetEstimatedPrice { offer: TokenAmount<Addr> },
 }
 
 impl Query for ShadeSwapQueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct PairInfoResponse {
-    pub liquidity_token: ContractLink<HumanAddr>,
-    pub factory: ContractLink<HumanAddr>,
-    pub pair: TokenPair<HumanAddr>,
+    pub liquidity_token: ContractLink<Addr>,
+    pub factory: ContractLink<Addr>,
+    pub pair: TokenPair<Addr>,
     pub amount_0: Uint128,
     pub amount_1: Uint128,
     pub total_liquidity: Uint128,
     pub contract_version: u32,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EstimatedPriceResponse {
     pub estimated_price: Uint128,
 }
@@ -66,14 +60,14 @@ pub struct EstimatedPriceResponse {
 pub struct TokenPair<A>(pub TokenType<A>, pub TokenType<A>);
 
 /*
-impl Canonize for TokenPair<HumanAddr> {
+impl Canonize for TokenPair<Addr> {
     fn canonize(&self, api: &impl Api) -> StdResult<TokenPair<CanonicalAddr>> {
         Ok(TokenPair(self.0.canonize(api)?, self.1.canonize(api)?))
     }
 }
 
 impl Humanize for TokenPair<CanonicalAddr> {
-    fn humanize(&self, api: &impl Api) -> StdResult<TokenPair<HumanAddr>> {
+    fn humanize(&self, api: &impl Api) -> StdResult<TokenPair<Addr>> {
         Ok(TokenPair(self.0.humanize(api)?, self.1.humanize(api)?))
     }
 }
@@ -112,13 +106,13 @@ impl<A: Clone + PartialEq> TokenPair<A> {
 }
 
 /*
-impl TokenPair<HumanAddr> {
+impl TokenPair<Addr> {
     /// Returns the balance for each token in the pair. The order of the balances in returned array
     /// correspond to the token order in the pair i.e `[ self.0 balance, self.1 balance ]`.
     pub fn query_balances(
         &self,
         querier: &impl Querier,
-        exchange_addr: HumanAddr,
+        exchange_addr: Addr,
         viewing_key: String,
     ) -> StdResult<[Uint128; 2]> {
         let amount_0 = self

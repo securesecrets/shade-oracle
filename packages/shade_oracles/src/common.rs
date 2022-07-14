@@ -1,8 +1,9 @@
 use crate::band::ReferenceData;
-use cosmwasm_math_compat::{Uint128, Uint256};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Uint128, Uint256};
 use cosmwasm_std::*;
-use shade_ensemble::prelude::ContractLink;
 use schemars::JsonSchema;
+use shade_ensemble::prelude::ContractLink;
 use secret_toolkit::utils::Query;
 use serde::{Deserialize, Serialize};
 pub use shade_protocol::utils::generic_response::ResponseStatus;
@@ -13,8 +14,7 @@ pub const BLOCK_SIZE: usize = 256;
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryMsg {
     GetConfig {},
     GetPrice { key: String },
@@ -25,21 +25,18 @@ impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum HandleMsg {
     UpdateConfig { enabled: bool },
 }
 
 /// Default HandleAnswer for oracles if only HandleMsg implemented is UpdateConfig.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum HandleAnswer {
     UpdateConfig { status: ResponseStatus },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct OraclePrice {
     pub key: String,
     pub data: ReferenceData,
@@ -56,20 +53,34 @@ impl OraclePrice {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+pub struct UnvalidatedContract {
+    pub address: String,
+    pub code_hash: String,
+}
+
+impl UnvalidatedContract {
+    pub fn validate(self, deps: Deps) -> StdResult<Contract> {
+        let valid_addr = deps.api.addr_validate(self.address.as_str())?;
+        Ok(Contract::new(valid_addr, self.code_hash.clone()))
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct Contract {
-    pub address: HumanAddr,
+    pub address: Addr,
     pub code_hash: String,
 }
 
 impl Contract {
-    pub fn new(address: String, code_hash: String) -> Self {
+    pub fn new(address: Addr, code_hash: String) -> Self {
         Contract {
-            address: HumanAddr(address),
+            address,
             code_hash,
         }
     }
 
-    pub fn new_link(link: ContractLink<HumanAddr>) -> Self {
+    pub fn new_link(link: ContractLink<Addr>) -> Self {
         Contract {
             address: link.address,
             code_hash: link.code_hash,
@@ -251,7 +262,7 @@ pub mod querier {
     pub fn verify_admin(
         contract: &Contract,
         querier: &impl Querier,
-        user: HumanAddr,
+        user: Addr,
     ) -> StdResult<()> {
         let get_admin_auth_req: AdminAuthResponse = RouterQueryMsg::GetAdminAuth {}.query(
             querier,
@@ -277,7 +288,7 @@ pub mod querier {
     ) -> StdResult<TokenInfoResponse> {
         querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: contract.address.clone(),
-            callback_code_hash: contract.code_hash.clone(),
+            code_hash: contract.code_hash.clone(),
             msg: to_binary(&Snip20QueryMsg::TokenInfo {})?,
         }))
     }
@@ -285,13 +296,13 @@ pub mod querier {
     pub fn query_token_balance(
         contract: &Contract,
         querier: &impl Querier,
-        address: HumanAddr,
+        address: Addr,
         key: String,
     ) -> StdResult<Balance> {
         let answer: AuthenticatedQueryResponse =
             querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
                 contract_addr: contract.address.clone(),
-                callback_code_hash: contract.code_hash.clone(),
+                code_hash: contract.code_hash.clone(),
                 msg: to_binary(&Snip20QueryMsg::Balance { address, key })?,
             }))?;
         match answer {

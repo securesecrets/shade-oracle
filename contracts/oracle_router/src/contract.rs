@@ -3,7 +3,7 @@ use crate::{
     state::*,
 };
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
+    to_binary, Api, Binary, Env, Extern, HandleResponse, Addr, InitResponse, Querier,
     StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
@@ -64,7 +64,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 
 fn is_admin<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-    user: HumanAddr,
+    user: Addr,
 ) -> StdResult<()> {
     let config = CONFIG.load(&deps.storage)?;
     let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {

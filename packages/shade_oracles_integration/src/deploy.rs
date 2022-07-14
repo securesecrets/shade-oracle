@@ -1,5 +1,5 @@
 use colored::*;
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::Uint128;
 use secretcli::secretcli::account_address;
 use serde_json::Result;
 use shade_oracles::common::Contract;

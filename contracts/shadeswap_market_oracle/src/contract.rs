@@ -1,6 +1,6 @@
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier, QueryResult,
+    to_binary, Api, Env, Extern, HandleResponse, Addr, InitResponse, Querier, QueryResult,
     StdError, StdResult, Storage,
 };
 use secret_toolkit::{
@@ -45,7 +45,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
                 contract_addr,
                 token_code_hash,
             } => Some(Contract {
-                address: HumanAddr(contract_addr.to_string()),
+                address: Addr(contract_addr.to_string()),
                 code_hash: token_code_hash.to_string(),
             }),
             _ => None,

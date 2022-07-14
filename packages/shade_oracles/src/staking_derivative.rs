@@ -1,15 +1,15 @@
 use crate::common::Contract;
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::HumanAddr;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_std::Uint128;
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Addr;
+
 
 pub mod shade {
 
+
     use super::*;
 
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub struct InitMsg {
         pub supported_key: String,
         pub underlying_symbol: String,
@@ -18,8 +18,7 @@ pub mod shade {
     }
 
     // We define a custom struct for each query response
-    #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
     pub struct Config {
         pub supported_key: String,
         pub underlying_symbol: String,
@@ -33,8 +32,7 @@ pub mod shade {
 
         use super::*;
 
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-        #[serde(rename_all = "snake_case")]
+        #[cw_serde]
         pub enum StakingDerivativeQueryMsg {
             // staking
             /// display the validator addresses, amount of bonded SCRT, amount of available SCRT not
@@ -47,16 +45,15 @@ pub mod shade {
         }
 
         /// validators and their weights
-        #[derive(Serialize, Deserialize, JsonSchema, Clone, PartialEq, Debug)]
+        #[cw_serde]
         pub struct WeightedValidator {
             /// the validator's address
-            pub validator: HumanAddr,
+            pub validator: Addr,
             /// the validator's weight in whole percents
             pub weight: u8,
         }
 
-        #[derive(Serialize, Deserialize, JsonSchema, Debug)]
-        #[serde(rename_all = "snake_case")]
+        #[cw_serde]
         pub enum StakingDerivativeQueryAnswer {
             // Staking
             /// displays staking info
@@ -95,7 +92,7 @@ pub mod shade {
             let resp: StakingDerivativeQueryAnswer =
                 querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
                     contract_addr: contract.address.clone(),
-                    callback_code_hash: contract.code_hash.clone(),
+                    code_hash: contract.code_hash.clone(),
                     msg: to_binary(&StakingDerivativeQueryMsg::StakingInfo { time: 0 })?,
                 }))?;
 

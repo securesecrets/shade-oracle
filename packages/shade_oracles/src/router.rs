@@ -1,12 +1,10 @@
 use crate::common::{Contract, ResponseStatus};
 use cosmwasm_std::*;
-use schemars::JsonSchema;
+use cosmwasm_schema::cw_serde;
 use secret_toolkit::utils::Query;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct InitMsg {
     pub admin_auth: Contract,
     pub default_oracle: Contract,
@@ -14,11 +12,9 @@ pub struct InitMsg {
     pub quote_symbol: String,
 }
 
-#[derive(Serialize, Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub struct Config {
-    pub address: HumanAddr,
+    pub address: Addr,
     pub admin_auth: Contract,
     pub default_oracle: Contract,
     pub band: Contract,
@@ -26,9 +22,7 @@ pub struct Config {
     pub enabled: bool,
 }
 
-#[derive(Serialize, Debug, Deserialize, Clone, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub struct UpdateConfig {
     pub admin_auth: Option<Contract>,
     pub default_oracle: Option<Contract>,
@@ -37,9 +31,7 @@ pub struct UpdateConfig {
     pub enabled: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum RegistryOperation {
     Remove { key: String },
     Replace { oracle: Contract, key: String },
@@ -47,27 +39,21 @@ pub enum RegistryOperation {
     UpdateAlias { alias: String, key: String },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum HandleMsg {
     UpdateConfig { config: UpdateConfig },
     UpdateRegistry { operation: RegistryOperation },
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum HandleAnswer {
     UpdateConfig { status: ResponseStatus },
     UpdateRegistry { status: ResponseStatus },
     BatchUpdateRegistry { status: ResponseStatus },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum QueryMsg {
     GetConfig {},
     /// Get oracle at that key
@@ -91,15 +77,13 @@ impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct OracleResponse {
     pub key: String,
     pub oracle: Contract,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct AdminAuthResponse {
     pub admin_auth: Contract,
 }

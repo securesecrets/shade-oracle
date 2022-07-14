@@ -6,7 +6,7 @@ use shade_oracles::{
         AssetInfo, SecretSwapPairInfo, SecretSwapPairQueryMsg, SecretSwapPoolResponse,
     },
     scrt::{
-        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, HumanAddr, InitResponse,
+        to_binary, Api, CanonicalAddr, Env, Extern, HandleResponse, Addr, InitResponse,
         Querier, QueryRequest, QueryResult, StdError, StdResult, Storage, Uint128, WasmQuery,
         BLOCK_SIZE,
     },
@@ -49,14 +49,14 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
     let router: CanonicalContract = CanonicalContract {
-        address: deps.api.canonical_address(&HumanAddr(msg.router.address))?,
+        address: deps.api.canonical_address(&Addr(msg.router.address))?,
         code_hash: msg.router.code_hash,
     };
 
     let pair: CanonicalContract = CanonicalContract {
         address: deps
             .api
-            .canonical_address(&HumanAddr(msg.pair.address.clone()))?,
+            .canonical_address(&Addr(msg.pair.address.clone()))?,
         code_hash: msg.pair.code_hash.clone(),
     };
 
@@ -71,8 +71,8 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let pair_info: SecretSwapPairInfo =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: HumanAddr::from(msg.pair.address),
-            callback_code_hash: msg.pair.code_hash,
+            contract_addr: Addr::from(msg.pair.address),
+            code_hash: msg.pair.code_hash,
             msg: to_binary(&SecretSwapPairQueryMsg::Pair {})?,
         }))?;
     let lp_token = CanonicalContract {
@@ -116,7 +116,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .decimals;
 
     let state: State = State {
-        owner: deps.api.canonical_address(&HumanAddr(msg.owner))?,
+        owner: deps.api.canonical_address(&Addr(msg.owner))?,
         symbol_0: msg.symbol_0,
         symbol_1: msg.symbol_1,
         router,
@@ -167,12 +167,12 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     }
 
     if let Some(owner) = owner {
-        state.owner = deps.api.canonical_address(&HumanAddr(owner))?;
+        state.owner = deps.api.canonical_address(&Addr(owner))?;
     }
 
     if let Some(router) = router {
         let router = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(router.address))?,
+            address: deps.api.canonical_address(&Addr(router.address))?,
             code_hash: router.code_hash,
         };
         state.router = router;
@@ -188,7 +188,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 
     if let Some(pair) = pair {
         let pair = CanonicalContract {
-            address: deps.api.canonical_address(&HumanAddr(pair.address))?,
+            address: deps.api.canonical_address(&Addr(pair.address))?,
             code_hash: pair.code_hash,
         };
         state.pair = pair;
@@ -252,7 +252,7 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let pair_info: SecretSwapPoolResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: deps.api.human_address(&state.pair.address)?,
-            callback_code_hash: state.pair.code_hash,
+            code_hash: state.pair.code_hash,
             msg: to_binary(&SecretSwapPairQueryMsg::Pool {})?,
         }))?;
     let reserve0 = pair_info.assets[0].amount;

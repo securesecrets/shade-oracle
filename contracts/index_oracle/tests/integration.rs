@@ -1,5 +1,5 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::HumanAddr;
+use cosmwasm_std::Uint128;
+use cosmwasm_std::Addr;
 use shade_ensemble::{
     core::ContractLink,
     ensemble::{ContractEnsemble, MockEnv},
@@ -83,7 +83,7 @@ fn basic_index_test(
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("index".into()),
+                    address: Addr("index".into()),
                     code_hash: reg_index_oracle.code_hash.clone(),
                 },
             ),
@@ -302,7 +302,7 @@ fn mod_index_test(
             MockEnv::new(
                 "admin",
                 ContractLink {
-                    address: HumanAddr("index".into()),
+                    address: Addr("index".into()),
                     code_hash: reg_index_oracle.code_hash.clone(),
                 },
             ),

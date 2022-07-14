@@ -1,6 +1,6 @@
 use super::{GasLog, TestableContract};
 use crate::constants::*;
-use cosmwasm_math_compat::Uint128;
+use cosmwasm_std::Uint128;
 use secretcli::{cli_types::NetContract, secretcli::query_contract};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;

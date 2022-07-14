@@ -1,20 +1,20 @@
 [workspace]
 members = [
   "packages/shade_oracles",
-  "packages/shade_oracles_ensemble",
-  "packages/shade_oracles_integration",
+  #"packages/shade_oracles_ensemble",
+  #"packages/shade_oracles_integration",
 
-  "contracts/index_oracle",
-  "contracts/proxy_band_oracle",
-  "contracts/oracle_router",
-  "contracts/siennaswap_lp_oracle",
-  "contracts/shade_staking_derivative_oracle",
-  "contracts/siennaswap_lp_spot_oracle",
-  "contracts/siennaswap_market_oracle",
-  "contracts/shadeswap_market_oracle",
+  # "contracts/index_oracle",
+  # "contracts/proxy_band_oracle",
+  # "contracts/oracle_router",
+  # "contracts/siennaswap_lp_oracle",
+  # "contracts/shade_staking_derivative_oracle",
+  # "contracts/siennaswap_lp_spot_oracle",
+  # "contracts/siennaswap_market_oracle",
+  # "contracts/shadeswap_market_oracle",
 
   "contracts/mock_sienna_pair",
-  "contracts/mock_shade_pair",
+  # "contracts/mock_shade_pair",
 ]
 
 [profile.release]
