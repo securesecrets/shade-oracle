@@ -3,7 +3,7 @@ use crate::common::Contract;
 
 
 #[cw_serde]
-pub struct InitMsg {
+pub struct InstantiateMsg {
     pub owner: String,
     pub deposit_token_oracle: Contract,
     pub strategy: Contract,

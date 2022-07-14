@@ -1,13 +1,13 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult,
+    to_binary, Api, Binary, Env, Extern, Response, InitResponse, Querier, StdResult<QueryResponse>,
     StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
 use shade_oracles::{
     band::{
-        proxy::{Config, HandleAnswer, HandleMsg, InitMsg},
+        proxy::{Config, HandleAnswer, ExecuteMsg, InstantiateMsg},
         reference_data, reference_data_bulk, BandQuery, ReferenceData,
     },
     common::{is_disabled, Contract, OraclePrice, QueryMsg, ResponseStatus, BLOCK_SIZE},
@@ -16,10 +16,11 @@ use shade_oracles::{
 
 const CONFIG: Item<Config> = Item::new("config");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     let config = Config {
         admin_auth: msg.admin_auth,
@@ -33,13 +34,14 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
-    let response: Result<HandleResponse, StdError> = match msg {
-        HandleMsg::UpdateConfig {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
+    let response: Result<Response, StdError> = match msg {
+        ExecuteMsg::UpdateConfig {
             band,
             quote_symbol,
             enabled,
@@ -49,14 +51,14 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     pad_handle_result(response, BLOCK_SIZE)
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+fn try_update_config(
+    deps: DepsMut,
     env: Env,
     band: Option<Contract>,
     quote_symbol: Option<String>,
     enabled: Option<bool>,
     admin_auth: Option<Contract>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     let config = CONFIG.load(&deps.storage)?;
 
     let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {
@@ -80,7 +82,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
         Ok(config)
     })?;
 
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateConfig {
@@ -89,7 +91,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     let response = match msg {
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
         QueryMsg::GetPrice { key } => try_query_price(deps, key),
@@ -98,8 +100,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     pad_query_result(response, BLOCK_SIZE)
 }
 
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_price(
+    deps: Deps,
     key: String,
 ) -> StdResult<Binary> {
     let config = CONFIG.load(&deps.storage)?;
@@ -126,8 +128,8 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     to_binary(&OraclePrice::new(key, band_response))
 }
 
-fn try_query_prices<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_prices(
+    deps: Deps,
     keys: Vec<String>,
 ) -> StdResult<Binary> {
     let config = CONFIG.load(&deps.storage)?;

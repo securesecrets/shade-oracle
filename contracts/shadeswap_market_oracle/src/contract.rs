@@ -1,6 +1,6 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Env, Extern, HandleResponse, Addr, InitResponse, Querier, QueryResult,
+    to_binary, Api, Env, Extern, Response, Addr, InitResponse, Querier, StdResult<QueryResponse>,
     StdError, StdResult, Storage,
 };
 use secret_toolkit::{
@@ -17,7 +17,7 @@ use shade_oracles::{
     protocols::shadeswap::{
         EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenAmount, TokenType,
     },
-    shadeswap_market_oracle::{Config, HandleMsg, InitMsg},
+    shadeswap_market_oracle::{Config, ExecuteMsg, InstantiateMsg},
     storage::Item,
 };
 
@@ -27,10 +27,11 @@ const PRIMARY_TOKEN: Item<Contract> = Item::new("primary_token");
 const PRIMARY_INFO: Item<TokenInfo> = Item::new("primary_info");
 const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     let pair_info_response: PairInfoResponse = ShadeSwapQueryMsg::GetPairInfo.query(
         &deps.querier,
@@ -105,14 +106,15 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig {
+            ExecuteMsg::UpdateConfig {
                 router,
                 enabled,
                 only_band,
@@ -122,13 +124,13 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     )
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+fn try_update_config(
+    deps: DepsMut,
     env: &Env,
     router: Option<Contract>,
     enabled: Option<bool>,
     only_band: Option<bool>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     let mut config = CONFIG.load(&deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
@@ -145,7 +147,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
 
     CONFIG.save(&mut deps.storage, &config)?;
 
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateConfig {
@@ -154,7 +156,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
@@ -171,8 +173,8 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
     )
 }
 
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_price(
+    deps: Deps,
     key: String,
 ) -> StdResult<OraclePrice> {
     let config = CONFIG.load(&deps.storage)?;

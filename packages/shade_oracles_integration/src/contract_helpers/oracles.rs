@@ -29,7 +29,7 @@ impl TestableContract for OracleRouterContract {
 
 impl OracleRouterContract {
     pub fn new(
-        msg: &router::InitMsg,
+        msg: &router::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
@@ -50,7 +50,7 @@ impl OracleRouterContract {
     }
 
     pub fn update_config(&self, config: UpdateConfig, sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = router::HandleMsg::UpdateConfig { config };
+        let msg = router::ExecuteMsg::UpdateConfig { config };
         self.wrap_handle(&msg, sender_key)
     }
 
@@ -59,7 +59,7 @@ impl OracleRouterContract {
         operation: router::RegistryOperation,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = router::HandleMsg::UpdateRegistry { operation };
+        let msg = router::ExecuteMsg::UpdateRegistry { operation };
         self.wrap_handle(&msg, sender_key)
     }
 
@@ -68,7 +68,7 @@ impl OracleRouterContract {
         operations: Vec<router::RegistryOperation>,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = router::HandleMsg::BatchUpdateRegistry { operations };
+        let msg = router::ExecuteMsg::BatchUpdateRegistry { operations };
         self.wrap_handle(&msg, sender_key)
     }
 
@@ -148,7 +148,7 @@ impl TestableContract for SiennaMarketOracleContract {
 
 impl SiennaMarketOracleContract {
     pub fn new(
-        msg: &shade_oracles::siennaswap_market_oracle::InitMsg,
+        msg: &shade_oracles::siennaswap_market_oracle::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
@@ -221,7 +221,7 @@ where
 }
 
 impl BandContract {
-    pub fn new(msg: &band::InitMsg, account_key: Option<&str>, name: Option<&str>) -> Result<Self> {
+    pub fn new(msg: &band::InstantiateMsg, account_key: Option<&str>, name: Option<&str>) -> Result<Self> {
         let info = Self::wrap_init(msg, account_key, name)?;
         Ok(BandContract { info })
     }
@@ -233,7 +233,7 @@ impl BandContract {
         last_updated: Option<u64>,
         account_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = shade_oracles::band::HandleMsg::UpdateSymbolPrice {
+        let msg = shade_oracles::band::ExecuteMsg::UpdateSymbolPrice {
             base_symbol: pair.0.to_string(),
             quote_symbol: pair.1.to_string(),
             rate,
@@ -251,7 +251,7 @@ impl ProxyBandOracleContract {
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
-        let msg = proxy_band_oracle::InitMsg {
+        let msg = proxy_band_oracle::InstantiateMsg {
             quote_symbol: quote_symbol.to_string(),
             band,
             admin_auth,
@@ -263,7 +263,7 @@ impl ProxyBandOracleContract {
 
 impl SiennaswapSpotLpOracleContract {
     pub fn new(
-        msg: &lp_oracle::siennaswap::InitMsg,
+        msg: &lp_oracle::siennaswap::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
@@ -274,7 +274,7 @@ impl SiennaswapSpotLpOracleContract {
 
 impl ShadeStakingDerivativeOracleContract {
     pub fn new(
-        msg: &shade_oracles::staking_derivative::shade::InitMsg,
+        msg: &shade_oracles::staking_derivative::shade::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
@@ -291,7 +291,7 @@ impl EarnV1OracleContract {
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
-        let msg = earn_v1_oracle::InitMsg {
+        let msg = earn_v1_oracle::InstantiateMsg {
             owner,
             deposit_token_oracle,
             strategy,
@@ -318,7 +318,7 @@ impl TestableContract for IndexOracleContract {
 
 impl IndexOracleContract {
     pub fn new(
-        msg: &index_oracle::InitMsg,
+        msg: &index_oracle::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
     ) -> Result<Self> {
@@ -341,7 +341,7 @@ impl IndexOracleContract {
         only_band: Option<bool>,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = index_oracle::HandleMsg::UpdateConfig {
+        let msg = index_oracle::ExecuteMsg::UpdateConfig {
             router,
             enabled,
             only_band,
@@ -354,7 +354,7 @@ impl IndexOracleContract {
         basket: Vec<(String, Uint128)>,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = index_oracle::HandleMsg::ModBasket { basket };
+        let msg = index_oracle::ExecuteMsg::ModBasket { basket };
         self.wrap_handle(&msg, sender_key)
     }
 }

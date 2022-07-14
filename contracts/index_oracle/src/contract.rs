@@ -1,6 +1,6 @@
 use cosmwasm_std::{Uint128, Uint512};
 use cosmwasm_std::{
-    to_binary, Api, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult, StdError,
+    to_binary, Api, Env, Extern, Response, InitResponse, Querier, StdResult<QueryResponse>, StdError,
     StdResult, Storage,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
@@ -13,7 +13,7 @@ use shade_oracles::{
         querier::{query_band_prices, query_prices, verify_admin},
         Contract, OraclePrice, ResponseStatus, BLOCK_SIZE,
     },
-    index_oracle::{Config, HandleAnswer, HandleMsg, InitMsg, QueryAnswer, QueryMsg},
+    index_oracle::{Config, HandleAnswer, ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg},
     storage::Item,
 };
 
@@ -22,10 +22,11 @@ const SYMBOL: Item<String> = Item::new("symbol");
 // (symbol, weight, constant)
 const BASKET: Item<Vec<(String, Uint128, Uint128)>> = Item::new("basket");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     let config = Config {
         router: msg.router,
@@ -72,25 +73,26 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     Ok(InitResponse::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig {
+            ExecuteMsg::UpdateConfig {
                 router,
                 enabled,
                 only_band,
             } => try_update_config(deps, env, router, enabled, only_band),
-            HandleMsg::ModBasket { basket, .. } => mod_basket(deps, env, basket),
+            ExecuteMsg::ModBasket { basket, .. } => mod_basket(deps, env, basket),
         },
         BLOCK_SIZE,
     )
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
@@ -150,8 +152,8 @@ fn eval_index(
     }
 }
 
-fn fetch_prices<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn fetch_prices(
+    deps: Deps,
     config: &Config,
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, ReferenceData>> {
@@ -182,13 +184,13 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     Ok(price_data)
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+fn try_update_config(
+    deps: DepsMut,
     env: Env,
     router: Option<Contract>,
     enabled: Option<bool>,
     only_band: Option<bool>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     let config = CONFIG.load(&deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender)?;
@@ -202,7 +204,7 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
         },
     )?;
 
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateConfig {
@@ -211,11 +213,11 @@ fn try_update_config<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-fn mod_basket<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+fn mod_basket(
+    deps: DepsMut,
     env: Env,
     mod_basket: Vec<(String, Uint128)>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     let config = CONFIG.load(&deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender)?;
@@ -288,7 +290,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
         .collect();
     BASKET.save(&mut deps.storage, &new_basket)?;
 
-    Ok(HandleResponse {
+    Ok(Response {
         messages: vec![],
         log: vec![],
         data: Some(to_binary(&HandleAnswer::UpdateConfig {
@@ -297,12 +299,12 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResult<Config> {
+fn try_query_config(deps: Deps) -> StdResult<Config> {
     CONFIG.load(&deps.storage)
 }
 
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_query_price(
+    deps: Deps,
     key: String,
 ) -> StdResult<OraclePrice> {
     if key != SYMBOL.load(&deps.storage)? {

@@ -13,7 +13,7 @@ pub struct Config {
 }
 
 #[cw_serde]
-pub struct InitMsg {
+pub struct InstantiateMsg {
     pub router: Contract,
     pub pair: Contract,
     pub symbol: String,
@@ -22,7 +22,7 @@ pub struct InitMsg {
 }
 
 #[cw_serde]
-pub enum HandleMsg {
+pub enum ExecuteMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
     UpdateConfig {

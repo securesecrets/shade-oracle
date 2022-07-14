@@ -47,7 +47,7 @@ fn basic_market_test(
     for (sym, price) in prices {
         ensemble
             .execute(
-                &band::HandleMsg::UpdateSymbolPrice {
+                &band::ExecuteMsg::UpdateSymbolPrice {
                     base_symbol: sym,
                     quote_symbol: "USD".to_string(),
                     rate: price,
@@ -62,7 +62,7 @@ fn basic_market_test(
     let primary_token = ensemble
         .instantiate(
             reg_snip20.id,
-            &snip20_reference_impl::msg::InitMsg {
+            &snip20_reference_impl::msg::InstantiateMsg {
                 name: "Primary".into(),
                 admin: Some("admin".into()),
                 symbol: primary_symbol,
@@ -85,7 +85,7 @@ fn basic_market_test(
     let base_token = ensemble
         .instantiate(
             reg_snip20.id,
-            &snip20_reference_impl::msg::InitMsg {
+            &snip20_reference_impl::msg::InstantiateMsg {
                 name: "Base".into(),
                 admin: Some("admin".into()),
                 symbol: base_symbol,
@@ -108,7 +108,7 @@ fn basic_market_test(
     let sienna_pair = ensemble
         .instantiate(
             reg_sienna_pair.id,
-            &mock_sienna_pair::InitMsg {},
+            &mock_sienna_pair::InstantiateMsg {},
             MockEnv::new(
                 "admin",
                 ContractLink {
@@ -122,7 +122,7 @@ fn basic_market_test(
 
     ensemble
         .execute(
-            &mock_sienna_pair::HandleMsg::MockPool {
+            &mock_sienna_pair::ExecuteMsg::MockPool {
                 token_a: Contract {
                     address: primary_token.address,
                     code_hash: primary_token.code_hash,
@@ -141,7 +141,7 @@ fn basic_market_test(
     let market_oracle = ensemble
         .instantiate(
             reg_market_oracle.id,
-            &siennaswap_market_oracle::InitMsg {
+            &siennaswap_market_oracle::InstantiateMsg {
                 router: Contract {
                     address: router.address.clone(),
                     code_hash: router.code_hash.clone(),
@@ -168,7 +168,7 @@ fn basic_market_test(
     // Configure router w/ market oracle
     ensemble
         .execute(
-            &router::HandleMsg::UpdateRegistry {
+            &router::ExecuteMsg::UpdateRegistry {
                 operation: router::RegistryOperation::Add {
                     oracle: Contract {
                         address: market_oracle.address.clone(),

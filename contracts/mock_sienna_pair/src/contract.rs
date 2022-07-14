@@ -1,12 +1,11 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, Addr, InitResponse, Querier,
+    to_binary, Api, Binary, Env, Extern, Response, Addr, InitResponse, Querier,
     StdError, StdResult, Storage,
 };
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use cosmwasm_schema::cw_serde;
 use secret_toolkit::utils::InitCallback;
-use serde::{Deserialize, Serialize};
 use shade_oracles::{
     common::Contract,
     protocols::siennaswap::{
@@ -14,6 +13,7 @@ use shade_oracles::{
         SiennaSwapPairInfo as PairInfo, SiennaSwapPairInfoResponse as PairInfoResponse,
         SimulationResponse,
     },
+    core::{cosmwasm_schema, cosmwasm_storage, cosmwasm_std}
 };
 
 pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
@@ -23,9 +23,9 @@ pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uin
 }
 
 #[cw_serde]
-pub struct InitMsg {}
+pub struct InstantiateMsg {}
 
-impl InitCallback for InitMsg {
+impl InitCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
@@ -39,16 +39,17 @@ pub fn pair_info_w<S: Storage>(storage: &mut S) -> Singleton<S, PairInfo> {
     singleton(storage, PAIR_INFO)
 }
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    _deps: &mut Extern<S, A, Q>,
+pub fn instantiate(
+    _deps: DepsMut,
     _env: Env,
-    _msg: InitMsg,
+    info: MessageInfo,
+    _msg: InstantiateMsg,
 ) -> StdResult<InitResponse> {
     Ok(InitResponse::default())
 }
 
 #[cw_serde]
-pub enum HandleMsg {
+pub enum ExecuteMsg {
     MockPool {
         token_a: Contract,
         amount_a: Uint128,
@@ -57,13 +58,14 @@ pub enum HandleMsg {
     },
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    _env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+pub fn execute(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     match msg {
-        HandleMsg::MockPool {
+        ExecuteMsg::MockPool {
             token_a,
             amount_a,
             token_b,
@@ -96,15 +98,16 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
 
             pair_info_w(&mut deps.storage).save(&pair_info)?;
 
-            Ok(HandleResponse::default())
+            Ok(Response::default())
         }
     }
 
-    // TODO: actual swap handle
+    // TODO: actual swap execute
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+pub fn query(
+    deps: Deps,
+    env: Env,
     msg: PairQuery,
 ) -> StdResult<Binary> {
     match msg {

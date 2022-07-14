@@ -23,9 +23,9 @@ impl Asset {
         self.info.is_native_token()
     }
 
-    pub fn to_raw<S: Storage, A: Api, Q: Querier>(
+    pub fn to_raw(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<AssetRaw> {
         Ok(AssetRaw {
             info: match &self.info {
@@ -71,9 +71,9 @@ impl fmt::Display for AssetInfo {
 }
 
 impl AssetInfo {
-    pub fn to_raw<S: Storage, A: Api, Q: Querier>(
+    pub fn to_raw(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<AssetInfoRaw> {
         match self {
             AssetInfo::NativeToken { denom } => Ok(AssetInfoRaw::NativeToken {
@@ -127,9 +127,9 @@ pub struct AssetRaw {
 }
 
 impl AssetRaw {
-    pub fn to_normal<S: Storage, A: Api, Q: Querier>(
+    pub fn to_normal(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<Asset> {
         Ok(Asset {
             info: match &self.info {
@@ -164,9 +164,9 @@ pub enum AssetInfoRaw {
 }
 
 impl AssetInfoRaw {
-    pub fn to_normal<S: Storage, A: Api, Q: Querier>(
+    pub fn to_normal(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<AssetInfo> {
         match self {
             AssetInfoRaw::NativeToken { denom } => Ok(AssetInfo::NativeToken {

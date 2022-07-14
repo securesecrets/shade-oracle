@@ -5,7 +5,7 @@ use secret_toolkit::utils::Query;
 use serde::{Deserialize, Serialize};
 
 #[cw_serde]
-pub struct InitMsg {
+pub struct InstantiateMsg {
     pub admin_auth: Contract,
     pub default_oracle: Contract,
     pub band: Contract,
@@ -40,7 +40,7 @@ pub enum RegistryOperation {
 }
 
 #[cw_serde]
-pub enum HandleMsg {
+pub enum ExecuteMsg {
     UpdateConfig { config: UpdateConfig },
     UpdateRegistry { operation: RegistryOperation },
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
