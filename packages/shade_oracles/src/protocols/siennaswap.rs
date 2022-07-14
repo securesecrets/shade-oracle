@@ -3,8 +3,7 @@ use cosmwasm_std::Uint128;
 use cosmwasm_std::Addr;
 
 
-use crate::common::Contract;
-use secret_toolkit::utils::Query;
+use shade_protocol::utils::asset::{UnvalidatedContract, Contract};use secret_toolkit::utils::Query;
 
 #[cw_serde]
 pub struct SiennaSwapPairInfoResponse {

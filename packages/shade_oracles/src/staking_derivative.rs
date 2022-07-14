@@ -1,8 +1,7 @@
-use crate::common::Contract;
+use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
 use cosmwasm_std::Uint128;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
-
 
 pub mod shade {
 
@@ -28,7 +27,8 @@ pub mod shade {
     }
 
     pub mod querier {
-        use cosmwasm_std::{to_binary, Querier, QueryRequest, StdResult, WasmQuery};
+        use cosmwasm_std::{to_binary, Querier, QueryRequest, StdResult, WasmQuery, Deps};
+        use shade_protocol::utils::Query;
 
         use super::*;
 
@@ -42,6 +42,10 @@ pub mod shade {
                 /// time in seconds since 01/01/1970.
                 time: u64,
             },
+        }
+
+        impl Query for StakingDerivativeQueryMsg {
+            const BLOCK_SIZE: usize = 256;
         }
 
         /// validators and their weights
@@ -86,16 +90,11 @@ pub mod shade {
         }
         /// Returns the price of 1 derivative token in underlying token (6 decimals)
         pub fn query_derivative_price(
+            deps: Deps,
             contract: &Contract,
-            querier: &impl Querier,
         ) -> StdResult<Uint128> {
-            let resp: StakingDerivativeQueryAnswer =
-                querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: contract.address.clone(),
-                    code_hash: contract.code_hash.clone(),
-                    msg: to_binary(&StakingDerivativeQueryMsg::StakingInfo { time: 0 })?,
-                }))?;
-
+            let resp: StakingDerivativeQueryAnswer = StakingDerivativeQueryMsg::StakingInfo { time: 0 }.query(&deps.querier, contract)?;
+            
             match resp {
                 StakingDerivativeQueryAnswer::StakingInfo {
                     validators: _,

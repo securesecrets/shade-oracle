@@ -1,8 +1,8 @@
 use crate::common::{Contract, ResponseStatus};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, QuerierWrapper};
 use cosmwasm_std::{Querier, StdResult};
-use secret_toolkit::utils::Query;
+use shade_protocol::utils::Query;
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -51,7 +51,7 @@ impl Query for BandQuery {
 }
 
 pub fn reference_data(
-    querier: &impl Querier,
+    querier: &QuerierWrapper,
     base_symbol: String,
     quote_symbol: String,
     band: Contract,
@@ -60,11 +60,11 @@ pub fn reference_data(
         base_symbol,
         quote_symbol,
     }
-    .query(querier, band.code_hash, band.address)
+    .query(querier, &band)
 }
 
 pub fn reference_data_bulk(
-    querier: &impl Querier,
+    querier: &QuerierWrapper,
     base_symbols: Vec<String>,
     quote_symbols: Vec<String>,
     band: Contract,
@@ -73,12 +73,11 @@ pub fn reference_data_bulk(
         base_symbols,
         quote_symbols,
     }
-    .query(querier, band.code_hash, band.address)
+    .query(querier, &band)
 }
 
 pub mod proxy {
-    use crate::common::Contract;
-
+    use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
     #[cw_serde]

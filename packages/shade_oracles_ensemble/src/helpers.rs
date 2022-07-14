@@ -12,10 +12,10 @@ use shade_oracles::{
 use crate::harness::{AdminAuth, MockBand, OracleRouter, ProxyBandOracle};
 
 pub struct OracleEnsembleCore {
-    pub band: ContractLink<Addr>,
-    pub band_proxy: ContractLink<Addr>,
-    pub router: ContractLink<Addr>,
-    pub admin_auth: ContractLink<Addr>,
+    pub band: Contract,
+    pub band_proxy: Contract,
+    pub router: Contract,
+    pub admin_auth: Contract,
     pub ensemble: ContractEnsemble,
 }
 

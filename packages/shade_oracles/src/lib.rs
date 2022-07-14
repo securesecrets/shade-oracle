@@ -9,7 +9,7 @@ pub mod shadeswap_market_oracle;
 pub mod siennaswap_market_oracle;
 pub mod staking_derivative;
 #[cfg(feature = "storage")]
-pub use secret_storage_plus as storage;
+pub use shade_protocol::secret_storage_plus as storage;
 #[cfg(feature = "core")]
 pub mod core {
     pub use cosmwasm_schema;

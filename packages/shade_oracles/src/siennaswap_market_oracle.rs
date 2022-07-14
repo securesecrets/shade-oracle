@@ -1,6 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use crate::common::Contract;
-
+use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
 
 #[cw_serde]
 pub struct Config {

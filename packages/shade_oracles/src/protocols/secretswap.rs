@@ -4,8 +4,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{CanonicalAddr, Deps, Addr, StdResult, Uint128};
 
 
-use crate::common::Contract;
-
+use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
 #[cw_serde]
 pub struct Asset {
     pub info: AssetInfo,

@@ -1,10 +1,12 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::Addr;
+use schemars::JsonSchema;
 use shade_ensemble::prelude::ContractLink;
 use cosmwasm_schema::cw_serde;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use secret_toolkit::utils::Query;
+use shade_protocol::Contract;
 
 #[cw_serde]
 pub struct TokenAmount<A> {
@@ -42,8 +44,8 @@ impl Query for ShadeSwapQueryMsg {
 
 #[cw_serde]
 pub struct PairInfoResponse {
-    pub liquidity_token: ContractLink<Addr>,
-    pub factory: ContractLink<Addr>,
+    pub liquidity_token: Contract,
+    pub factory: Contract,
     pub pair: TokenPair<Addr>,
     pub amount_0: Uint128,
     pub amount_1: Uint128,
@@ -111,7 +113,7 @@ impl TokenPair<Addr> {
     /// correspond to the token order in the pair i.e `[ self.0 balance, self.1 balance ]`.
     pub fn query_balances(
         &self,
-        querier: &impl Querier,
+        querier: &QuerierWrapper,
         exchange_addr: Addr,
         viewing_key: String,
     ) -> StdResult<[Uint128; 2]> {
