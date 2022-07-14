@@ -17,12 +17,7 @@ default = []
 backtraces = ["shade-oracles/backtraces"]
 
 [dependencies]
-schemars = "0.7"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
-cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
-secret-toolkit = { version = "0.2", features = ["permit"] }
-shade-oracles = { path = "../../packages/shade_oracles" }
 
-[dev-dependencies]
-cosmwasm-schema = "0.10.1"
+
+shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
+
