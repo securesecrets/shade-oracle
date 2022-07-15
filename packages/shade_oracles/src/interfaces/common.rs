@@ -1,13 +1,8 @@
-use crate::band::ReferenceData;
+use crate::interfaces::band::ReferenceData;
+use crate::{BLOCK_SIZE, Query, InstantiateCallback, ExecuteCallback, ResponseStatus, Contract};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Uint128, Uint256};
 use cosmwasm_std::*;
-pub use shade_protocol::utils::{Query};
-pub use shade_protocol::utils::generic_response::ResponseStatus as ResponseStatus;
-pub use shade_protocol::utils::asset::{Contract, UnvalidatedContract};
-
-pub const BLOCK_SIZE: usize = 256;
-
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
@@ -19,12 +14,16 @@ pub enum QueryMsg {
 }
 
 impl Query for QueryMsg {
-    const BLOCK_SIZE: usize = 256;
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
     UpdateConfig { enabled: bool },
+}
+
+impl ExecuteCallback for ExecuteMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
 /// Default HandleAnswer for oracles if only ExecuteMsg implemented is UpdateConfig.
@@ -96,8 +95,8 @@ pub mod querier {
 
     use super::*;
     use crate::{
-        band::{reference_data, reference_data_bulk},
-        router::{
+        interfaces::band::{reference_data, reference_data_bulk},
+        interfaces::router::{
             AdminAuthResponse, Config as RouterConfig, OracleResponse, QueryMsg as RouterQueryMsg,
         },
     };

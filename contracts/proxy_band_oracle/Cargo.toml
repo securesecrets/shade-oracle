@@ -21,13 +21,8 @@ default = []
 backtraces = ["shade-oracles/backtraces"]
 
 [dependencies]
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
 
-shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
-
-
-snafu = { version = "0.6.3" }
-shade-oracles = { path = "../../packages/shade_oracles", features = ["storage"] }
-
-[dev_dependencies]
-cosmwasm-schema = "0.10.1"
-mockall = "0.10.2"
+[dev-dependencies]
+shade-oracles-multi-test = { path = "../../packages/multi_test" }

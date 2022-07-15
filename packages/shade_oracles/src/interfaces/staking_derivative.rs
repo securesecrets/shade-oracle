@@ -1,10 +1,13 @@
 use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
+use shade_protocol::utils::{ExecuteCallback, InstantiateCallback};
 use cosmwasm_std::Uint128;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
 
 pub mod shade {
 
+
+    use crate::BLOCK_SIZE;
 
     use super::*;
 
@@ -24,6 +27,10 @@ pub mod shade {
         pub router: Contract,
         pub staking_derivative: Contract,
         pub enabled: bool,
+    }
+
+    impl InstantiateCallback for InstantiateMsg {
+        const BLOCK_SIZE: usize = BLOCK_SIZE;
     }
 
     pub mod querier {

@@ -131,7 +131,7 @@ fn try_update_config(
     enabled: Option<bool>,
     only_band: Option<bool>,
 ) -> StdResult<Response> {
-    let mut config = CONFIG.load(&deps.storage)?;
+    let mut config = CONFIG.load(deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
 
@@ -159,7 +159,7 @@ fn try_update_config(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
+            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
             QueryMsg::GetPrice { key } => to_binary(&try_query_price(deps, key)?),
             QueryMsg::GetPrices { keys } => {
                 let mut prices = vec![];
@@ -177,11 +177,11 @@ fn try_query_price(
     deps: Deps,
     key: String,
 ) -> StdResult<OraclePrice> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
 
-    let primary_token: Contract = PRIMARY_TOKEN.load(&deps.storage)?;
+    let primary_token: Contract = PRIMARY_TOKEN.load(deps.storage)?;
 
-    let primary_info = PRIMARY_INFO.load(&deps.storage)?;
+    let primary_info = PRIMARY_INFO.load(deps.storage)?;
 
     // Simulate trade 1 primary -> 1 base
     let sim: EstimatedPriceResponse = ShadeSwapQueryMsg::GetEstimatedPrice {
@@ -200,7 +200,7 @@ fn try_query_price(
     )?;
 
     // Normalize to 'rate * 10^18'
-    let base_info = BASE_INFO.load(&deps.storage)?;
+    let base_info = BASE_INFO.load(deps.storage)?;
     let exchange_rate = normalize_price(sim.estimated_price, base_info.decimals);
 
     // Query router for base_peg/USD

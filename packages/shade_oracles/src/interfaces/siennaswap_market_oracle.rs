@@ -1,6 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
+use shade_protocol::utils::{ExecuteCallback, InstantiateCallback};
 
+use crate::BLOCK_SIZE;
 
 #[cw_serde]
 pub struct Config {
@@ -27,7 +29,15 @@ pub enum ExecuteMsg {
     // all others are added or changed
     UpdateConfig {
         router: Option<Contract>,
-        enabled: Option<bool>,
         only_band: Option<bool>,
+        enabled: Option<bool>,
     },
+}
+
+impl InstantiateCallback for InstantiateMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
+}
+
+impl ExecuteCallback for ExecuteMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
 }

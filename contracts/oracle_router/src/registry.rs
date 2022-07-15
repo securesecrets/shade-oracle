@@ -37,8 +37,8 @@ pub fn get_price(
     deps: Deps,
     key: String,
 ) -> StdResult<Binary> {
-    let resolved_key = resolve_alias(&deps.storage, key)?;
-    let oracle = get_oracle(&deps.storage, &resolved_key)?;
+    let resolved_key = resolve_alias(deps.storage, key)?;
+    let oracle = get_oracle(deps.storage, &resolved_key)?;
 
     to_binary(&query_oracle_price(&oracle, &deps.querier, resolved_key)?)
 }
@@ -52,8 +52,8 @@ pub fn get_prices(
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
 
     for current_key in keys {
-        let resolved_key = resolve_alias(&deps.storage, current_key.clone())?;
-        let oracle = get_oracle(&deps.storage, &resolved_key)?;
+        let resolved_key = resolve_alias(deps.storage, current_key.clone())?;
+        let oracle = get_oracle(deps.storage, &resolved_key)?;
 
         // Get the current vector of symbols at that oracle and add the current key to it
         map.entry(oracle).or_insert(vec![]).push(resolved_key);

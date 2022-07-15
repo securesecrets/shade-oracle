@@ -3,10 +3,8 @@ use cosmwasm_std::{
     to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
    StdError, StdResult, Storage,
 };
-use shade_ensemble::prelude::ContractLink;
-use cosmwasm_schema::cw_serde;
 use secret_toolkit::utils::InitCallback;
-use serde::{Deserialize, Serialize};
+use shade_oracles::core::cosmwasm_schema::cw_serde;
 use shade_oracles::{
     common::Contract,
     protocols::shadeswap::{
@@ -24,7 +22,7 @@ pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uin
 #[cw_serde]
 pub struct InstantiateMsg {}
 
-impl InitCallback for InstantiateMsg {
+impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
@@ -102,7 +100,7 @@ pub fn query(
     msg: ShadeSwapQueryMsg,
 ) -> StdResult<Binary> {
     match msg {
-        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(&deps.storage)?),
+        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(deps.storage)?),
         ShadeSwapQueryMsg::GetEstimatedPrice { offer } => {
             //TODO: check swap doesnt exceed pool size
 
@@ -119,7 +117,7 @@ pub fn query(
                 }
             };
 
-            let pair_info = PAIR_INFO.load(&deps.storage)?;
+            let pair_info = PAIR_INFO.load(deps.storage)?;
 
             match pair_info.pair.0 {
                 TokenType::CustomToken {

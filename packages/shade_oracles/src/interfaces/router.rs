@@ -1,4 +1,4 @@
-use crate::common::{Contract, ResponseStatus};
+use crate::{Contract, ResponseStatus, InstantiateCallback, ExecuteCallback, BLOCK_SIZE};
 use cosmwasm_std::*;
 use cosmwasm_schema::cw_serde;
 use shade_protocol::utils::Query;
@@ -9,6 +9,18 @@ pub struct InstantiateMsg {
     pub default_oracle: Contract,
     pub band: Contract,
     pub quote_symbol: String,
+}
+
+impl InstantiateCallback for InstantiateMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
+}
+
+impl ExecuteCallback for ExecuteMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
+}
+
+impl Query for QueryMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
 #[cw_serde]
@@ -29,6 +41,7 @@ pub struct UpdateConfig {
     pub quote_symbol: Option<String>,
     pub enabled: Option<bool>,
 }
+
 
 #[cw_serde]
 pub enum RegistryOperation {
@@ -70,10 +83,6 @@ pub enum QueryMsg {
         keys: Vec<String>,
     },
     GetAdminAuth {},
-}
-
-impl Query for QueryMsg {
-    const BLOCK_SIZE: usize = 256;
 }
 
 #[cw_serde]

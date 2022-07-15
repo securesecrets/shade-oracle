@@ -20,9 +20,7 @@ backtraces = ["shade-oracles/backtraces"]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
 
-
 [dev-dependencies]
-shade-ensemble = { commit = "4b514b1", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }
-shade-oracles-ensemble = { path = "../../packages/shade_oracles_ensemble" }
+shade-oracles-multi-test = { path = "../../packages/multi_test" }
 snip20-reference-impl = { git = "https://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
 mock-sienna-pair = { path = "../mock_sienna_pair" }

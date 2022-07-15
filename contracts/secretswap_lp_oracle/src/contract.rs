@@ -162,7 +162,7 @@ fn try_update_config(
     router: Option<Contract>,
     pair: Option<Contract>,
 ) -> StdResult<Response> {
-    let mut state: State = State::new_json(&deps.storage)?;
+    let mut state: State = State::new_json(deps.storage)?;
 
     if deps.api.canonical_address(&env.message.sender)? != state.owner {
         return Err(StdError::Unauthorized { backtrace: None });
@@ -220,7 +220,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
 fn try_query_config(
     deps: Deps,
 ) -> StdResult<ConfigResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    let state: State = State::new_json(deps.storage)?;
 
     Ok(ConfigResponse {
         owner: deps.api.human_address(&state.owner)?.to_string(),
@@ -234,7 +234,7 @@ fn try_query_config(
 fn try_query_price(
     deps: Deps,
 ) -> StdResult<PriceResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    let state: State = State::new_json(deps.storage)?;
 
     let oracle0 = query_oracle(
         &state.router.as_human(&deps.api)?,
