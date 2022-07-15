@@ -17,7 +17,7 @@ pub fn update_registry(
     _env: Env,
     operation: RegistryOperation,
 ) -> StdResult<Response> {
-    resolve_registry_operation(&mut deps.storage, &deps.api, operation)?;
+    resolve_registry_operation(deps.storage, &deps.api, operation)?;
     Ok(Response::default())
 }
 
@@ -27,7 +27,7 @@ pub fn batch_update_registry(
     operations: Vec<RegistryOperation>,
 ) -> StdResult<Response> {
     for operation in operations {
-        resolve_registry_operation(&mut deps.storage, &deps.api, operation)?;
+        resolve_registry_operation(deps.storage, &deps.api, operation)?;
     }
     Ok(Response::default())
 }

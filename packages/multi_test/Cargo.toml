@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
+multi-test = []
 index-oracle = ["dep:index-oracle"]
 
 [dependencies]

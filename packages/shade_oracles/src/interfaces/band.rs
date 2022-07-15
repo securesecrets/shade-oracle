@@ -32,7 +32,7 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
-pub enum BandQuery {
+pub enum QueryMsg {
     GetReferenceData {
         base_symbol: String,
         quote_symbol: String,
@@ -55,7 +55,7 @@ pub struct ReferenceDataBulk {
     pub data: Vec<ReferenceData>,
 }
 
-impl Query for BandQuery {
+impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
@@ -65,7 +65,7 @@ pub fn reference_data(
     quote_symbol: String,
     band: Contract,
 ) -> StdResult<ReferenceData> {
-    BandQuery::GetReferenceData {
+    QueryMsg::GetReferenceData {
         base_symbol,
         quote_symbol,
     }
@@ -78,7 +78,7 @@ pub fn reference_data_bulk(
     quote_symbols: Vec<String>,
     band: Contract,
 ) -> StdResult<Vec<ReferenceData>> {
-    BandQuery::GetReferenceDataBulk {
+    QueryMsg::GetReferenceDataBulk {
         base_symbols,
         quote_symbols,
     }

@@ -6,18 +6,19 @@ use cosmwasm_std::{
     to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
    StdError, StdResult, Storage,
 };
-use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
 use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
 use shade_oracles::{
+    Contract, BLOCK_SIZE, pad_handle_result, pad_query_result
     common::{Contract, BLOCK_SIZE},
     router::*,
 };
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
+) -> StdResult<Response> {
     let config = Config {
         admin_auth: msg.admin_auth,
         default_oracle: msg.default_oracle,
@@ -26,13 +27,11 @@ pub fn instantiate(
         quote_symbol: msg.quote_symbol,
         enabled: true,
     };
-    CONFIG.save(&mut deps.storage, &config)?;
-    Ok(InitResponse {
-        messages: vec![],
-        log: vec![],
-    })
+    CONFIG.save(deps.storage, &config)?;
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -43,7 +42,7 @@ pub fn execute(
     pad_handle_result(
         match msg {
             ExecuteMsg::UpdateConfig { config } => {
-                CONFIG.update(&mut deps.storage, |mut new_config| -> StdResult<_> {
+                CONFIG.update(deps.storage, |mut new_config| -> StdResult<_> {
                     new_config.admin_auth = config.admin_auth.unwrap_or(new_config.admin_auth);
                     new_config.default_oracle =
                         config.default_oracle.unwrap_or(new_config.default_oracle);
@@ -85,6 +84,7 @@ fn is_admin(
 
 pub fn query(
     deps: Deps,
+    env: Env,
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     pad_query_result(

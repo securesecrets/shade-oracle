@@ -1,17 +1,16 @@
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response,  Querier, 
-   StdError, StdResult, Storage,
+    to_binary, MessageInfo, Binary, Env, Deps, Response, Addr, DepsMut,
+    QueryRequest, StdError, StdResult, QueryResponse, WasmQuery, entry_point,
 };
-use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
-    band::ReferenceData,
+    pad_handle_result, pad_query_result, ResponseStatus, Contract, BLOCK_SIZE,
+    interfaces::band::ReferenceData,
     common::{
-        get_precision,
-        querier::{query_band_price, query_token_info, verify_admin},
-        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, QueryMsg,
-        ResponseStatus, BLOCK_SIZE,
+        is_disabled,
+        querier::{query_prices, query_token_info, verify_admin, query_band_price},
+        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, QueryMsg, get_precision
     },
-    staking_derivative::shade::{
+    interfaces::staking_derivative::shade::{
         querier::query_derivative_price,
         {Config, InstantiateMsg},
     },
@@ -21,14 +20,14 @@ use shade_oracles::{
 const CONFIG: Item<Config> = Item::new("config");
 const TOKEN_DECIMALS: Item<u8> = Item::new("token_decimals");
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
+) -> StdResult<Response> {
     let token_decimals = query_token_info(&msg.staking_derivative, &deps.querier)?
-        .token_info
         .decimals;
 
     let config = Config {
@@ -39,21 +38,25 @@ pub fn instantiate(
         enabled: true,
     };
 
-    TOKEN_DECIMALS.save(&mut deps.storage, &token_decimals)?;
-    CONFIG.save(&mut deps.storage, &config)?;
+    TOKEN_DECIMALS.save(deps.storage, &token_decimals)?;
+    CONFIG.save(deps.storage, &config)?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
+    let config = CONFIG.load(deps.storage)?;
+    verify_admin(&config.router, deps.as_ref(), info.sender.clone())?;
+
     pad_handle_result(
         match msg {
-            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, &env, enabled),
+            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, enabled),
         },
         BLOCK_SIZE,
     )
@@ -61,24 +64,19 @@ pub fn execute(
 
 fn try_update_config(
     deps: DepsMut,
-    env: &Env,
     enabled: bool,
 ) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
-    verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
-    CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
         config.enabled = enabled;
         Ok(config)
     })?;
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
-    })
+    Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
+        status: ResponseStatus::Success,
+    })?))
 }
 
+#[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
@@ -106,7 +104,7 @@ fn try_query_price(
         query_band_price(&config.router, &deps.querier, config.underlying_symbol)?;
 
     let staking_derivative_price =
-        query_derivative_price(&config.staking_derivative, &deps.querier)?;
+        query_derivative_price(deps, &config.staking_derivative)?;
 
     let staking_derivative_price_precision = get_precision(token_decimals);
 
