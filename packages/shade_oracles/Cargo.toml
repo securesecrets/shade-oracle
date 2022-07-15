@@ -8,11 +8,11 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["storage"]
+default = []
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
-# for packages that won't be built
+# for packages will be built
 scrt = ["core"]
 # for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
 # in order for the build to work )
