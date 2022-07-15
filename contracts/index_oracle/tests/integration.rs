@@ -4,7 +4,9 @@ use shade_oracles::{
     Contract, common::OraclePrice,
     interfaces::index_oracle, interfaces::router,
 };
-use shade_oracles_multi_test;
+use shade_oracles_multi_test::{
+    multi::MockShadePair
+};
 
 use cosmwasm_std::{Uint128, Addr, StdResult, ContractInfo};
 

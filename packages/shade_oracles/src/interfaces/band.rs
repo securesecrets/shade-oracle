@@ -115,8 +115,11 @@ pub mod proxy {
         },
     }
 
-    #[cw_serde]
-    pub enum HandleAnswer {
-        UpdateConfig { status: ResponseStatus },
+    impl InstantiateCallback for InstantiateMsg {
+        const BLOCK_SIZE: usize = BLOCK_SIZE;
+    }
+    
+    impl ExecuteCallback for ExecuteMsg {
+        const BLOCK_SIZE: usize = BLOCK_SIZE;
     }
 }
