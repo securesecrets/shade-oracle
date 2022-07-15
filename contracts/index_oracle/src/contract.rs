@@ -108,7 +108,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
                 to_binary(&prices)
             }
             QueryMsg::Basket {} => to_binary(&QueryAnswer::Basket {
-                basket: BASKET.load(&deps.storage)?,
+                basket: BASKET.load(deps.storage)?,
             }),
         },
         BLOCK_SIZE,
@@ -191,7 +191,7 @@ fn try_update_config(
     enabled: Option<bool>,
     only_band: Option<bool>,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender)?;
 
@@ -218,13 +218,13 @@ fn mod_basket(
     env: Env,
     mod_basket: Vec<(String, Uint128)>,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
 
     verify_admin(&config.router, &deps.querier, env.message.sender)?;
 
-    let self_symbol = SYMBOL.load(&deps.storage)?;
+    let self_symbol = SYMBOL.load(deps.storage)?;
 
-    let basket = BASKET.load(&deps.storage)?;
+    let basket = BASKET.load(deps.storage)?;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
     let mut prices = fetch_prices(deps, &config, symbols.clone())?;
     // target previous price
@@ -300,23 +300,23 @@ fn mod_basket(
 }
 
 fn try_query_config(deps: Deps) -> StdResult<Config> {
-    CONFIG.load(&deps.storage)
+    CONFIG.load(deps.storage)
 }
 
 fn try_query_price(
     deps: Deps,
     key: String,
 ) -> StdResult<OraclePrice> {
-    if key != SYMBOL.load(&deps.storage)? {
+    if key != SYMBOL.load(deps.storage)? {
         return Err(StdError::generic_err(format!(
             "Missing price feed for {}",
             key
         )));
     }
 
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
 
-    let basket = BASKET.load(&deps.storage)?;
+    let basket = BASKET.load(deps.storage)?;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
     let prices = fetch_prices(deps, &config, symbols)?;
     let index = eval_index(prices, basket);

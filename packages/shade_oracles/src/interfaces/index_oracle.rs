@@ -1,4 +1,5 @@
-use crate::common::{Contract, ResponseStatus};
+use crate::{Contract, ResponseStatus, BLOCK_SIZE};
+use crate::{InstantiateCallback, ExecuteCallback};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
 
@@ -19,6 +20,10 @@ pub struct InstantiateMsg {
     pub only_band: bool,
 }
 
+impl InstantiateCallback for InstantiateMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
+}
+
 #[cw_serde]
 pub enum ExecuteMsg {
     // Asset with weight 0 will be removed
@@ -31,6 +36,10 @@ pub enum ExecuteMsg {
         enabled: Option<bool>,
         only_band: Option<bool>,
     },
+}
+
+impl ExecuteCallback for ExecuteMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
 #[cw_serde]

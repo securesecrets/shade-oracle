@@ -1,7 +1,9 @@
-use crate::common::{normalize_price, sqrt, Contract};
+use crate::common::{normalize_price, sqrt};
+use crate::Contract;
 use cosmwasm_std::{Uint128, Uint256};
 use cosmwasm_std::*;
 use cosmwasm_schema::cw_serde;
+use shade_protocol::utils::{ExecuteCallback, InstantiateCallback};
 
 pub mod secretswap {
     use super::*;
@@ -20,6 +22,8 @@ pub mod secretswap {
         pub pair: Contract,
     }
 
+    
+
     // We define a custom struct for each query response
     #[cw_serde]
     pub struct Config {
@@ -33,6 +37,8 @@ pub mod secretswap {
 }
 
 pub mod siennaswap {
+    use crate::BLOCK_SIZE;
+
     use super::*;
     /// Oracle1 - contract for an oracle of asset 1
     ///
@@ -47,6 +53,10 @@ pub mod siennaswap {
         pub symbol_1: String,
         pub router: Contract,
         pub exchange: Contract,
+    }
+
+    impl InstantiateCallback for InstantiateMsg {
+        const BLOCK_SIZE: usize = BLOCK_SIZE;
     }
 
     // We define a custom struct for each query response

@@ -112,7 +112,7 @@ pub fn query(
 ) -> StdResult<Binary> {
     match msg {
         PairQuery::PairInfo => to_binary(&PairInfoResponse {
-            pair_info: pair_info_r(&deps.storage).load()?,
+            pair_info: pair_info_r(deps.storage).load()?,
         }),
         PairQuery::SwapSimulation { offer } => {
             //TODO: check swap doesnt exceed pool size
@@ -130,7 +130,7 @@ pub fn query(
                 }
             };
 
-            let pair_info = pair_info_r(&deps.storage).load()?;
+            let pair_info = pair_info_r(deps.storage).load()?;
 
             match pair_info.pair.token_0 {
                 TokenType::CustomToken {

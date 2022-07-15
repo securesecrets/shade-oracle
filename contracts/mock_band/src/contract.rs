@@ -88,7 +88,7 @@ pub fn query(
             let mut results = vec![];
 
             for (base, quote) in base_symbols.iter().zip(quote_symbols) {
-                results.push(MOCK_DATA.load(&deps.storage, (base.to_string(), quote.to_string()))?);
+                results.push(MOCK_DATA.load(deps.storage, (base.to_string(), quote.to_string()))?);
             }
             to_binary(&results)
         }
@@ -101,8 +101,8 @@ fn query_saved_band_data(
     quote_symbol: String,
 ) -> StdResult<Binary> {
     /*
-    let data: ReferenceData = MOCK_DATA.load(&deps.storage, (base_symbol.clone(), quote_symbol.clone()))?;
+    let data: ReferenceData = MOCK_DATA.load(deps.storage, (base_symbol.clone(), quote_symbol.clone()))?;
     assert_eq!(data.rate, Uint128::zero(), "MOCK BAND REF");
     */
-    to_binary(&MOCK_DATA.load(&deps.storage, (base_symbol, quote_symbol))?)
+    to_binary(&MOCK_DATA.load(deps.storage, (base_symbol, quote_symbol))?)
 }

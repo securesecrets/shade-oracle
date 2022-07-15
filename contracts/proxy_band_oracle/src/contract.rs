@@ -59,7 +59,7 @@ fn try_update_config(
     enabled: Option<bool>,
     admin_auth: Option<Contract>,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
 
     let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {
         contract_address: env.contract.address.to_string(),
@@ -93,7 +93,7 @@ fn try_update_config(
 
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     let response = match msg {
-        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
+        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::GetPrice { key } => try_query_price(deps, key),
         QueryMsg::GetPrices { keys } => try_query_prices(deps, keys),
     };
@@ -104,7 +104,7 @@ fn try_query_price(
     deps: Deps,
     key: String,
 ) -> StdResult<Binary> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     is_disabled(config.enabled)?;
 
     if key == "SHD" {
@@ -132,7 +132,7 @@ fn try_query_prices(
     deps: Deps,
     keys: Vec<String>,
 ) -> StdResult<Binary> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     is_disabled(config.enabled)?;
 
     let quote_symbols = vec![config.quote_symbol; keys.len()];

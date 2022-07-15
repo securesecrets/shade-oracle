@@ -91,7 +91,7 @@ fn try_update_config(
     deposit_token_oracle: Option<Contract>,
     strategy: Option<Contract>,
 ) -> StdResult<Response> {
-    let mut state: State = State::new_json(&deps.storage)?;
+    let mut state: State = State::new_json(deps.storage)?;
 
     if deps.api.canonical_address(&env.message.sender)? != state.owner {
         return Err(StdError::Unauthorized { backtrace: None });
@@ -145,7 +145,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
 fn try_query_config(
     deps: Deps,
 ) -> StdResult<ConfigResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    let state: State = State::new_json(deps.storage)?;
 
     Ok(ConfigResponse {
         owner: deps.api.human_address(&state.owner)?.to_string(),
@@ -159,7 +159,7 @@ fn try_query_config(
 fn try_query_price(
     deps: Deps,
 ) -> StdResult<PriceResponse> {
-    let state: State = State::new_json(&deps.storage)?;
+    let state: State = State::new_json(deps.storage)?;
 
     let deposits_for_one_share = Uint256::from(query_deposit_for_shares(
         &state.strategy.as_human(&deps.api)?,

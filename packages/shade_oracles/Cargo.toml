@@ -30,7 +30,7 @@ serde = { version = "1.0.103", default-features = false, features = ["derive", "
 thiserror = "1.0"
 
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20"] }
-
-secret-toolkit = { version = "0.2", features = ["permit"] }
 shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor" }
-shade-ensemble = { commit = "4b514b1", git = "ssh://git@github.com/securesecrets/shade-ensemble.git" }
+
+# https://docs.rs/getrandom/latest/getrandom/#webassembly-support
+getrandom = { version = "0.2", features = ["js"] }

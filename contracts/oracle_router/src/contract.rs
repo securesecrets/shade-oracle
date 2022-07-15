@@ -67,7 +67,7 @@ fn is_admin(
     deps: Deps,
     user: Addr,
 ) -> StdResult<()> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {
         contract_address: config.address.to_string(),
         admin_address: user.to_string(),
@@ -90,25 +90,25 @@ pub fn query(
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => {
-                let config = CONFIG.load(&deps.storage)?;
+                let config = CONFIG.load(deps.storage)?;
                 to_binary(&config)
             }
             QueryMsg::GetOracle { key } => {
-                let oracle = get_oracle(&deps.storage, &key)?;
+                let oracle = get_oracle(deps.storage, &key)?;
                 to_binary(&OracleResponse { oracle, key })
             }
             QueryMsg::GetPrice { key } => get_price(deps, key),
             QueryMsg::GetOracles { keys } => {
                 let mut oracles = vec![];
                 for key in keys {
-                    let oracle = get_oracle(&deps.storage, &key)?;
+                    let oracle = get_oracle(deps.storage, &key)?;
                     oracles.push(OracleResponse { key, oracle })
                 }
                 to_binary(&oracles)
             }
             QueryMsg::GetPrices { keys } => get_prices(deps, keys),
             QueryMsg::GetAdminAuth {} => to_binary(&AdminAuthResponse {
-                admin_auth: CONFIG.load(&deps.storage)?.admin_auth,
+                admin_auth: CONFIG.load(deps.storage)?.admin_auth,
             }),
         },
         BLOCK_SIZE,

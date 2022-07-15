@@ -114,7 +114,7 @@ fn try_update_config(
     env: &Env,
     enabled: bool,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
     CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
         config.enabled = enabled;
@@ -132,7 +132,7 @@ fn try_update_config(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
+            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
             QueryMsg::GetPrice { key } => try_query_price(deps, key),
             QueryMsg::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
         },
@@ -144,9 +144,9 @@ fn try_query_price(
     deps: Deps,
     key: String,
 ) -> StdResult<Binary> {
-    let config = CONFIG.load(&deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     is_disabled(config.enabled)?;
-    let pair = PAIR.load(&deps.storage)?;
+    let pair = PAIR.load(deps.storage)?;
 
     if key != config.supported_key {
         return Err(throw_unsupported_symbol_error(key));
