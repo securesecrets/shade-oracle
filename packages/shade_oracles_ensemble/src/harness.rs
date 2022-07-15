@@ -5,7 +5,7 @@ use shade_ensemble::ensemble::{ContractHarness, MockDeps};
 macro_rules! implement_harness {
     ($x:ident, $s:ident) => {
         impl ContractHarness for $x {
-            fn instantiate(&self, deps: &mut MockDeps, env: Env, msg: Binary) -> StdResult<InitResponse> {
+            fn instantiate(&self, deps: &mut MockDeps, env: Env, msg: Binary) -> StdResult<Response> {
                 $s::contract::instantiate(deps, env, from_binary(&msg)?)
             }
 

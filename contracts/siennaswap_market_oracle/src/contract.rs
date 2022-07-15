@@ -28,12 +28,13 @@ const PRIMARY_TOKEN: Item<Contract> = Item::new("primary_token");
 const PRIMARY_INFO: Item<TokenInfo> = Item::new("primary_info");
 const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
+) -> StdResult<Response> {
     let pair_info_response: SiennaSwapPairInfoResponse = SiennaSwapExchangeQueryMsg::PairInfo
         .query(
             &deps.querier,
@@ -51,7 +52,7 @@ pub fn instantiate(
             contract_addr,
             token_code_hash,
         } => Some(Contract {
-            address: Addr(contract_addr.to_string()),
+            address: *contract_addr,
             code_hash: token_code_hash.to_string(),
         }),
         _ => None,
@@ -103,22 +104,32 @@ pub fn instantiate(
         )));
     };
 
-    CONFIG.save(&mut deps.storage, &config)?;
-    PRIMARY_TOKEN.save(&mut deps.storage, &tokens[primary_i].clone())?;
-    PRIMARY_INFO.save(&mut deps.storage, &token_infos[primary_i])?;
-    BASE_INFO.save(&mut deps.storage, &token_infos[base_i])?;
+    CONFIG.save(deps.storage, &config)?;
+    PRIMARY_TOKEN.save(deps.storage, &tokens[primary_i].clone())?;
+    PRIMARY_INFO.save(deps.storage, &token_infos[primary_i])?;
+    BASE_INFO.save(deps.storage, &token_infos[base_i])?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
+    let config = CONFIG.load(deps.storage)?;
+    verify_admin(&config.router, deps.as_ref(), info.sender.clone())?;
+
     pad_handle_result(
         match msg {
+            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, enabled),
+        },
+        BLOCK_SIZE,
+    )
+}
+
             ExecuteMsg::UpdateConfig {
                 router,
                 enabled,
@@ -126,8 +137,6 @@ pub fn execute(
             } => try_update_config(deps, &env, router, enabled, only_band),
         },
         BLOCK_SIZE,
-    )
-}
 
 fn try_update_config(
     deps: DepsMut,
@@ -142,17 +151,14 @@ fn try_update_config(
     config.enabled = enabled.unwrap_or(config.enabled);
     config.only_band = only_band.unwrap_or(config.only_band);
 
-    CONFIG.save(&mut deps.storage, &config)?;
+    CONFIG.save(deps.storage, &config)?;
 
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+        Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
             status: ResponseStatus::Success,
-        })?),
-    })
+        })?))
 }
 
+#[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {

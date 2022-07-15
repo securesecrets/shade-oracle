@@ -1,19 +1,18 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, DepsMut, MessageInfo, entry_point};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
+    to_binary, Binary, Env, Deps, Response, Addr,
    StdError, StdResult, Storage,
 };
-use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use cosmwasm_schema::cw_serde;
-use secret_toolkit::utils::InitCallback;
+use shade_oracles::storage::{singleton_read, ReadonlySingleton, Singleton, singleton};
 use shade_oracles::{
-    common::Contract,
+    Contract, InstantiateCallback, ExecuteCallback,
     protocols::siennaswap::{
         Pair, SiennaDexTokenType as TokenType, SiennaSwapExchangeQueryMsg as PairQuery,
         SiennaSwapPairInfo as PairInfo, SiennaSwapPairInfoResponse as PairInfoResponse,
         SimulationResponse,
     },
-    core::{cosmwasm_schema, cosmwasm_storage, cosmwasm_std}
+    core::{cosmwasm_schema}
 };
 
 pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
@@ -25,27 +24,32 @@ pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uin
 #[cw_serde]
 pub struct InstantiateMsg {}
 
-impl InitCallback for InstantiateMsg {
+impl InstantiateCallback for InstantiateMsg {
+    const BLOCK_SIZE: usize = 256;
+}
+
+impl ExecuteCallback for ExecuteMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
 pub static PAIR_INFO: &[u8] = b"pair_info";
 
-pub fn pair_info_r<S: Storage>(storage: &S) -> ReadonlySingleton<S, PairInfo> {
+pub fn pair_info_r(storage: &dyn Storage) -> ReadonlySingleton<PairInfo> {
     singleton_read(storage, PAIR_INFO)
 }
 
-pub fn pair_info_w<S: Storage>(storage: &mut S) -> Singleton<S, PairInfo> {
+pub fn pair_info_w(storage: &mut dyn Storage) -> Singleton<PairInfo> {
     singleton(storage, PAIR_INFO)
 }
 
+#[entry_point]
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     _msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
-    Ok(InitResponse::default())
+) -> StdResult<Response> {
+    Ok(Response::default())
 }
 
 #[cw_serde]
@@ -58,6 +62,7 @@ pub enum ExecuteMsg {
     },
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -73,11 +78,11 @@ pub fn execute(
         } => {
             let pair_info = PairInfo {
                 liquidity_token: Contract {
-                    address: Addr("".to_string()),
+                    address: Addr::unchecked("".to_string()),
                     code_hash: "".to_string(),
                 },
                 factory: Contract {
-                    address: Addr("".to_string()),
+                    address: Addr::unchecked("".to_string()),
                     code_hash: "".to_string(),
                 },
                 pair: Pair {
@@ -96,7 +101,7 @@ pub fn execute(
                 contract_version: 0,
             };
 
-            pair_info_w(&mut deps.storage).save(&pair_info)?;
+            pair_info_w(deps.storage).save(&pair_info)?;
 
             Ok(Response::default())
         }
@@ -105,6 +110,7 @@ pub fn execute(
     // TODO: actual swap execute
 }
 
+#[entry_point]
 pub fn query(
     deps: Deps,
     env: Env,

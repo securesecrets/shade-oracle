@@ -8,7 +8,7 @@ use shade_oracles::{
     protocols::shade_earn_v1::{query_deposit_for_shares, query_generic_config},
 };
 use cosmwasm_std::{
-    to_binary, Api, CanonicalAddr, Env, Deps, Response, Addr, InitResponse,
+    to_binary, Api, CanonicalAddr, Env, Deps, Response, Addr, Response,
     Querier, StdError, StdResult, Storage, Uint128,
 };
 use secret_toolkit::utils::{pad_handle_result, pad_query_result};
@@ -34,21 +34,20 @@ impl SingletonStorable for State {
     }
 }
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
+) -> StdResult<Response> {
     let underlying_oracle = msg.deposit_token_oracle.as_canonical(&deps.api)?;
     let config = query_generic_config(&msg.strategy, &deps.querier)?;
     let deposit_token = config.deposit_token.as_canonical(&deps.api)?;
     let share_token = config.share_token.as_canonical(&deps.api)?;
     let deposit_token_decimals = query_token_info(&config.deposit_token, &deps.querier)?
-        .token_info
         .decimals;
     let share_token_decimals = query_token_info(&config.share_token, &deps.querier)?
-        .token_info
         .decimals;
 
     let state: State = State {
@@ -61,11 +60,12 @@ pub fn instantiate(
         share_token_decimals,
     };
 
-    state.save_json(&mut deps.storage)?;
+    state.save_json(deps.storage)?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -121,17 +121,14 @@ fn try_update_config(
         state.share_token_decimals = share_token_decimals;
     }
 
-    state.save_json(&mut deps.storage)?;
+    state.save_json(deps.storage)?;
 
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+        Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
             status: ResponseStatus::Success,
-        })?),
-    })
+        })?))
 }
 
+#[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {

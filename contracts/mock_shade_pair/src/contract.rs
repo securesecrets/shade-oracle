@@ -1,12 +1,11 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, DepsMut, MessageInfo, entry_point};
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
    StdError, StdResult, Storage,
 };
-use secret_toolkit::utils::InitCallback;
 use shade_oracles::core::cosmwasm_schema::cw_serde;
 use shade_oracles::{
-    common::Contract,
+    Contract, InstantiateCallback, ExecuteCallback,
     protocols::shadeswap::{
         EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenPair, TokenType,
     },
@@ -26,15 +25,20 @@ impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
+impl ExecuteCallback for ExecuteMsg {
+    const BLOCK_SIZE: usize = 256;
+}
+
 const PAIR_INFO: Item<PairInfoResponse> = Item::new("pair_info");
 
+#[entry_point]
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     _msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
-    Ok(InitResponse::default())
+) -> StdResult<Response> {
+    Ok(Response::default())
 }
 
 #[cw_serde]
@@ -47,6 +51,7 @@ pub enum ExecuteMsg {
     },
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -61,14 +66,14 @@ pub fn execute(
             amount_b,
         } => {
             PAIR_INFO.save(
-                &mut deps.storage,
+                deps.storage,
                 &PairInfoResponse {
-                    liquidity_token: ContractLink {
-                        address: Addr("".to_string()),
+                    liquidity_token: Contract {
+                        address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
                     },
-                    factory: ContractLink {
-                        address: Addr("".to_string()),
+                    factory: Contract {
+                        address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
                     },
                     pair: TokenPair(
@@ -95,6 +100,7 @@ pub fn execute(
     // TODO: actual swap execute
 }
 
+#[entry_point]
 pub fn query(
     deps: Deps,
     msg: ShadeSwapQueryMsg,

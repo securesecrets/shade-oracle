@@ -1,23 +1,25 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, entry_point};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response,  Querier, StdResult, Storage,
+    to_binary, Binary, Env, Deps, Response, StdResult, DepsMut, MessageInfo
 };
 
-use shade_oracles::band::{HandleAnswer, ExecuteMsg, InstantiateMsg, ReferenceData};
-use shade_oracles::common::ResponseStatus;
+use shade_oracles::interfaces::band::{QueryMsg, HandleAnswer, ExecuteMsg, InstantiateMsg, ReferenceData};
+use shade_oracles::{ResponseStatus};
 use shade_oracles::storage::Map;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 
+#[entry_point]
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     _msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
-    Ok(InitResponse::default())
+) -> StdResult<Response> {
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -43,7 +45,7 @@ pub fn update_symbol_price(
     last_updated: Option<u64>,
 ) -> StdResult<Response> {
     MOCK_DATA.save(
-        &mut deps.storage,
+        deps.storage,
         (base_symbol, quote_symbol),
         &ReferenceData {
             rate,
@@ -52,28 +54,17 @@ pub fn update_symbol_price(
         },
     )?;
 
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateSymbolPrice {
-            status: ResponseStatus::Success,
-        })?),
-    })
+    let data = to_binary(&HandleAnswer::UpdateSymbolPrice {
+        status: ResponseStatus::Success,
+    })?;
+
+    Ok(Response::new().set_data(data))
 }
 
-#[cw_serde]
-pub enum QueryMsg {
-    GetReferenceData {
-        base_symbol: String,
-        quote_symbol: String,
-    },
-    GetReferenceDataBulk {
-        base_symbols: Vec<String>,
-        quote_symbols: Vec<String>,
-    },
-}
+#[entry_point]
 pub fn query(
     deps: Deps,
+    env: Env,
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     match msg {

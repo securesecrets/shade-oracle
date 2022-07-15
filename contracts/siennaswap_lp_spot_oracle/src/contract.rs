@@ -1,17 +1,16 @@
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
-    QueryRequest, StdError, StdResult, Storage, WasmQuery,
+    to_binary, MessageInfo, Binary, Env, Deps, Response, Addr, DepsMut,
+    QueryRequest, StdError, StdResult, QueryResponse, WasmQuery, entry_point,
 };
-use secret_toolkit::utils::{pad_handle_result, pad_query_result};
 use shade_oracles::{
-    band::ReferenceData,
+    pad_handle_result, pad_query_result, ResponseStatus, Contract, BLOCK_SIZE,
+    interfaces::band::ReferenceData,
     common::{
         is_disabled,
         querier::{query_prices, query_token_info, verify_admin},
-        throw_unsupported_symbol_error, Contract, HandleAnswer, ExecuteMsg, OraclePrice, QueryMsg,
-        ResponseStatus, BLOCK_SIZE,
+        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, QueryMsg
     },
-    lp::{
+    interfaces::lp::{
         get_lp_token_spot_price,
         siennaswap::{Config, InstantiateMsg, PairData},
         FairLpPriceInfo,
@@ -26,18 +25,19 @@ use std::cmp::min;
 const PAIR: Item<PairData> = Item::new("pair");
 const CONFIG: Item<Config> = Item::new("config");
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
-    let mut token0 = Contract::new("a".to_string(), "b".to_string());
+) -> StdResult<Response> {
+    let mut token0 = Contract::new(&Addr::unchecked("a"), &"b".to_string());
     let mut token1 = token0.clone();
 
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: msg.exchange.address.clone(),
+            contract_addr: msg.exchange.address.to_string(),
             code_hash: msg.exchange.code_hash.clone(),
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
@@ -48,7 +48,7 @@ pub fn instantiate(
         token_code_hash,
     } = &pair_info.pair.token_0
     {
-        token0.address = Addr(contract_addr.to_string());
+        token0.address = contract_addr.clone();
         token0.code_hash = token_code_hash.to_string();
     } else {
         return Err(StdError::generic_err(
@@ -60,7 +60,7 @@ pub fn instantiate(
         token_code_hash,
     } = &pair_info.pair.token_1
     {
-        token1.address = Addr(contract_addr.to_string());
+        token1.address = contract_addr.clone();
         token1.code_hash = token_code_hash.to_string();
     } else {
         return Err(StdError::generic_err(
@@ -68,10 +68,8 @@ pub fn instantiate(
         ));
     }
     let token0_decimals = query_token_info(&token0, &deps.querier)?
-        .token_info
         .decimals;
     let token1_decimals = query_token_info(&token1, &deps.querier)?
-        .token_info
         .decimals;
 
     let config = Config {
@@ -89,21 +87,25 @@ pub fn instantiate(
         token1_decimals,
     };
 
-    CONFIG.save(&mut deps.storage, &config)?;
-    PAIR.save(&mut deps.storage, &pair)?;
+    CONFIG.save(deps.storage, &config)?;
+    PAIR.save(deps.storage, &pair)?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
+    let config = CONFIG.load(deps.storage)?;
+    verify_admin(&config.router, deps.as_ref(), info.sender.clone())?;
+
     pad_handle_result(
         match msg {
-            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, &env, enabled),
+            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, enabled),
         },
         BLOCK_SIZE,
     )
@@ -111,24 +113,20 @@ pub fn execute(
 
 fn try_update_config(
     deps: DepsMut,
-    env: &Env,
     enabled: bool,
 ) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
-    verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
-    CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
         config.enabled = enabled;
         Ok(config)
     })?;
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+    Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
             status: ResponseStatus::Success,
-        })?),
-    })
+        })?)
+    )
 }
 
+#[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
@@ -161,7 +159,7 @@ fn try_query_price(
 
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: config.exchange.address.clone(),
+            contract_addr: config.exchange.address.to_string(),
             code_hash: config.exchange.code_hash,
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
@@ -171,8 +169,8 @@ fn try_query_price(
 
     let lp_token_info = query_token_info(&pair.lp_token, &deps.querier)?;
 
-    let total_supply = lp_token_info.token_info.total_supply.unwrap();
-    let lp_token_decimals = lp_token_info.token_info.decimals;
+    let total_supply = lp_token_info.total_supply.unwrap();
+    let lp_token_decimals = lp_token_info.decimals;
 
     let a = FairLpPriceInfo {
         reserve: reserve0.u128(),

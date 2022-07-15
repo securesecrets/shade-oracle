@@ -21,6 +21,6 @@ cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret"
 shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
 
 [dev-dependencies]
-shade-oracles-multi-test = { path = "../../packages/multi_test" }
+shade-oracles-multi-test = { path = "../../packages/multi_test", feature = [ "multi-test" ] }
 snip20-reference-impl = { git = "https://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
 mock-shade-pair = { path = "../mock_shade_pair" }

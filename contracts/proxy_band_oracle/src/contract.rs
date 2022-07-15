@@ -1,27 +1,28 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, QueryResponse, entry_point};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response,  Querier, 
-   StdError, StdResult, Storage,
+    to_binary, DepsMut, Binary, Env, Deps, Response, MessageInfo, 
+   StdError, StdResult,
 };
-use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
-use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
+use shade_oracles::common::querier::verify_admin;
 use shade_oracles::{
-    band::{
+    pad_handle_result, pad_query_result, Contract, ResponseStatus, BLOCK_SIZE,
+    interfaces::band::{
         proxy::{Config, HandleAnswer, ExecuteMsg, InstantiateMsg},
-        reference_data, reference_data_bulk, BandQuery, ReferenceData,
+        reference_data, reference_data_bulk, ReferenceData,
     },
-    common::{is_disabled, Contract, OraclePrice, QueryMsg, ResponseStatus, BLOCK_SIZE},
+    common::{is_disabled, OraclePrice, QueryMsg},
     storage::Item,
 };
 
 const CONFIG: Item<Config> = Item::new("config");
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
+) -> StdResult<Response> {
     let config = Config {
         admin_auth: msg.admin_auth,
         band: msg.band,
@@ -29,52 +30,41 @@ pub fn instantiate(
         enabled: true,
     };
 
-    CONFIG.save(&mut deps.storage, &config)?;
+    CONFIG.save(deps.storage, &config)?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
+    let config = CONFIG.load(deps.storage)?;
+    verify_admin(&config.admin_auth, deps.as_ref(), info.sender)?;
+
     let response: Result<Response, StdError> = match msg {
         ExecuteMsg::UpdateConfig {
             band,
             quote_symbol,
             enabled,
             admin_auth,
-        } => try_update_config(deps, env, band, quote_symbol, enabled, admin_auth),
+        } => try_update_config(deps, band, quote_symbol, enabled, admin_auth),
     };
     pad_handle_result(response, BLOCK_SIZE)
 }
 
 fn try_update_config(
     deps: DepsMut,
-    env: Env,
     band: Option<Contract>,
     quote_symbol: Option<String>,
     enabled: Option<bool>,
     admin_auth: Option<Contract>,
 ) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
-
-    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {
-        contract_address: env.contract.address.to_string(),
-        admin_address: env.message.sender.to_string(),
-    }
-    .query(
-        &deps.querier,
-        config.admin_auth.code_hash.clone(),
-        config.admin_auth.address,
-    )?;
-    if resp.error_msg.is_some() {
-        return Err(StdError::unauthorized());
-    }
-
-    CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
         config.band = band.unwrap_or(config.band);
         config.quote_symbol = quote_symbol.unwrap_or(config.quote_symbol);
         config.enabled = enabled.unwrap_or(config.enabled);
@@ -82,15 +72,14 @@ fn try_update_config(
         Ok(config)
     })?;
 
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
-    })
+    let data = to_binary(&HandleAnswer::UpdateConfig {
+        status: ResponseStatus::Success,
+    })?;
+
+    Ok(Response::new().set_data(data))
 }
 
+#[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     let response = match msg {
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),

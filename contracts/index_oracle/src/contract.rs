@@ -1,19 +1,20 @@
-use cosmwasm_std::{Uint128, Uint512};
+use cosmwasm_std::{Uint128, Uint512, DepsMut, MessageInfo, QueryResponse, entry_point};
 use cosmwasm_std::{
-    to_binary, Api, Env, Deps, Response, Querier, StdError,
-    StdResult, Storage,
+    to_binary, Env, Deps, Response, StdError,
+    StdResult,
 };
-use secret_toolkit::utils::{pad_handle_result, pad_query_result};
-
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    band::ReferenceData,
-    common::{
+    pad_handle_result, pad_query_result, Contract, BLOCK_SIZE, ResponseStatus,
+    interfaces::
+    {
+        band::ReferenceData,
+        common::{
         querier::{query_band_prices, query_prices, verify_admin},
-        Contract, OraclePrice, ResponseStatus, BLOCK_SIZE,
+        OraclePrice},
+        index_oracle::{Config, HandleAnswer, ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg},
     },
-    index_oracle::{Config, HandleAnswer, ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg},
     storage::Item,
 };
 
@@ -22,20 +23,21 @@ const SYMBOL: Item<String> = Item::new("symbol");
 // (symbol, weight, constant)
 const BASKET: Item<Vec<(String, Uint128, Uint128)>> = Item::new("basket");
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
+) -> StdResult<Response> {
     let config = Config {
         router: msg.router,
         enabled: true,
         only_band: msg.only_band,
     };
 
-    CONFIG.save(&mut deps.storage, &config)?;
-    SYMBOL.save(&mut deps.storage, &msg.symbol)?;
+    CONFIG.save(deps.storage, &config)?;
+    SYMBOL.save(deps.storage, &msg.symbol)?;
 
     if msg.basket.is_empty() {
         return Err(StdError::generic_err("Basket cannot be empty"));
@@ -58,7 +60,7 @@ pub fn instantiate(
         )));
     }
 
-    let prices = fetch_prices(deps, &config, symbols)?;
+    let prices = fetch_prices(deps.as_ref(), &config, symbols)?;
     let constants = build_constants(msg.basket.clone(), prices, msg.target);
 
     let mut full_basket: Vec<(String, Uint128, Uint128)> = msg
@@ -68,31 +70,35 @@ pub fn instantiate(
         .collect();
     full_basket.sort();
 
-    BASKET.save(&mut deps.storage, &full_basket)?;
+    BASKET.save(deps.storage, &full_basket)?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
+    let config = CONFIG.load(deps.storage)?;
+    verify_admin(&config.router, deps.as_ref(), info.sender)?;
     pad_handle_result(
         match msg {
             ExecuteMsg::UpdateConfig {
                 router,
                 enabled,
                 only_band,
-            } => try_update_config(deps, env, router, enabled, only_band),
-            ExecuteMsg::ModBasket { basket, .. } => mod_basket(deps, env, basket),
+            } => try_update_config(deps, router, enabled, only_band),
+            ExecuteMsg::ModBasket { basket, .. } => mod_basket(deps, basket),
         },
         BLOCK_SIZE,
     )
 }
 
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+#[entry_point]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
@@ -186,17 +192,14 @@ fn fetch_prices(
 
 fn try_update_config(
     deps: DepsMut,
-    env: Env,
     router: Option<Contract>,
     enabled: Option<bool>,
     only_band: Option<bool>,
 ) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
 
-    verify_admin(&config.router, &deps.querier, env.message.sender)?;
-
     CONFIG.save(
-        &mut deps.storage,
+        deps.storage,
         &Config {
             router: router.unwrap_or(config.router),
             enabled: enabled.unwrap_or(config.enabled),
@@ -204,29 +207,25 @@ fn try_update_config(
         },
     )?;
 
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+    Ok(
+        Response::new()
+        .set_data(to_binary(&HandleAnswer::UpdateConfig {
             status: ResponseStatus::Success,
-        })?),
-    })
+        })?)
+    )
 }
 
 fn mod_basket(
     deps: DepsMut,
-    env: Env,
     mod_basket: Vec<(String, Uint128)>,
 ) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
-
-    verify_admin(&config.router, &deps.querier, env.message.sender)?;
 
     let self_symbol = SYMBOL.load(deps.storage)?;
 
     let basket = BASKET.load(deps.storage)?;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
-    let mut prices = fetch_prices(deps, &config, symbols.clone())?;
+    let mut prices = fetch_prices(deps.as_ref(), &config, symbols.clone())?;
     // target previous price
     let target = eval_index(prices.clone(), basket.clone());
 
@@ -279,7 +278,7 @@ fn mod_basket(
         return Err(StdError::generic_err("Weights must add to 100%"));
     }
 
-    prices.extend(fetch_prices(deps, &config, new_symbols)?);
+    prices.extend(fetch_prices(deps.as_ref(), &config, new_symbols)?);
 
     let constants = build_constants(weights.clone(), prices.clone(), target.rate);
 
@@ -288,15 +287,11 @@ fn mod_basket(
         .into_iter()
         .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
         .collect();
-    BASKET.save(&mut deps.storage, &new_basket)?;
+    BASKET.save(deps.storage, &new_basket)?;
 
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
-    })
+    Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
+        status: ResponseStatus::Success,
+    })?))
 }
 
 fn try_query_config(deps: Deps) -> StdResult<Config> {

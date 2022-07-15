@@ -1,18 +1,12 @@
-use cosmwasm_std::Uint128;
-use cosmwasm_std::Addr;
-use shade_ensemble::{
-    core::ContractLink,
-    ensemble::{ContractEnsemble, MockEnv},
-};
 use std::collections::HashMap;
-
-use shade_oracles_ensemble::{harness::IndexOracle, helpers::setup_core};
-
 use shade_oracles::{
-    band::{self},
-    common::{Contract, OraclePrice},
-    index_oracle, router,
+    interfaces::band::{self},
+    Contract, common::OraclePrice,
+    interfaces::index_oracle, interfaces::router,
 };
+use shade_oracles_multi_test;
+
+use cosmwasm_std::{Uint128, Addr, StdResult, ContractInfo};
 
 fn basic_index_test(
     symbol: String,

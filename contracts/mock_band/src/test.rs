@@ -1,18 +1,19 @@
-use crate::contract::{execute, instantiate, query, QueryMsg};
+use crate::contract::{execute, instantiate, query};
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{
     coins, from_binary,
-    testing::{mock_dependencies, mock_env},
+    testing::{mock_dependencies, mock_env, mock_info},
 };
-use shade_oracles::band::{ExecuteMsg, InstantiateMsg, ReferenceData};
+use shade_oracles::interfaces::band::{QueryMsg, ExecuteMsg, InstantiateMsg, ReferenceData};
 
 #[test]
 fn update_config() {
-    let mut deps = mock_dependencies(20, &[]);
+    let mut deps = mock_dependencies();
     let mock_coins = coins(1000, "earth");
-    let env = mock_env("creator", &mock_coins);
+    let env = mock_env();
+    let user1 = mock_info("test", &vec![]);
     let msg = InstantiateMsg {};
-    let _res = instantiate(&mut deps, env, msg).unwrap();
+    let _res = instantiate(deps.as_mut(), env.clone(), user1.clone(), msg).unwrap();
 
     let time = 1000000u64;
     // update owner
@@ -23,13 +24,13 @@ fn update_config() {
         last_updated: Some(time),
     };
 
-    let env = mock_env("owner0000", &mock_coins);
-    let res = execute(&mut deps, env, msg).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), user1.clone(), msg).unwrap();
     assert_eq!(0, res.messages.len());
 
     // it worked, let's query the state
     let res = query(
-        &deps,
+        deps.as_ref(),
+        env,
         QueryMsg::GetReferenceData {
             base_symbol: "ETH".to_string(),
             quote_symbol: "USD".to_string(),

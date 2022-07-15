@@ -1,6 +1,6 @@
 use crate::interfaces::band::ReferenceData;
 use crate::{BLOCK_SIZE, Query, InstantiateCallback, ExecuteCallback, ResponseStatus, Contract};
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Uint128, Uint256};
 use cosmwasm_std::*;
 /// Default Query API for all oracles.

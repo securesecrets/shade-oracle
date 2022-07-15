@@ -28,4 +28,4 @@ schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 
 [dev-dependencies]
-shade-oracles-multi-test = { path = "../../packages/multi_test" }
+shade-oracles-multi-test = { path = "../../packages/multi_test", feature = [ "multi-test" ] }

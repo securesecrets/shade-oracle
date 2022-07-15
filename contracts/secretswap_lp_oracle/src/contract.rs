@@ -6,7 +6,7 @@ use shade_oracles::{
         AssetInfo, SecretSwapPairInfo, SecretSwapPairQueryMsg, SecretSwapPoolResponse,
     },
     scrt::{
-        to_binary, Api, CanonicalAddr, Env, Deps, Response, Addr, InitResponse,
+        to_binary, Api, CanonicalAddr, Env, Deps, Response, Addr, Response,
         Querier, QueryRequest, StdError, StdResult, Storage, Uint128, WasmQuery,
         BLOCK_SIZE,
     },
@@ -43,12 +43,13 @@ impl SingletonStorable for State {
     }
 }
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<InitResponse> {
+) -> StdResult<Response> {
     let router: CanonicalContract = CanonicalContract {
         address: deps.api.canonical_address(&Addr(msg.router.address))?,
         code_hash: msg.router.code_hash,
@@ -110,10 +111,8 @@ pub fn instantiate(
     }
 
     let token0_decimals = query_token_info(&token0, &deps.querier)?
-        .token_info
         .decimals;
     let token1_decimals = query_token_info(&token1, &deps.querier)?
-        .token_info
         .decimals;
 
     let state: State = State {
@@ -127,12 +126,13 @@ pub fn instantiate(
         token1_decimals,
     };
 
-    state.save_json(&mut deps.storage)?;
+    state.save_json(deps.storage)?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
 /* CONFIG UPDATE NEEDS TO BE FIXED */
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -196,17 +196,14 @@ fn try_update_config(
         state.pair = pair;
     }
 
-    state.save_json(&mut deps.storage)?;
+    state.save_json(deps.storage)?;
 
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+        Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
             status: ResponseStatus::Success,
-        })?),
-    })
+        })?))
 }
 
+#[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
@@ -262,8 +259,8 @@ fn try_query_price(
 
     let lp_token_info = query_token_info(&state.lp_token.as_human(&deps.api)?, &deps.querier)?;
 
-    let total_supply = lp_token_info.token_info.total_supply.unwrap();
-    let lp_token_decimals = lp_token_info.token_info.decimals;
+    let total_supply = lp_token_info.total_supply.unwrap();
+    let lp_token_decimals = lp_token_info.decimals;
 
     let a = FairLpPriceInfo {
         reserve: reserve0.u128(),
