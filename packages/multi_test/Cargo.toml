@@ -21,7 +21,6 @@ multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmw
 
 oracle-router = { path = "../../contracts/oracle_router" }
 proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
-admin = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor", optional = true }
 index-oracle = { path = "../../contracts/index_oracle", optional = true }
 
 shade-staking-derivative-oracle = { path = "../../contracts/shade_staking_derivative_oracle", optional = true }
@@ -35,8 +34,9 @@ siennaswap-lp-spot-oracle = { path = "../../contracts/siennaswap_lp_spot_oracle"
 #snip20-reference-impl = { git = "https://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
 
 mock-band = { path = "../../contracts/mock_band" }
-mock-sienna-pair = { path = "../../contracts/mock_sienna_pair", optional = true }
-mock-shade-pair = { path = "../../contracts/mock_shade_pair", optional = true }
+mock-sienna-pair = { path = "../../contracts/mock_sienna_pair" }
+mock-shade-pair = { path = "../../contracts/mock_shade_pair" }
 
+shade-admin-multi-test = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor" }
 shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor" }
 shade-oracles = { path = "../shade_oracles" }

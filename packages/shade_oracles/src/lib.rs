@@ -4,6 +4,7 @@ pub mod interfaces;
 pub use interfaces::common as common;
 pub mod protocols;
 
+pub use shade_admin::admin::validate_admin;
 pub use shade_protocol::utils::{Query, InstantiateCallback, ExecuteCallback, pad_handle_result, pad_query_result};
 pub use shade_protocol::utils::generic_response::ResponseStatus;
 pub use shade_protocol::utils::asset::{Contract, UnvalidatedContract};

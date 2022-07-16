@@ -146,7 +146,7 @@ fn try_update_config(
     only_band: Option<bool>,
 ) -> StdResult<Response> {
     let mut config = CONFIG.load(deps.storage)?;
-    verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
+    verify_admin(&config.router, &deps.querier, info.sender.clone())?;
     config.router = router.unwrap_or(config.router);
     config.enabled = enabled.unwrap_or(config.enabled);
     config.only_band = only_band.unwrap_or(config.only_band);

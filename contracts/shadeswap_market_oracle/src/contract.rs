@@ -153,7 +153,7 @@ fn try_update_config(
 ) -> StdResult<Response> {
     let mut config = CONFIG.load(deps.storage)?;
 
-    verify_admin(&config.router, &deps.querier, env.message.sender.clone())?;
+    verify_admin(&config.router, &deps.querier, info.sender.clone())?;
 
     if let Some(router) = router {
         config.router = router;

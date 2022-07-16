@@ -4,13 +4,14 @@ use cosmwasm_std::{
    StdError, StdResult,
 };
 use shade_oracles::common::querier::verify_admin;
+use shade_oracles::validate_admin;
 use shade_oracles::{
     pad_handle_result, pad_query_result, Contract, ResponseStatus, BLOCK_SIZE,
     interfaces::band::{
-        proxy::{Config, HandleAnswer, ExecuteMsg, InstantiateMsg},
+        proxy::{Config, ExecuteMsg, InstantiateMsg},
         reference_data, reference_data_bulk, ReferenceData,
     },
-    common::{is_disabled, OraclePrice, QueryMsg},
+    common::{is_disabled, HandleAnswer, OraclePrice, QueryMsg},
     storage::Item,
 };
 
@@ -43,7 +44,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
-    verify_admin(&config.admin_auth, deps.as_ref(), info.sender)?;
+    validate_admin(&deps.querier, env.contract.address.to_string(), info.sender.to_string(), &config.admin_auth)?;
 
     let response: Result<Response, StdError> = match msg {
         ExecuteMsg::UpdateConfig {
