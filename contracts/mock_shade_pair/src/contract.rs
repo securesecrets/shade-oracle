@@ -103,6 +103,7 @@ pub fn execute(
 #[entry_point]
 pub fn query(
     deps: Deps,
+    env: Env,
     msg: ShadeSwapQueryMsg,
 ) -> StdResult<Binary> {
     match msg {

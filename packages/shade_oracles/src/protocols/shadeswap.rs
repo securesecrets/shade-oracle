@@ -61,13 +61,13 @@ pub struct TokenPair<A>(pub TokenType<A>, pub TokenType<A>);
 
 /*
 impl Canonize for TokenPair<Addr> {
-    fn canonize(&self, api: &impl Api) -> StdResult<TokenPair<CanonicalAddr>> {
+    fn canonize(&self, api: &dyn Api) -> StdResult<TokenPair<CanonicalAddr>> {
         Ok(TokenPair(self.0.canonize(api)?, self.1.canonize(api)?))
     }
 }
 
 impl Humanize for TokenPair<CanonicalAddr> {
-    fn humanize(&self, api: &impl Api) -> StdResult<TokenPair<Addr>> {
+    fn humanize(&self, api: &dyn Api) -> StdResult<TokenPair<Addr>> {
         Ok(TokenPair(self.0.humanize(api)?, self.1.humanize(api)?))
     }
 }

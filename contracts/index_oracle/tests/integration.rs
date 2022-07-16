@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use shade_oracles::{
+    ExecuteCallback, Query, InstantiateCallback,
     interfaces::band::{self},
     Contract, common::OraclePrice,
     interfaces::index_oracle, interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::MockShadePair
+    multi::{MockShadePair, index::IndexOracle}, App, helpers::setup_core
 };
 
 use cosmwasm_std::{Uint128, Addr, StdResult, ContractInfo};
@@ -18,15 +19,13 @@ fn basic_index_test(
     expected: Uint128,
     error: Uint128,
 ) {
-    let mut ensemble = ContractEnsemble::new(50);
+    let user = Addr::unchecked("superadmin");
+    let mut app = App::default();
 
-    let reg_index_oracle = ensemble.register(Box::new(IndexOracle));
-
-    let oracle_core = setup_core(ensemble);
+    let oracle_core = setup_core(&mut app).unwrap();
     let band = oracle_core.band;
     let band_proxy = oracle_core.band_proxy;
     let router = oracle_core.router;
-    let mut ensemble = oracle_core.ensemble;
 
     let mut operations = vec![];
 
@@ -41,51 +40,28 @@ fn basic_index_test(
     }
 
     // Configure BAND symbols on router
-    ensemble
-        .execute(
-            &router::ExecuteMsg::BatchUpdateRegistry { operations },
-            MockEnv::new("admin", router.clone()),
-        )
-        .unwrap();
-
+    router::ExecuteMsg::BatchUpdateRegistry { operations }.test_exec(&router, &mut app, user, &[]);
+    
     // Configure mock band prices
     for (sym, price) in prices.clone() {
-        ensemble
-            .execute(
-                &band::ExecuteMsg::UpdateSymbolPrice {
+        band::ExecuteMsg::UpdateSymbolPrice {
                     base_symbol: sym,
                     quote_symbol: "USD".to_string(),
                     rate: price,
                     last_updated: None,
-                },
-                MockEnv::new("admin", band.clone()),
-            )
-            .unwrap();
+        }.test_exec(&band, &mut app, user, &[]);
     }
 
-    let index_oracle = ensemble
-        .instantiate(
-            reg_index_oracle.id,
-            &index_oracle::InstantiateMsg {
-                router: Contract {
-                    address: router.address.clone(),
-                    code_hash: router.code_hash.clone(),
-                },
-                symbol: symbol.clone(),
-                target,
-                basket,
-                only_band: true,
-            },
-            MockEnv::new(
-                "admin",
-                ContractLink {
-                    address: Addr("index".into()),
-                    code_hash: reg_index_oracle.code_hash.clone(),
-                },
-            ),
-        )
-        .unwrap()
-        .instance;
+    let index_oracle = index_oracle::InstantiateMsg {
+        router: Contract {
+            address: router.address.clone(),
+            code_hash: router.code_hash.clone(),
+        },
+        symbol: symbol.clone(),
+        target,
+        basket,
+        only_band: true,
+    }.test_init(IndexOracle::default(), &mut app, user, "index-oracle", &[]);
 
     // Configure router w/ index oracle
     ensemble

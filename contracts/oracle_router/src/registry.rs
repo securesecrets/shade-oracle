@@ -2,14 +2,15 @@ use std::collections::HashMap;
 
 use crate::{contract::get_oracle, state::*};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response, Querier, StdError, StdResult, Storage,
+    to_binary, Api, Binary, Env, Deps, Response, StdError, StdResult, Storage, DepsMut,
 };
 use shade_oracles::{
+    Contract,
     common::{
+        OraclePrice,
         querier::{query_oracle_price, query_oracle_prices},
-        Contract, OraclePrice,
     },
-    router::*,
+    interfaces::router::*,
 };
 
 pub fn update_registry(
@@ -17,7 +18,7 @@ pub fn update_registry(
     _env: Env,
     operation: RegistryOperation,
 ) -> StdResult<Response> {
-    resolve_registry_operation(deps.storage, &deps.api, operation)?;
+    resolve_registry_operation(deps.storage, deps.api, operation)?;
     Ok(Response::default())
 }
 
@@ -27,7 +28,7 @@ pub fn batch_update_registry(
     operations: Vec<RegistryOperation>,
 ) -> StdResult<Response> {
     for operation in operations {
-        resolve_registry_operation(deps.storage, &deps.api, operation)?;
+        resolve_registry_operation(deps.storage, deps.api, operation)?;
     }
     Ok(Response::default())
 }
@@ -73,7 +74,7 @@ pub fn get_prices(
     to_binary(&prices)
 }
 
-pub fn resolve_alias(storage: &impl Storage, alias: String) -> StdResult<String> {
+pub fn resolve_alias(storage: &dyn Storage, alias: String) -> StdResult<String> {
     match ALIASES.may_load(storage, alias.clone()) {
         Ok(key) => match key {
             Some(key) => Ok(key),
@@ -86,8 +87,8 @@ pub fn resolve_alias(storage: &impl Storage, alias: String) -> StdResult<String>
 }
 
 fn resolve_registry_operation(
-    storage: &mut impl Storage,
-    _api: &impl Api,
+    storage: &mut dyn Storage,
+    _api: &dyn Api,
     operation: RegistryOperation,
 ) -> StdResult<()> {
     match operation {

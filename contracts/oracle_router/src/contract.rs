@@ -3,20 +3,18 @@ use crate::{
     state::*,
 };
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
-   StdError, StdResult, Storage,
+    to_binary, Binary, Env, Deps, Response, Addr, StdResult, Storage, entry_point, DepsMut, MessageInfo,
 };
-use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
 use shade_oracles::{
-    Contract, BLOCK_SIZE, pad_handle_result, pad_query_result
-    common::{Contract, BLOCK_SIZE},
-    router::*,
+    Contract, BLOCK_SIZE, pad_handle_result, pad_query_result, validate_admin,
+    interfaces::router::*,
 };
 
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let config = Config {
@@ -38,7 +36,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
-    is_admin(deps, env.message.sender.clone())?;
+    is_admin(deps.as_ref(), info.sender)?;
     pad_handle_result(
         match msg {
             ExecuteMsg::UpdateConfig { config } => {
@@ -67,24 +65,12 @@ fn is_admin(
     user: Addr,
 ) -> StdResult<()> {
     let config = CONFIG.load(deps.storage)?;
-    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {
-        contract_address: config.address.to_string(),
-        admin_address: user.to_string(),
-    }
-    .query(
-        &deps.querier,
-        config.admin_auth.code_hash,
-        config.admin_auth.address,
-    )?;
-    match resp.error_msg {
-        Some(err) => Err(StdError::generic_err(err)),
-        None => Ok(()),
-    }
+    validate_admin(&deps.querier, config.address.to_string(), user.to_string(), &config.admin_auth)
 }
 
 pub fn query(
     deps: Deps,
-    env: Env,
+    _env: Env,
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     pad_query_result(
@@ -115,7 +101,7 @@ pub fn query(
     )
 }
 
-pub fn get_oracle(storage: &impl Storage, key: &str) -> StdResult<Contract> {
+pub fn get_oracle(storage: &dyn Storage, key: &str) -> StdResult<Contract> {
     let config = CONFIG.load(storage)?;
     let resolved_key = resolve_alias(storage, key.to_string())?;
     match ORACLES.may_load(storage, resolved_key)? {

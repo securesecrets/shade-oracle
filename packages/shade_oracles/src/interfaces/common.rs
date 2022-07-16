@@ -219,13 +219,10 @@ pub mod querier {
     ) -> StdResult<()> {
         let get_admin_auth_req: AdminAuthResponse = RouterQueryMsg::GetAdminAuth {}.query(
             &deps.querier,
-            &contract,
+            contract,
         )?;
         let admin_auth = get_admin_auth_req.admin_auth;
-        match shade_admin::admin::validate_admin(deps, contract.address.to_string(), user.to_string(), admin_auth)? {
-            true => Ok(()),
-            false => Err(StdError::generic_err("Unauthorized")),
-        }
+        shade_admin::admin::validate_admin(&deps.querier, contract.address.to_string(), user.to_string(), &admin_auth)
     }
 
     pub fn query_token_info(
