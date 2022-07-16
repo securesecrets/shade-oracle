@@ -2,6 +2,7 @@ use crate::{Contract, ResponseStatus, BLOCK_SIZE};
 use crate::{InstantiateCallback, ExecuteCallback};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
+use shade_protocol::utils::Query;
 
 
 #[cw_serde]
@@ -57,6 +58,10 @@ pub enum QueryMsg {
     GetConfig {},
     Basket {},
     //Constants { },
+}
+
+impl Query for QueryMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
 #[cw_serde]
