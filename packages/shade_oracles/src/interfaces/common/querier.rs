@@ -19,7 +19,8 @@ pub fn query_oracle_price(
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<OraclePrice> {
-    OracleQuery::GetPrice { key }.query(querier, &oracle)
+    let resp: PriceResponse = OracleQuery::GetPrice { key }.query(querier, &oracle)?;
+    Ok(resp.price)
 }
 
 /// Gets the oracle for the key from the router & calls GetPrice on it.
@@ -42,10 +43,11 @@ pub fn query_oracle_prices(
     querier: &QuerierWrapper,
     keys: Vec<String>,
 ) -> StdResult<Vec<OraclePrice>> {
-    OracleQuery::GetPrices { keys }.query(
+    let resp: PricesResponse = OracleQuery::GetPrices { keys }.query(
         querier,
         oracle,
-    )
+    )?;
+    Ok(resp.prices)
 }
 
 /// Groups the keys by their respective oracles and sends bulk GetPrices queries to each of those oracles.

@@ -111,19 +111,6 @@ pub fn execute(
     )
 }
 
-fn try_update_config(
-    deps: DepsMut,
-    enabled: bool,
-) -> StdResult<Response> {
-    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.enabled = enabled;
-        Ok(config)
-    })?;
-    Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?))
-}
-
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
     pad_query_result(
