@@ -1,25 +1,23 @@
-use cosmwasm_std::Uint128;
 use cosmwasm_std::{
-    to_binary, Api, Env, Deps, Response, Addr,  Querier, 
-   StdError, StdResult, Storage,
-};
-use secret_toolkit::{
-    snip20::TokenInfo,
-    utils::{pad_handle_result, pad_query_result, Query},
+    to_binary, MessageInfo, Env, Deps, Response, DepsMut,
+    QueryRequest, StdError, StdResult, QueryResponse, entry_point, Uint128,
 };
 use shade_oracles::{
-    band::ReferenceData,
+    pad_handle_result, pad_query_result, ResponseStatus, Contract, BLOCK_SIZE,
+    interfaces::band::ReferenceData,
     common::{
-        is_disabled, normalize_price,
-        querier::{query_band_price, query_price, query_token_info, verify_admin},
-        Contract, HandleAnswer, OraclePrice, QueryMsg, ResponseStatus, BLOCK_SIZE,
+        is_disabled,
+        querier::{query_token_info, verify_admin, query_band_price, query_price},
+        HandleAnswer, OraclePrice, OracleQuery, normalize_price
+    },
+    interfaces::lp::{
+        siennaswap::market::{Config, ExecuteMsg, InstantiateMsg},
     },
     protocols::siennaswap::{
         SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
-        SimulationResponse, TokenTypeAmount,
+        SimulationResponse, TokenTypeAmount
     },
-    siennaswap_market_oracle::{Config, ExecuteMsg, InstantiateMsg},
-    storage::Item,
+    storage::Item, Query, snip20::helpers::TokenInfo,
 };
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -32,14 +30,13 @@ const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let pair_info_response: SiennaSwapPairInfoResponse = SiennaSwapExchangeQueryMsg::PairInfo
         .query(
             &deps.querier,
-            msg.pair.code_hash.clone(),
-            msg.pair.address.clone(),
+            &msg.pair,
         )?;
 
     let tokens: [Contract; 2] = vec![
@@ -52,7 +49,7 @@ pub fn instantiate(
             contract_addr,
             token_code_hash,
         } => Some(Contract {
-            address: *contract_addr,
+            address: contract_addr.clone(),
             code_hash: token_code_hash.to_string(),
         }),
         _ => None,
@@ -64,7 +61,7 @@ pub fn instantiate(
 
     let token_infos: [TokenInfo; 2] = tokens
         .iter()
-        .map(|t| query_token_info(t, &deps.querier).ok().unwrap().token_info)
+        .map(|t| query_token_info(t, &deps.querier).ok().unwrap())
         .collect::<Vec<TokenInfo>>()
         .try_into()
         .ok()
@@ -115,7 +112,7 @@ pub fn instantiate(
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
@@ -124,29 +121,25 @@ pub fn execute(
 
     pad_handle_result(
         match msg {
-            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, enabled),
+            ExecuteMsg::UpdateConfig {
+                router,
+                enabled,
+                only_band,
+            } => try_update_config(deps, &info, router, enabled, only_band),
         },
         BLOCK_SIZE,
     )
 }
 
-            ExecuteMsg::UpdateConfig {
-                router,
-                enabled,
-                only_band,
-            } => try_update_config(deps, &env, router, enabled, only_band),
-        },
-        BLOCK_SIZE,
-
 fn try_update_config(
     deps: DepsMut,
-    env: &Env,
+    info: &MessageInfo,
     router: Option<Contract>,
     enabled: Option<bool>,
     only_band: Option<bool>,
 ) -> StdResult<Response> {
     let mut config = CONFIG.load(deps.storage)?;
-    verify_admin(&config.router, &deps.querier, info.sender.clone())?;
+    verify_admin(&config.router, deps.as_ref(), info.sender.clone())?;
     config.router = router.unwrap_or(config.router);
     config.enabled = enabled.unwrap_or(config.enabled);
     config.only_band = only_band.unwrap_or(config.only_band);
@@ -159,15 +152,16 @@ fn try_update_config(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, _env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
+    let config = CONFIG.load(deps.storage)?;
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-            QueryMsg::GetPrice { key } => to_binary(&try_query_price(deps, key)?),
-            QueryMsg::GetPrices { keys } => {
+            OracleQuery::GetConfig {} => to_binary(&config),
+            OracleQuery::GetPrice { key } => to_binary(&try_query_price(deps, &config, key)?),
+            OracleQuery::GetPrices { keys } => {
                 let mut prices = vec![];
                 for key in keys {
-                    prices.push(try_query_price(deps, key)?);
+                    prices.push(try_query_price(deps, &config, key)?);
                 }
                 to_binary(&prices)
             }
@@ -178,9 +172,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
 
 fn try_query_price(
     deps: Deps,
+    config: &Config,
     key: String,
 ) -> StdResult<OraclePrice> {
-    let config = CONFIG.load(deps.storage)?;
     is_disabled(config.enabled)?;
 
     let primary_token: Contract = PRIMARY_TOKEN.load(deps.storage)?;
@@ -198,8 +192,7 @@ fn try_query_price(
     }
     .query(
         &deps.querier,
-        config.pair.code_hash.clone(),
-        config.pair.address.clone(),
+        &config.pair,
     )?;
 
     // Normalize to 'rate * 10^18'
@@ -208,9 +201,9 @@ fn try_query_price(
 
     // Query router for base_peg/USD
     let base_usd_price = if config.only_band {
-        query_band_price(&config.router, &deps.querier, config.base_peg)?
+        query_band_price(&config.router, &deps.querier, config.base_peg.clone())?
     } else {
-        query_price(&config.router, &deps.querier, config.base_peg)?
+        query_price(&config.router, &deps.querier, config.base_peg.clone())?
     };
 
     // Translate price to primary/USD

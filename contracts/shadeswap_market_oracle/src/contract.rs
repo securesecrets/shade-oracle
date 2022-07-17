@@ -12,7 +12,7 @@ use shade_oracles::{
     common::{
         normalize_price,
         querier::{query_band_price, query_price, query_token_info, verify_admin},
-        Contract, HandleAnswer, OraclePrice, QueryMsg, ResponseStatus, BLOCK_SIZE,
+        Contract, HandleAnswer, OraclePrice, OracleQuery, ResponseStatus, BLOCK_SIZE,
     },
     protocols::shadeswap::{
         EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenAmount, TokenType,
@@ -146,7 +146,7 @@ pub fn execute(
 
 fn try_update_config(
     deps: DepsMut,
-    env: &Env,
+    info: &MessageInfo,
     router: Option<Contract>,
     enabled: Option<bool>,
     only_band: Option<bool>,
@@ -173,12 +173,12 @@ fn try_update_config(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-            QueryMsg::GetPrice { key } => to_binary(&try_query_price(deps, key)?),
-            QueryMsg::GetPrices { keys } => {
+            OracleQuery::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+            OracleQuery::GetPrice { key } => to_binary(&try_query_price(deps, key)?),
+            OracleQuery::GetPrices { keys } => {
                 let mut prices = vec![];
                 for key in keys {
                     prices.push(try_query_price(deps, key)?);

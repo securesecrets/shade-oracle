@@ -7,7 +7,7 @@ use shade_oracles::{
     pad_handle_result, pad_query_result, Contract, ResponseStatus, BLOCK_SIZE,
     interfaces::band::ReferenceData,
     common::querier::{query_prices, query_token_info, verify_admin},
-    common::{is_disabled, HandleAnswer, ExecuteMsg, OraclePrice, QueryMsg},
+    common::{is_disabled, HandleAnswer, ExecuteMsg, OraclePrice, OracleQuery},
     common::{throw_unsupported_symbol_error},
     interfaces::lp::{
         get_fair_lp_token_price,
@@ -125,12 +125,12 @@ fn try_update_config(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, _env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-            QueryMsg::GetPrice { key } => try_query_price(deps, key),
-            QueryMsg::GetPrices { .. } => {
+            OracleQuery::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+            OracleQuery::GetPrice { key } => try_query_price(deps, key),
+            OracleQuery::GetPrices { .. } => {
                 Err(StdError::generic_err("GetPrices method not supported."))
             }
         },

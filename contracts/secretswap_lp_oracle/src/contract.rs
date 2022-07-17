@@ -14,7 +14,7 @@ use shade_oracles::{
     storage::traits::SingletonStorable,
 };
 use shade_oracles::{
-    common::{query_price, PriceResponse, QueryMsg},
+    common::{query_price, PriceResponse, OracleQuery},
     lp::{
         get_fair_lp_token_price,
         secretswap::{ConfigResponse, HandleAnswer, ExecuteMsg, InstantiateMsg},
@@ -204,11 +204,11 @@ fn try_update_config(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
-            QueryMsg::GetPrice { .. } => to_binary(&try_query_price(deps)?),
+            OracleQuery::GetConfig {} => to_binary(&try_query_config(deps)?),
+            OracleQuery::GetPrice { .. } => to_binary(&try_query_price(deps)?),
         },
         BLOCK_SIZE,
     )

@@ -7,22 +7,39 @@ use cosmwasm_std::*;
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
 #[cw_serde]
-pub enum QueryMsg {
+pub enum OracleQuery {
     GetConfig {},
     GetPrice { key: String },
     GetPrices { keys: Vec<String> },
 }
 
-impl Query for QueryMsg {
+impl Query for OracleQuery {
     const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
 #[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig { enabled: bool },
+pub enum OracleExecuteMsg {
+    UpdateConfig { 
+        supported_keys: Option<Vec<String>>,
+        symbols: Option<Vec<String>>,
+        dependencies: Option<Vec<(String, Contract)>>,
+        router: Option<Contract>,
+        only_band: Option<bool>,
+        enabled: Option<bool>,
+    },
 }
 
-impl ExecuteCallback for ExecuteMsg {
+#[cw_serde]
+pub struct CommonConfig {
+    pub supported_keys: Vec<String>,
+    pub symbols: Vec<String>,
+    pub dependencies: Vec<(String, Contract)>,
+    pub router: Contract,
+    pub enabled: bool,
+    pub only_band: bool,
+}
+
+impl ExecuteCallback for OracleExecuteMsg {
     const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
@@ -47,16 +64,8 @@ impl OraclePrice {
     }
 }
 
-pub fn get_precision(factor: u8) -> Uint128 {
-    Uint128::from(10u128.pow(factor.into()))
-}
-
 pub fn throw_unsupported_symbol_error(key: String) -> StdError {
    StdError::generic_err(format!("{} is not supported as a key.", key))
-}
-
-pub fn normalize_price(amount: Uint128, decimals: u8) -> Uint128 {
-    (amount.u128() * 10u128.pow(18u32 - u32::try_from(decimals).unwrap())).into()
 }
 
 pub fn is_disabled(enabled: bool) -> StdResult<()> {
@@ -65,29 +74,6 @@ pub fn is_disabled(enabled: bool) -> StdResult<()> {
     } else {
         Ok(())
     }
-}
-
-pub fn sqrt(value: Uint256) -> StdResult<Uint256> {
-    let mut z = Uint256::zero();
-
-    if value.gt(&Uint256::from(3u128)) {
-        z = value;
-        let mut x = value
-            .checked_div(Uint256::from(2u128))?
-            .checked_add(Uint256::from(1u128))?;
-
-        while x.lt(&z) {
-            z = x;
-            x = value
-                .checked_div(x)?
-                .checked_add(x)?
-                .checked_div(Uint256::from(2u128))?;
-        }
-    } else if !value.is_zero() {
-        z = Uint256::from(1u128);
-    }
-
-    Ok(z)
 }
 
 pub mod querier {
@@ -109,7 +95,7 @@ pub mod querier {
         querier: &QuerierWrapper,
         key: String,
     ) -> StdResult<OraclePrice> {
-        QueryMsg::GetPrice { key }.query(querier, &oracle)
+        OracleQuery::GetPrice { key }.query(querier, &oracle)
     }
 
     /// Gets the oracle for the key from the router & calls GetPrice on it.
@@ -132,7 +118,7 @@ pub mod querier {
         querier: &QuerierWrapper,
         keys: Vec<String>,
     ) -> StdResult<Vec<OraclePrice>> {
-        QueryMsg::GetPrices { keys }.query(
+        OracleQuery::GetPrices { keys }.query(
             querier,
             oracle,
         )
