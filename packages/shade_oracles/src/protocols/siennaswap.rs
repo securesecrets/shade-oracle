@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
 use cosmwasm_std::Addr;
 use shade_protocol::utils::Query;
-use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
+use shade_protocol::utils::asset::{Contract};
 
 #[cw_serde]
 pub struct SiennaSwapPairInfoResponse {

@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_binary, Querier, QueryRequest, StdError, StdResult, Uint128, WasmQuery, QuerierWrapper};
 
 
-use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
+use shade_protocol::utils::asset::{RawContract, Contract};
 #[cw_serde]
 pub enum QueryMsg {
     GetConfig { r#type: ConfigType },
