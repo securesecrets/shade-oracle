@@ -1,5 +1,6 @@
 use crate::storage::{Item, ItemStorage};
-use crate::{BLOCK_SIZE, Query, InstantiateCallback, ExecuteCallback, ResponseStatus, Contract};
+use crate::{BLOCK_SIZE, Query, InstantiateCallback, ExecuteCallback, ResponseStatus, Contract, pad_handle_result, pad_query_result};
+use self::querier::verify_admin;
 use cosmwasm_schema::{cw_serde};
 use cosmwasm_std::{Uint128, Uint256, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api};
 use shade_protocol::utils::asset::{Dependency, RawDependency, Dependencies, RawContract};
@@ -37,13 +38,18 @@ impl Query for OracleQuery {
 #[cw_serde]
 pub enum ExecuteMsg {
     UpdateConfig { 
-        supported_keys: Option<Vec<String>>,
-        symbols: Option<Vec<String>>,
-        dependencies: Option<Vec<RawDependency>>,
-        router: Option<RawContract>,
-        only_band: Option<bool>,
-        enabled: Option<bool>,
+        updates: ConfigUpdates,
     },
+}
+
+#[cw_serde]
+pub struct ConfigUpdates {
+    pub supported_keys: Option<Vec<String>>,
+    pub symbols: Option<Vec<String>>,
+    pub dependencies: Option<Vec<RawDependency>>,
+    pub router: Option<RawContract>,
+    pub only_band: Option<bool>,
+    pub enabled: Option<bool>,
 }
 
 #[cw_serde]
@@ -142,10 +148,12 @@ pub fn oracle_exec(
     msg: ExecuteMsg,
     oracle: impl Oracle
 ) -> StdResult<Response> {
-    match msg {
-        ExecuteMsg::UpdateConfig { supported_keys, symbols, dependencies, router, only_band, enabled } => todo!(),
-    }
-    Ok(Response::default())
+    let mut config = CommonConfig::load(deps.storage)?;
+    verify_admin(&config.router, &deps.querier, info.sender)?;
+    let msg = match msg {
+        ExecuteMsg::UpdateConfig { updates } => oracle.try_update_config(deps, env, updates, &mut config),
+    };
+    pad_handle_result(msg, BLOCK_SIZE)
 }
 
 #[cfg(feature = "core")]
@@ -155,8 +163,6 @@ pub fn oracle_query(
     msg: OracleQuery,
     oracle: impl Oracle
 ) -> StdResult<QueryResponse> {
-    use shade_protocol::utils::pad_query_result;
-
     let config = CommonConfig::load(deps.storage)?;
     let resp = match msg {
         OracleQuery::GetConfig {  } => to_binary(&oracle.config_resp(config)),
@@ -172,9 +178,9 @@ pub fn oracle_query(
             let supported_keys = config.supported_keys.as_slice();
             let keys_slice = keys.as_slice();
             let mut key = "";
-            if !supported_keys.is_empty() && !keys_slice.into_iter().any(|k| -> bool {
+            if !supported_keys.is_empty() && !keys_slice.iter().any(|k| -> bool {
                 key = k;
-                !supported_keys.contains(&k)
+                !supported_keys.contains(k)
             }) {
                 return Err(throw_unsupported_symbol_error(key.to_string()));
             } else {
@@ -189,7 +195,11 @@ pub fn oracle_query(
 pub struct OracleImpl;
 
 #[cfg(feature = "core")]
-impl Oracle for OracleImpl { }
+impl Oracle for OracleImpl {
+    fn _try_query_price(&self, _deps: Deps,_env: &Env, _key: String, _config: &CommonConfig) -> StdResult<OraclePrice> {
+        Err(StdError::generic_err("Need to be implemented."))
+    }
+}
 
 #[cfg(feature = "core")]
 pub trait Oracle {
@@ -204,26 +214,22 @@ pub trait Oracle {
         Ok(config)
     }
 
-    fn update_config(
+    #[allow(clippy::too_many_arguments)]
+    fn try_update_config(
         &self,
         deps: DepsMut, 
-        env: Env, 
-        supported_keys: Option<Vec<String>>,
-        symbols: Option<Vec<String>>,
-        dependencies: Option<Vec<RawDependency>>,
-        router: Option<RawContract>,
-        only_band: Option<bool>,
-        enabled: Option<bool>,
+        _env: Env, 
+        updates: ConfigUpdates,
+        config: &mut CommonConfig
     ) -> StdResult<Response> {
-        let mut config = CommonConfig::load(deps.storage)?;
-        config.supported_keys = supported_keys.unwrap_or(config.supported_keys);
-        config.symbols = symbols.unwrap_or(config.symbols);
-        config.only_band = only_band.unwrap_or(config.only_band);
-        config.enabled = enabled.unwrap_or(config.enabled);
-        if let Some(router) = router {
+        config.supported_keys = updates.supported_keys.unwrap_or_else(|| config.supported_keys.clone());
+        config.symbols = updates.symbols.unwrap_or_else(|| config.symbols.clone());
+        config.only_band = updates.only_band.unwrap_or(config.only_band);
+        config.enabled = updates.enabled.unwrap_or(config.enabled);
+        if let Some(router) = updates.router {
             config.router = router.into_valid(deps.api)?;
         }
-        if let Some(dependencies) = dependencies {
+        if let Some(dependencies) = updates.dependencies {
             config.dependencies = dependencies.into_iter().map(|d| d.into_valid(deps.api)).collect::<StdResult<Vec<_>>>()?;
         }
 
@@ -242,9 +248,7 @@ pub trait Oracle {
     }
 
     /// Internal implementation of the query price method.
-    fn _try_query_price(&self, deps: Deps, env: &Env, key: String, config: &CommonConfig) -> StdResult<OraclePrice> {
-        Err(StdError::generic_err("Unimplemented."))
-    }
+    fn _try_query_price(&self, deps: Deps, env: &Env, key: String, config: &CommonConfig) -> StdResult<OraclePrice>;
 
     fn try_query_prices(&self, deps: Deps, env: Env, keys: Vec<String>, config: CommonConfig) -> StdResult<PricesResponse> {
         Ok(PricesResponse { prices: self._try_query_prices(deps, env, keys, config)? })

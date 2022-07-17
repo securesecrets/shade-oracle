@@ -86,40 +86,34 @@ pub fn reference_data_bulk(
 }
 
 pub mod proxy {
-    use shade_protocol::utils::asset::{RawContract, Contract};
+    use shade_admin::storage::Item;
+    use shade_protocol::utils::{asset::{RawContract, Contract}, storage::plus::ItemStorage};
+    use crate::common::{ConfigUpdates, InstantiateCommonConfig, CommonConfig};
+
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
     #[cw_serde]
     pub struct InstantiateMsg {
-        pub admin_auth: Contract,
-        pub band: Contract,
+        pub config: InstantiateCommonConfig,
         pub quote_symbol: String,
     }
 
     #[cw_serde]
-    pub struct Config {
-        pub admin_auth: Contract,
-        pub band: Contract,
+    pub struct ConfigResponse {
+        pub config: CommonConfig,
         pub quote_symbol: String,
-        pub enabled: bool,
     }
 
-    /// Every ExecuteMsg for each specific oracle type should include this
+    #[cfg(feature = "proxy-band")]
     #[cw_serde]
-    pub enum ExecuteMsg {
-        UpdateConfig {
-            enabled: Option<bool>,
-            admin_auth: Option<Contract>,
-            band: Option<Contract>,
-            quote_symbol: Option<String>,
-        },
+    pub struct QuoteSymbol(String);
+
+    #[cfg(feature = "proxy-band")]
+    impl ItemStorage for QuoteSymbol {
+        const ITEM: Item<'static, Self> = Item::new("quotesymbol");
     }
 
     impl InstantiateCallback for InstantiateMsg {
-        const BLOCK_SIZE: usize = BLOCK_SIZE;
-    }
-    
-    impl ExecuteCallback for ExecuteMsg {
         const BLOCK_SIZE: usize = BLOCK_SIZE;
     }
 }
