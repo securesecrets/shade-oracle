@@ -7,7 +7,7 @@ pub mod protocols;
 pub use shade_admin::admin::validate_admin;
 pub use shade_protocol::utils::{Query, InstantiateCallback, ExecuteCallback, pad_handle_result, pad_query_result};
 pub use shade_protocol::utils::generic_response::ResponseStatus;
-pub use shade_protocol::utils::asset::{Contract, UnvalidatedContract};
+pub use shade_protocol::utils::asset::{Contract, RawContract};
 pub use shade_protocol::snip20;
 pub use shade_protocol::utils::calc::{sqrt};
 pub use shade_protocol::utils::price::{translate_price, normalize_price, get_precision};
