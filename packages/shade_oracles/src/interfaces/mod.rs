@@ -4,6 +4,4 @@ pub mod earn;
 pub mod index_oracle;
 pub mod lp;
 pub mod router;
-pub mod shadeswap_market_oracle;
-pub mod siennaswap_market_oracle;
 pub mod staking_derivative;

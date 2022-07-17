@@ -184,7 +184,7 @@ fn basic_market_test(
     let OraclePrice { key: _, data } = ensemble
         .query(
             market_oracle.address,
-            &common::QueryMsg::GetPrice { key: symbol },
+            &common::OracleQuery::GetPrice { key: symbol },
         )
         .unwrap();
     assert_eq!(

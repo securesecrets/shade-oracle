@@ -8,7 +8,7 @@ use shade_oracles::{
     common::{
         is_disabled,
         querier::{query_prices, query_token_info, verify_admin, query_band_price},
-        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, QueryMsg, get_precision
+        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, OracleQuery, get_precision
     },
     interfaces::staking_derivative::shade::{
         querier::query_derivative_price,
@@ -77,12 +77,12 @@ fn try_update_config(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-            QueryMsg::GetPrice { key } => try_query_price(deps, key),
-            QueryMsg::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
+            OracleQuery::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+            OracleQuery::GetPrice { key } => try_query_price(deps, key),
+            OracleQuery::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
         },
         BLOCK_SIZE,
     )

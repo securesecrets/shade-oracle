@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use shade_protocol::utils::{asset::{UnvalidatedContract, Contract}, InstantiateCallback};
+use shade_protocol::utils::{asset::{RawContract, Contract}, InstantiateCallback};
 use crate::BLOCK_SIZE;
 
 #[cw_serde]

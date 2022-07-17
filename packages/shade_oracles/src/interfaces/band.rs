@@ -32,7 +32,7 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
-pub enum QueryMsg {
+pub enum OracleQuery {
     GetReferenceData {
         base_symbol: String,
         quote_symbol: String,
@@ -55,7 +55,7 @@ pub struct ReferenceDataBulk {
     pub data: Vec<ReferenceData>,
 }
 
-impl Query for QueryMsg {
+impl Query for OracleQuery {
     const BLOCK_SIZE: usize = 256;
 }
 
@@ -65,7 +65,7 @@ pub fn reference_data(
     quote_symbol: String,
     band: Contract,
 ) -> StdResult<ReferenceData> {
-    QueryMsg::GetReferenceData {
+    OracleQuery::GetReferenceData {
         base_symbol,
         quote_symbol,
     }
@@ -78,7 +78,7 @@ pub fn reference_data_bulk(
     quote_symbols: Vec<String>,
     band: Contract,
 ) -> StdResult<Vec<ReferenceData>> {
-    QueryMsg::GetReferenceDataBulk {
+    OracleQuery::GetReferenceDataBulk {
         base_symbols,
         quote_symbols,
     }
@@ -86,7 +86,7 @@ pub fn reference_data_bulk(
 }
 
 pub mod proxy {
-    use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
+    use shade_protocol::utils::asset::{RawContract, Contract};
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
     #[cw_serde]

@@ -11,7 +11,7 @@ use shade_oracles::{
         proxy::{Config, ExecuteMsg, InstantiateMsg},
         reference_data, reference_data_bulk, ReferenceData,
     },
-    common::{is_disabled, HandleAnswer, OraclePrice, QueryMsg},
+    common::{is_disabled, HandleAnswer, OraclePrice, OracleQuery},
     storage::Item,
 };
 
@@ -81,11 +81,11 @@ fn try_update_config(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
     let response = match msg {
-        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::GetPrice { key } => try_query_price(deps, key),
-        QueryMsg::GetPrices { keys } => try_query_prices(deps, keys),
+        OracleQuery::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+        OracleQuery::GetPrice { key } => try_query_price(deps, key),
+        OracleQuery::GetPrices { keys } => try_query_prices(deps, keys),
     };
     pad_query_result(response, BLOCK_SIZE)
 }

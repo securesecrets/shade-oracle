@@ -11,7 +11,7 @@ fn main() {
 
     // export_schema(&schema_for!(InstantiateMsg), &out_dir);
     // export_schema(&schema_for!(ExecuteMsg), &out_dir);
-    // export_schema(&schema_for!(QueryMsg), &out_dir);
+    // export_schema(&schema_for!(OracleQuery), &out_dir);
     // export_schema(&schema_for!(State), &out_dir);
     // export_schema(&schema_for!(CountResponse), &out_dir);
 }

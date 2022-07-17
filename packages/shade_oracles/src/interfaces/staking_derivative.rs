@@ -1,4 +1,4 @@
-use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
+use shade_protocol::utils::asset::{RawContract, Contract};
 use shade_protocol::utils::{ExecuteCallback, InstantiateCallback};
 use cosmwasm_std::Uint128;
 use cosmwasm_schema::cw_serde;

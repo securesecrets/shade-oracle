@@ -1,9 +1,9 @@
-use crate::common::{normalize_price, sqrt};
-use crate::Contract;
+use crate::{normalize_price, sqrt};
+use crate::{ExecuteCallback, Query, InstantiateCallback, BLOCK_SIZE, Contract};
 use cosmwasm_std::{Uint128, Uint256};
 use cosmwasm_std::*;
 use cosmwasm_schema::cw_serde;
-use shade_protocol::utils::{ExecuteCallback, InstantiateCallback};
+
 
 pub mod secretswap {
     use super::*;
@@ -37,8 +37,6 @@ pub mod secretswap {
 }
 
 pub mod siennaswap {
-    use crate::BLOCK_SIZE;
-
     use super::*;
     /// Oracle1 - contract for an oracle of asset 1
     ///
@@ -76,8 +74,79 @@ pub mod siennaswap {
         pub token0_decimals: u8,
         pub token1_decimals: u8,
     }
+    pub mod market {
+        use super::*;
+
+        #[cw_serde]
+        pub struct Config {
+            pub router: Contract,
+            pub pair: Contract,
+            pub symbol: String,
+            pub base_peg: String,
+            pub only_band: bool,
+            pub enabled: bool,
+        }
+
+        #[cw_serde]
+        pub struct InstantiateMsg {
+            pub router: Contract,
+            pub pair: Contract,
+            pub symbol: String,
+            pub only_band: bool,
+            pub base_peg: Option<String>,
+        }
+
+        impl InstantiateCallback for InstantiateMsg {
+            const BLOCK_SIZE: usize = BLOCK_SIZE;
+        }
+    }
 }
 
+pub mod shadeswap {
+    use super::*;
+
+    pub mod market {
+        use super::*;
+
+        #[cw_serde]
+        pub struct Config {
+            pub router: Contract,
+            pub pair: Contract,
+            pub symbol: String,
+            pub base_peg: String,
+            pub only_band: bool,
+            pub enabled: bool,
+        }
+
+        #[cw_serde]
+        pub struct InstantiateMsg {
+            pub router: Contract,
+            pub pair: Contract,
+            pub symbol: String,
+            pub only_band: bool,
+            pub base_peg: Option<String>,
+        }
+
+        #[cw_serde]
+        pub enum ExecuteMsg {
+            // Asset with weight 0 will be removed
+            // all others are added or changed
+            UpdateConfig {
+                router: Option<Contract>,
+                enabled: Option<bool>,
+                only_band: Option<bool>,
+            },
+        }
+
+        impl InstantiateCallback for InstantiateMsg {
+            const BLOCK_SIZE: usize = BLOCK_SIZE;
+        }
+
+        impl ExecuteCallback for ExecuteMsg {
+            const BLOCK_SIZE: usize = BLOCK_SIZE;
+        }
+    }
+}
 pub struct FairLpPriceInfo {
     pub reserve: u128,
     pub price: u128,
