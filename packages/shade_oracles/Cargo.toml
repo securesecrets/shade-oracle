@@ -19,6 +19,13 @@ scrt = ["core"]
 core = ["storage"]
 storage = ["shade-protocol/storage_plus"]
 # multi-test = ["secret-multi-test"]
+proxy-band = []
+index = []
+router = []
+staking-derivative = []
+lp-spot = []
+lp-smart = []
+market-lp = []
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
