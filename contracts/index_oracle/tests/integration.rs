@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use shade_oracles::{
     ExecuteCallback, Query, InstantiateCallback,
     interfaces::band::{self},
-    Contract, common::OraclePrice,
+    Contract, common::{OraclePrice, InstantiateCommonConfig},
     interfaces::index_oracle, interfaces::router,
 };
 use shade_oracles_multi_test::{
@@ -27,11 +27,10 @@ fn basic_index_test(
     let router = oracle_core.router;
 
     let index_oracle = index_oracle::InstantiateMsg {
-        router: router.clone().into(),
+        config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
         symbol: symbol.clone(),
         target,
         basket,
-        only_band: true,
     }.test_init(IndexOracle::default(), &mut app, user.clone(), "index-oracle", &[]).unwrap();
 
     // Configure router w/ index oracle
@@ -181,11 +180,10 @@ fn mod_index_test(
     let router = oracle_core.router;
 
     let index_oracle = index_oracle::InstantiateMsg {
-        router: router.clone().into(),
+        config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
         symbol: symbol.clone(),
         target,
         basket,
-        only_band: true,
     }.test_init(IndexOracle::default(), &mut app, user.clone(), "index-oracle", &[]).unwrap();
 
     // Configure router w/ index oracle
@@ -257,7 +255,7 @@ fn mod_index_test(
     // check basket changed
     match (index_oracle::QueryMsg::Basket {}.test_query(&index_oracle, &app).unwrap())
     {
-        index_oracle::QueryAnswer::Basket { mut basket } => {
+        index_oracle::BasketResponse { mut basket } => {
             basket.sort();
             for (sym, w, _) in basket {
                 assert!(

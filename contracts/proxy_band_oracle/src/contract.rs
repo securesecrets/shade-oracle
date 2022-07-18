@@ -1,32 +1,32 @@
 use cosmwasm_std::{Uint128, QueryResponse, entry_point};
 use cosmwasm_std::{
-    to_binary, DepsMut, Binary, Env, Deps, Response, MessageInfo, 
-   StdError, StdResult,
+    DepsMut, Env, Deps, Response, MessageInfo, StdResult,
 };
-use shade_oracles::common::{Oracle, oracle_exec, oracle_query};
-use shade_oracles::common::querier::verify_admin;
+use shade_oracles::Contract;
+use shade_oracles::common::{Oracle, oracle_exec, oracle_query, ExecuteMsg};
 use shade_oracles::interfaces::band::proxy::QuoteSymbol;
-use shade_oracles::validate_admin;
 use shade_oracles::{
-    pad_handle_result, pad_query_result, Contract, ResponseStatus, BLOCK_SIZE,
     interfaces::band::{
-        proxy::{Config, ExecuteMsg, InstantiateMsg},
+        proxy::{InstantiateMsg},
         reference_data, reference_data_bulk, ReferenceData,
     },
-    common::{is_disabled, HandleAnswer, OraclePrice, OracleQuery},
+    common::{OraclePrice, OracleQuery},
     storage::{ItemStorage, Item},
 };
+
+const BAND: Item<Contract> = Item::new("band-contract");
 
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    ProxyBandOracle.init_config(deps, msg.config)?;
     let symbol = QuoteSymbol(msg.quote_symbol);
     symbol.save(deps.storage)?;
+    BAND.save(deps.storage, &msg.band.into_valid(deps.api)?)?;
+    ProxyBandOracle.init_config(deps.storage, deps.api, msg.config)?;
 
     Ok(Response::default())
 }
@@ -49,9 +49,10 @@ pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse>
 pub struct ProxyBandOracle;
 
 impl Oracle for ProxyBandOracle {
-    fn _try_query_price(&self, deps: Deps, env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
+    fn _try_query_price(&self, deps: Deps, _env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
+        let band = BAND.load(deps.storage)?;
         if key == "SHD" {
-            return to_binary(&OraclePrice::new(
+            return Ok(OraclePrice::new(
                 key,
                 ReferenceData {
                     rate: Uint128::from(13450000000000000000u128),
@@ -60,20 +61,22 @@ impl Oracle for ProxyBandOracle {
                 },
             ));
         }
-    
+        let quote_symbol = QuoteSymbol::load(deps.storage)?;
         let band_response = reference_data(
             &deps.querier,
             key.clone(),
-            config.quote_symbol.clone(),
-            config.band,
+            quote_symbol.0,
+            &band,
         )?;
+        Ok(OraclePrice::new(key, band_response))
     }
-    fn _try_query_prices(&self, deps: Deps, env: Env, keys: Vec<String>, config: shade_oracles::common::CommonConfig) -> StdResult<Vec<OraclePrice>> {
+    fn _try_query_prices(&self, deps: Deps, _env: Env, keys: Vec<String>, config: shade_oracles::common::CommonConfig) -> StdResult<Vec<OraclePrice>> {
         let quote_symbol = QuoteSymbol::load(deps.storage)?;
         let quote_symbols = vec![quote_symbol.0; keys.len()];
+        let band = BAND.load(deps.storage)?;
 
         let band_response =
-            reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, config.band)?;
+            reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, &band)?;
     
         let mut prices: Vec<OraclePrice> = vec![];
         for (index, key) in keys.iter().enumerate() {

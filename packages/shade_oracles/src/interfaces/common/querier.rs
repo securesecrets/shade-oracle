@@ -19,7 +19,7 @@ pub fn query_oracle_price(
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<OraclePrice> {
-    let resp: PriceResponse = OracleQuery::GetPrice { key }.query(querier, &oracle)?;
+    let resp: PriceResponse = OracleQuery::GetPrice { key }.query(querier, oracle)?;
     Ok(resp.price)
 }
 
@@ -33,7 +33,7 @@ pub fn query_price(
 ) -> StdResult<OraclePrice> {
     let oracle_resp: OracleResponse = RouterQueryMsg::GetOracle { key: key.clone() }.query(
         querier,
-        &router
+        router
     )?;
     query_oracle_price(&oracle_resp.oracle, querier, key)
 }
@@ -60,7 +60,7 @@ pub fn query_prices(
 ) -> StdResult<Vec<OraclePrice>> {
     let oracle_resps: Vec<OracleResponse> = RouterQueryMsg::GetOracles { keys }.query(
         querier,
-        &router
+        router
     )?;
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
     let mut prices: Vec<OraclePrice> = vec![];
@@ -89,13 +89,13 @@ pub fn query_band_price(
 ) -> StdResult<OraclePrice> {
     let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(
         querier,
-        &router
+        router
     )?;
     let band_response = reference_data(
         querier,
         key.clone(),
         config.quote_symbol.clone(),
-        config.band,
+        &config.band,
     )?;
     Ok(OraclePrice::new(key, band_response))
 }
@@ -107,11 +107,11 @@ pub fn query_band_prices(
 ) -> StdResult<Vec<OraclePrice>> {
     let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(
         querier,
-        &router
+        router
     )?;
     let quote_symbols = vec![config.quote_symbol; keys.len()];
 
-    let band_response = reference_data_bulk(querier, keys.clone(), quote_symbols, config.band)?;
+    let band_response = reference_data_bulk(querier, keys.clone(), quote_symbols, &config.band)?;
 
     let mut prices: Vec<OraclePrice> = vec![];
     for (index, key) in keys.iter().enumerate() {

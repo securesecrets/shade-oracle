@@ -5,11 +5,11 @@ use shade_oracles::{
     Contract,
     interfaces::{
     band::{self, proxy},
-    router,
-    }
+    router::{self, UpdateConfig},
+    }, common::{InstantiateCommonConfig, constants::DepKeys}
 };
 use shade_admin_multi_test::AdminAuth;
-use shade_protocol::{multi_test::App, utils::{InstantiateCallback, ExecuteCallback, Query, MultiTestable}};
+use shade_protocol::{multi_test::App, utils::{InstantiateCallback, ExecuteCallback, Query, MultiTestable, asset::{RawDependencies, RawDependency}}};
 use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
 
 pub struct OracleCore {
@@ -29,18 +29,18 @@ pub fn setup_core(app: &mut App, prices: HashMap<String, Uint128>) -> StdResult<
 
     let band = band::InstantiateMsg {}.test_init(MockBand::default(), app, admin.clone(), "band", &[])?;
 
-    let band_proxy = proxy::InstantiateMsg {
-                band: band.clone().into(),
-                quote_symbol: "USD".to_string(),
-                admin_auth: admin_auth.clone().into(),
-            }.test_init(ProxyBandOracle::default(), app, admin.clone(), "proxy-band", &[])?;
-
     let router = router::InstantiateMsg {
-        default_oracle: band_proxy.clone().into(),
+        default_oracle: admin_auth.clone().into(),
         admin_auth: admin_auth.clone().into(),
         band: band.clone().into(),
         quote_symbol: "USD".to_string(),
     }.test_init(OracleRouter::default(), app, admin.clone(), "oracle-router", &[])?;
+
+    let band_proxy_deps = RawDependencies(vec![RawDependency::new(DepKeys::BAND.to_string(), band.clone().into())]);
+    let band_proxy = proxy::InstantiateMsg {
+        quote_symbol: "USD".to_string(),
+        config: InstantiateCommonConfig::new(None, None, Some(band_proxy_deps), router.clone().into(), true, true),
+    }.test_init(ProxyBandOracle::default(), app, admin.clone(), "proxy-band", &[])?;
 
     let mut operations = vec![];
 
@@ -55,7 +55,15 @@ pub fn setup_core(app: &mut App, prices: HashMap<String, Uint128>) -> StdResult<
     }
 
     // Configure BAND symbols on router
-    router::ExecuteMsg::BatchUpdateRegistry { operations }.test_exec(&router, app, admin.clone(), &[]).unwrap();
+    router::ExecuteMsg::BatchUpdateRegistry { operations }.test_exec(&router.clone(), app, admin.clone(), &[]).unwrap();
+
+    router::ExecuteMsg::UpdateConfig { config: UpdateConfig {
+        admin_auth: None,
+        default_oracle: Some(band_proxy.clone().into()),
+        band: None,
+        quote_symbol: None,
+        enabled: None,
+    } }.test_exec(&router, app, admin.clone(), &[]).unwrap();
     
     // Configure mock band prices
     for (sym, price) in prices {
