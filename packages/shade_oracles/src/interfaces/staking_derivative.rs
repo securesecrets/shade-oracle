@@ -7,26 +7,16 @@ use cosmwasm_std::Addr;
 pub mod shade {
 
 
-    use crate::BLOCK_SIZE;
+    use crate::{BLOCK_SIZE, common::InstantiateCommonConfig};
 
     use super::*;
 
     #[cw_serde]
+     /// Config needs symbol of underlying, one supported key,
+    /// and a dependency named "staking-derivative-token".
     pub struct InstantiateMsg {
-        pub supported_key: String,
-        pub underlying_symbol: String,
-        pub staking_derivative: Contract,
-        pub router: Contract,
-    }
-
-    // We define a custom struct for each query response
-    #[cw_serde]
-    pub struct Config {
-        pub supported_key: String,
-        pub underlying_symbol: String,
-        pub router: Contract,
-        pub staking_derivative: Contract,
-        pub enabled: bool,
+        pub config: InstantiateCommonConfig,
+        pub staking_derivative_token: RawContract,
     }
 
     impl InstantiateCallback for InstantiateMsg {

@@ -2,7 +2,7 @@ use crate::BLOCK_SIZE;
 use crate::{Contract, ResponseStatus};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Uint128, QuerierWrapper};
-use cosmwasm_std::{Querier, StdResult};
+use cosmwasm_std::{StdResult};
 use shade_protocol::utils::{Query, ExecuteCallback, InstantiateCallback};
 
 #[cw_serde]
@@ -32,7 +32,7 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
-pub enum OracleQuery {
+pub enum QueryMsg {
     GetReferenceData {
         base_symbol: String,
         quote_symbol: String,
@@ -55,7 +55,7 @@ pub struct ReferenceDataBulk {
     pub data: Vec<ReferenceData>,
 }
 
-impl Query for OracleQuery {
+impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
@@ -63,38 +63,39 @@ pub fn reference_data(
     querier: &QuerierWrapper,
     base_symbol: String,
     quote_symbol: String,
-    band: Contract,
+    band: &Contract,
 ) -> StdResult<ReferenceData> {
-    OracleQuery::GetReferenceData {
+    QueryMsg::GetReferenceData {
         base_symbol,
         quote_symbol,
     }
-    .query(querier, &band)
+    .query(querier, band)
 }
 
 pub fn reference_data_bulk(
     querier: &QuerierWrapper,
     base_symbols: Vec<String>,
     quote_symbols: Vec<String>,
-    band: Contract,
+    band: &Contract,
 ) -> StdResult<Vec<ReferenceData>> {
-    OracleQuery::GetReferenceDataBulk {
+    QueryMsg::GetReferenceDataBulk {
         base_symbols,
         quote_symbols,
     }
-    .query(querier, &band)
+    .query(querier, band)
 }
 
 pub mod proxy {
     use shade_admin::storage::Item;
-    use shade_protocol::utils::{asset::{RawContract, Contract}, storage::plus::ItemStorage};
-    use crate::common::{ConfigUpdates, InstantiateCommonConfig, CommonConfig};
+    use shade_protocol::utils::{storage::plus::ItemStorage, asset::RawContract};
+    use crate::common::{InstantiateCommonConfig, CommonConfig};
 
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
     #[cw_serde]
     pub struct InstantiateMsg {
         pub config: InstantiateCommonConfig,
+        pub band: RawContract,
         pub quote_symbol: String,
     }
 
@@ -104,9 +105,8 @@ pub mod proxy {
         pub quote_symbol: String,
     }
 
-    #[cfg(feature = "proxy-band")]
     #[cw_serde]
-    pub struct QuoteSymbol(String);
+    pub struct QuoteSymbol(pub String);
 
     #[cfg(feature = "proxy-band")]
     impl ItemStorage for QuoteSymbol {

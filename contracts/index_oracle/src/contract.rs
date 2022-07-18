@@ -3,6 +3,9 @@ use cosmwasm_std::{
     to_binary, Env, Deps, Response, StdError,
     StdResult,
 };
+use shade_oracles::common::Oracle;
+use shade_oracles::core::schemars::_serde_json::value::Index;
+use shade_oracles::interfaces::index_oracle::{Symbol, Basket, TargetResponse, Target, BasketResponse};
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
@@ -11,17 +14,13 @@ use shade_oracles::{
     {
         band::ReferenceData,
         common::{
+            CommonConfig,
         querier::{query_band_prices, query_prices, verify_admin},
         OraclePrice},
-        index_oracle::{Config, HandleAnswer, ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg},
+        index_oracle::{HandleAnswer, ExecuteMsg, InstantiateMsg, QueryMsg},
     },
-    storage::Item,
+    storage::ItemStorage,
 };
-
-const CONFIG: Item<Config> = Item::new("config");
-const SYMBOL: Item<String> = Item::new("symbol");
-// (symbol, weight, constant)
-const BASKET: Item<Vec<(String, Uint128, Uint128)>> = Item::new("basket");
 
 #[entry_point]
 pub fn instantiate(
@@ -30,15 +29,9 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let config = Config {
-        router: msg.router,
-        enabled: true,
-        only_band: msg.only_band,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
-    SYMBOL.save(deps.storage, &msg.symbol)?;
-
+    
+    let config = IndexOracle.init_config(deps.storage, deps.api, msg.config)?;
+    
     if msg.basket.is_empty() {
         return Err(StdError::generic_err("Basket cannot be empty"));
     }
@@ -69,8 +62,10 @@ pub fn instantiate(
         .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
         .collect();
     full_basket.sort();
-
-    BASKET.save(deps.storage, &full_basket)?;
+    
+    Target(msg.target).save(deps.storage)?;
+    Symbol(msg.symbol).save(deps.storage)?;
+    Basket(full_basket).save(deps.storage)?;
 
     Ok(Response::default())
 }
@@ -82,40 +77,46 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
-    verify_admin(&config.router, deps.as_ref(), info.sender)?;
+    let mut config = IndexOracle.verify_admin(deps.storage, &deps.querier, info)?;
     pad_handle_result(
         match msg {
             ExecuteMsg::UpdateConfig {
-                router,
-                enabled,
-                only_band,
-            } => try_update_config(deps, router, enabled, only_band),
+                updates,
+            } => IndexOracle.try_update_config(deps, updates, &mut config),
             ExecuteMsg::ModBasket { basket, .. } => mod_basket(deps, basket),
+            ExecuteMsg::UpdateTarget { new_target } => {
+                if let Some(new_target) = new_target {
+                    Target(new_target).save(deps.storage)?;
+                }
+                Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateTarget {
+                    status: ResponseStatus::Success,
+                })?))
+            }
         },
         BLOCK_SIZE,
     )
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
+            QueryMsg::GetConfig {} => to_binary(&IndexOracle.config_resp(CommonConfig::load(deps.storage)?)),
             /* add 'symbol' so we can error if its the wrong oracle
              * Prevents router failure from causing economic failure
              */
-            QueryMsg::GetPrice { key, .. } => to_binary(&try_query_price(deps, key)?),
+            QueryMsg::GetPrice { key, .. } => {
+                let config = IndexOracle.can_query_price(deps, &key)?;
+                to_binary(&IndexOracle.try_query_price(deps, env, key, config)?)
+            },
             QueryMsg::GetPrices { keys } => {
-                let mut prices = vec![];
-                for key in keys {
-                    prices.push(try_query_price(deps, key)?);
-                }
-                to_binary(&prices)
+                let config = IndexOracle.can_query_prices(deps, keys.as_slice())?;
+                to_binary(&IndexOracle.try_query_prices(deps, env, keys, config)?)
             }
-            QueryMsg::Basket {} => to_binary(&QueryAnswer::Basket {
-                basket: BASKET.load(deps.storage)?,
+            QueryMsg::Basket {} => to_binary(&BasketResponse {
+                basket: Basket::load(deps.storage)?.0,
             }),
+            QueryMsg::GetTarget {  } => to_binary(&TargetResponse { target: Target::load(deps.storage)?.0 })
         },
         BLOCK_SIZE,
     )
@@ -160,7 +161,7 @@ fn eval_index(
 
 fn fetch_prices(
     deps: Deps,
-    config: &Config,
+    config: &CommonConfig,
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, ReferenceData>> {
     let mut price_data = HashMap::new();
@@ -190,40 +191,15 @@ fn fetch_prices(
     Ok(price_data)
 }
 
-fn try_update_config(
-    deps: DepsMut,
-    router: Option<Contract>,
-    enabled: Option<bool>,
-    only_band: Option<bool>,
-) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
-
-    CONFIG.save(
-        deps.storage,
-        &Config {
-            router: router.unwrap_or(config.router),
-            enabled: enabled.unwrap_or(config.enabled),
-            only_band: only_band.unwrap_or(config.only_band),
-        },
-    )?;
-
-    Ok(
-        Response::new()
-        .set_data(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?)
-    )
-}
-
 fn mod_basket(
     deps: DepsMut,
     mod_basket: Vec<(String, Uint128)>,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
+    let config = CommonConfig::load(deps.storage)?;
 
-    let self_symbol = SYMBOL.load(deps.storage)?;
+    let self_symbol = Symbol::load(deps.storage)?.0;
 
-    let basket = BASKET.load(deps.storage)?;
+    let basket = Basket::load(deps.storage)?.0;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
     let mut prices = fetch_prices(deps.as_ref(), &config, symbols.clone())?;
     // target previous price
@@ -287,34 +263,29 @@ fn mod_basket(
         .into_iter()
         .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
         .collect();
-    BASKET.save(deps.storage, &new_basket)?;
+    Basket(new_basket).save(deps.storage)?;
 
-    Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
+    Ok(Response::new().set_data(to_binary(&HandleAnswer::ModBasket {
         status: ResponseStatus::Success,
     })?))
 }
 
-fn try_query_config(deps: Deps) -> StdResult<Config> {
-    CONFIG.load(deps.storage)
-}
+pub struct IndexOracle;
 
-fn try_query_price(
-    deps: Deps,
-    key: String,
-) -> StdResult<OraclePrice> {
-    if key != SYMBOL.load(deps.storage)? {
-        return Err(StdError::generic_err(format!(
-            "Missing price feed for {}",
-            key
-        )));
+impl Oracle for IndexOracle {
+    fn _try_query_price(&self, deps: Deps, env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
+        if key != Symbol::load(deps.storage)?.0 {
+            return Err(StdError::generic_err(format!(
+                "Missing price feed for {}",
+                key
+            )));
+        }
+        
+        let basket = Basket::load(deps.storage)?;
+        let symbols: Vec<String> = basket.0.clone().into_iter().map(|(sym, _, _)| sym).collect();
+        let prices = fetch_prices(deps, &config, symbols)?;
+        let index = eval_index(prices, basket.0);
+    
+        Ok(OraclePrice::new(key, index))    
     }
-
-    let config = CONFIG.load(deps.storage)?;
-
-    let basket = BASKET.load(deps.storage)?;
-    let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
-    let prices = fetch_prices(deps, &config, symbols)?;
-    let index = eval_index(prices, basket);
-
-    Ok(OraclePrice::new(key, index))
 }

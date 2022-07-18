@@ -3,21 +3,22 @@ use cosmwasm_std::{
     QueryRequest, StdError, StdResult, QueryResponse, WasmQuery, entry_point,
 };
 use shade_oracles::{
+    get_precision,
     pad_handle_result, pad_query_result, ResponseStatus, Contract, BLOCK_SIZE,
     interfaces::band::ReferenceData,
     common::{
         is_disabled,
         querier::{query_prices, query_token_info, verify_admin, query_band_price},
-        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, OracleQuery, get_precision
+        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, OracleQuery
     },
     interfaces::staking_derivative::shade::{
         querier::query_derivative_price,
-        {Config, InstantiateMsg},
+        {InstantiateMsg},
     },
     storage::Item,
 };
 
-const CONFIG: Item<Config> = Item::new("config");
+const STAKING_DERIVATIVE_TOKEN: Item<Contract> = Item::new("staking_derivative_token");
 const TOKEN_DECIMALS: Item<u8> = Item::new("token_decimals");
 
 #[entry_point]
@@ -29,14 +30,6 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let token_decimals = query_token_info(&msg.staking_derivative, &deps.querier)?
         .decimals;
-
-    let config = Config {
-        supported_key: msg.supported_key,
-        underlying_symbol: msg.underlying_symbol,
-        router: msg.router,
-        staking_derivative: msg.staking_derivative,
-        enabled: true,
-    };
 
     TOKEN_DECIMALS.save(deps.storage, &token_decimals)?;
     CONFIG.save(deps.storage, &config)?;
@@ -88,6 +81,10 @@ pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse>
     )
 }
 
+pub struct ShadeStakingDerivativeOracle;
+impl Oracle for ShadeStakingDerivativeOracle {
+
+}
 fn try_query_price(
     deps: Deps,
     key: String,
