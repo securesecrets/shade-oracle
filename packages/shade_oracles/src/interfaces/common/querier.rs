@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use crate::core::{Contract};
 use super::*;
 use crate::{
     interfaces::band::{reference_data, reference_data_bulk},
@@ -8,7 +7,9 @@ use crate::{
     },
 };
 use cosmwasm_std::{QuerierWrapper, StdResult, Addr};
-use shade_protocol::{contract_interfaces::snip20::{
+use shade_protocol::{
+    Contract,
+    contract_interfaces::snip20::{
     QueryMsg as Snip20QueryMsg, QueryAnswer as Snip20QueryAnswer
 }, snip20::helpers::{token_info, TokenInfo, }};
 
