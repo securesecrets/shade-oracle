@@ -1,5 +1,6 @@
 use shade_protocol::utils::asset::{RawContract, Contract};
-use shade_protocol::utils::{ExecuteCallback, InstantiateCallback};
+use shade_protocol::utils::{InstantiateCallback};
+use crate::storage::{ItemStorage, Item};
 use cosmwasm_std::Uint128;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
@@ -7,7 +8,10 @@ use cosmwasm_std::Addr;
 pub mod shade {
 
 
-    use crate::{BLOCK_SIZE, common::InstantiateCommonConfig};
+    use crate::{
+        core::{BLOCK_SIZE},
+        common::InstantiateCommonConfig
+    };
 
     use super::*;
 
@@ -17,14 +21,32 @@ pub mod shade {
     pub struct InstantiateMsg {
         pub config: InstantiateCommonConfig,
         pub staking_derivative_token: RawContract,
+        pub underlying_symbol: String,
     }
 
     impl InstantiateCallback for InstantiateMsg {
         const BLOCK_SIZE: usize = BLOCK_SIZE;
     }
 
+    #[cw_serde]
+    /// token_decimals - # of decimals used by staking derivative token
+    /// 
+    /// staking_derivative_token - token this oracle is for
+    /// 
+    /// underlying_symbol - the symbol of the underlying asset for which the token is a derivative (used to query its price via router or band)
+    pub struct StakingDerivativeConfig {
+        pub token_decimals: u8,
+        pub staking_derivative_token: Contract,
+        pub underlying_symbol: String,
+    }
+
+    #[cfg(feature = "shd-staking-derivative")]
+    impl ItemStorage for StakingDerivativeConfig {
+        const ITEM: Item<'static, Self> = Item::new("staking-derivative-config");
+    }
+
     pub mod querier {
-        use cosmwasm_std::{to_binary, Querier, QueryRequest, StdResult, WasmQuery, Deps};
+        use cosmwasm_std::{StdResult, Deps};
         use shade_protocol::utils::Query;
 
         use super::*;

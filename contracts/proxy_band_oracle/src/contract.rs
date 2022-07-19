@@ -2,7 +2,7 @@ use cosmwasm_std::{Uint128, QueryResponse, entry_point};
 use cosmwasm_std::{
     DepsMut, Env, Deps, Response, MessageInfo, StdResult,
 };
-use shade_oracles::Contract;
+use shade_oracles::core::Contract;
 use shade_oracles::common::{Oracle, oracle_exec, oracle_query, ExecuteMsg};
 use shade_oracles::interfaces::band::proxy::QuoteSymbol;
 use shade_oracles::{
@@ -49,7 +49,7 @@ pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse>
 pub struct ProxyBandOracle;
 
 impl Oracle for ProxyBandOracle {
-    fn _try_query_price(&self, deps: Deps, _env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
+    fn try_query_price(&self, deps: Deps, _env: &Env, key: String, _config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
         let band = BAND.load(deps.storage)?;
         if key == "SHD" {
             return Ok(OraclePrice::new(
@@ -70,7 +70,7 @@ impl Oracle for ProxyBandOracle {
         )?;
         Ok(OraclePrice::new(key, band_response))
     }
-    fn _try_query_prices(&self, deps: Deps, _env: Env, keys: Vec<String>, config: shade_oracles::common::CommonConfig) -> StdResult<Vec<OraclePrice>> {
+    fn try_query_prices(&self, deps: Deps, _env: &Env, keys: Vec<String>, _config: &shade_oracles::common::CommonConfig) -> StdResult<Vec<OraclePrice>> {
         let quote_symbol = QuoteSymbol::load(deps.storage)?;
         let quote_symbols = vec![quote_symbol.0; keys.len()];
         let band = BAND.load(deps.storage)?;

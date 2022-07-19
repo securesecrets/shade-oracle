@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 
 use shade_oracles::interfaces::band::{QueryMsg, HandleAnswer, ExecuteMsg, InstantiateMsg, ReferenceData};
-use shade_oracles::{ResponseStatus};
+use shade_oracles::core::{ResponseStatus};
 use shade_oracles::storage::Map;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
@@ -13,7 +13,7 @@ const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> StdResult<Response> {
     Ok(Response::default())
@@ -23,7 +23,7 @@ pub fn instantiate(
 pub fn execute(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     match msg {
@@ -64,7 +64,7 @@ pub fn update_symbol_price(
 #[entry_point]
 pub fn query(
     deps: Deps,
-    env: Env,
+    _env: Env,
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     match msg {

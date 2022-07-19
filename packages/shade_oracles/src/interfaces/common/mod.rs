@@ -1,5 +1,5 @@
 use crate::storage::{Item, ItemStorage};
-use crate::{BLOCK_SIZE, Query, ExecuteCallback, ResponseStatus, Contract, pad_handle_result, pad_query_result};
+use crate::core::{BLOCK_SIZE, Query, ExecuteCallback, ResponseStatus, Contract, pad_handle_result, pad_query_result};
 use self::querier::verify_admin;
 use cosmwasm_schema::{cw_serde};
 use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper};
@@ -45,6 +45,15 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+/// Config object passed into the updating of an oracle's common config.
+/// 
+/// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
+/// 
+/// router - oracle router
+/// 
+/// enabled - can we use this oracle?
+/// 
+/// only_band - will this oracle go directly to band rather than through the router?
 pub struct ConfigUpdates {
     pub supported_keys: Option<Vec<String>>,
     pub router: Option<RawContract>,
@@ -54,6 +63,14 @@ pub struct ConfigUpdates {
 
 #[cw_serde]
 /// Config object passed into the instantiation of an oracle.
+/// 
+/// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
+/// 
+/// router - oracle router
+/// 
+/// enabled - can we use this oracle?
+/// 
+/// only_band - will this oracle go directly to band rather than through the router?
 pub struct InstantiateCommonConfig {
     pub supported_keys: Option<Vec<String>>,
     pub router: RawContract,
@@ -80,8 +97,15 @@ impl InstantiateCommonConfig {
     }
 }
 
-/// supported_keys - list of keys this oracle supports (if none then oracle supports all keys)
-/// dependencies - list of dependencies oracle has
+/// Config object stored in all oracles.
+/// 
+/// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
+/// 
+/// router - oracle router
+/// 
+/// enabled - can we use this oracle?
+/// 
+/// only_band - will this oracle go directly to band rather than through the router?
 #[cw_serde]
 pub struct CommonConfig {
     pub supported_keys: Vec<String>,
@@ -135,7 +159,7 @@ impl ItemStorage for CommonConfig {
 #[cfg(feature = "core")]
 pub fn oracle_exec(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
     oracle: impl Oracle
@@ -161,11 +185,11 @@ pub fn oracle_query(
         },
         OracleQuery::GetPrice { key } => {
             let config = oracle.can_query_price(deps, &key)?;
-            to_binary(&oracle.try_query_price(deps, env, key, config)?)
+            to_binary(&oracle.price_resp(oracle.try_query_price(deps, &env, key, &config)?))
         },
         OracleQuery::GetPrices { keys } => {
             let config = oracle.can_query_prices(deps, keys.as_slice())?;
-            to_binary(&oracle.try_query_prices(deps, env, keys, config)?)
+            to_binary(&oracle.prices_resp(oracle.try_query_prices(deps, &env, keys, &config)?))
         },
     };
     pad_query_result(resp, BLOCK_SIZE)
@@ -176,7 +200,7 @@ pub struct OracleImpl;
 
 #[cfg(feature = "core")]
 impl Oracle for OracleImpl {
-    fn _try_query_price(&self, _deps: Deps,_env: &Env, _key: String, _config: &CommonConfig) -> StdResult<OraclePrice> {
+    fn try_query_price(&self, _deps: Deps,_env: &Env, _key: String, _config: &CommonConfig) -> StdResult<OraclePrice> {
         Err(StdError::generic_err("Need to be implemented."))
     }
 }
@@ -232,17 +256,21 @@ pub trait Oracle {
         ConfigResponse { config }
     }
 
-    /// Wraps internal implementation in proper response struct.
-    fn try_query_price(&self, deps: Deps, env: Env, key: String, config: CommonConfig) -> StdResult<PriceResponse> {
-        Ok(PriceResponse { price: self._try_query_price(deps, &env, key, &config )? })
+    fn price_resp(&self, price: OraclePrice) -> PriceResponse {
+        PriceResponse { price }
+    }
+
+    fn prices_resp(&self, prices: Vec<OraclePrice>) -> PricesResponse {
+        PricesResponse { prices }
     }
 
     /// Internal implementation of the query price method.
-    fn _try_query_price(&self, deps: Deps, env: &Env, key: String, config: &CommonConfig) -> StdResult<OraclePrice>;
+    fn try_query_price(&self, deps: Deps, env: &Env, key: String, config: &CommonConfig) -> StdResult<OraclePrice>;
 
     /// Checks if user can query for prices
     fn can_query_prices(&self, deps: Deps, keys: &[String]) -> StdResult<CommonConfig> {
         let config = CommonConfig::load(deps.storage)?;
+        is_disabled(config.enabled)?;
         let supported_keys = config.supported_keys.as_slice();
         let mut key = "";
         if !supported_keys.is_empty() && !keys.iter().any(|k| -> bool {
@@ -256,6 +284,7 @@ pub trait Oracle {
 
     fn can_query_price(&self, deps: Deps, key: &String) -> StdResult<CommonConfig> {
         let config = CommonConfig::load(deps.storage)?;
+        is_disabled(config.enabled)?;
         let supported_keys = config.supported_keys.as_slice();
         if !supported_keys.is_empty() && !supported_keys.contains(key) {
             return Err(throw_unsupported_symbol_error(key.to_string()));
@@ -263,14 +292,10 @@ pub trait Oracle {
         Ok(config)
     }
 
-    fn try_query_prices(&self, deps: Deps, env: Env, keys: Vec<String>, config: CommonConfig) -> StdResult<PricesResponse> {
-        Ok(PricesResponse { prices: self._try_query_prices(deps, env, keys, config)? })
-    }
-
-    fn _try_query_prices(&self, deps: Deps, env: Env, keys: Vec<String>, config: CommonConfig) -> StdResult<Vec<OraclePrice>> {
+    fn try_query_prices(&self, deps: Deps, env: &Env, keys: Vec<String>, config: &CommonConfig) -> StdResult<Vec<OraclePrice>> {
         let mut prices = vec![];
         for key in keys {
-            prices.push(self._try_query_price(deps, &env, key, &config)?);
+            prices.push(self.try_query_price(deps, env, key, config)?);
         }
         Ok(prices)
     }

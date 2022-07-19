@@ -1,6 +1,6 @@
 use crate::common::{InstantiateCommonConfig, ConfigUpdates};
-use crate::{ResponseStatus, BLOCK_SIZE};
-use crate::{InstantiateCallback, ExecuteCallback};
+use crate::core::{ResponseStatus, BLOCK_SIZE};
+use crate::core::{InstantiateCallback, ExecuteCallback};
 use crate::storage::{Item, ItemStorage};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;

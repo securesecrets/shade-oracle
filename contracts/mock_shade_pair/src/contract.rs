@@ -1,11 +1,11 @@
 use cosmwasm_std::{Uint128, DepsMut, MessageInfo, entry_point};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Deps, Response, Addr,  Querier,
-   StdError, StdResult, Storage,
+    to_binary, Binary, Env, Deps, Response, Addr,
+   StdError, StdResult,
 };
 use shade_oracles::core::cosmwasm_schema::cw_serde;
 use shade_oracles::{
-    Contract, InstantiateCallback, ExecuteCallback,
+    core::{Contract, InstantiateCallback, ExecuteCallback},
     protocols::shadeswap::{
         EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenPair, TokenType,
     },
@@ -35,7 +35,7 @@ const PAIR_INFO: Item<PairInfoResponse> = Item::new("pair_info");
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> StdResult<Response> {
     Ok(Response::default())
@@ -54,8 +54,8 @@ pub enum ExecuteMsg {
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _env: Env,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     match msg {
@@ -103,7 +103,7 @@ pub fn execute(
 #[entry_point]
 pub fn query(
     deps: Deps,
-    env: Env,
+    _env: Env,
     msg: ShadeSwapQueryMsg,
 ) -> StdResult<Binary> {
     match msg {

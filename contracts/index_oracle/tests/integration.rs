@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 use shade_oracles::{
-    ExecuteCallback, Query, InstantiateCallback,
+    core::{ExecuteCallback, Query, InstantiateCallback},
     interfaces::band::{self},
-    Contract, common::{OraclePrice, InstantiateCommonConfig},
+    common::{OraclePrice, InstantiateCommonConfig},
     interfaces::index_oracle, interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::{MockShadePair, index::IndexOracle}, App, helpers::setup_core, MultiTestable
+    multi::{index::IndexOracle}, App, helpers::setup_core, MultiTestable
 };
-use rstest::*;
 
-use cosmwasm_std::{Uint128, Addr, StdResult, ContractInfo};
+use cosmwasm_std::{Uint128, Addr};
 
 fn basic_index_test(
     symbol: String,
