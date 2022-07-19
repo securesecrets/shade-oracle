@@ -9,7 +9,7 @@ pub mod shade {
 
 
     use crate::{
-        core::{BLOCK_SIZE},
+        BLOCK_SIZE,
         common::InstantiateCommonConfig
     };
 

@@ -6,7 +6,8 @@ use cosmwasm_std::{
     to_binary, Binary, Env, Deps, Response, Addr, StdResult, Storage, entry_point, DepsMut, MessageInfo,
 };
 use shade_oracles::{
-    core::{Contract, BLOCK_SIZE, pad_handle_result, pad_query_result, validate_admin},
+    BLOCK_SIZE,
+    core::{Contract, pad_handle_result, pad_query_result, validate_admin},
     interfaces::router::*,
 };
 

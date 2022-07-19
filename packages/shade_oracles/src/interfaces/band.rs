@@ -1,9 +1,12 @@
-use crate::core::BLOCK_SIZE;
-use crate::core::{Contract, ResponseStatus};
+use crate::BLOCK_SIZE;
+use shade_protocol::{
+    Contract,
+    utils::generic_response::ResponseStatus,
+    utils::{InstantiateCallback, ExecuteCallback, Query},
+};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Uint128, QuerierWrapper};
 use cosmwasm_std::{StdResult};
-use shade_protocol::utils::{Query, ExecuteCallback, InstantiateCallback};
 
 #[cw_serde]
 pub struct InstantiateMsg {}

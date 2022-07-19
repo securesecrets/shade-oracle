@@ -23,9 +23,10 @@ proxy-band = []
 index = []
 router = []
 shd-staking-derivative = []
-lp-spot = []
-lp-smart = []
-market-lp = []
+lp-spot = ["lp"]
+lp-smart = ["lp"]
+market-lp = ["lp"]
+lp = []
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
