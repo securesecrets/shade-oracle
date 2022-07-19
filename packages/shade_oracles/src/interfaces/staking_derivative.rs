@@ -1,6 +1,7 @@
 use shade_protocol::utils::asset::{RawContract, Contract};
 use shade_protocol::utils::{InstantiateCallback};
-use crate::storage::{ItemStorage, Item};
+use shade_protocol::secret_storage_plus::{Item};
+use shade_protocol::utils::storage::plus::ItemStorage;
 use cosmwasm_std::Uint128;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;

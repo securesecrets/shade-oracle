@@ -89,7 +89,7 @@ pub fn reference_data_bulk(
 }
 
 pub mod proxy {
-    use shade_admin::storage::Item;
+    use shade_protocol::secret_storage_plus::Item;
     use shade_protocol::utils::{storage::plus::ItemStorage, asset::RawContract};
     use crate::common::{InstantiateCommonConfig, CommonConfig};
 
