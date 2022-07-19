@@ -1,5 +1,6 @@
 pub mod interfaces;
 pub use interfaces::common as common;
+pub const BLOCK_SIZE: usize = 256;
 pub mod protocols;
 
 #[cfg(feature = "storage")]
@@ -22,7 +23,6 @@ pub mod core {
     pub use shade_protocol::snip20;
     pub use shade_protocol::utils::calc::{sqrt};
     pub use shade_protocol::utils::price::{translate_price, normalize_price, get_precision};
-    pub const BLOCK_SIZE: usize = 256;
     #[cfg(feature = "scrt")]
     pub use {cosmwasm_std, cosmwasm_std::*};
 }

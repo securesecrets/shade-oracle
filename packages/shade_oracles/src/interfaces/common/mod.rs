@@ -1,9 +1,14 @@
-use crate::storage::{Item, ItemStorage};
-use crate::core::{BLOCK_SIZE, Query, ExecuteCallback, ResponseStatus, Contract, pad_handle_result, pad_query_result};
+use shade_protocol::{
+    utils::storage::plus::{ItemStorage},
+    secret_storage_plus::Item,
+    utils::generic_response::ResponseStatus,
+    utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
+};
+use crate::BLOCK_SIZE;
 use self::querier::verify_admin;
 use cosmwasm_schema::{cw_serde};
 use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper};
-use shade_protocol::utils::asset::{RawContract};
+use shade_protocol::utils::asset::{Contract, RawContract};
 
 pub mod querier;
 

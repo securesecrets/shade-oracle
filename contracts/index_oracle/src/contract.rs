@@ -8,7 +8,8 @@ use shade_oracles::interfaces::index_oracle::{Symbol, Basket, TargetResponse, Ta
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    core::{pad_handle_result, pad_query_result, BLOCK_SIZE, ResponseStatus},
+    BLOCK_SIZE,
+    core::{pad_handle_result, pad_query_result, ResponseStatus},
     interfaces::
     {
         band::ReferenceData,

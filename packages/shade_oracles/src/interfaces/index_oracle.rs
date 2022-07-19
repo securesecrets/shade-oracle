@@ -1,10 +1,13 @@
 use crate::common::{InstantiateCommonConfig, ConfigUpdates};
-use crate::core::{ResponseStatus, BLOCK_SIZE};
-use crate::core::{InstantiateCallback, ExecuteCallback};
+use shade_protocol::{
+    utils::generic_response::ResponseStatus,
+    utils::{InstantiateCallback, ExecuteCallback, Query},
+};
+use crate::BLOCK_SIZE;
+#[cfg(feature = "index")]
 use crate::storage::{Item, ItemStorage};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
-use shade_protocol::utils::Query;
 
 #[cw_serde]
 /// Config doesn't need list of symbols, supported keys. or dependencies.
