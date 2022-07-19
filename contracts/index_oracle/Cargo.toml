@@ -25,4 +25,3 @@ shade-oracles = { path = "../../packages/shade_oracles", features = ["core", "in
 
 [dev-dependencies]
 shade-oracles-multi-test = { path = "../../packages/multi_test", features = [ "multi-test", "index-oracle" ] }
-rstest = { version = "0.15.0" }

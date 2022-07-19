@@ -27,6 +27,7 @@ pub mod router
 {
     use oracle_router;
     multi_derive::implement_multi!(OracleRouter, oracle_router);
+    pub use shade_oracles::interfaces::router::*;
     
 }
 

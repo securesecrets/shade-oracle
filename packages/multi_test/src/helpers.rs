@@ -1,15 +1,18 @@
 use std::collections::HashMap;
 
-use cosmwasm_std::{Addr, ContractInfo, StdResult, Uint128};
 use shade_oracles::{
-    Contract,
     interfaces::{
     band::{self, proxy},
     router::{self, UpdateConfig},
-    }, common::{InstantiateCommonConfig, constants::DepKeys}
+    }, common::{InstantiateCommonConfig}
 };
 use shade_admin_multi_test::AdminAuth;
-use shade_protocol::{multi_test::App, utils::{InstantiateCallback, ExecuteCallback, Query, MultiTestable, asset::{RawDependencies, RawDependency}}};
+use shade_protocol::{
+    c_std::{Addr, ContractInfo, StdResult, Uint128},
+    Contract,
+    multi_test::App, 
+    utils::{InstantiateCallback, ExecuteCallback, MultiTestable}
+};
 use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
 
 pub struct OracleCore {
@@ -36,10 +39,10 @@ pub fn setup_core(app: &mut App, prices: HashMap<String, Uint128>) -> StdResult<
         quote_symbol: "USD".to_string(),
     }.test_init(OracleRouter::default(), app, admin.clone(), "oracle-router", &[])?;
 
-    let band_proxy_deps = RawDependencies(vec![RawDependency::new(DepKeys::BAND.to_string(), band.clone().into())]);
     let band_proxy = proxy::InstantiateMsg {
         quote_symbol: "USD".to_string(),
-        config: InstantiateCommonConfig::new(None, None, Some(band_proxy_deps), router.clone().into(), true, true),
+        config: InstantiateCommonConfig::new(None, router.clone().into(), true, true),
+        band: band.clone().into(),
     }.test_init(ProxyBandOracle::default(), app, admin.clone(), "proxy-band", &[])?;
 
     let mut operations = vec![];

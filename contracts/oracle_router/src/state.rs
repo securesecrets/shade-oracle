@@ -1,5 +1,5 @@
 use shade_oracles::{
-    Contract,
+    core::Contract,
     interfaces::router::Config,
     storage::{Item, Map},
 };

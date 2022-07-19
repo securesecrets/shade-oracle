@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use shade_protocol::utils::{asset::{Contract}, InstantiateCallback};
-use crate::BLOCK_SIZE;
+use crate::core::BLOCK_SIZE;
 
 #[cw_serde]
 pub struct InstantiateMsg {

@@ -1,5 +1,5 @@
-use crate::{normalize_price, sqrt};
-use crate::{ExecuteCallback, Query, InstantiateCallback, BLOCK_SIZE, Contract};
+use crate::core::{normalize_price, sqrt};
+use crate::core::{ExecuteCallback, InstantiateCallback, BLOCK_SIZE, Contract};
 use cosmwasm_std::{Uint128, Uint256};
 use cosmwasm_std::*;
 use cosmwasm_schema::cw_serde;

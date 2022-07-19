@@ -1,5 +1,5 @@
-use crate::BLOCK_SIZE;
-use crate::{Contract, ResponseStatus};
+use crate::core::BLOCK_SIZE;
+use crate::core::{Contract, ResponseStatus};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Uint128, QuerierWrapper};
 use cosmwasm_std::{StdResult};

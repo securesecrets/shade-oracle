@@ -5,7 +5,7 @@ use cosmwasm_std::{
     to_binary, Api, Binary, Env, Deps, Response, StdError, StdResult, Storage, DepsMut,
 };
 use shade_oracles::{
-    Contract,
+    core::Contract,
     common::{
         OraclePrice,
         querier::{query_oracle_price, query_oracle_prices},

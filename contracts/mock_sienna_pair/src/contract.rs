@@ -6,7 +6,7 @@ use cosmwasm_std::{
 use cosmwasm_schema::cw_serde;
 use shade_oracles::storage::{singleton_read, ReadonlySingleton, Singleton, singleton};
 use shade_oracles::{
-    Contract, InstantiateCallback, ExecuteCallback,
+    core::{Contract, InstantiateCallback, ExecuteCallback},
     protocols::siennaswap::{
         Pair, SiennaDexTokenType as TokenType, SiennaSwapExchangeQueryMsg as PairQuery,
         SiennaSwapPairInfo as PairInfo, SiennaSwapPairInfoResponse as PairInfoResponse,
@@ -46,7 +46,7 @@ pub fn pair_info_w(storage: &mut dyn Storage) -> Singleton<PairInfo> {
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> StdResult<Response> {
     Ok(Response::default())
@@ -65,8 +65,8 @@ pub enum ExecuteMsg {
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _env: Env,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     match msg {
@@ -113,7 +113,7 @@ pub fn execute(
 #[entry_point]
 pub fn query(
     deps: Deps,
-    env: Env,
+    _env: Env,
     msg: PairQuery,
 ) -> StdResult<Binary> {
     match msg {

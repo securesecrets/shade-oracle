@@ -4,18 +4,17 @@ use cosmwasm_std::{
     StdResult,
 };
 use shade_oracles::common::Oracle;
-use shade_oracles::core::schemars::_serde_json::value::Index;
 use shade_oracles::interfaces::index_oracle::{Symbol, Basket, TargetResponse, Target, BasketResponse};
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    pad_handle_result, pad_query_result, Contract, BLOCK_SIZE, ResponseStatus,
+    core::{pad_handle_result, pad_query_result, BLOCK_SIZE, ResponseStatus},
     interfaces::
     {
         band::ReferenceData,
         common::{
             CommonConfig,
-        querier::{query_band_prices, query_prices, verify_admin},
+        querier::{query_band_prices, query_prices},
         OraclePrice},
         index_oracle::{HandleAnswer, ExecuteMsg, InstantiateMsg, QueryMsg},
     },
@@ -107,11 +106,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
              */
             QueryMsg::GetPrice { key, .. } => {
                 let config = IndexOracle.can_query_price(deps, &key)?;
-                to_binary(&IndexOracle.try_query_price(deps, env, key, config)?)
+                to_binary(&IndexOracle.price_resp(IndexOracle.try_query_price(deps, &env, key, &config)?))
             },
             QueryMsg::GetPrices { keys } => {
                 let config = IndexOracle.can_query_prices(deps, keys.as_slice())?;
-                to_binary(&IndexOracle.try_query_prices(deps, env, keys, config)?)
+                to_binary(&IndexOracle.prices_resp(IndexOracle.try_query_prices(deps, &env, keys, &config)?))
             }
             QueryMsg::Basket {} => to_binary(&BasketResponse {
                 basket: Basket::load(deps.storage)?.0,
@@ -273,7 +272,7 @@ fn mod_basket(
 pub struct IndexOracle;
 
 impl Oracle for IndexOracle {
-    fn _try_query_price(&self, deps: Deps, env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
+    fn try_query_price(&self, deps: Deps, _env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
         if key != Symbol::load(deps.storage)?.0 {
             return Err(StdError::generic_err(format!(
                 "Missing price feed for {}",
@@ -283,7 +282,7 @@ impl Oracle for IndexOracle {
         
         let basket = Basket::load(deps.storage)?;
         let symbols: Vec<String> = basket.0.clone().into_iter().map(|(sym, _, _)| sym).collect();
-        let prices = fetch_prices(deps, &config, symbols)?;
+        let prices = fetch_prices(deps, config, symbols)?;
         let index = eval_index(prices, basket.0);
     
         Ok(OraclePrice::new(key, index))    
