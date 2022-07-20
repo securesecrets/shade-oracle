@@ -1,5 +1,5 @@
 use cosmwasm_std::Uint128;
-use shade_oracles::interfaces::lp::{get_fair_lp_token_price, FairLpPriceInfo};
+use shade_oracles::interfaces::lp::math::{get_fair_lp_token_price, FairLpPriceInfo};
 
 #[test]
 fn test_get_fair_lp_token_price_1() {
