@@ -1,8 +1,14 @@
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{to_binary, Addr};
-use shade_ensemble::{
-    ensemble::{ContractEnsemble, MockEnv},
-    prelude::ContractLink,
+use std::collections::HashMap;
+use shade_oracles::{
+    core::{ExecuteCallback, Query, InstantiateCallback},
+    interfaces::band::{self},
+    common::{OraclePrice, InstantiateCommonConfig},
+    interfaces::index_oracle, interfaces::router,
+};
+use shade_oracles_multi_test::{
+    multi::{MockShadePair, market::shadeswap::ShadeSwapMarketOracle}, App, helpers::setup_core, MultiTestable
 };
 use std::collections::HashMap;
 

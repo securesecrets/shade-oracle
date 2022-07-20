@@ -7,6 +7,8 @@ pub mod mocks {
         use mock_sienna_pair;
         multi_derive::implement_multi!(MockSiennaPair, mock_sienna_pair);
     }
+    #[cfg(feature = "snip20")]
+    pub use shade_multi_test::multi::snip20::Snip20;
 }
 
 pub use crate::multi::{
@@ -47,5 +49,28 @@ pub mod band {
 pub mod index {
     use index_oracle;
     multi_derive::implement_multi!(IndexOracle, index_oracle);
+}
+
+#[cfg(feature = "market")]
+pub mod market {
+    pub mod siennaswap {
+        multi_derive::implement_multi!(SiennaSwapMarketOracle, siennaswap_market_oracle);
+    }
+    pub mod shadeswap {
+        multi_derive::implement_multi!(ShadeSwapMarketOracle, shadeswap_market_oracle);
+    }
+}
+
+#[cfg(feature = "lp")]
+pub mod lp {
+    pub mod spot {
+        multi_derive::implement_multi!(SiennaSwapLpSpotOracle, siennaswap_lp_spot_oracle);
+    }
+    multi_derive::implement_multi!(SiennaSwapLpOracle, siennaswap_lp_oracle);
+}
+
+#[cfg(feature = "staking-derivative")]
+pub mod staking_derivative {
+    multi_derive::implement_multi!(ShadeStakingDerivativeOracle, shade_staking_derivative_oracle);
 }
 

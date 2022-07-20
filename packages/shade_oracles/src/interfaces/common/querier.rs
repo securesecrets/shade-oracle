@@ -148,7 +148,7 @@ pub fn query_token_info(
 pub fn query_token_balance(
     contract: &Contract,
     querier: &QuerierWrapper,
-    address: Addr,
+    address: String,
     key: String,
 ) -> StdResult<Uint128> {
     let answer: Snip20QueryAnswer =

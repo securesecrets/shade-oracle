@@ -7,7 +7,9 @@ use shade_oracles::{
     }, common::{InstantiateCommonConfig}
 };
 use shade_admin_multi_test::AdminAuth;
+//use shade_multi_test::multi::snip20::Snip20;
 use shade_protocol::{
+    AnyResult,
     c_std::{Addr, ContractInfo, StdResult, Uint128},
     Contract,
     multi_test::App, 
@@ -25,7 +27,7 @@ pub struct OracleCore {
 /// Initializes the core dependencies for testing all oracles which are
 /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
 /// based off the prices argument with them being quoted in "USD".
-pub fn setup_core(app: &mut App, prices: HashMap<String, Uint128>) -> StdResult<OracleCore> {
+pub fn setup_core(app: &mut App, prices: HashMap<String, Uint128>) -> AnyResult<OracleCore> {
     let admin = Addr::unchecked("superadmin");
 
     let admin_auth =shade_admin::admin::InstantiateMsg { super_admin: None }.test_init(AdminAuth::default(), app, admin.clone(), "admin-auth", &[])?;

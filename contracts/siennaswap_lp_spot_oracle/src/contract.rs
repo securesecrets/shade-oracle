@@ -1,40 +1,33 @@
+use cosmwasm_std::{Uint128, entry_point};
 use cosmwasm_std::{
-    to_binary, MessageInfo, Binary, Env, Deps, Response, Addr, DepsMut,
-    QueryRequest, StdError, StdResult, QueryResponse, WasmQuery, entry_point,
+    to_binary, MessageInfo, Env, Deps, Response,  DepsMut,
+    QueryRequest, StdResult, QueryResponse, WasmQuery,
 };
+use shade_oracles::common::{Oracle, oracle_exec, CommonConfig};
 use shade_oracles::{
-    pad_handle_result, pad_query_result, ResponseStatus, Contract, BLOCK_SIZE,
     interfaces::band::ReferenceData,
-    common::{
-        is_disabled,
-        querier::{query_prices, query_token_info, verify_admin},
-        throw_unsupported_symbol_error, HandleAnswer, ExecuteMsg, OraclePrice, OracleQuery
-    },
+    common::querier::{query_prices, query_token_info},
+    common::{ExecuteMsg, OraclePrice, OracleQuery},
     interfaces::lp::{
-        get_lp_token_spot_price,
-        siennaswap::{Config, InstantiateMsg, PairData},
-        FairLpPriceInfo,
+        math::{FairLpPriceInfo, get_lp_token_spot_price},
+        siennaswap::{EXCHANGE, ConfigResponse, InstantiateMsg, PairData, resolve_pair},
     },
     protocols::siennaswap::{
-        SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
+        SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
     },
-    storage::Item,
+    core::{pad_query_result},
+    BLOCK_SIZE,
+    storage::ItemStorage,
 };
 use std::cmp::min;
-
-const PAIR: Item<PairData> = Item::new("pair");
-const CONFIG: Item<Config> = Item::new("config");
 
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let mut token0 = Contract::new(&Addr::unchecked("a"), &"b".to_string());
-    let mut token1 = token0.clone();
-
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: msg.exchange.address.to_string(),
@@ -42,53 +35,23 @@ pub fn instantiate(
             msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
         }))?;
     let pair_info = pair_info_response.pair_info;
+    let tokens = resolve_pair(&pair_info)?;
+    let token0_decimals = query_token_info(&tokens.0, &deps.querier)?
+        .decimals;
+    let token1_decimals = query_token_info(&tokens.1, &deps.querier)?
+        .decimals;
     let lp_token = pair_info.liquidity_token;
-    if let SiennaDexTokenType::CustomToken {
-        contract_addr,
-        token_code_hash,
-    } = &pair_info.pair.token_0
-    {
-        token0.address = contract_addr.clone();
-        token0.code_hash = token_code_hash.to_string();
-    } else {
-        return Err(StdError::generic_err(
-            "Could not resolve SiennaSwap token 1 info.",
-        ));
-    }
-    if let SiennaDexTokenType::CustomToken {
-        contract_addr,
-        token_code_hash,
-    } = &pair_info.pair.token_1
-    {
-        token1.address = contract_addr.clone();
-        token1.code_hash = token_code_hash.to_string();
-    } else {
-        return Err(StdError::generic_err(
-            "Could not resolve SiennaSwap token 2 info.",
-        ));
-    }
-    let token0_decimals = query_token_info(&token0, &deps.querier)?
-        .decimals;
-    let token1_decimals = query_token_info(&token1, &deps.querier)?
-        .decimals;
-
-    let config = Config {
-        supported_key: msg.supported_key,
-        symbol_0: msg.symbol_0,
-        symbol_1: msg.symbol_1,
-        router: msg.router,
-        exchange: msg.exchange,
-        enabled: true,
-    };
 
     let pair = PairData {
         lp_token,
         token0_decimals,
         token1_decimals,
+        symbol_0: msg.symbol_0,
+        symbol_1: msg.symbol_1,
     };
 
-    CONFIG.save(deps.storage, &config)?;
-    PAIR.save(deps.storage, &pair)?;
+    pair.save(deps.storage)?;
+    SiennaswapLpOracle.init_config(deps.storage, deps.api, msg.config)?;
 
     Ok(Response::default())
 }
@@ -100,97 +63,82 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
-    verify_admin(&config.router, deps.as_ref(), info.sender.clone())?;
-
-    pad_handle_result(
-        match msg {
-            ExecuteMsg::UpdateConfig { enabled } => try_update_config(deps, enabled),
-        },
-        BLOCK_SIZE,
-    )
-}
-
-fn try_update_config(
-    deps: DepsMut,
-    enabled: bool,
-) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
-    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.enabled = enabled;
-        Ok(config)
-    })?;
-    Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?)
-    )
+    oracle_exec(deps, env, info, msg, SiennaswapLpOracle)
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, _env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
+    let config = CommonConfig::load(deps.storage)?;
+
     pad_query_result(
         match msg {
-            OracleQuery::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-            OracleQuery::GetPrice { key } => try_query_price(deps, key),
-            OracleQuery::GetPrices { .. } => Err(StdError::generic_err("Unsupported method.")),
+            OracleQuery::GetConfig {} => {
+                to_binary(&ConfigResponse { config, exchange: EXCHANGE.load(deps.storage)?, pair: PairData::load(deps.storage)? })
+            },
+            OracleQuery::GetPrice { key } => {
+                SiennaswapLpOracle.can_query_price(deps, &key)?;
+                to_binary(&SiennaswapLpOracle.price_resp(SiennaswapLpOracle.try_query_price(deps, &_env, key, &config)?))
+            },
+            OracleQuery::GetPrices { keys } => {
+                SiennaswapLpOracle.can_query_prices(deps, &keys)?;
+                to_binary(&SiennaswapLpOracle.prices_resp(SiennaswapLpOracle.try_query_prices(deps, &_env, keys, &config)?))
+            }
         },
         BLOCK_SIZE,
     )
 }
 
-fn try_query_price(
-    deps: Deps,
-    key: String,
-) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
-    is_disabled(config.enabled)?;
-    let pair = PAIR.load(deps.storage)?;
+pub struct SiennaswapLpOracle;
 
-    if key != config.supported_key {
-        return Err(throw_unsupported_symbol_error(key));
+impl Oracle for SiennaswapLpOracle {
+    fn try_query_price(&self, deps: Deps, _env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
+        let pair = PairData::load(deps.storage)?;
+        let exchange = EXCHANGE.load(deps.storage)?;
+    
+        let prices = query_prices(
+            &config.router,
+            &deps.querier,
+            vec![pair.symbol_0, pair.symbol_1],
+        )?;
+        let (price0, price1) = (prices[0].clone(), prices[1].clone());
+    
+        let pair_info_response: SiennaSwapPairInfoResponse =
+            deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+                contract_addr: exchange.address.to_string(),
+                code_hash: exchange.code_hash,
+                msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
+            }))?;
+        let pair_info = pair_info_response.pair_info;
+        let reserve0 = pair_info.amount_0;
+        let reserve1 = pair_info.amount_1;
+    
+        let lp_token_info = query_token_info(&pair.lp_token, &deps.querier)?;
+    
+        let total_supply = lp_token_info.total_supply.unwrap();
+        let lp_token_decimals = lp_token_info.decimals;
+    
+        let a = FairLpPriceInfo {
+            reserve: reserve0.u128(),
+            price: price0.data.rate.u128(),
+            decimals: pair.token0_decimals,
+        };
+    
+        let b = FairLpPriceInfo {
+            reserve: reserve1.u128(),
+            price: price1.data.rate.u128(),
+            decimals: pair.token1_decimals,
+        };
+    
+        let price = get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals);
+    
+        let data = ReferenceData {
+            rate: Uint128::from(u128::from_be_bytes(price.unwrap().to_be_bytes())),
+            last_updated_base: min(price0.data.last_updated_base, price1.data.last_updated_base),
+            last_updated_quote: min(
+                price0.data.last_updated_quote,
+                price1.data.last_updated_quote,
+            ),
+        };
+        Ok(OraclePrice::new(key, data))    
     }
-
-    let prices = query_prices(
-        &config.router,
-        &deps.querier,
-        vec![config.symbol_0, config.symbol_1],
-    )?;
-    let (price0, price1) = (prices[0].clone(), prices[1].clone());
-
-    let pair_info_response: SiennaSwapPairInfoResponse =
-        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: config.exchange.address.to_string(),
-            code_hash: config.exchange.code_hash,
-            msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
-        }))?;
-
-    let reserve0 = pair_info_response.pair_info.amount_0;
-    let reserve1 = pair_info_response.pair_info.amount_1;
-
-    let lp_token_info = query_token_info(&pair.lp_token, &deps.querier)?;
-
-    let total_supply = lp_token_info.total_supply.unwrap();
-    let lp_token_decimals = lp_token_info.decimals;
-
-    let a = FairLpPriceInfo {
-        reserve: reserve0.u128(),
-        price: price0.data.rate.u128(),
-        decimals: pair.token0_decimals,
-    };
-
-    let b = FairLpPriceInfo {
-        reserve: reserve1.u128(),
-        price: price1.data.rate.u128(),
-        decimals: pair.token1_decimals,
-    };
-
-    let data = ReferenceData {
-        rate: get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals)?,
-        last_updated_base: min(price0.data.last_updated_base, price1.data.last_updated_base),
-        last_updated_quote: min(
-            price0.data.last_updated_quote,
-            price1.data.last_updated_quote,
-        ),
-    };
-    to_binary(&OraclePrice::new(key, data))
 }
