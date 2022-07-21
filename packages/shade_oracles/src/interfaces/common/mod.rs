@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use shade_protocol::{
     utils::storage::plus::{ItemStorage},
     secret_storage_plus::Item,
@@ -7,7 +9,7 @@ use shade_protocol::{
 use crate::BLOCK_SIZE;
 use self::querier::verify_admin;
 use cosmwasm_schema::{cw_serde};
-use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper};
+use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp, OverflowError};
 use shade_protocol::utils::asset::{Contract, RawContract};
 
 pub mod querier;
@@ -141,6 +143,21 @@ impl OraclePrice {
             key,
             data: reference_data,
         }
+    }
+    pub fn time_since_updated(&self, time: &Timestamp) -> StdResult<u64> {
+        let now = time.seconds();
+        let base = self.data.last_updated_base;
+        let quote = self.data.last_updated_quote;
+        let time_since_base = now.checked_sub(base);
+        let time_since_quote = now.checked_sub(quote);
+        if time_since_base.is_none() {
+            return Err(StdError::Overflow { source: OverflowError::new(cosmwasm_std::OverflowOperation::Sub, now, base ) });
+        }
+        if time_since_quote.is_none() {
+            return Err(StdError::Overflow { source: OverflowError::new(cosmwasm_std::OverflowOperation::Sub, now, quote ) });
+        }
+        let time_since_updated = max(time_since_base.unwrap(), time_since_quote.unwrap());
+        Ok(time_since_updated)
     }
 }
 
