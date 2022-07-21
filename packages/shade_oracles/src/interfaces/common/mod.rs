@@ -159,8 +159,22 @@ impl OraclePrice {
         let time_since_updated = max(time_since_base.unwrap(), time_since_quote.unwrap());
         Ok(time_since_updated)
     }
-    pub fn price(&self) -> Uint256 {
-        Uint256::from(self.data.rate)
+    /// Allows us to pass a variable amount of precision decimals in the future
+    /// in case our oracles lose their constant decimal precision (currently 18).
+    pub fn price(&self) -> Price {
+        Price::new(Uint256::from(self.data.rate), 18)
+    }
+}
+
+#[cw_serde]
+pub struct Price {
+    pub value: Uint256,
+    pub decimals: u8,
+}
+
+impl Price {
+    pub fn new(value: Uint256, decimals: u8) -> Self {
+        Price { value, decimals }
     }
 }
 
