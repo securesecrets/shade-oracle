@@ -1,7 +1,7 @@
 use std::cmp::max;
 
 use shade_protocol::{
-    utils::storage::plus::{ItemStorage},
+    utils::{storage::plus::{ItemStorage}, price::get_precision},
     secret_storage_plus::Item,
     utils::generic_response::ResponseStatus,
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
@@ -9,7 +9,7 @@ use shade_protocol::{
 use crate::BLOCK_SIZE;
 use self::querier::verify_admin;
 use cosmwasm_schema::{cw_serde};
-use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp, OverflowError, Uint256};
+use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp, OverflowError, Uint256, CheckedMultiplyRatioError};
 use shade_protocol::utils::asset::{Contract, RawContract};
 
 pub mod querier;
@@ -161,20 +161,9 @@ impl OraclePrice {
     }
     /// Allows us to pass a variable amount of precision decimals in the future
     /// in case our oracles lose their constant decimal precision (currently 18).
-    pub fn price(&self) -> Price {
-        Price::new(Uint256::from(self.data.rate), 18)
-    }
-}
-
-#[cw_serde]
-pub struct Price {
-    pub value: Uint256,
-    pub decimals: u8,
-}
-
-impl Price {
-    pub fn new(value: Uint256, decimals: u8) -> Self {
-        Price { value, decimals }
+    /// Gets the value for some amount using the price.
+    pub fn calc_value(&self, amount: Uint256) -> Result<Uint256, CheckedMultiplyRatioError> {
+        amount.checked_multiply_ratio(amount, Uint256::from(get_precision(18)))
     }
 }
 
