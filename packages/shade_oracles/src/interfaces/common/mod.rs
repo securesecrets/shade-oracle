@@ -9,7 +9,7 @@ use shade_protocol::{
 use crate::BLOCK_SIZE;
 use self::querier::verify_admin;
 use cosmwasm_schema::{cw_serde};
-use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp, OverflowError};
+use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp, OverflowError, Uint256};
 use shade_protocol::utils::asset::{Contract, RawContract};
 
 pub mod querier;
@@ -159,8 +159,8 @@ impl OraclePrice {
         let time_since_updated = max(time_since_base.unwrap(), time_since_quote.unwrap());
         Ok(time_since_updated)
     }
-    pub fn price(&self) -> Uint128 {
-        self.data.rate
+    pub fn price(&self) -> Uint256 {
+        Uint256::from(self.data.rate)
     }
 }
 
