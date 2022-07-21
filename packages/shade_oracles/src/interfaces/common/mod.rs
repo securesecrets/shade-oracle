@@ -159,6 +159,9 @@ impl OraclePrice {
         let time_since_updated = max(time_since_base.unwrap(), time_since_quote.unwrap());
         Ok(time_since_updated)
     }
+    pub fn price(&self) -> Uint128 {
+        self.data.rate
+    }
 }
 
 pub fn throw_unsupported_symbol_error(key: String) -> StdError {
