@@ -3,7 +3,7 @@ use std::cmp::max;
 use shade_protocol::{
     utils::{storage::plus::{ItemStorage}, price::get_precision},
     secret_storage_plus::Item,
-    utils::generic_response::ResponseStatus,
+    utils::{generic_response::ResponseStatus},
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
 };
 use crate::BLOCK_SIZE;
@@ -163,7 +163,17 @@ impl OraclePrice {
     /// in case our oracles lose their constant decimal precision (currently 18).
     /// Gets the value for some amount using the price.
     pub fn calc_value(&self, amount: Uint256) -> Result<Uint256, CheckedMultiplyRatioError> {
-        amount.checked_multiply_ratio(amount, Uint256::from(get_precision(18)))
+        let price_precision = Uint256::from(get_precision(18));
+        amount.checked_multiply_ratio(self.data.rate, price_precision)
+    }
+    /// Gets the amount equivalent to the provided value divided by the unit price.
+    pub fn calc_amount(&self, value: Uint256, value_precision: u8, amount_precision: u8) -> Result<Uint256, CheckedMultiplyRatioError> {
+        let price_precision = Uint256::from(get_precision(18));
+        let value_precision = Uint256::from(get_precision(value_precision));
+        let amount_precision = Uint256::from(get_precision(amount_precision));
+
+        let normalized_value = value.checked_multiply_ratio(price_precision, value_precision)?;
+        normalized_value.checked_multiply_ratio(amount_precision, self.data.rate)
     }
 }
 
