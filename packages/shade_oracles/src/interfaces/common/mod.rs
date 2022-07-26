@@ -8,7 +8,7 @@ use shade_protocol::{
 };
 use crate::BLOCK_SIZE;
 use self::querier::verify_admin;
-use cosmwasm_schema::{cw_serde};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp, OverflowError, Uint256, CheckedMultiplyRatioError};
 use shade_protocol::utils::asset::{Contract, RawContract};
 
@@ -19,9 +19,13 @@ use super::band::ReferenceData;
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum OracleQuery {
+    #[returns(ConfigResponse)]
     GetConfig {},
+    #[returns(PriceResponse)]
     GetPrice { key: String },
+    #[returns(PricesResponse)]
     GetPrices { keys: Vec<String> },
 }
 

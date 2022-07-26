@@ -4,7 +4,7 @@ use shade_protocol::{
     utils::generic_response::ResponseStatus,
     utils::{InstantiateCallback, ExecuteCallback, Query},
 };
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Uint128, QuerierWrapper};
 use cosmwasm_std::{StdResult};
 
@@ -35,11 +35,14 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(ReferenceData)]
     GetReferenceData {
         base_symbol: String,
         quote_symbol: String,
     },
+    #[returns(ReferenceDataBulk)]
     GetReferenceDataBulk {
         base_symbols: Vec<String>,
         quote_symbols: Vec<String>,
