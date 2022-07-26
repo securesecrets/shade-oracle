@@ -91,3 +91,8 @@ clean:
 format:
 	cargo fmt
 	
+schema: schema-siennaswap-market
+
+schema-siennaswap_market:
+	cd contracts/siennaswap_market_oracle \
+	&& cargo schema \

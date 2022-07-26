@@ -1,11 +1,12 @@
 use crate::BLOCK_SIZE;
 use cosmwasm_std::*;
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use shade_protocol::{
     utils::generic_response::ResponseStatus,
     utils::{InstantiateCallback, ExecuteCallback, Query},
     Contract,
 };
+use crate::common::{PriceResponse, PricesResponse};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -70,22 +71,29 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(Config)]
     GetConfig {},
     /// Get oracle at that key
+    #[returns(OracleResponse)]
     GetOracle {
         key: String,
     },
     /// Get price of oracle at that key
+    #[returns(PriceResponse)]
     GetPrice {
         key: String,
     },
+    #[returns(Vec<OracleResponse>)]
     GetOracles {
         keys: Vec<String>,
     },
+    #[returns(PricesResponse)]
     GetPrices {
         keys: Vec<String>,
     },
+    #[returns(AdminAuthResponse)]
     GetAdminAuth {},
 }
 

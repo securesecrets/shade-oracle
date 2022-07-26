@@ -1,4 +1,4 @@
-use crate::common::{InstantiateCommonConfig, ConfigUpdates};
+use crate::common::{InstantiateCommonConfig, ConfigUpdates, ConfigResponse, PriceResponse, PricesResponse};
 use shade_protocol::{
     utils::generic_response::ResponseStatus,
     utils::{InstantiateCallback, ExecuteCallback, Query},
@@ -6,7 +6,7 @@ use shade_protocol::{
 use crate::BLOCK_SIZE;
 #[cfg(feature = "index")]
 use crate::storage::{Item, ItemStorage};
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint128;
 
 #[cw_serde]
@@ -49,13 +49,19 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
+    #[returns(PriceResponse)]
     GetPrice { key: String },
+    #[returns(PricesResponse)]
     GetPrices { keys: Vec<String> },
+    #[returns(ConfigResponse)]
     GetConfig {},
+    #[returns(BasketResponse)]
     Basket {},
+    #[returns(TargetResponse)]
     GetTarget {},
     //Constants { },
 }
