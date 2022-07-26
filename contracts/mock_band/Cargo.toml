@@ -18,8 +18,6 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 # for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["shade-oracles/backtraces"]
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
