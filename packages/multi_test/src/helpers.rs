@@ -6,7 +6,7 @@ use shade_oracles::{
     router::{self, UpdateConfig},
     }, common::{InstantiateCommonConfig}
 };
-use shade_admin_multi_test::AdminAuth;
+use shade_admin_multi_test::multi::AdminAuth;
 //use shade_multi_test::multi::snip20::Snip20;
 use shade_protocol::{
     AnyResult,
