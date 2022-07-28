@@ -38,7 +38,7 @@ pub fn execute(
 
 pub fn update_symbol_price(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     base_symbol: String,
     quote_symbol: String,
     rate: Uint128,
@@ -49,8 +49,8 @@ pub fn update_symbol_price(
         (base_symbol, quote_symbol),
         &ReferenceData {
             rate,
-            last_updated_base: last_updated.unwrap_or(0),
-            last_updated_quote: last_updated.unwrap_or(0),
+            last_updated_base: last_updated.unwrap_or_else(|| env.block.time.seconds()),
+            last_updated_quote: last_updated.unwrap_or_else(|| env.block.time.seconds()),
         },
     )?;
 

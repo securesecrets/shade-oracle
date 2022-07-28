@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use shade_oracles_ensemble::{
     harness::{MockSiennaPair, SiennaMarketOracle, Snip20},
-    helpers::setup_core,
+    helpers::OracleCore,
 };
 
 use shade_oracles::{
@@ -38,7 +38,7 @@ fn basic_market_test(
     let reg_sienna_pair = ensemble.register(Box::new(MockSiennaPair));
     let reg_snip20 = ensemble.register(Box::new(Snip20));
 
-    let oracle_core = setup_core(ensemble);
+    let oracle_core = OracleCore::setup(ensemble);
     let band = oracle_core.band;
     let router = oracle_core.router;
     let mut ensemble = oracle_core.ensemble;

@@ -6,7 +6,7 @@ use shade_oracles::{
     interfaces::index_oracle, interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::{index::IndexOracle}, App, helpers::setup_core, MultiTestable
+    multi::{index::IndexOracle}, App, helpers::OracleCore, MultiTestable
 };
 
 use cosmwasm_std::{Uint128, Addr};
@@ -22,7 +22,7 @@ fn basic_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = setup_core(&mut app, prices).unwrap();
+    let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
     let router = oracle_core.router;
 
     let index_oracle = index_oracle::InstantiateMsg {
@@ -173,7 +173,7 @@ fn mod_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = setup_core(&mut app, prices).unwrap();
+    let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
     let band = oracle_core.band;
     let band_proxy = oracle_core.band_proxy;
     let router = oracle_core.router;
