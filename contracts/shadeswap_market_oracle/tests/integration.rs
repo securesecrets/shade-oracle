@@ -8,13 +8,13 @@ use shade_oracles::{
     interfaces::index_oracle, interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::{MockShadePair, market::shadeswap::ShadeSwapMarketOracle}, App, helpers::setup_core, MultiTestable
+    multi::{MockShadePair, market::shadeswap::ShadeSwapMarketOracle}, App, helpers::OracleCore, MultiTestable
 };
 use std::collections::HashMap;
 
 use shade_oracles_ensemble::{
     harness::{MockShadePair, ShadeMarketOracle, Snip20},
-    helpers::setup_core,
+    helpers::OracleCore,
 };
 
 use shade_oracles::{
