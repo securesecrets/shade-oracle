@@ -179,6 +179,19 @@ impl OraclePrice {
         let normalized_value = value.checked_multiply_ratio(price_precision, value_precision)?;
         normalized_value.checked_multiply_ratio(amount_precision, self.data.rate)
     }
+    pub fn is_stale_price(
+        &self,
+        delay_tolerance: u64,
+        current_time: &Timestamp,
+    ) -> StdResult<bool> {
+        if self
+            .time_since_updated(current_time)?
+            .gt(&delay_tolerance)
+        {
+            return Ok(false);
+        }
+        Ok(true)
+    }
 }
 
 pub fn throw_unsupported_symbol_error(key: String) -> StdError {
