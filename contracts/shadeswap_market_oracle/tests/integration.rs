@@ -4,7 +4,7 @@ use mock_shade_pair::contract as mock_shade_pair;
 use shade_oracles::common::PriceResponse;
 use shade_oracles::core::{snip20, Contract};
 use shade_oracles::{
-    common::{self, InstantiateCommonConfig, OraclePrice},
+    common::{self, InstantiateCommonConfig},
     core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::{lp::market as shadeswap_market_oracle, router},
 };

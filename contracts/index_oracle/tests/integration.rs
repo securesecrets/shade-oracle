@@ -1,5 +1,5 @@
 use shade_oracles::{
-    common::{InstantiateCommonConfig, OraclePrice, PriceResponse},
+    common::{InstantiateCommonConfig, PriceResponse},
     core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::band::{self},
     interfaces::index_oracle,
@@ -186,7 +186,7 @@ fn mod_index_test(
 
     let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
     let band = oracle_core.band;
-    let band_proxy = oracle_core.band_proxy;
+    let _band_proxy = oracle_core.band_proxy;
     let router = oracle_core.router;
 
     let index_oracle = index_oracle::InstantiateMsg {
@@ -221,9 +221,9 @@ fn mod_index_test(
     {
         let mut err = Uint128::zero();
         if data.rate > expected_initial {
-            err = (data.rate - expected_initial);
+            err = data.rate - expected_initial;
         } else {
-            err = (expected_initial - data.rate);
+            err = expected_initial - data.rate;
         }
         let acceptable = expected_initial.multiply_ratio(error, 10u128.pow(18));
 
@@ -260,9 +260,9 @@ fn mod_index_test(
     {
         let mut err = Uint128::zero();
         if data.rate > expected_final {
-            err = (data.rate - expected_final);
+            err = data.rate - expected_final;
         } else {
-            err = (expected_final - data.rate);
+            err = expected_final - data.rate;
         }
         let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
@@ -305,9 +305,9 @@ fn mod_index_test(
     {
         let mut err = Uint128::zero();
         if data.rate > expected_final {
-            err = (data.rate - expected_final);
+            err = data.rate - expected_final;
         } else {
-            err = (expected_final - data.rate);
+            err = expected_final - data.rate;
         }
         let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
