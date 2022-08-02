@@ -1,5 +1,7 @@
 use std::cmp::max;
 
+use better_secret_math::core::{exp10, muldiv};
+use ethnum::U256;
 use shade_protocol::{
     utils::{storage::plus::{ItemStorage}, price::get_precision},
     secret_storage_plus::Item,
@@ -152,33 +154,28 @@ impl OraclePrice {
         let now = time.seconds();
         let base = self.data.last_updated_base;
         let quote = self.data.last_updated_quote;
-        let time_since_base = now.checked_sub(base);
-        let time_since_quote = now.checked_sub(quote);
-        if time_since_base.is_none() {
-            return Err(StdError::Overflow { source: OverflowError::new(cosmwasm_std::OverflowOperation::Sub, now, base ) });
-        }
-        if time_since_quote.is_none() {
-            return Err(StdError::Overflow { source: OverflowError::new(cosmwasm_std::OverflowOperation::Sub, now, quote ) });
-        }
-        let time_since_updated = max(time_since_base.unwrap(), time_since_quote.unwrap());
+        let time_since_base = now - base;
+        let time_since_quote = now - quote;
+        let time_since_updated = max(time_since_base, time_since_quote);
         Ok(time_since_updated)
     }
     /// Allows us to pass a variable amount of precision decimals in the future
     /// in case our oracles lose their constant decimal precision (currently 18).
     /// Gets the value for some amount using the price.
-    pub fn calc_value(&self, amount: Uint256) -> Result<Uint256, CheckedMultiplyRatioError> {
-        let price_precision = Uint256::from(get_precision(18));
-        amount.checked_multiply_ratio(self.data.rate, price_precision)
+    pub fn calc_value(&self, amount: U256) -> StdResult<U256> {
+        let price_precision = exp10(18);
+        muldiv(amount, self.data.rate.into(), price_precision)
     }
     /// Gets the amount equivalent to the provided value divided by the unit price.
-    pub fn calc_amount(&self, value: Uint256, value_precision: u8, amount_precision: u8) -> Result<Uint256, CheckedMultiplyRatioError> {
-        let price_precision = Uint256::from(get_precision(18));
-        let value_precision = Uint256::from(get_precision(value_precision));
-        let amount_precision = Uint256::from(get_precision(amount_precision));
-
-        let normalized_value = value.checked_multiply_ratio(price_precision, value_precision)?;
-        normalized_value.checked_multiply_ratio(amount_precision, self.data.rate)
+    pub fn calc_amount(&self, value: U256, value_precision: u32, amount_precision: u32) -> StdResult<U256> {
+        let price_precision = exp10(18);
+        let value_precision = exp10(value_precision);
+        let amount_precision = exp10(amount_precision);
+    
+        let normalized_value = muldiv(value,price_precision, value_precision)?;
+        muldiv(normalized_value, amount_precision, self.data.rate.into())
     }
+
     pub fn is_stale_price(
         &self,
         delay_tolerance: u64,
