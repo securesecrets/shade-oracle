@@ -31,6 +31,10 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "ajuwdnhioadniowa"
+
       - uses: actions-rs/cargo@v1.0.3
         with:
           command: build
@@ -61,6 +65,10 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "ajuwdnhioadniowa"
+      
       - uses: actions-rs/cargo@v1.0.3
         with:
           command: check
@@ -80,8 +88,11 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           components: llvm-tools-preview
-      - uses: Swatinem/rust-cache@c5ed9ba6b7e1bb8aff90d43acd2f0af4990fa57c
-      
+          
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "ajuwdnhioadniowa"
+            
       - name: Install latest nextest release
         uses: taiki-e/install-action@nextest
       - name: Install cargo-llvm-cov
