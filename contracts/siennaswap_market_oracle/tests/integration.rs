@@ -3,7 +3,7 @@ use cosmwasm_std::{to_binary, Addr};
 use shade_oracles::common::PriceResponse;
 use shade_oracles::core::{snip20, Contract};
 use shade_oracles::{
-    common::{self, InstantiateCommonConfig, OraclePrice},
+    common::{self, InstantiateCommonConfig},
     core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::{lp::market as siennaswap_market_oracle, router},
 };
@@ -12,7 +12,6 @@ use shade_oracles_multi_test::multi::market::siennaswap::SiennaSwapMarketOracle;
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::{
     helpers::OracleCore,
-    multi::{MockShadePair},
     App, MultiTestable,
 };
 use std::collections::HashMap;

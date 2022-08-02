@@ -9,7 +9,7 @@ use shade_oracles::interfaces::band::{ExecuteMsg, InstantiateMsg, QueryMsg, Refe
 #[test]
 fn update_config() {
     let mut deps = mock_dependencies();
-    let mock_coins = coins(1000, "earth");
+    let _mock_coins = coins(1000, "earth");
     let env = mock_env();
     let user1 = mock_info("test", &vec![]);
     let msg = InstantiateMsg {};
