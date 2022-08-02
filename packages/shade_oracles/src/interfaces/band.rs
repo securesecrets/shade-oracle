@@ -1,4 +1,5 @@
 use crate::BLOCK_SIZE;
+use ethnum::U256;
 use shade_protocol::{
     Contract,
     utils::generic_response::ResponseStatus,
@@ -52,6 +53,19 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct ReferenceData {
     pub rate: Uint128,
+    pub last_updated_base: u64,
+    pub last_updated_quote: u64,
+}
+
+impl From<ReferenceData> for BtrReferenceData {
+    fn from(r: ReferenceData) -> Self {
+        BtrReferenceData { rate: U256::new(r.rate.u128()), last_updated_base: r.last_updated_base, last_updated_quote: r.last_updated_quote }
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+pub struct BtrReferenceData {
+    pub rate: U256,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
 }
