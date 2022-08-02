@@ -67,14 +67,14 @@ impl Oracle for ShadeStakingDerivativeOracle {
         let staking_derivative_price_precision = get_precision(oracle_config.token_decimals);
     
         let price = underlying_price
-            .data
+            .data()
             .rate
             .multiply_ratio(staking_derivative_price, staking_derivative_price_precision);
     
         let response = ReferenceData {
             rate: price,
-            last_updated_base: underlying_price.data.last_updated_base,
-            last_updated_quote: underlying_price.data.last_updated_quote,
+            last_updated_base: underlying_price.data().last_updated_base,
+            last_updated_quote: underlying_price.data().last_updated_quote,
         };
         Ok(OraclePrice::new(key, response))
     }

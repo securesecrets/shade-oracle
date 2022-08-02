@@ -119,13 +119,13 @@ impl Oracle for SiennaswapLpOracle {
     
         let a = FairLpPriceInfo {
             reserve: reserve0.u128(),
-            price: price0.data.rate.u128(),
+            price: price0.data().rate.u128(),
             decimals: pair.token0_decimals,
         };
     
         let b = FairLpPriceInfo {
             reserve: reserve1.u128(),
-            price: price1.data.rate.u128(),
+            price: price1.data().rate.u128(),
             decimals: pair.token1_decimals,
         };
     
@@ -133,10 +133,10 @@ impl Oracle for SiennaswapLpOracle {
     
         let data = ReferenceData {
             rate: Uint128::from(u128::from_be_bytes(price.unwrap().to_be_bytes())),
-            last_updated_base: min(price0.data.last_updated_base, price1.data.last_updated_base),
+            last_updated_base: min(price0.data().last_updated_base, price1.data().last_updated_base),
             last_updated_quote: min(
-                price0.data.last_updated_quote,
-                price1.data.last_updated_quote,
+                price0.data().last_updated_quote,
+                price1.data().last_updated_quote,
             ),
         };
         Ok(OraclePrice::new(key, data))    
