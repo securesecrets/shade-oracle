@@ -3,7 +3,7 @@ use std::cmp::max;
 use better_secret_math::core::{exp10, muldiv};
 use ethnum::U256;
 use shade_protocol::{
-    utils::{storage::plus::{ItemStorage}, price::get_precision},
+    utils::{storage::plus::{ItemStorage}},
     secret_storage_plus::Item,
     utils::{generic_response::ResponseStatus},
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
@@ -11,12 +11,12 @@ use shade_protocol::{
 use crate::BLOCK_SIZE;
 use self::querier::verify_admin;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp, OverflowError, Uint256, CheckedMultiplyRatioError};
+use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp};
 use shade_protocol::utils::asset::{Contract, RawContract};
 
 pub mod querier;
 
-use super::band::ReferenceData;
+use super::band::{ReferenceData, BtrReferenceData};
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
@@ -150,6 +150,21 @@ impl OraclePrice {
             data: reference_data,
         }
     }
+}
+
+/// Variant of OraclePrice that is optimized for math.
+pub struct BtrOraclePrice {
+    pub key: String,
+    pub data: BtrReferenceData,
+}
+
+impl From<OraclePrice> for BtrOraclePrice {
+    fn from(o: OraclePrice) -> Self {
+        BtrOraclePrice { key: o.key, data: o.data.into() }
+    }
+}
+
+impl BtrOraclePrice {
     pub fn time_since_updated(&self, time: &Timestamp) -> StdResult<u64> {
         let now = time.seconds();
         let base = self.data.last_updated_base;
@@ -164,7 +179,7 @@ impl OraclePrice {
     /// Gets the value for some amount using the price.
     pub fn calc_value(&self, amount: U256) -> StdResult<U256> {
         let price_precision = exp10(18);
-        muldiv(amount, self.data.rate.into(), price_precision)
+        muldiv(amount, self.data.rate, price_precision)
     }
     /// Gets the amount equivalent to the provided value divided by the unit price.
     pub fn calc_amount(&self, value: U256, value_precision: u32, amount_precision: u32) -> StdResult<U256> {
@@ -173,7 +188,7 @@ impl OraclePrice {
         let amount_precision = exp10(amount_precision);
     
         let normalized_value = muldiv(value,price_precision, value_precision)?;
-        muldiv(normalized_value, amount_precision, self.data.rate.into())
+        muldiv(normalized_value, amount_precision, self.data.rate)
     }
 
     pub fn is_stale_price(
