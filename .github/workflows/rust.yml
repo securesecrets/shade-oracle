@@ -65,7 +65,7 @@ jobs:
         with:
           command: check
           
-coverage:
+  coverage:
     name: Collect test coverage
     runs-on: ubuntu-latest
     # nightly rust might break from time to time
