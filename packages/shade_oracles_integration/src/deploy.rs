@@ -48,7 +48,7 @@ fn main() -> Result<()> {
     )?;
     let shd_price = oracle_router.query_price("SHD".to_string());
     match shd_price {
-        Ok(price) => println!("SHD Price is: {}", price.data.rate),
+        Ok(price) => println!("SHD Price is: {}", price.data().rate),
         Err(err) => println!("{}", err),
     }
     Ok(())

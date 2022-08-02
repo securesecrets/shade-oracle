@@ -139,8 +139,8 @@ pub enum HandleAnswer {
 
 #[cw_serde]
 pub struct OraclePrice {
-    pub key: String,
-    pub data: ReferenceData,
+    key: String,
+    data: ReferenceData,
 }
 
 impl OraclePrice {
@@ -150,25 +150,29 @@ impl OraclePrice {
             data: reference_data,
         }
     }
+    pub fn key(&self) -> &String { &self.key }
+    pub fn data(&self) -> &ReferenceData { &self.data }
 }
 
 /// Variant of OraclePrice that is optimized for math.
 pub struct BtrOraclePrice {
-    pub key: String,
-    pub data: BtrReferenceData,
+    key: String,
+    data: BtrReferenceData,
 }
 
 impl From<OraclePrice> for BtrOraclePrice {
     fn from(o: OraclePrice) -> Self {
-        BtrOraclePrice { key: o.key, data: o.data.into() }
+        BtrOraclePrice { key: o.key.clone(), data: o.data().clone().into() }
     }
 }
 
 impl BtrOraclePrice {
+    pub fn key(&self) -> &String { &self.key }
+    pub fn data(&self) -> &BtrReferenceData { &self.data } 
     pub fn time_since_updated(&self, time: &Timestamp) -> StdResult<u64> {
         let now = time.seconds();
-        let base = self.data.last_updated_base;
-        let quote = self.data.last_updated_quote;
+        let base = self.data().last_updated_base;
+        let quote = self.data().last_updated_quote;
         let time_since_base = now - base;
         let time_since_quote = now - quote;
         let time_since_updated = max(time_since_base, time_since_quote);
@@ -182,7 +186,7 @@ impl BtrOraclePrice {
         muldiv(amount, self.data.rate, price_precision)
     }
     /// Gets the amount equivalent to the provided value divided by the unit price.
-    pub fn calc_amount(&self, value: U256, value_precision: u32, amount_precision: u32) -> StdResult<U256> {
+    pub fn calc_amount(&self, value: U256, value_precision: u8, amount_precision: u8) -> StdResult<U256> {
         let price_precision = exp10(18);
         let value_precision = exp10(value_precision);
         let amount_precision = exp10(amount_precision);

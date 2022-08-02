@@ -140,7 +140,7 @@ impl Oracle for ShadeswapMarketOracle {
     
         // Translate price to primary/USD
         let price = base_usd_price
-            .data
+            .data()
             .rate
             .multiply_ratio(exchange_rate, 10u128.pow(18));
     
@@ -148,8 +148,8 @@ impl Oracle for ShadeswapMarketOracle {
             key,
             ReferenceData {
                 rate: price,
-                last_updated_base: base_usd_price.data.last_updated_base,
-                last_updated_quote: base_usd_price.data.last_updated_quote,
+                last_updated_base: base_usd_price.data().last_updated_base,
+                last_updated_quote: base_usd_price.data().last_updated_quote,
             },
         ))    }
 }

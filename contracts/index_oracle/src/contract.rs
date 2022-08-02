@@ -173,7 +173,7 @@ fn fetch_prices(
     match prices_resp {
         Ok(prices) => {
             for oracle_price in prices {
-                price_data.insert(oracle_price.key.clone(), oracle_price.data);
+                price_data.insert(oracle_price.key().clone(), oracle_price.data().clone());
             }
         }
         Err(e) => {
