@@ -1,13 +1,13 @@
 use crate::BLOCK_SIZE;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::StdResult;
+use cosmwasm_std::{QuerierWrapper, Uint128};
 use ethnum::U256;
 use shade_protocol::{
-    Contract,
     utils::generic_response::ResponseStatus,
-    utils::{InstantiateCallback, ExecuteCallback, Query},
+    utils::{ExecuteCallback, InstantiateCallback, Query},
+    Contract,
 };
-use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Uint128, QuerierWrapper};
-use cosmwasm_std::{StdResult};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -59,7 +59,11 @@ pub struct ReferenceData {
 
 impl From<ReferenceData> for BtrReferenceData {
     fn from(r: ReferenceData) -> Self {
-        BtrReferenceData { rate: U256::new(r.rate.u128()), last_updated_base: r.last_updated_base, last_updated_quote: r.last_updated_quote }
+        BtrReferenceData {
+            rate: U256::new(r.rate.u128()),
+            last_updated_base: r.last_updated_base,
+            last_updated_quote: r.last_updated_quote,
+        }
     }
 }
 
@@ -106,9 +110,9 @@ pub fn reference_data_bulk(
 }
 
 pub mod proxy {
+    use crate::common::{CommonConfig, InstantiateCommonConfig};
     use shade_protocol::secret_storage_plus::Item;
-    use shade_protocol::utils::{storage::plus::ItemStorage, asset::RawContract};
-    use crate::common::{InstantiateCommonConfig, CommonConfig};
+    use shade_protocol::utils::{asset::RawContract, storage::plus::ItemStorage};
 
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)

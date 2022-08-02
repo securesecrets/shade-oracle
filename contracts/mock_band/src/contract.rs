@@ -1,10 +1,10 @@
-use cosmwasm_std::{Uint128, entry_point};
-use cosmwasm_std::{
-    to_binary, Binary, Env, Deps, Response, StdResult, DepsMut, MessageInfo
-};
+use cosmwasm_std::{entry_point, Uint128};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
-use shade_oracles::interfaces::band::{QueryMsg, HandleAnswer, ExecuteMsg, InstantiateMsg, ReferenceData};
-use shade_oracles::core::{ResponseStatus};
+use shade_oracles::core::ResponseStatus;
+use shade_oracles::interfaces::band::{
+    ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg, ReferenceData,
+};
 use shade_oracles::storage::Map;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
@@ -62,11 +62,7 @@ pub fn update_symbol_price(
 }
 
 #[entry_point]
-pub fn query(
-    deps: Deps,
-    _env: Env,
-    msg: QueryMsg,
-) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetReferenceData {
             base_symbol,

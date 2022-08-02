@@ -1,13 +1,10 @@
+use crate::common::CommonConfig;
 use crate::BLOCK_SIZE;
-use shade_protocol::{
-    utils::{InstantiateCallback},
-    Contract,
-};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{StdResult, Uint128, Uint256};
 use shade_protocol::secret_storage_plus::Item;
 use shade_protocol::utils::storage::plus::ItemStorage;
-use cosmwasm_std::{Uint128, Uint256, StdResult};
-use crate::common::CommonConfig;
-use cosmwasm_schema::cw_serde;
+use shade_protocol::{utils::InstantiateCallback, Contract};
 
 pub mod market {
     use shade_protocol::{snip20::helpers::TokenInfo, utils::asset::RawContract};
@@ -45,11 +42,10 @@ pub mod market {
     #[cfg(feature = "market-lp")]
     pub const BASE_INFO: Item<TokenInfo> = Item::new("base_info");
 
-
     #[cw_serde]
     pub struct InstantiateMsg {
         pub config: InstantiateCommonConfig,
-        pub base_peg: String,
+        pub base_peg: Option<String>,
         pub symbol: String,
         pub pair: RawContract,
     }
@@ -60,10 +56,13 @@ pub mod market {
 }
 
 pub mod siennaswap {
-    use cosmwasm_std::{StdError, Addr};
+    use cosmwasm_std::{Addr, StdError};
     use shade_protocol::utils::asset::RawContract;
 
-    use crate::{common::{InstantiateCommonConfig, CommonConfig}, protocols::siennaswap::{SiennaSwapPairInfo, SiennaDexTokenType}};
+    use crate::{
+        common::{CommonConfig, InstantiateCommonConfig},
+        protocols::siennaswap::{SiennaDexTokenType, SiennaSwapPairInfo},
+    };
 
     use super::*;
     /// Oracle1 - contract for an oracle of asset 1
@@ -110,7 +109,10 @@ pub mod siennaswap {
 
     #[cfg(feature = "siennaswap")]
     pub fn resolve_pair(info: &SiennaSwapPairInfo) -> StdResult<(Contract, Contract)> {
-        let mut tokens: (Contract, Contract) = (Contract::new(&Addr::unchecked("0"), &String::default()), Contract::new(&Addr::unchecked("0"), &String::default()));
+        let mut tokens: (Contract, Contract) = (
+            Contract::new(&Addr::unchecked("0"), &String::default()),
+            Contract::new(&Addr::unchecked("0"), &String::default()),
+        );
 
         if let SiennaDexTokenType::CustomToken {
             contract_addr,
@@ -140,20 +142,18 @@ pub mod siennaswap {
     }
 }
 
-pub mod shadeswap {
-
-}
+pub mod shadeswap {}
 
 #[cfg(feature = "lp")]
 pub mod math {
-    use crate::core::{normalize_price, sqrt};
     use super::*;
+    use crate::core::{normalize_price, sqrt};
     pub struct FairLpPriceInfo {
         pub reserve: u128,
         pub price: u128,
         pub decimals: u8,
     }
-    
+
     /// Calculates the spot price of an LP token
     pub fn get_lp_token_spot_price(
         a: FairLpPriceInfo,
@@ -163,7 +163,8 @@ pub mod math {
     ) -> StdResult<Uint128> {
         let normalized_reserve1 =
             Uint256::from_uint128(normalize_price(Uint128::from(a.reserve), a.decimals));
-        let normalized_reserve2 = Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
+        let normalized_reserve2 =
+            Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
         let normalized_supply =
             Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
         let safe_price_a = Uint256::from(a.price);
@@ -173,7 +174,7 @@ pub mod math {
         let lp_total_value = total_value_a.checked_add(total_value_b)?;
         Ok(lp_total_value.checked_div(normalized_supply)?.try_into()?)
     }
-    
+
     /// Calculates the price of an LP token based on https://blog.alphafinance.io/fair-lp-token-pricing/.
     ///
     /// Assumes token prices are normalized to 10^18.
@@ -183,8 +184,10 @@ pub mod math {
         total_supply: u128,
         lp_token_decimals: u8,
     ) -> StdResult<Uint128> {
-        let normalized_reserve1 = Uint256::from(normalize_price(Uint128::from(a.reserve), a.decimals));
-        let normalized_reserve2 = Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
+        let normalized_reserve1 =
+            Uint256::from(normalize_price(Uint128::from(a.reserve), a.decimals));
+        let normalized_reserve2 =
+            Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
         let normalized_supply =
             Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
         let r = sqrt(normalized_reserve1.checked_mul(normalized_reserve2)?)?;
@@ -195,5 +198,5 @@ pub mod math {
             .checked_div(normalized_supply)?
             .checked_mul(Uint256::from(2u128))?
             .try_into()?)
-    }    
+    }
 }

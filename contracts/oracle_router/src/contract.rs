@@ -3,12 +3,13 @@ use crate::{
     state::*,
 };
 use cosmwasm_std::{
-    to_binary, Binary, Env, Deps, Response, Addr, StdResult, Storage, entry_point, DepsMut, MessageInfo,
+    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    Storage,
 };
 use shade_oracles::{
-    BLOCK_SIZE,
-    core::{Contract, pad_handle_result, pad_query_result, validate_admin},
+    core::{pad_handle_result, pad_query_result, validate_admin, Contract},
     interfaces::router::*,
+    BLOCK_SIZE,
 };
 
 #[entry_point]
@@ -31,12 +32,7 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     is_admin(deps.as_ref(), info.sender)?;
     pad_handle_result(
         match msg {
@@ -61,19 +57,17 @@ pub fn execute(
     )
 }
 
-fn is_admin(
-    deps: Deps,
-    user: Addr,
-) -> StdResult<()> {
+fn is_admin(deps: Deps, user: Addr) -> StdResult<()> {
     let config = CONFIG.load(deps.storage)?;
-    validate_admin(&deps.querier, config.address.to_string(), user.to_string(), &config.admin_auth)
+    validate_admin(
+        &deps.querier,
+        config.address.to_string(),
+        user.to_string(),
+        &config.admin_auth,
+    )
 }
 
-pub fn query(
-    deps: Deps,
-    _env: Env,
-    msg: QueryMsg,
-) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => {

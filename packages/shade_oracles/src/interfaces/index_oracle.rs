@@ -1,13 +1,15 @@
-use crate::common::{InstantiateCommonConfig, ConfigUpdates, ConfigResponse, PriceResponse, PricesResponse};
-use shade_protocol::{
-    utils::generic_response::ResponseStatus,
-    utils::{InstantiateCallback, ExecuteCallback, Query},
+use crate::common::{
+    ConfigResponse, ConfigUpdates, InstantiateCommonConfig, PriceResponse, PricesResponse,
 };
-use crate::BLOCK_SIZE;
 #[cfg(feature = "index")]
 use crate::storage::{Item, ItemStorage};
+use crate::BLOCK_SIZE;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint128;
+use shade_protocol::{
+    utils::generic_response::ResponseStatus,
+    utils::{ExecuteCallback, InstantiateCallback, Query},
+};
 
 #[cw_serde]
 /// Config doesn't need list of symbols, supported keys. or dependencies.
@@ -26,15 +28,9 @@ impl InstantiateCallback for InstantiateMsg {
 pub enum ExecuteMsg {
     // Asset with weight 0 will be removed
     // all others are added or changed
-    ModBasket {
-        basket: Vec<(String, Uint128)>,
-    },
-    UpdateConfig {
-        updates: ConfigUpdates
-    },
-    UpdateTarget {
-        new_target: Option<Uint128>,
-    },
+    ModBasket { basket: Vec<(String, Uint128)> },
+    UpdateConfig { updates: ConfigUpdates },
+    UpdateTarget { new_target: Option<Uint128> },
 }
 
 impl ExecuteCallback for ExecuteMsg {

@@ -12,36 +12,25 @@ pub mod mocks {
 }
 
 pub use crate::multi::{
-    {
-        router::OracleRouter,
-        band::{
-            mock::MockBand,
-            proxy::ProxyBandOracle,
-        },
-        mocks::{
-            shade_pair::MockShadePair,
-            sienna_pair::MockSiennaPair,
-        }
-    }
+    band::{mock::MockBand, proxy::ProxyBandOracle},
+    mocks::{shade_pair::MockShadePair, sienna_pair::MockSiennaPair},
+    router::OracleRouter,
 };
 
-pub mod router
-{
+pub mod router {
     use oracle_router;
     multi_derive::implement_multi!(OracleRouter, oracle_router);
     pub use shade_oracles::interfaces::router::*;
-    
 }
 
 pub mod band {
     pub mod proxy {
         use proxy_band_oracle;
         multi_derive::implement_multi!(ProxyBandOracle, proxy_band_oracle);
-                
     }
     pub mod mock {
         use mock_band;
-        multi_derive::implement_multi!(MockBand, mock_band); 
+        multi_derive::implement_multi!(MockBand, mock_band);
     }
 }
 
@@ -71,6 +60,8 @@ pub mod lp {
 
 #[cfg(feature = "staking-derivative")]
 pub mod staking_derivative {
-    multi_derive::implement_multi!(ShadeStakingDerivativeOracle, shade_staking_derivative_oracle);
+    multi_derive::implement_multi!(
+        ShadeStakingDerivativeOracle,
+        shade_staking_derivative_oracle
+    );
 }
-

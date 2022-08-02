@@ -1,25 +1,23 @@
-use cosmwasm_std::{Uint128, Uint512, DepsMut, MessageInfo, QueryResponse, entry_point};
-use cosmwasm_std::{
-    to_binary, Env, Deps, Response, StdError,
-    StdResult,
-};
+use cosmwasm_std::{entry_point, DepsMut, MessageInfo, QueryResponse, Uint128, Uint512};
+use cosmwasm_std::{to_binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::common::Oracle;
-use shade_oracles::interfaces::index_oracle::{Symbol, Basket, TargetResponse, Target, BasketResponse};
+use shade_oracles::interfaces::index_oracle::{
+    Basket, BasketResponse, Symbol, Target, TargetResponse,
+};
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    BLOCK_SIZE,
     core::{pad_handle_result, pad_query_result, ResponseStatus},
-    interfaces::
-    {
+    interfaces::{
         band::ReferenceData,
         common::{
-            CommonConfig,
-        querier::{query_band_prices, query_prices},
-        OraclePrice},
-        index_oracle::{HandleAnswer, ExecuteMsg, InstantiateMsg, QueryMsg},
+            querier::{query_band_prices, query_prices},
+            CommonConfig, OraclePrice,
+        },
+        index_oracle::{ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg},
     },
     storage::ItemStorage,
+    BLOCK_SIZE,
 };
 
 #[entry_point]
@@ -29,9 +27,8 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    
     let config = IndexOracle.init_config(deps.storage, deps.api, msg.config)?;
-    
+
     if msg.basket.is_empty() {
         return Err(StdError::generic_err("Basket cannot be empty"));
     }
@@ -62,7 +59,7 @@ pub fn instantiate(
         .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
         .collect();
     full_basket.sort();
-    
+
     Target(msg.target).save(deps.storage)?;
     Symbol(msg.symbol).save(deps.storage)?;
     Basket(full_basket).save(deps.storage)?;
@@ -80,17 +77,19 @@ pub fn execute(
     let mut config = IndexOracle.verify_admin(deps.storage, &deps.querier, info)?;
     pad_handle_result(
         match msg {
-            ExecuteMsg::UpdateConfig {
-                updates,
-            } => IndexOracle.try_update_config(deps, updates, &mut config),
+            ExecuteMsg::UpdateConfig { updates } => {
+                IndexOracle.try_update_config(deps, updates, &mut config)
+            }
             ExecuteMsg::ModBasket { basket, .. } => mod_basket(deps, basket),
             ExecuteMsg::UpdateTarget { new_target } => {
                 if let Some(new_target) = new_target {
                     Target(new_target).save(deps.storage)?;
                 }
-                Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateTarget {
-                    status: ResponseStatus::Success,
-                })?))
+                Ok(
+                    Response::new().set_data(to_binary(&HandleAnswer::UpdateTarget {
+                        status: ResponseStatus::Success,
+                    })?),
+                )
             }
         },
         BLOCK_SIZE,
@@ -101,22 +100,31 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&IndexOracle.config_resp(CommonConfig::load(deps.storage)?)),
+            QueryMsg::GetConfig {} => {
+                to_binary(&IndexOracle.config_resp(CommonConfig::load(deps.storage)?))
+            }
             /* add 'symbol' so we can error if its the wrong oracle
              * Prevents router failure from causing economic failure
              */
             QueryMsg::GetPrice { key, .. } => {
                 let config = IndexOracle.can_query_price(deps, &key)?;
-                to_binary(&IndexOracle.price_resp(IndexOracle.try_query_price(deps, &env, key, &config)?))
-            },
+                to_binary(
+                    &IndexOracle.price_resp(IndexOracle.try_query_price(deps, &env, key, &config)?),
+                )
+            }
             QueryMsg::GetPrices { keys } => {
                 let config = IndexOracle.can_query_prices(deps, keys.as_slice())?;
-                to_binary(&IndexOracle.prices_resp(IndexOracle.try_query_prices(deps, &env, keys, &config)?))
+                to_binary(
+                    &IndexOracle
+                        .prices_resp(IndexOracle.try_query_prices(deps, &env, keys, &config)?),
+                )
             }
             QueryMsg::Basket {} => to_binary(&BasketResponse {
                 basket: Basket::load(deps.storage)?.0,
             }),
-            QueryMsg::GetTarget {  } => to_binary(&TargetResponse { target: Target::load(deps.storage)?.0 })
+            QueryMsg::GetTarget {} => to_binary(&TargetResponse {
+                target: Target::load(deps.storage)?.0,
+            }),
         },
         BLOCK_SIZE,
     )
@@ -191,10 +199,7 @@ fn fetch_prices(
     Ok(price_data)
 }
 
-fn mod_basket(
-    deps: DepsMut,
-    mod_basket: Vec<(String, Uint128)>,
-) -> StdResult<Response> {
+fn mod_basket(deps: DepsMut, mod_basket: Vec<(String, Uint128)>) -> StdResult<Response> {
     let config = CommonConfig::load(deps.storage)?;
 
     let self_symbol = Symbol::load(deps.storage)?.0;
@@ -265,27 +270,40 @@ fn mod_basket(
         .collect();
     Basket(new_basket).save(deps.storage)?;
 
-    Ok(Response::new().set_data(to_binary(&HandleAnswer::ModBasket {
-        status: ResponseStatus::Success,
-    })?))
+    Ok(
+        Response::new().set_data(to_binary(&HandleAnswer::ModBasket {
+            status: ResponseStatus::Success,
+        })?),
+    )
 }
 
 pub struct IndexOracle;
 
 impl Oracle for IndexOracle {
-    fn try_query_price(&self, deps: Deps, _env: &Env, key: String, config: &shade_oracles::common::CommonConfig) -> StdResult<OraclePrice> {
+    fn try_query_price(
+        &self,
+        deps: Deps,
+        _env: &Env,
+        key: String,
+        config: &shade_oracles::common::CommonConfig,
+    ) -> StdResult<OraclePrice> {
         if key != Symbol::load(deps.storage)?.0 {
             return Err(StdError::generic_err(format!(
                 "Missing price feed for {}",
                 key
             )));
         }
-        
+
         let basket = Basket::load(deps.storage)?;
-        let symbols: Vec<String> = basket.0.clone().into_iter().map(|(sym, _, _)| sym).collect();
+        let symbols: Vec<String> = basket
+            .0
+            .clone()
+            .into_iter()
+            .map(|(sym, _, _)| sym)
+            .collect();
         let prices = fetch_prices(deps, config, symbols)?;
         let index = eval_index(prices, basket.0);
-    
-        Ok(OraclePrice::new(key, index))    
+
+        Ok(OraclePrice::new(key, index))
     }
 }

@@ -23,6 +23,9 @@ PKGS = shade_oracles shade_oracles_ensemble shade_oracles_integration
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
 
+test:
+	cargo nextest run
+
 release: build_release compress
 
 debug: build_debug compress
@@ -53,9 +56,6 @@ compress_all: setup
 
 compress-%: setup
 	$(call opt_and_compress,$*,$*)
-
-test:
-	@$(MAKE) $(addprefix test-,$(CONTRACTS))
 
 test-%: %
 	(cd ${contracts_dir}/$*; cargo test)
