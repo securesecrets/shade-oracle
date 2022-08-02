@@ -11,10 +11,10 @@ use shade_oracles::{
 //use shade_multi_test::multi::snip20::Snip20;
 use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
 use shade_protocol::{
-    c_std::{Addr, ContractInfo, StdResult, Uint128},
+    c_std::{Addr, ContractInfo, Uint128},
     multi_test::App,
     utils::{ExecuteCallback, InstantiateCallback, MultiTestable},
-    AnyResult, Contract,
+    AnyResult,
 };
 
 pub struct OracleCore {
