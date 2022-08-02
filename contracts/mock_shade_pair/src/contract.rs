@@ -1,11 +1,8 @@
-use cosmwasm_std::{Uint128, DepsMut, MessageInfo, entry_point};
-use cosmwasm_std::{
-    to_binary, Binary, Env, Deps, Response, Addr,
-   StdError, StdResult,
-};
+use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::core::cosmwasm_schema::cw_serde;
 use shade_oracles::{
-    core::{Contract, InstantiateCallback, ExecuteCallback},
+    core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::shadeswap::{
         EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenPair, TokenType,
     },
@@ -101,11 +98,7 @@ pub fn execute(
 }
 
 #[entry_point]
-pub fn query(
-    deps: Deps,
-    _env: Env,
-    msg: ShadeSwapQueryMsg,
-) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: ShadeSwapQueryMsg) -> StdResult<Binary> {
     match msg {
         ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(deps.storage)?),
         ShadeSwapQueryMsg::GetEstimatedPrice { offer } => {

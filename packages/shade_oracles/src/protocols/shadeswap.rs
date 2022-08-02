@@ -1,10 +1,10 @@
-use cosmwasm_std::Uint128;
-use cosmwasm_std::Addr;
-use schemars::JsonSchema;
 use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Addr;
+use cosmwasm_std::Uint128;
+use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use shade_protocol::Contract;
 use shade_protocol::utils::Query;
+use shade_protocol::Contract;
 
 #[cw_serde]
 pub struct TokenAmount<A> {

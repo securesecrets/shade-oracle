@@ -1,23 +1,19 @@
-use shade_protocol::utils::asset::{RawContract, Contract};
-use shade_protocol::utils::{InstantiateCallback};
-use shade_protocol::secret_storage_plus::{Item};
-use shade_protocol::utils::storage::plus::ItemStorage;
-use cosmwasm_std::Uint128;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
+use cosmwasm_std::Uint128;
+use shade_protocol::secret_storage_plus::Item;
+use shade_protocol::utils::asset::{Contract, RawContract};
+use shade_protocol::utils::storage::plus::ItemStorage;
+use shade_protocol::utils::InstantiateCallback;
 
 pub mod shade {
 
-
-    use crate::{
-        BLOCK_SIZE,
-        common::InstantiateCommonConfig
-    };
+    use crate::{common::InstantiateCommonConfig, BLOCK_SIZE};
 
     use super::*;
 
     #[cw_serde]
-     /// Config needs symbol of underlying, one supported key,
+    /// Config needs symbol of underlying, one supported key,
     /// and a dependency named "staking-derivative-token".
     pub struct InstantiateMsg {
         pub config: InstantiateCommonConfig,
@@ -31,9 +27,9 @@ pub mod shade {
 
     #[cw_serde]
     /// token_decimals - # of decimals used by staking derivative token
-    /// 
+    ///
     /// staking_derivative_token - token this oracle is for
-    /// 
+    ///
     /// underlying_symbol - the symbol of the underlying asset for which the token is a derivative (used to query its price via router or band)
     pub struct StakingDerivativeConfig {
         pub token_decimals: u8,
@@ -47,7 +43,7 @@ pub mod shade {
     }
 
     pub mod querier {
-        use cosmwasm_std::{StdResult, Deps};
+        use cosmwasm_std::{Deps, StdResult};
         use shade_protocol::utils::Query;
 
         use super::*;
@@ -109,12 +105,11 @@ pub mod shade {
             },
         }
         /// Returns the price of 1 derivative token in underlying token (6 decimals)
-        pub fn query_derivative_price(
-            deps: Deps,
-            contract: &Contract,
-        ) -> StdResult<Uint128> {
-            let resp: StakingDerivativeQueryAnswer = StakingDerivativeQueryMsg::StakingInfo { time: 0 }.query(&deps.querier, contract)?;
-            
+        pub fn query_derivative_price(deps: Deps, contract: &Contract) -> StdResult<Uint128> {
+            let resp: StakingDerivativeQueryAnswer =
+                StakingDerivativeQueryMsg::StakingInfo { time: 0 }
+                    .query(&deps.querier, contract)?;
+
             match resp {
                 StakingDerivativeQueryAnswer::StakingInfo {
                     validators: _,

@@ -1,22 +1,25 @@
 use std::cmp::max;
 
+use self::querier::verify_admin;
+use crate::BLOCK_SIZE;
 use better_secret_math::core::{exp10, muldiv};
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{
+    to_binary, Api, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, QueryResponse, Response,
+    StdError, StdResult, Storage, Timestamp, Uint128,
+};
 use ethnum::U256;
+use shade_protocol::utils::asset::{Contract, RawContract};
 use shade_protocol::{
-    utils::{storage::plus::{ItemStorage}},
     secret_storage_plus::Item,
-    utils::{generic_response::ResponseStatus},
+    utils::generic_response::ResponseStatus,
+    utils::storage::plus::ItemStorage,
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
 };
-use crate::BLOCK_SIZE;
-use self::querier::verify_admin;
-use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Uint128, StdError, QueryResponse, StdResult, DepsMut, MessageInfo, Env, Response, Deps, to_binary, Api, Storage, QuerierWrapper, Timestamp};
-use shade_protocol::utils::asset::{Contract, RawContract};
 
 pub mod querier;
 
-use super::band::{ReferenceData, BtrReferenceData};
+use super::band::{BtrReferenceData, ReferenceData};
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
@@ -26,24 +29,26 @@ pub enum OracleQuery {
     #[returns(ConfigResponse)]
     GetConfig {},
     #[returns(PriceResponse)]
+    /// Returns PriceResponse
     GetPrice { key: String },
     #[returns(PricesResponse)]
+    /// Returns PricesResponse
     GetPrices { keys: Vec<String> },
 }
 
 #[cw_serde]
 pub struct ConfigResponse {
-    pub config: CommonConfig
+    pub config: CommonConfig,
 }
 
 #[cw_serde]
 pub struct PriceResponse {
-    pub price: OraclePrice
+    pub price: OraclePrice,
 }
 
 #[cw_serde]
 pub struct PricesResponse {
-    pub prices: Vec<OraclePrice>
+    pub prices: Vec<OraclePrice>,
 }
 
 impl Query for OracleQuery {
@@ -52,20 +57,18 @@ impl Query for OracleQuery {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    UpdateConfig { 
-        updates: ConfigUpdates,
-    },
+    UpdateConfig { updates: ConfigUpdates },
 }
 
 #[cw_serde]
 /// Config object passed into the updating of an oracle's common config.
-/// 
+///
 /// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
-/// 
+///
 /// router - oracle router
-/// 
+///
 /// enabled - can we use this oracle?
-/// 
+///
 /// only_band - will this oracle go directly to band rather than through the router?
 pub struct ConfigUpdates {
     pub supported_keys: Option<Vec<String>>,
@@ -76,13 +79,13 @@ pub struct ConfigUpdates {
 
 #[cw_serde]
 /// Config object passed into the instantiation of an oracle.
-/// 
+///
 /// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
-/// 
+///
 /// router - oracle router
-/// 
+///
 /// enabled - can we use this oracle?
-/// 
+///
 /// only_band - will this oracle go directly to band rather than through the router?
 pub struct InstantiateCommonConfig {
     pub supported_keys: Option<Vec<String>>,
@@ -96,9 +99,14 @@ impl InstantiateCommonConfig {
         supported_keys: Option<Vec<String>>,
         router: RawContract,
         enabled: bool,
-        only_band: bool
+        only_band: bool,
     ) -> Self {
-        InstantiateCommonConfig { supported_keys, router, enabled, only_band }
+        InstantiateCommonConfig {
+            supported_keys,
+            router,
+            enabled,
+            only_band,
+        }
     }
     pub fn into_valid(self, api: &dyn Api) -> StdResult<CommonConfig> {
         Ok(CommonConfig {
@@ -111,13 +119,13 @@ impl InstantiateCommonConfig {
 }
 
 /// Config object stored in all oracles.
-/// 
+///
 /// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
-/// 
+///
 /// router - oracle router
-/// 
+///
 /// enabled - can we use this oracle?
-/// 
+///
 /// only_band - will this oracle go directly to band rather than through the router?
 #[cw_serde]
 pub struct CommonConfig {
@@ -150,8 +158,12 @@ impl OraclePrice {
             data: reference_data,
         }
     }
-    pub fn key(&self) -> &String { &self.key }
-    pub fn data(&self) -> &ReferenceData { &self.data }
+    pub fn key(&self) -> &String {
+        &self.key
+    }
+    pub fn data(&self) -> &ReferenceData {
+        &self.data
+    }
 }
 
 /// Variant of OraclePrice that is optimized for math.
@@ -162,13 +174,20 @@ pub struct BtrOraclePrice {
 
 impl From<OraclePrice> for BtrOraclePrice {
     fn from(o: OraclePrice) -> Self {
-        BtrOraclePrice { key: o.key.clone(), data: o.data().clone().into() }
+        BtrOraclePrice {
+            key: o.key.clone(),
+            data: o.data().clone().into(),
+        }
     }
 }
 
 impl BtrOraclePrice {
-    pub fn key(&self) -> &String { &self.key }
-    pub fn data(&self) -> &BtrReferenceData { &self.data } 
+    pub fn key(&self) -> &String {
+        &self.key
+    }
+    pub fn data(&self) -> &BtrReferenceData {
+        &self.data
+    }
     pub fn time_since_updated(&self, time: &Timestamp) -> StdResult<u64> {
         let now = time.seconds();
         let base = self.data().last_updated_base;
@@ -186,12 +205,17 @@ impl BtrOraclePrice {
         muldiv(amount, self.data.rate, price_precision)
     }
     /// Gets the amount equivalent to the provided value divided by the unit price.
-    pub fn calc_amount(&self, value: U256, value_precision: u8, amount_precision: u8) -> StdResult<U256> {
+    pub fn calc_amount(
+        &self,
+        value: U256,
+        value_precision: u8,
+        amount_precision: u8,
+    ) -> StdResult<U256> {
         let price_precision = exp10(18);
         let value_precision = exp10(value_precision);
         let amount_precision = exp10(amount_precision);
-    
-        let normalized_value = muldiv(value,price_precision, value_precision)?;
+
+        let normalized_value = muldiv(value, price_precision, value_precision)?;
         muldiv(normalized_value, amount_precision, self.data.rate)
     }
 
@@ -200,10 +224,7 @@ impl BtrOraclePrice {
         delay_tolerance: u64,
         current_time: &Timestamp,
     ) -> StdResult<bool> {
-        if self
-            .time_since_updated(current_time)?
-            .gt(&delay_tolerance)
-        {
+        if self.time_since_updated(current_time)?.gt(&delay_tolerance) {
             return Ok(false);
         }
         Ok(true)
@@ -211,7 +232,7 @@ impl BtrOraclePrice {
 }
 
 pub fn throw_unsupported_symbol_error(key: String) -> StdError {
-   StdError::generic_err(format!("{} is not supported as a key.", key))
+    StdError::generic_err(format!("{} is not supported as a key.", key))
 }
 
 pub fn is_disabled(enabled: bool) -> StdResult<()> {
@@ -233,11 +254,13 @@ pub fn oracle_exec(
     _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-    oracle: impl Oracle
+    oracle: impl Oracle,
 ) -> StdResult<Response> {
     let mut config = oracle.verify_admin(deps.storage, &deps.querier, info)?;
     let msg = match msg {
-        ExecuteMsg::UpdateConfig { updates } => oracle.try_update_config(deps, updates, &mut config),
+        ExecuteMsg::UpdateConfig { updates } => {
+            oracle.try_update_config(deps, updates, &mut config)
+        }
     };
     pad_handle_result(msg, BLOCK_SIZE)
 }
@@ -247,21 +270,21 @@ pub fn oracle_query(
     deps: Deps,
     env: Env,
     msg: OracleQuery,
-    oracle: impl Oracle
+    oracle: impl Oracle,
 ) -> StdResult<QueryResponse> {
     let resp = match msg {
-        OracleQuery::GetConfig {  } => {
+        OracleQuery::GetConfig {} => {
             let config = CommonConfig::load(deps.storage)?;
             to_binary(&oracle.config_resp(config))
-        },
+        }
         OracleQuery::GetPrice { key } => {
             let config = oracle.can_query_price(deps, &key)?;
             to_binary(&oracle.price_resp(oracle.try_query_price(deps, &env, key, &config)?))
-        },
+        }
         OracleQuery::GetPrices { keys } => {
             let config = oracle.can_query_prices(deps, keys.as_slice())?;
             to_binary(&oracle.prices_resp(oracle.try_query_prices(deps, &env, keys, &config)?))
-        },
+        }
     };
     pad_query_result(resp, BLOCK_SIZE)
 }
@@ -271,7 +294,13 @@ pub struct OracleImpl;
 
 #[cfg(feature = "core")]
 impl Oracle for OracleImpl {
-    fn try_query_price(&self, _deps: Deps,_env: &Env, _key: String, _config: &CommonConfig) -> StdResult<OraclePrice> {
+    fn try_query_price(
+        &self,
+        _deps: Deps,
+        _env: &Env,
+        _key: String,
+        _config: &CommonConfig,
+    ) -> StdResult<OraclePrice> {
         Err(StdError::generic_err("Need to be implemented."))
     }
 }
@@ -295,7 +324,7 @@ pub trait Oracle {
         &self,
         storage: &mut dyn Storage,
         querier: &QuerierWrapper,
-        info: MessageInfo
+        info: MessageInfo,
     ) -> StdResult<CommonConfig> {
         let config = CommonConfig::load(storage)?;
         verify_admin(&config.router, querier, info.sender)?;
@@ -305,11 +334,13 @@ pub trait Oracle {
     #[allow(clippy::too_many_arguments)]
     fn try_update_config(
         &self,
-        deps: DepsMut, 
+        deps: DepsMut,
         updates: ConfigUpdates,
-        config: &mut CommonConfig
+        config: &mut CommonConfig,
     ) -> StdResult<Response> {
-        config.supported_keys = updates.supported_keys.unwrap_or_else(|| config.supported_keys.clone());
+        config.supported_keys = updates
+            .supported_keys
+            .unwrap_or_else(|| config.supported_keys.clone());
         config.only_band = updates.only_band.unwrap_or(config.only_band);
         config.enabled = updates.enabled.unwrap_or(config.enabled);
         if let Some(router) = updates.router {
@@ -318,9 +349,11 @@ pub trait Oracle {
 
         config.save(deps.storage)?;
 
-        Ok(Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?))
+        Ok(
+            Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
+                status: ResponseStatus::Success,
+            })?),
+        )
     }
 
     fn config_resp(&self, config: CommonConfig) -> ConfigResponse {
@@ -336,7 +369,13 @@ pub trait Oracle {
     }
 
     /// Internal implementation of the query price method.
-    fn try_query_price(&self, deps: Deps, env: &Env, key: String, config: &CommonConfig) -> StdResult<OraclePrice>;
+    fn try_query_price(
+        &self,
+        deps: Deps,
+        env: &Env,
+        key: String,
+        config: &CommonConfig,
+    ) -> StdResult<OraclePrice>;
 
     /// Checks if user can query for prices
     fn can_query_prices(&self, deps: Deps, keys: &[String]) -> StdResult<CommonConfig> {
@@ -344,10 +383,12 @@ pub trait Oracle {
         is_disabled(config.enabled)?;
         let supported_keys = config.supported_keys.as_slice();
         let mut key = "";
-        if !supported_keys.is_empty() && !keys.iter().any(|k| -> bool {
-            key = k;
-            !supported_keys.contains(k)
-        }) {
+        if !supported_keys.is_empty()
+            && !keys.iter().any(|k| -> bool {
+                key = k;
+                !supported_keys.contains(k)
+            })
+        {
             return Err(throw_unsupported_symbol_error(key.to_string()));
         }
         Ok(config)
@@ -363,12 +404,17 @@ pub trait Oracle {
         Ok(config)
     }
 
-    fn try_query_prices(&self, deps: Deps, env: &Env, keys: Vec<String>, config: &CommonConfig) -> StdResult<Vec<OraclePrice>> {
+    fn try_query_prices(
+        &self,
+        deps: Deps,
+        env: &Env,
+        keys: Vec<String>,
+        config: &CommonConfig,
+    ) -> StdResult<Vec<OraclePrice>> {
         let mut prices = vec![];
         for key in keys {
             prices.push(self.try_query_price(deps, env, key, config)?);
         }
         Ok(prices)
     }
-    
 }

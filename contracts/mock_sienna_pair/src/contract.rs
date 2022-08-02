@@ -1,18 +1,15 @@
-use cosmwasm_std::{Uint128, DepsMut, MessageInfo, entry_point};
-use cosmwasm_std::{
-    to_binary, Binary, Env, Deps, Response, Addr,
-   StdError, StdResult, Storage,
-};
 use cosmwasm_schema::cw_serde;
-use shade_oracles::storage::{singleton_read, ReadonlySingleton, Singleton, singleton};
+use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult, Storage};
+use shade_oracles::storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use shade_oracles::{
-    core::{Contract, InstantiateCallback, ExecuteCallback},
+    core::cosmwasm_schema,
+    core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::siennaswap::{
         Pair, SiennaDexTokenType as TokenType, SiennaSwapExchangeQueryMsg as PairQuery,
         SiennaSwapPairInfo as PairInfo, SiennaSwapPairInfoResponse as PairInfoResponse,
         SimulationResponse,
     },
-    core::{cosmwasm_schema}
 };
 
 pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
@@ -111,11 +108,7 @@ pub fn execute(
 }
 
 #[entry_point]
-pub fn query(
-    deps: Deps,
-    _env: Env,
-    msg: PairQuery,
-) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: PairQuery) -> StdResult<Binary> {
     match msg {
         PairQuery::PairInfo => to_binary(&PairInfoResponse {
             pair_info: pair_info_r(deps.storage).load()?,

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use super::*;
 use crate::{
     interfaces::band::{reference_data, reference_data_bulk},
@@ -6,12 +5,13 @@ use crate::{
         AdminAuthResponse, Config as RouterConfig, OracleResponse, QueryMsg as RouterQueryMsg,
     },
 };
-use cosmwasm_std::{QuerierWrapper, StdResult, Addr};
+use cosmwasm_std::{Addr, QuerierWrapper, StdResult};
 use shade_protocol::{
+    contract_interfaces::snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},
+    snip20::helpers::{token_info, TokenInfo},
     Contract,
-    contract_interfaces::snip20::{
-    QueryMsg as Snip20QueryMsg, QueryAnswer as Snip20QueryAnswer
-}, snip20::helpers::{token_info, TokenInfo, }};
+};
+use std::collections::HashMap;
 
 use super::OraclePrice;
 
@@ -32,10 +32,8 @@ pub fn query_price(
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<OraclePrice> {
-    let oracle_resp: OracleResponse = RouterQueryMsg::GetOracle { key: key.clone() }.query(
-        querier,
-        router
-    )?;
+    let oracle_resp: OracleResponse =
+        RouterQueryMsg::GetOracle { key: key.clone() }.query(querier, router)?;
     query_oracle_price(&oracle_resp.oracle, querier, key)
 }
 
@@ -44,10 +42,7 @@ pub fn query_oracle_prices(
     querier: &QuerierWrapper,
     keys: Vec<String>,
 ) -> StdResult<Vec<OraclePrice>> {
-    let resp: PricesResponse = OracleQuery::GetPrices { keys }.query(
-        querier,
-        oracle,
-    )?;
+    let resp: PricesResponse = OracleQuery::GetPrices { keys }.query(querier, oracle)?;
     Ok(resp.prices)
 }
 
@@ -59,10 +54,8 @@ pub fn query_prices(
     querier: &QuerierWrapper,
     keys: Vec<String>,
 ) -> StdResult<Vec<OraclePrice>> {
-    let oracle_resps: Vec<OracleResponse> = RouterQueryMsg::GetOracles { keys }.query(
-        querier,
-        router
-    )?;
+    let oracle_resps: Vec<OracleResponse> =
+        RouterQueryMsg::GetOracles { keys }.query(querier, router)?;
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
     let mut prices: Vec<OraclePrice> = vec![];
 
@@ -88,10 +81,7 @@ pub fn query_band_price(
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<OraclePrice> {
-    let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(
-        querier,
-        router
-    )?;
+    let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(querier, router)?;
     let band_response = reference_data(
         querier,
         key.clone(),
@@ -106,10 +96,7 @@ pub fn query_band_prices(
     querier: &QuerierWrapper,
     keys: Vec<String>,
 ) -> StdResult<Vec<OraclePrice>> {
-    let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(
-        querier,
-        router
-    )?;
+    let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(querier, router)?;
     let quote_symbols = vec![config.quote_symbol; keys.len()];
 
     let band_response = reference_data_bulk(querier, keys.clone(), quote_symbols, &config.band)?;
@@ -125,23 +112,19 @@ pub fn query_band_prices(
 }
 
 /// Gets the admin auth contract from the router and uses it to check if the user is an admin for the router.
-pub fn verify_admin(
-    contract: &Contract,
-    querier: &QuerierWrapper,
-    user: Addr,
-) -> StdResult<()> {
-    let get_admin_auth_req: AdminAuthResponse = RouterQueryMsg::GetAdminAuth {}.query(
-        querier,
-        contract,
-    )?;
+pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: Addr) -> StdResult<()> {
+    let get_admin_auth_req: AdminAuthResponse =
+        RouterQueryMsg::GetAdminAuth {}.query(querier, contract)?;
     let admin_auth = get_admin_auth_req.admin_auth;
-    shade_admin::admin::validate_admin(querier, contract.address.to_string(), user.to_string(), &admin_auth)
+    shade_admin::admin::validate_admin(
+        querier,
+        contract.address.to_string(),
+        user.to_string(),
+        &admin_auth,
+    )
 }
 
-pub fn query_token_info(
-    contract: &Contract,
-    querier: &QuerierWrapper,
-) -> StdResult<TokenInfo> {
+pub fn query_token_info(contract: &Contract, querier: &QuerierWrapper) -> StdResult<TokenInfo> {
     token_info(querier, contract)
 }
 
@@ -161,4 +144,3 @@ pub fn query_token_balance(
         )),
     }
 }
-

@@ -4,7 +4,7 @@ use cosmwasm_std::{
     coins, from_binary,
     testing::{mock_dependencies, mock_env, mock_info},
 };
-use shade_oracles::interfaces::band::{QueryMsg, ExecuteMsg, InstantiateMsg, ReferenceData};
+use shade_oracles::interfaces::band::{ExecuteMsg, InstantiateMsg, QueryMsg, ReferenceData};
 
 #[test]
 fn update_config() {

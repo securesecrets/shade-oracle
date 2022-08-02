@@ -1,15 +1,16 @@
-use std::collections::HashMap;
 use shade_oracles::{
-    core::{ExecuteCallback, Query, InstantiateCallback},
+    common::{InstantiateCommonConfig, OraclePrice, PriceResponse},
+    core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::band::{self},
-    common::{OraclePrice, InstantiateCommonConfig},
-    interfaces::index_oracle, interfaces::router,
+    interfaces::index_oracle,
+    interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::{index::IndexOracle}, App, helpers::OracleCore, MultiTestable
+    helpers::OracleCore, multi::index::IndexOracle, App, MultiTestable,
 };
+use std::collections::HashMap;
 
-use cosmwasm_std::{Uint128, Addr};
+use cosmwasm_std::{Addr, Uint128};
 
 fn basic_index_test(
     symbol: String,
@@ -30,7 +31,15 @@ fn basic_index_test(
         symbol: symbol.clone(),
         target,
         basket,
-    }.test_init(IndexOracle::default(), &mut app, user.clone(), "index-oracle", &[]).unwrap();
+    }
+    .test_init(
+        IndexOracle::default(),
+        &mut app,
+        user.clone(),
+        "index-oracle",
+        &[],
+    )
+    .unwrap();
 
     // Configure router w/ index oracle
     router::ExecuteMsg::UpdateRegistry {
@@ -38,15 +47,17 @@ fn basic_index_test(
             oracle: index_oracle.into(),
             key: symbol.clone(),
         },
-    }.test_exec(&router, &mut app, user, &[]).unwrap();
+    }
+    .test_exec(&router, &mut app, user, &[])
+    .unwrap();
 
-    let OraclePrice { key: _, data } = index_oracle::QueryMsg::GetPrice {
-        key: symbol,
-    }.test_query(&router, &app).unwrap();
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol }
+        .test_query(&router, &app)
+        .unwrap();
+    let data = price.price.data();
 
     {
-        let err =
-        if data.rate > expected {
+        let err = if data.rate > expected {
             data.rate - expected
         } else {
             expected - data.rate
@@ -183,7 +194,15 @@ fn mod_index_test(
         symbol: symbol.clone(),
         target,
         basket,
-    }.test_init(IndexOracle::default(), &mut app, user.clone(), "index-oracle", &[]).unwrap();
+    }
+    .test_init(
+        IndexOracle::default(),
+        &mut app,
+        user.clone(),
+        "index-oracle",
+        &[],
+    )
+    .unwrap();
 
     // Configure router w/ index oracle
     router::ExecuteMsg::UpdateRegistry {
@@ -191,11 +210,14 @@ fn mod_index_test(
             oracle: index_oracle.clone().into(),
             key: symbol.clone(),
         },
-    }.test_exec(&router, &mut app, user.clone(), &[]).unwrap();
+    }
+    .test_exec(&router, &mut app, user.clone(), &[])
+    .unwrap();
 
-
-    // Not sure why this query wont let me unwrap
-    let OraclePrice { key: _, data } = (index_oracle::QueryMsg::GetPrice { key: symbol.clone() }.test_query(&index_oracle, &mut app).unwrap());
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
+        .test_query(&router, &app)
+        .unwrap();
+    let data = price.price.data();
     {
         let mut err = Uint128::zero();
         if data.rate > expected_initial {
@@ -226,11 +248,15 @@ fn mod_index_test(
             quote_symbol: "USD".to_string(),
             rate: price,
             last_updated: None,
-        }.test_exec(&band, &mut app, user.clone(), &[]).unwrap();
+        }
+        .test_exec(&band, &mut app, user.clone(), &[])
+        .unwrap();
     }
 
-    // Check price updates
-    let OraclePrice { key: _, data } = (index_oracle::QueryMsg::GetPrice { key: symbol.clone() }.test_query(&router, &mut app).unwrap());
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
+        .test_query(&router, &app)
+        .unwrap();
+    let data = price.price.data();
     {
         let mut err = Uint128::zero();
         if data.rate > expected_final {
@@ -249,10 +275,14 @@ fn mod_index_test(
     };
 
     // Update basket
-    index_oracle::ExecuteMsg::ModBasket { basket: mod_basket }.test_exec(&index_oracle, &mut app, user, &[]).unwrap();
+    index_oracle::ExecuteMsg::ModBasket { basket: mod_basket }
+        .test_exec(&index_oracle, &mut app, user, &[])
+        .unwrap();
 
     // check basket changed
-    match (index_oracle::QueryMsg::Basket {}.test_query(&index_oracle, &app).unwrap())
+    match (index_oracle::QueryMsg::Basket {}
+        .test_query(&index_oracle, &app)
+        .unwrap())
     {
         index_oracle::BasketResponse { mut basket } => {
             basket.sort();
@@ -268,7 +298,10 @@ fn mod_index_test(
     };
 
     // check price doesn't change on mod_price
-    let OraclePrice { key: _, data } = (index_oracle::QueryMsg::GetPrice { key: symbol.clone() }.test_query(&router, &mut app).unwrap());
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
+        .test_query(&router, &app)
+        .unwrap();
+    let data = price.price.data();
     {
         let mut err = Uint128::zero();
         if data.rate > expected_final {
