@@ -33,6 +33,8 @@ schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 thiserror = "1.0"
 
+ethnum = { git = "https://github.com/securesecrets/ethnum-rs", features = ["serde"] }
+better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20", "math"] }
 shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor" }
 
