@@ -2,58 +2,53 @@ use std::collections::HashMap;
 
 use crate::{contract::get_oracle, state::*};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, Querier, StdError, StdResult, Storage,
+    to_binary, Api, Binary, Deps, DepsMut, Env, Response, StdError, StdResult, Storage,
 };
 use shade_oracles::{
     common::{
         querier::{query_oracle_price, query_oracle_prices},
-        Contract, OraclePrice,
+        OraclePrice, PriceResponse, PricesResponse,
     },
-    router::*,
+    core::Contract,
+    interfaces::router::*,
 };
 
-pub fn update_registry<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn update_registry(
+    deps: DepsMut,
     _env: Env,
     operation: RegistryOperation,
-) -> StdResult<HandleResponse> {
-    resolve_registry_operation(&mut deps.storage, &deps.api, operation)?;
-    Ok(HandleResponse::default())
+) -> StdResult<Response> {
+    resolve_registry_operation(deps.storage, deps.api, operation)?;
+    Ok(Response::default())
 }
 
-pub fn batch_update_registry<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+pub fn batch_update_registry(
+    deps: DepsMut,
     _env: Env,
     operations: Vec<RegistryOperation>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     for operation in operations {
-        resolve_registry_operation(&mut deps.storage, &deps.api, operation)?;
+        resolve_registry_operation(deps.storage, deps.api, operation)?;
     }
-    Ok(HandleResponse::default())
+    Ok(Response::default())
 }
 
 /// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.
-pub fn get_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    key: String,
-) -> StdResult<Binary> {
-    let resolved_key = resolve_alias(&deps.storage, key)?;
-    let oracle = get_oracle(&deps.storage, &resolved_key)?;
+pub fn get_price(deps: Deps, key: String) -> StdResult<Binary> {
+    let resolved_key = resolve_alias(deps.storage, key)?;
+    let oracle = get_oracle(deps.storage, &resolved_key)?;
 
-    to_binary(&query_oracle_price(&oracle, &deps.querier, resolved_key)?)
+    to_binary(&PriceResponse { price: query_oracle_price(&oracle, &deps.querier, resolved_key)? })
 }
 
 /// Builds bulk queries using the keys given.
-pub fn get_prices<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    keys: Vec<String>,
-) -> StdResult<Binary> {
+pub fn get_prices(deps: Deps, keys: Vec<String>) -> StdResult<Binary> {
     // Maps oracle to the symbols it is responsible for
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
 
     for current_key in keys {
-        let resolved_key = resolve_alias(&deps.storage, current_key.clone())?;
-        let oracle = get_oracle(&deps.storage, &resolved_key)?;
+        let resolved_key = resolve_alias(deps.storage, current_key.clone())?;
+        let oracle = get_oracle(deps.storage, &resolved_key)?;
 
         // Get the current vector of symbols at that oracle and add the current key to it
         map.entry(oracle).or_insert(vec![]).push(resolved_key);
@@ -70,10 +65,10 @@ pub fn get_prices<S: Storage, A: Api, Q: Querier>(
             prices.append(&mut queried_prices);
         }
     }
-    to_binary(&prices)
+    to_binary(&PricesResponse { prices })
 }
 
-pub fn resolve_alias(storage: &impl Storage, alias: String) -> StdResult<String> {
+pub fn resolve_alias(storage: &dyn Storage, alias: String) -> StdResult<String> {
     match ALIASES.may_load(storage, alias.clone()) {
         Ok(key) => match key {
             Some(key) => Ok(key),
@@ -86,8 +81,8 @@ pub fn resolve_alias(storage: &impl Storage, alias: String) -> StdResult<String>
 }
 
 fn resolve_registry_operation(
-    storage: &mut impl Storage,
-    _api: &impl Api,
+    storage: &mut dyn Storage,
+    _api: &dyn Api,
     operation: RegistryOperation,
 ) -> StdResult<()> {
     match operation {

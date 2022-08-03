@@ -1,6 +1,6 @@
 use shade_oracles::{
-    common::Contract,
-    router::Config,
+    core::Contract,
+    interfaces::router::Config,
     storage::{Item, Map},
 };
 

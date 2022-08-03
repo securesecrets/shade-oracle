@@ -8,26 +8,35 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["storage"]
+default = []
 # for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
-debug-print = ["cosmwasm-std/debug-print"]
-storage = ["secret-storage-plus"]
+scrt = ["core"]
+# for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
+# in order for the build to work )
+core = ["storage"]
+storage = ["shade-protocol/storage_plus"]
+# multi-test = ["secret-multi-test"]
+proxy-band = []
+index = []
+router = []
+shd-staking-derivative = []
+siennaswap = ["lp"]
+market-lp = ["lp"]
+lp = []
 
 [dependencies]
-cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
-cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
-cosmwasm-schema = "0.10.1"
-schemars = { version = "0.7" }
-secret-toolkit = { version = "0.2", features = ["permit"] }
-shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0" }
-snafu = { version = "0.6.3" }
-secret-storage-plus = { git = "https://github.com/securesecrets/secret-storage-plus", tag = "v1.0.0", optional = true }
-fadroma = { branch = "v100", commit = 76867e0, git = "https://github.com/hackbg/fadroma.git" }
-cosmwasm-math-compat = { git = "https://github.com/securesecrets/shade", branch = "dev" }
-# shade-protocol = { git = "https://github.com/securesecrets/shade?dev" }
-# Switch to the bottom when building on Linux. For some reason, needs the one above for it to work on Mac
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "dev" }
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+# Core re-exports (no need to re-export cosmwasm-std because that has to be included in contracts for them to build)
+cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", commit = "1e05e7e" }
+schemars = "0.8.1"
+serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
+thiserror = "1.0"
+
+ethnum = { git = "https://github.com/securesecrets/ethnum-rs", features = ["serde"] }
+better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20", "math"] }
+shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git" }
+
+# https://docs.rs/getrandom/latest/getrandom/#webassembly-support
+getrandom = { version = "0.2", features = ["js"] }

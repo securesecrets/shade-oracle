@@ -1,40 +1,33 @@
-use cosmwasm_math_compat::{Uint128, Uint512};
-use cosmwasm_std::{
-    to_binary, Api, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult, StdError,
-    StdResult, Storage,
+use cosmwasm_std::{entry_point, DepsMut, MessageInfo, QueryResponse, Uint128, Uint512};
+use cosmwasm_std::{to_binary, Deps, Env, Response, StdError, StdResult};
+use shade_oracles::common::Oracle;
+use shade_oracles::interfaces::index_oracle::{
+    Basket, BasketResponse, Symbol, Target, TargetResponse,
 };
-use secret_toolkit::utils::{pad_handle_result, pad_query_result};
-
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    band::ReferenceData,
-    common::{
-        querier::{query_band_prices, query_prices, verify_admin},
-        Contract, OraclePrice, ResponseStatus, BLOCK_SIZE,
+    core::{pad_handle_result, pad_query_result, ResponseStatus},
+    interfaces::{
+        band::ReferenceData,
+        common::{
+            querier::{query_band_prices, query_prices},
+            CommonConfig, OraclePrice,
+        },
+        index_oracle::{ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg},
     },
-    index_oracle::{Config, HandleAnswer, HandleMsg, InitMsg, QueryAnswer, QueryMsg},
-    storage::Item,
+    storage::ItemStorage,
+    BLOCK_SIZE,
 };
 
-const CONFIG: Item<Config> = Item::new("config");
-const SYMBOL: Item<String> = Item::new("symbol");
-// (symbol, weight, constant)
-const BASKET: Item<Vec<(String, Uint128, Uint128)>> = Item::new("basket");
-
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
-) -> StdResult<InitResponse> {
-    let config = Config {
-        router: msg.router,
-        enabled: true,
-        only_band: msg.only_band,
-    };
-
-    CONFIG.save(&mut deps.storage, &config)?;
-    SYMBOL.save(&mut deps.storage, &msg.symbol)?;
+    _info: MessageInfo,
+    msg: InstantiateMsg,
+) -> StdResult<Response> {
+    let config = IndexOracle.init_config(deps.storage, deps.api, msg.config)?;
 
     if msg.basket.is_empty() {
         return Err(StdError::generic_err("Basket cannot be empty"));
@@ -57,7 +50,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         )));
     }
 
-    let prices = fetch_prices(deps, &config, symbols)?;
+    let prices = fetch_prices(deps.as_ref(), &config, symbols)?;
     let constants = build_constants(msg.basket.clone(), prices, msg.target);
 
     let mut full_basket: Vec<(String, Uint128, Uint128)> = msg
@@ -67,46 +60,70 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         .collect();
     full_basket.sort();
 
-    BASKET.save(&mut deps.storage, &full_basket)?;
+    Target(msg.target).save(deps.storage)?;
+    Symbol(msg.symbol).save(deps.storage)?;
+    Basket(full_basket).save(deps.storage)?;
 
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
+    let mut config = IndexOracle.verify_admin(deps.storage, &deps.querier, info)?;
     pad_handle_result(
         match msg {
-            HandleMsg::UpdateConfig {
-                router,
-                enabled,
-                only_band,
-            } => try_update_config(deps, env, router, enabled, only_band),
-            HandleMsg::ModBasket { basket, .. } => mod_basket(deps, env, basket),
+            ExecuteMsg::UpdateConfig { updates } => {
+                IndexOracle.try_update_config(deps, updates, &mut config)
+            }
+            ExecuteMsg::ModBasket { basket, .. } => mod_basket(deps, basket),
+            ExecuteMsg::UpdateTarget { new_target } => {
+                if let Some(new_target) = new_target {
+                    Target(new_target).save(deps.storage)?;
+                }
+                Ok(
+                    Response::new().set_data(to_binary(&HandleAnswer::UpdateTarget {
+                        status: ResponseStatus::Success,
+                    })?),
+                )
+            }
         },
         BLOCK_SIZE,
     )
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
+#[entry_point]
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     pad_query_result(
         match msg {
-            QueryMsg::GetConfig {} => to_binary(&try_query_config(deps)?),
+            QueryMsg::GetConfig {} => {
+                to_binary(&IndexOracle.config_resp(CommonConfig::load(deps.storage)?))
+            }
             /* add 'symbol' so we can error if its the wrong oracle
              * Prevents router failure from causing economic failure
              */
-            QueryMsg::GetPrice { key, .. } => to_binary(&try_query_price(deps, key)?),
-            QueryMsg::GetPrices { keys } => {
-                let mut prices = vec![];
-                for key in keys {
-                    prices.push(try_query_price(deps, key)?);
-                }
-                to_binary(&prices)
+            QueryMsg::GetPrice { key, .. } => {
+                let config = IndexOracle.can_query_price(deps, &key)?;
+                to_binary(
+                    &IndexOracle.price_resp(IndexOracle.try_query_price(deps, &env, key, &config)?),
+                )
             }
-            QueryMsg::Basket {} => to_binary(&QueryAnswer::Basket {
-                basket: BASKET.load(&deps.storage)?,
+            QueryMsg::GetPrices { keys } => {
+                let config = IndexOracle.can_query_prices(deps, keys.as_slice())?;
+                to_binary(
+                    &IndexOracle
+                        .prices_resp(IndexOracle.try_query_prices(deps, &env, keys, &config)?),
+                )
+            }
+            QueryMsg::Basket {} => to_binary(&BasketResponse {
+                basket: Basket::load(deps.storage)?.0,
+            }),
+            QueryMsg::GetTarget {} => to_binary(&TargetResponse {
+                target: Target::load(deps.storage)?.0,
             }),
         },
         BLOCK_SIZE,
@@ -150,9 +167,9 @@ fn eval_index(
     }
 }
 
-fn fetch_prices<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    config: &Config,
+fn fetch_prices(
+    deps: Deps,
+    config: &CommonConfig,
     symbols: Vec<String>,
 ) -> StdResult<HashMap<String, ReferenceData>> {
     let mut price_data = HashMap::new();
@@ -164,7 +181,7 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     match prices_resp {
         Ok(prices) => {
             for oracle_price in prices {
-                price_data.insert(oracle_price.key.clone(), oracle_price.data);
+                price_data.insert(oracle_price.key().clone(), oracle_price.data().clone());
             }
         }
         Err(e) => {
@@ -182,49 +199,14 @@ fn fetch_prices<S: Storage, A: Api, Q: Querier>(
     Ok(price_data)
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    router: Option<Contract>,
-    enabled: Option<bool>,
-    only_band: Option<bool>,
-) -> StdResult<HandleResponse> {
-    let config = CONFIG.load(&deps.storage)?;
+fn mod_basket(deps: DepsMut, mod_basket: Vec<(String, Uint128)>) -> StdResult<Response> {
+    let config = CommonConfig::load(deps.storage)?;
 
-    verify_admin(&config.router, &deps.querier, env.message.sender)?;
+    let self_symbol = Symbol::load(deps.storage)?.0;
 
-    CONFIG.save(
-        &mut deps.storage,
-        &Config {
-            router: router.unwrap_or(config.router),
-            enabled: enabled.unwrap_or(config.enabled),
-            only_band: only_band.unwrap_or(config.only_band),
-        },
-    )?;
-
-    Ok(HandleResponse {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
-    })
-}
-
-fn mod_basket<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    mod_basket: Vec<(String, Uint128)>,
-) -> StdResult<HandleResponse> {
-    let config = CONFIG.load(&deps.storage)?;
-
-    verify_admin(&config.router, &deps.querier, env.message.sender)?;
-
-    let self_symbol = SYMBOL.load(&deps.storage)?;
-
-    let basket = BASKET.load(&deps.storage)?;
+    let basket = Basket::load(deps.storage)?.0;
     let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
-    let mut prices = fetch_prices(deps, &config, symbols.clone())?;
+    let mut prices = fetch_prices(deps.as_ref(), &config, symbols.clone())?;
     // target previous price
     let target = eval_index(prices.clone(), basket.clone());
 
@@ -277,7 +259,7 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
         return Err(StdError::generic_err("Weights must add to 100%"));
     }
 
-    prices.extend(fetch_prices(deps, &config, new_symbols)?);
+    prices.extend(fetch_prices(deps.as_ref(), &config, new_symbols)?);
 
     let constants = build_constants(weights.clone(), prices.clone(), target.rate);
 
@@ -286,38 +268,42 @@ fn mod_basket<S: Storage, A: Api, Q: Querier>(
         .into_iter()
         .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
         .collect();
-    BASKET.save(&mut deps.storage, &new_basket)?;
+    Basket(new_basket).save(deps.storage)?;
 
-    Ok(HandleResponse {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
+    Ok(
+        Response::new().set_data(to_binary(&HandleAnswer::ModBasket {
             status: ResponseStatus::Success,
         })?),
-    })
+    )
 }
 
-fn try_query_config<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResult<Config> {
-    CONFIG.load(&deps.storage)
-}
+pub struct IndexOracle;
 
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    key: String,
-) -> StdResult<OraclePrice> {
-    if key != SYMBOL.load(&deps.storage)? {
-        return Err(StdError::generic_err(format!(
-            "Missing price feed for {}",
-            key
-        )));
+impl Oracle for IndexOracle {
+    fn try_query_price(
+        &self,
+        deps: Deps,
+        _env: &Env,
+        key: String,
+        config: &shade_oracles::common::CommonConfig,
+    ) -> StdResult<OraclePrice> {
+        if key != Symbol::load(deps.storage)?.0 {
+            return Err(StdError::generic_err(format!(
+                "Missing price feed for {}",
+                key
+            )));
+        }
+
+        let basket = Basket::load(deps.storage)?;
+        let symbols: Vec<String> = basket
+            .0
+            .clone()
+            .into_iter()
+            .map(|(sym, _, _)| sym)
+            .collect();
+        let prices = fetch_prices(deps, config, symbols)?;
+        let index = eval_index(prices, basket.0);
+
+        Ok(OraclePrice::new(key, index))
     }
-
-    let config = CONFIG.load(&deps.storage)?;
-
-    let basket = BASKET.load(&deps.storage)?;
-    let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
-    let prices = fetch_prices(deps, &config, symbols)?;
-    let index = eval_index(prices, basket);
-
-    Ok(OraclePrice::new(key, index))
 }

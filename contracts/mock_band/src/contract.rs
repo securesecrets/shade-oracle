@@ -1,30 +1,33 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdResult, Storage,
+use cosmwasm_std::{entry_point, Uint128};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+
+use shade_oracles::core::ResponseStatus;
+use shade_oracles::interfaces::band::{
+    ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg, ReferenceData,
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use shade_oracles::band::{HandleAnswer, HandleMsg, InitMsg, ReferenceData};
-use shade_oracles::common::ResponseStatus;
 use shade_oracles::storage::Map;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    _deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn instantiate(
+    _deps: DepsMut,
     _env: Env,
-    _msg: InitMsg,
-) -> StdResult<InitResponse> {
-    Ok(InitResponse::default())
+    _info: MessageInfo,
+    _msg: InstantiateMsg,
+) -> StdResult<Response> {
+    Ok(Response::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    _info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     match msg {
-        HandleMsg::UpdateSymbolPrice {
+        ExecuteMsg::UpdateSymbolPrice {
             base_symbol,
             quote_symbol,
             rate,
@@ -33,49 +36,33 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     }
 }
 
-pub fn update_symbol_price<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    _env: Env,
+pub fn update_symbol_price(
+    deps: DepsMut,
+    env: Env,
     base_symbol: String,
     quote_symbol: String,
     rate: Uint128,
     last_updated: Option<u64>,
-) -> StdResult<HandleResponse> {
+) -> StdResult<Response> {
     MOCK_DATA.save(
-        &mut deps.storage,
+        deps.storage,
         (base_symbol, quote_symbol),
         &ReferenceData {
             rate,
-            last_updated_base: last_updated.unwrap_or(0),
-            last_updated_quote: last_updated.unwrap_or(0),
+            last_updated_base: last_updated.unwrap_or_else(|| env.block.time.seconds()),
+            last_updated_quote: last_updated.unwrap_or_else(|| env.block.time.seconds()),
         },
     )?;
 
-    Ok(HandleResponse {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateSymbolPrice {
-            status: ResponseStatus::Success,
-        })?),
-    })
+    let data = to_binary(&HandleAnswer::UpdateSymbolPrice {
+        status: ResponseStatus::Success,
+    })?;
+
+    Ok(Response::new().set_data(data))
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum QueryMsg {
-    GetReferenceData {
-        base_symbol: String,
-        quote_symbol: String,
-    },
-    GetReferenceDataBulk {
-        base_symbols: Vec<String>,
-        quote_symbols: Vec<String>,
-    },
-}
-pub fn query<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    msg: QueryMsg,
-) -> StdResult<Binary> {
+#[entry_point]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetReferenceData {
             base_symbol,
@@ -88,21 +75,21 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
             let mut results = vec![];
 
             for (base, quote) in base_symbols.iter().zip(quote_symbols) {
-                results.push(MOCK_DATA.load(&deps.storage, (base.to_string(), quote.to_string()))?);
+                results.push(MOCK_DATA.load(deps.storage, (base.to_string(), quote.to_string()))?);
             }
             to_binary(&results)
         }
     }
 }
 
-fn query_saved_band_data<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn query_saved_band_data(
+    deps: Deps,
     base_symbol: String,
     quote_symbol: String,
 ) -> StdResult<Binary> {
     /*
-    let data: ReferenceData = MOCK_DATA.load(&deps.storage, (base_symbol.clone(), quote_symbol.clone()))?;
+    let data: ReferenceData = MOCK_DATA.load(deps.storage, (base_symbol.clone(), quote_symbol.clone()))?;
     assert_eq!(data.rate, Uint128::zero(), "MOCK BAND REF");
     */
-    to_binary(&MOCK_DATA.load(&deps.storage, (base_symbol, quote_symbol))?)
+    to_binary(&MOCK_DATA.load(deps.storage, (base_symbol, quote_symbol))?)
 }
