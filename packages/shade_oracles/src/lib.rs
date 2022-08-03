@@ -17,7 +17,7 @@ pub mod core {
     pub use ethnum;
     pub use schemars;
     pub use serde;
-    pub use shade_admin::admin::validate_admin;
+    pub use shade_admin::querier::validate_permission;
     pub use shade_protocol::snip20;
     pub use shade_protocol::utils::asset::{Contract, RawContract};
     pub use shade_protocol::utils::calc::sqrt;
