@@ -39,7 +39,7 @@ pub fn pair_info_w(storage: &mut dyn Storage) -> Singleton<PairInfo> {
     singleton(storage, PAIR_INFO)
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
@@ -59,7 +59,7 @@ pub enum ExecuteMsg {
     },
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     _env: Env,
@@ -107,7 +107,7 @@ pub fn execute(
     // TODO: actual swap execute
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: PairQuery) -> StdResult<Binary> {
     match msg {
         PairQuery::PairInfo => to_binary(&PairInfoResponse {

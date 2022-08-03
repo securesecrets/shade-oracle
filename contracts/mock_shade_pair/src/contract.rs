@@ -28,7 +28,7 @@ impl ExecuteCallback for ExecuteMsg {
 
 const PAIR_INFO: Item<PairInfoResponse> = Item::new("pair_info");
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
@@ -48,7 +48,7 @@ pub enum ExecuteMsg {
     },
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     _env: Env,
@@ -97,7 +97,7 @@ pub fn execute(
     // TODO: actual swap execute
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: ShadeSwapQueryMsg) -> StdResult<Binary> {
     match msg {
         ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(deps.storage)?),
