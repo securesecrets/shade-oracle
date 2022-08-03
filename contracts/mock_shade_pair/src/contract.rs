@@ -1,14 +1,8 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
-    StdError, StdResult, Storage,
-};
-use fadroma::prelude::ContractLink;
-use schemars::JsonSchema;
-use secret_toolkit::utils::InitCallback;
-use serde::{Deserialize, Serialize};
+use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult};
+use shade_oracles::core::cosmwasm_schema::cw_serde;
 use shade_oracles::{
-    common::Contract,
+    core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::shadeswap::{
         EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenPair, TokenType,
     },
@@ -21,26 +15,31 @@ pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uin
     )
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct InitMsg {}
+#[cw_serde]
+pub struct InstantiateMsg {}
 
-impl InitCallback for InitMsg {
+impl InstantiateCallback for InstantiateMsg {
+    const BLOCK_SIZE: usize = 256;
+}
+
+impl ExecuteCallback for ExecuteMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
 const PAIR_INFO: Item<PairInfoResponse> = Item::new("pair_info");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    _deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn instantiate(
+    _deps: DepsMut,
     _env: Env,
-    _msg: InitMsg,
-) -> StdResult<InitResponse> {
-    Ok(InitResponse::default())
+    _info: MessageInfo,
+    _msg: InstantiateMsg,
+) -> StdResult<Response> {
+    Ok(Response::default())
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleMsg {
+#[cw_serde]
+pub enum ExecuteMsg {
     MockPool {
         token_a: Contract,
         amount_a: Uint128,
@@ -49,27 +48,29 @@ pub enum HandleMsg {
     },
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
     _env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    _info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     match msg {
-        HandleMsg::MockPool {
+        ExecuteMsg::MockPool {
             token_a,
             amount_a,
             token_b,
             amount_b,
         } => {
             PAIR_INFO.save(
-                &mut deps.storage,
+                deps.storage,
                 &PairInfoResponse {
-                    liquidity_token: ContractLink {
-                        address: HumanAddr("".to_string()),
+                    liquidity_token: Contract {
+                        address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
                     },
-                    factory: ContractLink {
-                        address: HumanAddr("".to_string()),
+                    factory: Contract {
+                        address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
                     },
                     pair: TokenPair(
@@ -89,19 +90,17 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                 },
             )?;
 
-            Ok(HandleResponse::default())
+            Ok(Response::default())
         }
     }
 
-    // TODO: actual swap handle
+    // TODO: actual swap execute
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    msg: ShadeSwapQueryMsg,
-) -> StdResult<Binary> {
+#[entry_point]
+pub fn query(deps: Deps, _env: Env, msg: ShadeSwapQueryMsg) -> StdResult<Binary> {
     match msg {
-        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(&deps.storage)?),
+        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(deps.storage)?),
         ShadeSwapQueryMsg::GetEstimatedPrice { offer } => {
             //TODO: check swap doesnt exceed pool size
 
@@ -118,7 +117,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 }
             };
 
-            let pair_info = PAIR_INFO.load(&deps.storage)?;
+            let pair_info = PAIR_INFO.load(deps.storage)?;
 
             match pair_info.pair.0 {
                 TokenType::CustomToken {

@@ -1,9 +1,8 @@
 [workspace]
 members = [
   "packages/shade_oracles",
-  "packages/shade_oracles_ensemble",
-  "packages/shade_oracles_integration",
-
+  "packages/multi_test",
+  
   "contracts/index_oracle",
   "contracts/proxy_band_oracle",
   "contracts/oracle_router",
@@ -13,9 +12,11 @@ members = [
   "contracts/siennaswap_market_oracle",
   "contracts/shadeswap_market_oracle",
 
+  "contracts/mock_band",
   "contracts/mock_sienna_pair",
   "contracts/mock_shade_pair",
 ]
+exclude = [ "contracts/secretswap_lp_oracle", "contracts/earn_v1_oracle" ]
 
 [profile.release]
 opt-level = 3

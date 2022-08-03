@@ -1,150 +1,86 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, QueryResult,
-    StdError, StdResult, Storage,
-};
-use secret_toolkit::utils::{pad_handle_result, pad_query_result, Query};
-use shade_admin::admin::{QueryMsg as AdminQueryMsg, ValidateAdminPermissionResponse};
+use cosmwasm_std::{entry_point, QueryResponse, Uint128};
+use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use shade_oracles::common::{oracle_exec, oracle_query, ExecuteMsg, Oracle};
+use shade_oracles::core::Contract;
+use shade_oracles::interfaces::band::proxy::QuoteSymbol;
 use shade_oracles::{
-    band::{
-        proxy::{Config, HandleAnswer, HandleMsg, InitMsg},
-        reference_data, reference_data_bulk, BandQuery, ReferenceData,
-    },
-    common::{is_disabled, Contract, OraclePrice, QueryMsg, ResponseStatus, BLOCK_SIZE},
-    storage::Item,
+    common::{OraclePrice, OracleQuery},
+    interfaces::band::{proxy::InstantiateMsg, reference_data, reference_data_bulk, ReferenceData},
+    storage::{Item, ItemStorage},
 };
 
-const CONFIG: Item<Config> = Item::new("config");
+const BAND: Item<Contract> = Item::new("band-contract");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn instantiate(
+    deps: DepsMut,
     _env: Env,
-    msg: InitMsg,
-) -> StdResult<InitResponse> {
-    let config = Config {
-        admin_auth: msg.admin_auth,
-        band: msg.band,
-        quote_symbol: msg.quote_symbol,
-        enabled: true,
-    };
+    _info: MessageInfo,
+    msg: InstantiateMsg,
+) -> StdResult<Response> {
+    let symbol = QuoteSymbol(msg.quote_symbol);
+    symbol.save(deps.storage)?;
+    BAND.save(deps.storage, &msg.band.into_valid(deps.api)?)?;
+    ProxyBandOracle.init_config(deps.storage, deps.api, msg.config)?;
 
-    CONFIG.save(&mut deps.storage, &config)?;
-
-    Ok(InitResponse::default())
+    Ok(Response::default())
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
-    let response: Result<HandleResponse, StdError> = match msg {
-        HandleMsg::UpdateConfig {
-            band,
-            quote_symbol,
-            enabled,
-            admin_auth,
-        } => try_update_config(deps, env, band, quote_symbol, enabled, admin_auth),
-    };
-    pad_handle_result(response, BLOCK_SIZE)
+#[entry_point]
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+    oracle_exec(deps, env, info, msg, ProxyBandOracle)
 }
 
-fn try_update_config<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    band: Option<Contract>,
-    quote_symbol: Option<String>,
-    enabled: Option<bool>,
-    admin_auth: Option<Contract>,
-) -> StdResult<HandleResponse> {
-    let config = CONFIG.load(&deps.storage)?;
+#[entry_point]
+pub fn query(deps: Deps, env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
+    oracle_query(deps, env, msg, ProxyBandOracle)
+}
 
-    let resp: ValidateAdminPermissionResponse = AdminQueryMsg::ValidateAdminPermission {
-        contract_address: env.contract.address.to_string(),
-        admin_address: env.message.sender.to_string(),
+pub struct ProxyBandOracle;
+
+impl Oracle for ProxyBandOracle {
+    fn try_query_price(
+        &self,
+        deps: Deps,
+        _env: &Env,
+        key: String,
+        _config: &shade_oracles::common::CommonConfig,
+    ) -> StdResult<OraclePrice> {
+        let band = BAND.load(deps.storage)?;
+        if key == "SHD" {
+            return Ok(OraclePrice::new(
+                key,
+                ReferenceData {
+                    rate: Uint128::from(13450000000000000000u128),
+                    last_updated_base: 1654019032,
+                    last_updated_quote: 1654019032,
+                },
+            ));
+        }
+        let quote_symbol = QuoteSymbol::load(deps.storage)?;
+        let band_response = reference_data(&deps.querier, key.clone(), quote_symbol.0, &band)?;
+        Ok(OraclePrice::new(key, band_response))
     }
-    .query(
-        &deps.querier,
-        config.admin_auth.code_hash.clone(),
-        config.admin_auth.address,
-    )?;
-    if resp.error_msg.is_some() {
-        return Err(StdError::unauthorized());
+    fn try_query_prices(
+        &self,
+        deps: Deps,
+        _env: &Env,
+        keys: Vec<String>,
+        _config: &shade_oracles::common::CommonConfig,
+    ) -> StdResult<Vec<OraclePrice>> {
+        let quote_symbol = QuoteSymbol::load(deps.storage)?;
+        let quote_symbols = vec![quote_symbol.0; keys.len()];
+        let band = BAND.load(deps.storage)?;
+
+        let band_response = reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, &band)?;
+
+        let mut prices: Vec<OraclePrice> = vec![];
+        for (index, key) in keys.iter().enumerate() {
+            prices.push(OraclePrice::new(
+                key.to_string(),
+                band_response[index].clone(),
+            ));
+        }
+        Ok(prices)
     }
-
-    CONFIG.update(&mut deps.storage, |mut config| -> StdResult<_> {
-        config.band = band.unwrap_or(config.band);
-        config.quote_symbol = quote_symbol.unwrap_or(config.quote_symbol);
-        config.enabled = enabled.unwrap_or(config.enabled);
-        config.admin_auth = admin_auth.unwrap_or(config.admin_auth);
-        Ok(config)
-    })?;
-
-    Ok(HandleResponse {
-        messages: vec![],
-        log: vec![],
-        data: Some(to_binary(&HandleAnswer::UpdateConfig {
-            status: ResponseStatus::Success,
-        })?),
-    })
-}
-
-pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryMsg) -> QueryResult {
-    let response = match msg {
-        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(&deps.storage)?),
-        QueryMsg::GetPrice { key } => try_query_price(deps, key),
-        QueryMsg::GetPrices { keys } => try_query_prices(deps, keys),
-    };
-    pad_query_result(response, BLOCK_SIZE)
-}
-
-fn try_query_price<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    key: String,
-) -> StdResult<Binary> {
-    let config = CONFIG.load(&deps.storage)?;
-    is_disabled(config.enabled)?;
-
-    if key == "SHD" {
-        return to_binary(&OraclePrice::new(
-            key,
-            ReferenceData {
-                rate: Uint128::from(13450000000000000000u128),
-                last_updated_base: 1654019032,
-                last_updated_quote: 1654019032,
-            },
-        ));
-    }
-
-    let band_response = reference_data(
-        &deps.querier,
-        key.clone(),
-        config.quote_symbol.clone(),
-        config.band,
-    )?;
-
-    to_binary(&OraclePrice::new(key, band_response))
-}
-
-fn try_query_prices<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    keys: Vec<String>,
-) -> StdResult<Binary> {
-    let config = CONFIG.load(&deps.storage)?;
-    is_disabled(config.enabled)?;
-
-    let quote_symbols = vec![config.quote_symbol; keys.len()];
-
-    let band_response =
-        reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, config.band)?;
-
-    let mut prices: Vec<OraclePrice> = vec![];
-    for (index, key) in keys.iter().enumerate() {
-        prices.push(OraclePrice::new(
-            key.to_string(),
-            band_response[index].clone(),
-        ));
-    }
-
-    to_binary(&prices)
 }

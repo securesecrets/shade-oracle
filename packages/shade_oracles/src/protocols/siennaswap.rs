@@ -1,19 +1,15 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::HumanAddr;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Addr;
+use cosmwasm_std::Uint128;
+use shade_protocol::utils::asset::Contract;
+use shade_protocol::utils::Query;
 
-use crate::common::Contract;
-use secret_toolkit::utils::Query;
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct SiennaSwapPairInfoResponse {
     pub pair_info: SiennaSwapPairInfo,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct SiennaSwapPairInfo {
     pub liquidity_token: Contract,
     pub factory: Contract,
@@ -24,8 +20,7 @@ pub struct SiennaSwapPairInfo {
     pub contract_version: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum SiennaSwapExchangeQueryMsg {
     PairInfo,
     SwapSimulation { offer: TokenTypeAmount },
@@ -35,11 +30,10 @@ impl Query for SiennaSwapExchangeQueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum SiennaDexTokenType {
     CustomToken {
-        contract_addr: HumanAddr,
+        contract_addr: Addr,
         token_code_hash: String,
     },
     NativeToken {
@@ -47,28 +41,24 @@ pub enum SiennaDexTokenType {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct Pair {
     pub token_0: SiennaDexTokenType,
     pub token_1: SiennaDexTokenType,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct TokenTypeAmount {
     pub amount: Uint128,
     pub token: SiennaDexTokenType,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct SwapSimulation {
     pub offer: TokenTypeAmount,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct SimulationResponse {
     pub return_amount: Uint128,
     pub spread_amount: Uint128,

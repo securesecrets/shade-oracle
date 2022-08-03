@@ -35,7 +35,7 @@ Contract responsible for aggregating a list of assets (denom/weight) into a sing
 Updates config of index oracle contract.
 | Name         | Type     | Description                                              | optional |
 |--------------|----------|----------------------------------------------------------|----------|
-| admins       | Vec<HumanAddr> | List of admins has ability to adjust config        | yes      |
+| admins       | Vec<Addr> | List of admins has ability to adjust config        | yes      |
 | router       | Contract    | Oracle router contract                                | yes      |
 
 #### ModBasket

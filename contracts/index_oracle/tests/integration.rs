@@ -1,18 +1,16 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::HumanAddr;
-use fadroma::{
-    core::ContractLink,
-    ensemble::{ContractEnsemble, MockEnv},
+use shade_oracles::{
+    common::{InstantiateCommonConfig, PriceResponse},
+    core::{ExecuteCallback, InstantiateCallback, Query},
+    interfaces::band::{self},
+    interfaces::index_oracle,
+    interfaces::router,
+};
+use shade_oracles_multi_test::{
+    helpers::OracleCore, multi::index::IndexOracle, App, MultiTestable,
 };
 use std::collections::HashMap;
 
-use shade_oracles_ensemble::{harness::IndexOracle, helpers::setup_core};
-
-use shade_oracles::{
-    band::{self},
-    common::{Contract, OraclePrice},
-    index_oracle, router,
-};
+use cosmwasm_std::{Addr, Uint128};
 
 fn basic_index_test(
     symbol: String,
@@ -22,106 +20,48 @@ fn basic_index_test(
     expected: Uint128,
     error: Uint128,
 ) {
-    let mut ensemble = ContractEnsemble::new(50);
+    let user = Addr::unchecked("superadmin");
+    let mut app = App::default();
 
-    let reg_index_oracle = ensemble.register(Box::new(IndexOracle));
-
-    let oracle_core = setup_core(ensemble);
-    let band = oracle_core.band;
-    let band_proxy = oracle_core.band_proxy;
+    let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
     let router = oracle_core.router;
-    let mut ensemble = oracle_core.ensemble;
 
-    let mut operations = vec![];
-
-    for (sym, _) in prices.clone() {
-        operations.push(router::RegistryOperation::Add {
-            oracle: Contract {
-                address: band_proxy.address.clone(),
-                code_hash: band_proxy.code_hash.clone(),
-            },
-            key: sym,
-        });
+    let index_oracle = index_oracle::InstantiateMsg {
+        config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
+        symbol: symbol.clone(),
+        target,
+        basket,
     }
-
-    // Configure BAND symbols on router
-    ensemble
-        .execute(
-            &router::HandleMsg::BatchUpdateRegistry { operations },
-            MockEnv::new("admin", router.clone()),
-        )
-        .unwrap();
-
-    // Configure mock band prices
-    for (sym, price) in prices.clone() {
-        ensemble
-            .execute(
-                &band::HandleMsg::UpdateSymbolPrice {
-                    base_symbol: sym,
-                    quote_symbol: "USD".to_string(),
-                    rate: price,
-                    last_updated: None,
-                },
-                MockEnv::new("admin", band.clone()),
-            )
-            .unwrap();
-    }
-
-    let index_oracle = ensemble
-        .instantiate(
-            reg_index_oracle.id,
-            &index_oracle::InitMsg {
-                router: Contract {
-                    address: router.address.clone(),
-                    code_hash: router.code_hash.clone(),
-                },
-                symbol: symbol.clone(),
-                target,
-                basket,
-                only_band: true,
-            },
-            MockEnv::new(
-                "admin",
-                ContractLink {
-                    address: HumanAddr("index".into()),
-                    code_hash: reg_index_oracle.code_hash.clone(),
-                },
-            ),
-        )
-        .unwrap()
-        .instance;
+    .test_init(
+        IndexOracle::default(),
+        &mut app,
+        user.clone(),
+        "index-oracle",
+        &[],
+    )
+    .unwrap();
 
     // Configure router w/ index oracle
-    ensemble
-        .execute(
-            &router::HandleMsg::UpdateRegistry {
-                operation: router::RegistryOperation::Add {
-                    oracle: Contract {
-                        address: index_oracle.address.clone(),
-                        code_hash: index_oracle.code_hash.clone(),
-                    },
-                    key: symbol.clone(),
-                },
-            },
-            MockEnv::new("admin", router.clone()),
-        )
-        .unwrap();
+    router::ExecuteMsg::UpdateRegistry {
+        operation: router::RegistryOperation::Add {
+            oracle: index_oracle.into(),
+            key: symbol.clone(),
+        },
+    }
+    .test_exec(&router, &mut app, user, &[])
+    .unwrap();
 
-    let OraclePrice { key: _, data } = ensemble
-        .query(
-            index_oracle.address.clone(),
-            &index_oracle::QueryMsg::GetPrice {
-                key: symbol.clone(),
-            },
-        )
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol }
+        .test_query(&router, &app)
         .unwrap();
+    let data = price.price.data();
+
     {
-        let mut err = Uint128::zero();
-        if data.rate > expected {
-            err = (data.rate - expected);
+        let err = if data.rate > expected {
+            data.rate - expected
         } else {
-            err = (expected - data.rate);
-        }
+            expected - data.rate
+        };
         let acceptable = expected.multiply_ratio(error, 10u128.pow(18));
 
         assert!(
@@ -241,117 +181,58 @@ fn mod_index_test(
     expected_final: Uint128,
     error: Uint128,
 ) {
-    let mut ensemble = ContractEnsemble::new(50);
+    let user = Addr::unchecked("superadmin");
+    let mut app = App::default();
 
-    let reg_index_oracle = ensemble.register(Box::new(IndexOracle));
-
-    let oracle_core = setup_core(ensemble);
+    let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
     let band = oracle_core.band;
-    let band_proxy = oracle_core.band_proxy;
+    let _band_proxy = oracle_core.band_proxy;
     let router = oracle_core.router;
-    let mut ensemble = oracle_core.ensemble;
 
-    let mut operations = vec![];
-
-    for (sym, _) in prices.clone() {
-        operations.push(router::RegistryOperation::Add {
-            oracle: Contract {
-                address: band_proxy.address.clone(),
-                code_hash: band_proxy.code_hash.clone(),
-            },
-            key: sym,
-        });
+    let index_oracle = index_oracle::InstantiateMsg {
+        config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
+        symbol: symbol.clone(),
+        target,
+        basket,
     }
-
-    // Configure BAND symbols on router
-    ensemble
-        .execute(
-            &router::HandleMsg::BatchUpdateRegistry { operations },
-            MockEnv::new("admin", router.clone()),
-        )
-        .unwrap();
-
-    // Configure mock band prices
-    for (sym, price) in prices.clone() {
-        ensemble
-            .execute(
-                &band::HandleMsg::UpdateSymbolPrice {
-                    base_symbol: sym,
-                    quote_symbol: "USD".to_string(),
-                    rate: price,
-                    last_updated: None,
-                },
-                MockEnv::new("admin", band.clone()),
-            )
-            .unwrap();
-    }
-
-    let index_oracle = ensemble
-        .instantiate(
-            reg_index_oracle.id,
-            &index_oracle::InitMsg {
-                router: Contract {
-                    address: router.address.clone(),
-                    code_hash: router.code_hash.clone(),
-                },
-                symbol: symbol.clone(),
-                target,
-                basket,
-                only_band: true,
-            },
-            MockEnv::new(
-                "admin",
-                ContractLink {
-                    address: HumanAddr("index".into()),
-                    code_hash: reg_index_oracle.code_hash.clone(),
-                },
-            ),
-        )
-        .unwrap()
-        .instance;
+    .test_init(
+        IndexOracle::default(),
+        &mut app,
+        user.clone(),
+        "index-oracle",
+        &[],
+    )
+    .unwrap();
 
     // Configure router w/ index oracle
-    ensemble
-        .execute(
-            &router::HandleMsg::UpdateRegistry {
-                operation: router::RegistryOperation::Add {
-                    oracle: Contract {
-                        address: index_oracle.address.clone(),
-                        code_hash: index_oracle.code_hash.clone(),
-                    },
-                    key: symbol.clone(),
-                },
-            },
-            MockEnv::new("admin", router.clone()),
-        )
+    router::ExecuteMsg::UpdateRegistry {
+        operation: router::RegistryOperation::Add {
+            oracle: index_oracle.clone().into(),
+            key: symbol.clone(),
+        },
+    }
+    .test_exec(&router, &mut app, user.clone(), &[])
+    .unwrap();
+
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
+        .test_query(&router, &app)
         .unwrap();
-
-    // Not sure why this query wont let me unwrap
-    match ensemble
-        .query(
-            index_oracle.address.clone(),
-            &index_oracle::QueryMsg::GetPrice {
-                key: symbol.clone(),
-            },
-        )
-        .unwrap()
+    let data = price.price.data();
     {
-        OraclePrice { key: _, data } => {
-            let mut err = Uint128::zero();
-            if data.rate > expected_initial {
-                err = (data.rate - expected_initial);
-            } else {
-                err = (expected_initial - data.rate);
-            }
-            let acceptable = expected_initial.multiply_ratio(error, 10u128.pow(18));
-
-            assert!(
-                err <= acceptable,
-                "price: {}, expected: {}, exceeds acceptable error",
-                data.rate,
-                expected_initial
-            );
+        let mut err = Uint128::zero();
+        if data.rate > expected_initial {
+            err = data.rate - expected_initial;
+        } else {
+            err = expected_initial - data.rate;
         }
+        let acceptable = expected_initial.multiply_ratio(error, 10u128.pow(18));
+
+        assert!(
+            err <= acceptable,
+            "price: {}, expected: {}, exceeds acceptable error",
+            data.rate,
+            expected_initial
+        );
     };
 
     /* TODO
@@ -362,64 +243,48 @@ fn mod_index_test(
 
     // Update mock band prices
     for (sym, price) in new_prices.clone() {
-        ensemble
-            .execute(
-                &band::HandleMsg::UpdateSymbolPrice {
-                    base_symbol: sym,
-                    quote_symbol: "USD".to_string(),
-                    rate: price,
-                    last_updated: None,
-                },
-                MockEnv::new("admin", band.clone()),
-            )
-            .unwrap();
+        band::ExecuteMsg::UpdateSymbolPrice {
+            base_symbol: sym,
+            quote_symbol: "USD".to_string(),
+            rate: price,
+            last_updated: None,
+        }
+        .test_exec(&band, &mut app, user.clone(), &[])
+        .unwrap();
     }
 
-    // Check price updates
-    match ensemble
-        .query(
-            index_oracle.address.clone(),
-            &index_oracle::QueryMsg::GetPrice {
-                key: symbol.clone(),
-            },
-        )
-        .unwrap()
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
+        .test_query(&router, &app)
+        .unwrap();
+    let data = price.price.data();
     {
-        OraclePrice { key: _, data } => {
-            let mut err = Uint128::zero();
-            if data.rate > expected_final {
-                err = (data.rate - expected_final);
-            } else {
-                err = (expected_final - data.rate);
-            }
-            let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
-
-            assert!(
-                err <= acceptable,
-                "Price change check failed price: {}, expected: {}, exceeds acceptable error",
-                data.rate,
-                expected_final
-            );
+        let mut err = Uint128::zero();
+        if data.rate > expected_final {
+            err = data.rate - expected_final;
+        } else {
+            err = expected_final - data.rate;
         }
+        let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
+
+        assert!(
+            err <= acceptable,
+            "Price change check failed price: {}, expected: {}, exceeds acceptable error",
+            data.rate,
+            expected_final
+        );
     };
 
     // Update basket
-    ensemble
-        .execute(
-            &index_oracle::HandleMsg::ModBasket { basket: mod_basket },
-            MockEnv::new("admin", index_oracle.clone()),
-        )
+    index_oracle::ExecuteMsg::ModBasket { basket: mod_basket }
+        .test_exec(&index_oracle, &mut app, user, &[])
         .unwrap();
 
     // check basket changed
-    match ensemble
-        .query(
-            index_oracle.address.clone(),
-            &index_oracle::QueryMsg::Basket {},
-        )
-        .unwrap()
+    match (index_oracle::QueryMsg::Basket {}
+        .test_query(&index_oracle, &app)
+        .unwrap())
     {
-        index_oracle::QueryAnswer::Basket { mut basket } => {
+        index_oracle::BasketResponse { mut basket } => {
             basket.sort();
             for (sym, w, _) in basket {
                 assert!(
@@ -433,31 +298,25 @@ fn mod_index_test(
     };
 
     // check price doesn't change on mod_price
-    match ensemble
-        .query(
-            index_oracle.address.clone(),
-            &index_oracle::QueryMsg::GetPrice {
-                key: symbol.clone(),
-            },
-        )
-        .unwrap()
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
+        .test_query(&router, &app)
+        .unwrap();
+    let data = price.price.data();
     {
-        OraclePrice { key: _, data } => {
-            let mut err = Uint128::zero();
-            if data.rate > expected_final {
-                err = (data.rate - expected_final);
-            } else {
-                err = (expected_final - data.rate);
-            }
-            let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
-
-            assert!(
-                err <= acceptable,
-                "Post-Mod price: {}, expected: {}, exceeds acceptable error",
-                data.rate,
-                expected_final
-            );
+        let mut err = Uint128::zero();
+        if data.rate > expected_final {
+            err = data.rate - expected_final;
+        } else {
+            err = expected_final - data.rate;
         }
+        let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
+
+        assert!(
+            err <= acceptable,
+            "Post-Mod price: {}, expected: {}, exceeds acceptable error",
+            data.rate,
+            expected_final
+        );
     };
 }
 

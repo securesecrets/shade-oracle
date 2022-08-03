@@ -1,14 +1,10 @@
-use cosmwasm_math_compat::Uint128;
-use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, HumanAddr, InitResponse, Querier,
-    StdError, StdResult, Storage,
-};
-use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
-use schemars::JsonSchema;
-use secret_toolkit::utils::InitCallback;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult, Storage};
+use shade_oracles::storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use shade_oracles::{
-    common::Contract,
+    core::cosmwasm_schema,
+    core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::siennaswap::{
         Pair, SiennaDexTokenType as TokenType, SiennaSwapExchangeQueryMsg as PairQuery,
         SiennaSwapPairInfo as PairInfo, SiennaSwapPairInfoResponse as PairInfoResponse,
@@ -22,34 +18,39 @@ pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uin
     )
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct InitMsg {}
+#[cw_serde]
+pub struct InstantiateMsg {}
 
-impl InitCallback for InitMsg {
+impl InstantiateCallback for InstantiateMsg {
+    const BLOCK_SIZE: usize = 256;
+}
+
+impl ExecuteCallback for ExecuteMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
 pub static PAIR_INFO: &[u8] = b"pair_info";
 
-pub fn pair_info_r<S: Storage>(storage: &S) -> ReadonlySingleton<S, PairInfo> {
+pub fn pair_info_r(storage: &dyn Storage) -> ReadonlySingleton<PairInfo> {
     singleton_read(storage, PAIR_INFO)
 }
 
-pub fn pair_info_w<S: Storage>(storage: &mut S) -> Singleton<S, PairInfo> {
+pub fn pair_info_w(storage: &mut dyn Storage) -> Singleton<PairInfo> {
     singleton(storage, PAIR_INFO)
 }
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    _deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn instantiate(
+    _deps: DepsMut,
     _env: Env,
-    _msg: InitMsg,
-) -> StdResult<InitResponse> {
-    Ok(InitResponse::default())
+    _info: MessageInfo,
+    _msg: InstantiateMsg,
+) -> StdResult<Response> {
+    Ok(Response::default())
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum HandleMsg {
+#[cw_serde]
+pub enum ExecuteMsg {
     MockPool {
         token_a: Contract,
         amount_a: Uint128,
@@ -58,13 +59,15 @@ pub enum HandleMsg {
     },
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
     _env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    _info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     match msg {
-        HandleMsg::MockPool {
+        ExecuteMsg::MockPool {
             token_a,
             amount_a,
             token_b,
@@ -72,11 +75,11 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
         } => {
             let pair_info = PairInfo {
                 liquidity_token: Contract {
-                    address: HumanAddr("".to_string()),
+                    address: Addr::unchecked("".to_string()),
                     code_hash: "".to_string(),
                 },
                 factory: Contract {
-                    address: HumanAddr("".to_string()),
+                    address: Addr::unchecked("".to_string()),
                     code_hash: "".to_string(),
                 },
                 pair: Pair {
@@ -95,22 +98,20 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
                 contract_version: 0,
             };
 
-            pair_info_w(&mut deps.storage).save(&pair_info)?;
+            pair_info_w(deps.storage).save(&pair_info)?;
 
-            Ok(HandleResponse::default())
+            Ok(Response::default())
         }
     }
 
-    // TODO: actual swap handle
+    // TODO: actual swap execute
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    msg: PairQuery,
-) -> StdResult<Binary> {
+#[entry_point]
+pub fn query(deps: Deps, _env: Env, msg: PairQuery) -> StdResult<Binary> {
     match msg {
         PairQuery::PairInfo => to_binary(&PairInfoResponse {
-            pair_info: pair_info_r(&deps.storage).load()?,
+            pair_info: pair_info_r(deps.storage).load()?,
         }),
         PairQuery::SwapSimulation { offer } => {
             //TODO: check swap doesnt exceed pool size
@@ -128,7 +129,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 }
             };
 
-            let pair_info = pair_info_r(&deps.storage).load()?;
+            let pair_info = pair_info_r(deps.storage).load()?;
 
             match pair_info.pair.token_0 {
                 TokenType::CustomToken {
