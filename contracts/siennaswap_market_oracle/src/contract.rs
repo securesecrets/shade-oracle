@@ -21,7 +21,7 @@ use shade_oracles::{
     storage::{ItemStorage},
 };
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -100,7 +100,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     _env: Env,
@@ -110,7 +110,7 @@ pub fn execute(
     oracle_exec(deps, _env, info, msg, SiennaswapMarketOracle)
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
     oracle_query(deps, _env, msg, SiennaswapMarketOracle)
 }

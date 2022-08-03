@@ -12,7 +12,7 @@ use shade_oracles::{
     BLOCK_SIZE, common::SHADE_ORACLE_ADMIN_PERMISSION,
 };
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
@@ -31,7 +31,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     is_admin(deps.as_ref(), info.sender)?;
     pad_handle_result(
