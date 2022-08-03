@@ -116,9 +116,9 @@ pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: Addr) -
     let get_admin_auth_req: AdminAuthResponse =
         RouterQueryMsg::GetAdminAuth {}.query(querier, contract)?;
     let admin_auth = get_admin_auth_req.admin_auth;
-    shade_admin::admin::validate_admin(
+    shade_admin::querier::validate_permission(
         querier,
-        contract.address.to_string(),
+        SHADE_ORACLE_ADMIN_PERMISSION,
         user.to_string(),
         &admin_auth,
     )

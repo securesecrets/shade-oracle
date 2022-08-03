@@ -7,9 +7,9 @@ use cosmwasm_std::{
     Storage,
 };
 use shade_oracles::{
-    core::{pad_handle_result, pad_query_result, validate_admin, Contract},
+    core::{pad_handle_result, pad_query_result, Contract, validate_permission},
     interfaces::router::*,
-    BLOCK_SIZE,
+    BLOCK_SIZE, common::SHADE_ORACLE_ADMIN_PERMISSION,
 };
 
 #[entry_point]
@@ -59,9 +59,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
 fn is_admin(deps: Deps, user: Addr) -> StdResult<()> {
     let config = CONFIG.load(deps.storage)?;
-    validate_admin(
+    validate_permission(
         &deps.querier,
-        config.address.to_string(),
+        SHADE_ORACLE_ADMIN_PERMISSION,
         user.to_string(),
         &config.admin_auth,
     )

@@ -20,6 +20,8 @@ use shade_protocol::{
 pub mod querier;
 
 use super::band::{BtrReferenceData, ReferenceData};
+
+pub const SHADE_ORACLE_ADMIN_PERMISSION: &str = "SHADE_ORACLE_ADMIN";
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.

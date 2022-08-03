@@ -23,8 +23,8 @@ shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cos
 shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "snip20" ] }
 multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
 
-shade-admin-multi-test = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor" }
-shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git", branch = "cosmwasm-v1-refactor" }
+shade-admin-multi-test = { git = "https://github.com/securesecrets/shadeadmin.git" }
+shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git" }
 shade-oracles = { path = "../shade_oracles" }
 oracle-router = { path = "../../contracts/oracle_router" }
 proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
