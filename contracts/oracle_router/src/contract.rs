@@ -62,7 +62,7 @@ fn is_admin(deps: Deps, user: Addr) -> StdResult<()> {
     validate_permission(
         &deps.querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
-        user.to_string(),
+        &user,
         &config.admin_auth,
     )
 }

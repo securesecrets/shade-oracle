@@ -119,7 +119,7 @@ pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: Addr) -
     shade_admin::querier::validate_permission(
         querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
-        user.to_string(),
+        &user,
         &admin_auth,
     )
 }
