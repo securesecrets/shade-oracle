@@ -1,7 +1,7 @@
 use crate::common::{
     ConfigResponse, ConfigUpdates, InstantiateCommonConfig, PriceResponse, PricesResponse,
 };
-use crate::core::Query;
+use shade_protocol::utils::Query;
 use crate::BLOCK_SIZE;
 use better_secret_math::U256;
 use cosmwasm_schema::{cw_serde, QueryResponses};
