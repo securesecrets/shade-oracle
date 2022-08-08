@@ -1,13 +1,17 @@
-use cosmwasm_std::{entry_point, DepsMut, MessageInfo, QueryResponse, Uint128, Uint512};
+use cosmwasm_std::{entry_point, DepsMut, MessageInfo, QueryResponse, Uint128, Uint512, Decimal256, Decimal};
 use cosmwasm_std::{to_binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::common::Oracle;
-use shade_oracles::interfaces::index_oracle::{
-    Basket, BasketResponse, Symbol, Target, TargetResponse,
+use shade_oracles::core::{
+    better_secret_math::core::{exp10, muldiv_fp}
 };
+use shade_oracles::interfaces::index_oracle::{
+    BtrBasket, BtrBasketItem, BasketResponse, Symbol, Target, TargetResponse, BasketSymbols, BasketResponseItem, BasketSymbol,
+};
+use std::vec;
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    core::{pad_handle_result, pad_query_result, ResponseStatus},
+    core::{pad_handle_result, pad_query_result, ResponseStatus, better_secret_math::{U256, core::muldiv}},
     interfaces::{
         band::ReferenceData,
         common::{
@@ -16,7 +20,7 @@ use shade_oracles::{
         },
         index_oracle::{ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg},
     },
-    storage::ItemStorage,
+    storage::{ItemStorage, GenericItemStorage, MapStorage, GenericMapStorage},
     BLOCK_SIZE,
 };
 
@@ -33,36 +37,43 @@ pub fn instantiate(
         return Err(StdError::generic_err("Basket cannot be empty"));
     }
 
-    let symbols: Vec<String> = msg.basket.clone().into_iter().map(|(sym, _)| sym).collect();
+    let mut symbols: Vec<String> = vec![];
+    let mut weight_sum = Decimal256::zero();
 
-    if symbols.contains(&msg.symbol) {
-        return Err(StdError::generic_err(format!(
-            "Recursive symbol {}",
-            msg.symbol
-        )));
+    for (sym, weight) in &msg.basket {
+        weight_sum += weight;
+        symbols.push(sym.clone());
     }
 
-    let weight_sum: u128 = msg.basket.clone().into_iter().map(|(_, w)| w.u128()).sum();
-    if weight_sum != 10u128.pow(18) {
+    let sym_slice = symbols.as_slice();
+
+    for symbol in sym_slice {
+        if symbol.eq(&msg.symbol) {
+            return Err(StdError::generic_err(format!(
+                "Recursive symbol {}",
+                msg.symbol
+            )));
+        }
+    }
+
+    if weight_sum != Decimal256::percent(100) {
         return Err(StdError::generic_err(format!(
             "Weights must add to 100%, {}",
             weight_sum
         )));
     }
 
-    let prices = fetch_prices(deps.as_ref(), &config, symbols)?;
-    let constants = build_constants(msg.basket.clone(), prices, msg.target);
+    let prices = fetch_prices(deps.as_ref(), &config, symbols.as_slice())?;
+    let constants = build_constants(msg.basket.as_slice(), prices, msg.target.into())?;
 
-    let mut full_basket: Vec<(String, Uint128, Uint128)> = msg
-        .basket
-        .into_iter()
-        .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
-        .collect();
-    full_basket.sort();
+    for (sym, w) in msg.basket {
+        let w: U256 = w.into();
+        BtrBasket::save(deps.storage, sym.as_str(), &(w, constants[&sym]))?;
+    }
 
     Target(msg.target).save(deps.storage)?;
     Symbol(msg.symbol).save(deps.storage)?;
-    Basket(full_basket).save(deps.storage)?;
+    BasketSymbols::save(deps.storage, &symbols)?;
 
     Ok(Response::default())
 }
@@ -120,7 +131,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
                 )
             }
             QueryMsg::Basket {} => to_binary(&BasketResponse {
-                basket: Basket::load(deps.storage)?.0,
+                basket: query_basket(deps)?,
             }),
             QueryMsg::GetTarget {} => to_binary(&TargetResponse {
                 target: Target::load(deps.storage)?.0,
@@ -130,53 +141,65 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     )
 }
 
-fn build_constants(
-    weights: Vec<(String, Uint128)>,
-    prices: HashMap<String, ReferenceData>,
-    target: Uint128,
-) -> HashMap<String, Uint128> {
-    let mut constants: HashMap<String, Uint128> = HashMap::new();
+fn query_basket(deps: Deps) -> StdResult<Vec<BasketResponseItem>> {
+    let symbols = BasketSymbols::load(deps.storage)?;
+    let mut basket_response_items = vec![];
+    for symbol in symbols {
+        let item = BtrBasket::load(deps.storage, symbol.as_str())?;
+        let item: BasketResponseItem = (symbol, item.0.into(), item.1.as_u128().into());
+        basket_response_items.push(item)
+    }
+    Ok(basket_response_items)
+}
 
+fn build_constants(
+    weights: &[(String, Decimal256)],
+    prices: HashMap<String, ReferenceData>,
+    target: U256,
+) -> StdResult<HashMap<String, U256>> {
+    let mut constants: HashMap<String, U256> = HashMap::new();
     for (sym, weight) in weights {
         constants.insert(
             sym.clone(),
-            weight.multiply_ratio(target, prices[&sym].rate),
+            muldiv((*weight).into(), target, prices[sym].rate.into())?
         );
     }
-    constants
+    Ok(constants)
 }
 
 fn eval_index(
     prices: HashMap<String, ReferenceData>,
-    basket: Vec<(String, Uint128, Uint128)>,
-) -> ReferenceData {
-    let mut index_price = Uint512::zero();
+    basket: &[(String, U256, U256)],
+) -> StdResult<ReferenceData> {
+    let mut index_price = U256::ZERO;
     let mut last_updated_base = 0u64;
     let mut last_updated_quote = 0u64;
 
     for (sym, _, constant) in basket {
-        index_price += Uint512::from(prices[&sym].rate.u128()) * Uint512::from(constant.u128())
-            / Uint512::from(10u128.pow(18));
-        last_updated_base = min(last_updated_base, prices[&sym].last_updated_base);
-        last_updated_quote = min(last_updated_quote, prices[&sym].last_updated_quote);
+        index_price += muldiv_fp(U256::new(prices[sym].rate.u128()), *constant)?;
+        last_updated_base = min(last_updated_base, prices[sym].last_updated_base);
+        last_updated_quote = min(last_updated_quote, prices[sym].last_updated_quote);
     }
-    ReferenceData {
-        rate: Uint128::try_from(index_price).ok().unwrap(),
+    Ok(ReferenceData {
+        rate: Uint128::from(index_price.as_u128()),
         last_updated_base,
         last_updated_quote,
-    }
+    })
 }
 
-fn fetch_prices(
+fn fetch_prices<'a>(
     deps: Deps,
     config: &CommonConfig,
-    symbols: Vec<String>,
-) -> StdResult<HashMap<String, ReferenceData>> {
+    symbols: impl IntoIterator<Item = &'a String>,
+) -> StdResult<HashMap<String, ReferenceData>>
+ {
     let mut price_data = HashMap::new();
+    let symbols = symbols.into_iter().map(|f| f.to_string()).collect::<Vec<String>>();
+    let symbols_slice = symbols.as_slice().as_ref();
     let prices_resp = if config.only_band {
-        query_band_prices(&config.router, &deps.querier, symbols.clone())
+        query_band_prices(&config.router, &deps.querier, symbols_slice)
     } else {
-        query_prices(&config.router, &deps.querier, symbols.clone())
+        query_prices(&config.router, &deps.querier, symbols_slice)
     };
     match prices_resp {
         Ok(prices) => {
@@ -188,7 +211,7 @@ fn fetch_prices(
             return Err(StdError::generic_err(format!(
                 "Failed to query {} from router {}, '{}'",
                 symbols
-                    .iter()
+                    .into_iter()
                     .map(|sym| sym.to_string() + ",")
                     .collect::<String>(),
                 config.router.address.as_str(),
@@ -199,19 +222,19 @@ fn fetch_prices(
     Ok(price_data)
 }
 
-fn mod_basket(deps: DepsMut, mod_basket: Vec<(String, Uint128)>) -> StdResult<Response> {
+fn mod_basket(deps: DepsMut, mod_basket: impl IntoIterator<Item = (String, Decimal256)>) -> StdResult<Response> {
     let config = CommonConfig::load(deps.storage)?;
 
     let self_symbol = Symbol::load(deps.storage)?.0;
+    let symbols = BasketSymbols::load(deps.storage)?;
 
-    let basket = Basket::load(deps.storage)?.0;
-    let symbols: Vec<String> = basket.clone().into_iter().map(|(sym, _, _)| sym).collect();
-    let mut prices = fetch_prices(deps.as_ref(), &config, symbols.clone())?;
+    let basket = BtrBasket::load_basket(deps.storage, &symbols)?;
+    let mut prices = fetch_prices(deps.as_ref(), &config, &symbols)?;
     // target previous price
-    let target = eval_index(prices.clone(), basket.clone());
+    let target = eval_index(prices.clone(), basket.as_slice())?;
 
-    let mut weights: Vec<(String, Uint128)> =
-        basket.into_iter().map(|(sym, w, _)| (sym, w)).collect();
+    let mut weights: Vec<(String, Decimal256)> =
+        basket.into_iter().map(|(sym, w, _)| (sym, w.into())).collect();
     let mut new_symbols = vec![];
 
     // Update weights
@@ -224,7 +247,9 @@ fn mod_basket(deps: DepsMut, mod_basket: Vec<(String, Uint128)>) -> StdResult<Re
             )));
         }
 
+
         // gather new symbols for fetching
+        // if all of the symbols don't match mod_sym then mod_sym is new
         if !symbols.contains(&mod_sym) {
             new_symbols.push(mod_sym.clone());
         }
@@ -252,23 +277,26 @@ fn mod_basket(deps: DepsMut, mod_basket: Vec<(String, Uint128)>) -> StdResult<Re
     if weights
         .clone()
         .into_iter()
-        .map(|(_, w)| w.u128())
-        .sum::<u128>()
-        != 10u128.pow(18)
+        .map(|(_, w)| w)
+        .sum::<Decimal256>()
+        != Decimal256::percent(100)
     {
         return Err(StdError::generic_err("Weights must add to 100%"));
     }
 
-    prices.extend(fetch_prices(deps.as_ref(), &config, new_symbols)?);
+    prices.extend(fetch_prices(deps.as_ref(), &config, new_symbols.as_slice())?);
 
-    let constants = build_constants(weights.clone(), prices.clone(), target.rate);
+    let constants = build_constants(weights.as_slice(), prices.clone(), target.rate.into())?;
 
+    let mut new_symbols = vec![];
     // Recalculate the constants
-    let new_basket: Vec<(String, Uint128, Uint128)> = weights
-        .into_iter()
-        .map(|(sym, w)| (sym.clone(), w, constants[&sym]))
-        .collect();
-    Basket(new_basket).save(deps.storage)?;
+    for (sym, w) in weights {
+        let w: U256 = w.into();
+        BtrBasket::save(deps.storage, sym.as_str(), &(w, constants[&sym]))?;
+        new_symbols.push(sym);
+    }
+
+    BasketSymbols::save(deps.storage, &new_symbols)?;
 
     Ok(
         Response::new().set_data(to_binary(&HandleAnswer::ModBasket {
@@ -294,15 +322,10 @@ impl Oracle for IndexOracle {
             )));
         }
 
-        let basket = Basket::load(deps.storage)?;
-        let symbols: Vec<String> = basket
-            .0
-            .clone()
-            .into_iter()
-            .map(|(sym, _, _)| sym)
-            .collect();
-        let prices = fetch_prices(deps, config, symbols)?;
-        let index = eval_index(prices, basket.0);
+        let symbols = BasketSymbols::load(deps.storage)?;
+        let basket = BtrBasket::load_basket(deps.storage, &symbols)?;
+        let prices = fetch_prices(deps, config, symbols.iter())?;
+        let index = eval_index(prices, &basket)?;
 
         Ok(OraclePrice::new(key, index))
     }

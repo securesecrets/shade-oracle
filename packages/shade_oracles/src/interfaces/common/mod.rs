@@ -8,7 +8,7 @@ use cosmwasm_std::{
     to_binary, Api, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, QueryResponse, Response,
     StdError, StdResult, Storage, Timestamp, Uint128,
 };
-use ethnum::U256;
+use better_secret_math::U256;
 use shade_protocol::utils::asset::{Contract, RawContract};
 use shade_protocol::{
     secret_storage_plus::Item,

@@ -2,7 +2,7 @@ use crate::BLOCK_SIZE;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::StdResult;
 use cosmwasm_std::{QuerierWrapper, Uint128};
-use ethnum::U256;
+use better_secret_math::U256;
 use shade_protocol::{
     utils::generic_response::ResponseStatus,
     utils::{ExecuteCallback, InstantiateCallback, Query},
@@ -50,6 +50,7 @@ pub enum QueryMsg {
     },
 }
 
+#[derive(Default)]
 #[cw_serde]
 pub struct ReferenceData {
     pub rate: Uint128,
@@ -96,15 +97,15 @@ pub fn reference_data(
     .query(querier, band)
 }
 
-pub fn reference_data_bulk(
+pub fn reference_data_bulk<I>(
     querier: &QuerierWrapper,
-    base_symbols: Vec<String>,
-    quote_symbols: Vec<String>,
+    base_symbols: I,
+    quote_symbols: I,
     band: &Contract,
-) -> StdResult<Vec<ReferenceData>> {
+) -> StdResult<Vec<ReferenceData>> where I: IntoIterator<Item = String> {
     QueryMsg::GetReferenceDataBulk {
-        base_symbols,
-        quote_symbols,
+        base_symbols: base_symbols.into_iter().collect(),
+        quote_symbols: quote_symbols.into_iter().collect(),
     }
     .query(querier, band)
 }
