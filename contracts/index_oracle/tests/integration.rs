@@ -1,3 +1,5 @@
+use cosmwasm_std::{Addr, Decimal256, Uint128};
+use rstest::*;
 use shade_oracles::{
     common::{InstantiateCommonConfig, PriceResponse},
     core::{ExecuteCallback, InstantiateCallback, Query},
@@ -8,10 +10,8 @@ use shade_oracles::{
 use shade_oracles_multi_test::{
     helpers::OracleCore, multi::index::IndexOracle, App, MultiTestable,
 };
-use std::str::FromStr;
 use std::collections::HashMap;
-use rstest::*;
-use cosmwasm_std::{Addr, Uint128, Decimal256};
+use std::str::FromStr;
 
 #[rstest]
 #[case(
@@ -92,8 +92,14 @@ fn basic_index_test(
     #[case] expected: Uint128,
     #[case] error: Uint128,
 ) {
-    let basket: Vec<(String, Decimal256)> = basket.into_iter().map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap())).collect();
-    let prices: HashMap<String, Uint128> = prices.into_iter().map(|(sym, p)| (sym.to_string(), p.into())).collect();
+    let basket: Vec<(String, Decimal256)> = basket
+        .into_iter()
+        .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
+        .collect();
+    let prices: HashMap<String, Uint128> = prices
+        .into_iter()
+        .map(|(sym, p)| (sym.to_string(), p.into()))
+        .collect();
 
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
@@ -152,7 +158,7 @@ fn basic_index_test(
  * - Change to new_prices & apply mod_basket changes -- check against expected_final
  */
 #[rstest]
-    #[case(
+#[case(
         "sUSD",
         // basket
         vec![
@@ -184,7 +190,7 @@ fn basic_index_test(
         98 * 10u128.pow(16), // $0.98
         10u128.pow(10), // .000001% error
     )]
-    #[case(
+#[case(
         "AnIndex",
         // basket
         vec![
@@ -239,16 +245,31 @@ fn mod_index_test(
     #[case] expected_final: u128,
     #[case] error: u128,
 ) {
-    let basket: Vec<(String, Decimal256)> = basket.into_iter().map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap())).collect();
-    let mod_basket: Vec<(String, Decimal256)> = mod_basket.into_iter().map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap())).collect();
-    let expected_weights: Vec<(String, Decimal256)> = expected_weights.into_iter().map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap())).collect();
+    let basket: Vec<(String, Decimal256)> = basket
+        .into_iter()
+        .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
+        .collect();
+    let mod_basket: Vec<(String, Decimal256)> = mod_basket
+        .into_iter()
+        .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
+        .collect();
+    let expected_weights: Vec<(String, Decimal256)> = expected_weights
+        .into_iter()
+        .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
+        .collect();
     let target: Uint128 = target.into();
     let expected_initial: Uint128 = expected_initial.into();
     let expected_final: Uint128 = expected_final.into();
     let error: Uint128 = error.into();
 
-    let prices: HashMap<String, Uint128> = prices.into_iter().map(|(sym, p)| (sym.to_string(), p.into())).collect();
-    let new_prices: HashMap<String, Uint128> = new_prices.into_iter().map(|(sym, p)| (sym.to_string(), p.into())).collect();
+    let prices: HashMap<String, Uint128> = prices
+        .into_iter()
+        .map(|(sym, p)| (sym.to_string(), p.into()))
+        .collect();
+    let new_prices: HashMap<String, Uint128> = new_prices
+        .into_iter()
+        .map(|(sym, p)| (sym.to_string(), p.into()))
+        .collect();
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
@@ -282,9 +303,11 @@ fn mod_index_test(
     .test_exec(&router, &mut app, user.clone(), &[])
     .unwrap();
 
-    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
-        .test_query(&router, &app)
-        .unwrap();
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice {
+        key: symbol.clone(),
+    }
+    .test_query(&router, &app)
+    .unwrap();
     let data = price.price.data();
     {
         let mut err = Uint128::zero();
@@ -321,9 +344,11 @@ fn mod_index_test(
         .unwrap();
     }
 
-    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
-        .test_query(&router, &app)
-        .unwrap();
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice {
+        key: symbol.clone(),
+    }
+    .test_query(&router, &app)
+    .unwrap();
     let data = price.price.data();
     {
         let mut err = Uint128::zero();
@@ -366,9 +391,11 @@ fn mod_index_test(
     };
 
     // check price doesn't change on mod_price
-    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol.clone() }
-        .test_query(&router, &app)
-        .unwrap();
+    let price: PriceResponse = index_oracle::QueryMsg::GetPrice {
+        key: symbol.clone(),
+    }
+    .test_query(&router, &app)
+    .unwrap();
     let data = price.price.data();
     {
         let mut err = Uint128::zero();

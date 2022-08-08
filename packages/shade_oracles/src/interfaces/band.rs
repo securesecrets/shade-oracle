@@ -1,8 +1,8 @@
 use crate::BLOCK_SIZE;
+use better_secret_math::U256;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::StdResult;
 use cosmwasm_std::{QuerierWrapper, Uint128};
-use better_secret_math::U256;
 use shade_protocol::{
     utils::generic_response::ResponseStatus,
     utils::{ExecuteCallback, InstantiateCallback, Query},
@@ -102,7 +102,10 @@ pub fn reference_data_bulk<I>(
     base_symbols: I,
     quote_symbols: I,
     band: &Contract,
-) -> StdResult<Vec<ReferenceData>> where I: IntoIterator<Item = String> {
+) -> StdResult<Vec<ReferenceData>>
+where
+    I: IntoIterator<Item = String>,
+{
     QueryMsg::GetReferenceDataBulk {
         base_symbols: base_symbols.into_iter().collect(),
         quote_symbols: quote_symbols.into_iter().collect(),
