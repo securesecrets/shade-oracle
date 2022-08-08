@@ -38,7 +38,9 @@ pub fn get_price(deps: Deps, key: String) -> StdResult<Binary> {
     let resolved_key = resolve_alias(deps.storage, key)?;
     let oracle = get_oracle(deps.storage, &resolved_key)?;
 
-    to_binary(&PriceResponse { price: query_oracle_price(&oracle, &deps.querier, resolved_key)? })
+    to_binary(&PriceResponse {
+        price: query_oracle_price(&oracle, &deps.querier, resolved_key)?,
+    })
 }
 
 /// Builds bulk queries using the keys given.

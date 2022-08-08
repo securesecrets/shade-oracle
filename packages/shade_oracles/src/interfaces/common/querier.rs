@@ -54,8 +54,10 @@ pub fn query_prices<'a>(
     querier: &QuerierWrapper,
     keys: impl IntoIterator<Item = &'a String>,
 ) -> StdResult<Vec<OraclePrice>> {
-    let oracle_resps: Vec<OracleResponse> =
-        RouterQueryMsg::GetOracles { keys: keys.into_iter().map(|s| s.to_string()).collect() }.query(querier, router)?;
+    let oracle_resps: Vec<OracleResponse> = RouterQueryMsg::GetOracles {
+        keys: keys.into_iter().map(|s| s.to_string()).collect(),
+    }
+    .query(querier, router)?;
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
     let mut prices: Vec<OraclePrice> = vec![];
 
@@ -99,17 +101,20 @@ pub fn query_band_prices<'a>(
     let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(querier, router)?;
     let mut prices: Vec<OraclePrice> = vec![];
     let prices_count = prices.len();
-    let base_symbols = keys.into_iter().map(|key| {
-        prices.push(OraclePrice::new(key.to_string(), ReferenceData::default()));
-        key.to_string()
-    }).collect();
+    let base_symbols = keys
+        .into_iter()
+        .map(|key| {
+            prices.push(OraclePrice::new(key.to_string(), ReferenceData::default()));
+            key.to_string()
+        })
+        .collect();
     let quote_symbols = vec![config.quote_symbol; prices_count];
 
     let band_data = reference_data_bulk(querier, base_symbols, quote_symbols, &config.band)?;
 
     for i in 0..prices_count {
         prices[i].data = band_data[i].clone();
-    } 
+    }
 
     Ok(prices)
 }

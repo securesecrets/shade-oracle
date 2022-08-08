@@ -3,12 +3,12 @@ use std::cmp::max;
 use self::querier::verify_admin;
 use crate::BLOCK_SIZE;
 use better_secret_math::core::{exp10, muldiv};
+use better_secret_math::U256;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     to_binary, Api, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, QueryResponse, Response,
     StdError, StdResult, Storage, Timestamp, Uint128,
 };
-use better_secret_math::U256;
 use shade_protocol::utils::asset::{Contract, RawContract};
 use shade_protocol::{
     secret_storage_plus::Item,

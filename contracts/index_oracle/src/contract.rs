@@ -1,17 +1,21 @@
-use cosmwasm_std::{entry_point, DepsMut, MessageInfo, QueryResponse, Uint128, Uint512, Decimal256, Decimal};
+use cosmwasm_std::{
+    entry_point, Decimal, Decimal256, DepsMut, MessageInfo, QueryResponse, Uint128, Uint512,
+};
 use cosmwasm_std::{to_binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::common::Oracle;
-use shade_oracles::core::{
-    better_secret_math::core::{exp10, muldiv_fp}
-};
+use shade_oracles::core::better_secret_math::core::{exp10, muldiv_fp};
 use shade_oracles::interfaces::index_oracle::{
-    BtrBasket, BtrBasketItem, BasketResponse, Symbol, Target, TargetResponse, BasketSymbols, BasketResponseItem, BasketSymbol,
+    BasketResponse, BasketResponseItem, BasketSymbol, BasketSymbols, BtrBasket, BtrBasketItem,
+    Symbol, Target, TargetResponse,
 };
 use std::vec;
 use std::{cmp::min, collections::HashMap};
 
 use shade_oracles::{
-    core::{pad_handle_result, pad_query_result, ResponseStatus, better_secret_math::{U256, core::muldiv}},
+    core::{
+        better_secret_math::{core::muldiv, U256},
+        pad_handle_result, pad_query_result, ResponseStatus,
+    },
     interfaces::{
         band::ReferenceData,
         common::{
@@ -20,7 +24,7 @@ use shade_oracles::{
         },
         index_oracle::{ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg},
     },
-    storage::{ItemStorage, GenericItemStorage, MapStorage, GenericMapStorage},
+    storage::{GenericItemStorage, GenericMapStorage, ItemStorage, MapStorage},
     BLOCK_SIZE,
 };
 
@@ -161,7 +165,7 @@ fn build_constants(
     for (sym, weight) in weights {
         constants.insert(
             sym.clone(),
-            muldiv((*weight).into(), target, prices[sym].rate.into())?
+            muldiv((*weight).into(), target, prices[sym].rate.into())?,
         );
     }
     Ok(constants)
@@ -191,10 +195,12 @@ fn fetch_prices<'a>(
     deps: Deps,
     config: &CommonConfig,
     symbols: impl IntoIterator<Item = &'a String>,
-) -> StdResult<HashMap<String, ReferenceData>>
- {
+) -> StdResult<HashMap<String, ReferenceData>> {
     let mut price_data = HashMap::new();
-    let symbols = symbols.into_iter().map(|f| f.to_string()).collect::<Vec<String>>();
+    let symbols = symbols
+        .into_iter()
+        .map(|f| f.to_string())
+        .collect::<Vec<String>>();
     let symbols_slice = symbols.as_slice().as_ref();
     let prices_resp = if config.only_band {
         query_band_prices(&config.router, &deps.querier, symbols_slice)
@@ -222,7 +228,10 @@ fn fetch_prices<'a>(
     Ok(price_data)
 }
 
-fn mod_basket(deps: DepsMut, mod_basket: impl IntoIterator<Item = (String, Decimal256)>) -> StdResult<Response> {
+fn mod_basket(
+    deps: DepsMut,
+    mod_basket: impl IntoIterator<Item = (String, Decimal256)>,
+) -> StdResult<Response> {
     let config = CommonConfig::load(deps.storage)?;
 
     let self_symbol = Symbol::load(deps.storage)?.0;
@@ -233,8 +242,10 @@ fn mod_basket(deps: DepsMut, mod_basket: impl IntoIterator<Item = (String, Decim
     // target previous price
     let target = eval_index(prices.clone(), basket.as_slice())?;
 
-    let mut weights: Vec<(String, Decimal256)> =
-        basket.into_iter().map(|(sym, w, _)| (sym, w.into())).collect();
+    let mut weights: Vec<(String, Decimal256)> = basket
+        .into_iter()
+        .map(|(sym, w, _)| (sym, w.into()))
+        .collect();
     let mut new_symbols = vec![];
 
     // Update weights
@@ -246,7 +257,6 @@ fn mod_basket(deps: DepsMut, mod_basket: impl IntoIterator<Item = (String, Decim
                 self_symbol
             )));
         }
-
 
         // gather new symbols for fetching
         // if all of the symbols don't match mod_sym then mod_sym is new
@@ -284,7 +294,11 @@ fn mod_basket(deps: DepsMut, mod_basket: impl IntoIterator<Item = (String, Decim
         return Err(StdError::generic_err("Weights must add to 100%"));
     }
 
-    prices.extend(fetch_prices(deps.as_ref(), &config, new_symbols.as_slice())?);
+    prices.extend(fetch_prices(
+        deps.as_ref(),
+        &config,
+        new_symbols.as_slice(),
+    )?);
 
     let constants = build_constants(weights.as_slice(), prices.clone(), target.rate.into())?;
 

@@ -7,9 +7,10 @@ use cosmwasm_std::{
     Storage,
 };
 use shade_oracles::{
-    core::{pad_handle_result, pad_query_result, Contract, validate_permission},
+    common::SHADE_ORACLE_ADMIN_PERMISSION,
+    core::{pad_handle_result, pad_query_result, validate_permission, Contract},
     interfaces::router::*,
-    BLOCK_SIZE, common::SHADE_ORACLE_ADMIN_PERMISSION,
+    BLOCK_SIZE,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]

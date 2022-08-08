@@ -7,13 +7,10 @@ use shade_oracles::{
     core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::{lp::market as siennaswap_market_oracle, router},
 };
-use shade_oracles_multi_test::multi::MockSiennaPair;
 use shade_oracles_multi_test::multi::market::siennaswap::SiennaSwapMarketOracle;
 use shade_oracles_multi_test::multi::mocks::Snip20;
-use shade_oracles_multi_test::{
-    helpers::OracleCore,
-    App, MultiTestable,
-};
+use shade_oracles_multi_test::multi::MockSiennaPair;
+use shade_oracles_multi_test::{helpers::OracleCore, App, MultiTestable};
 use std::collections::HashMap;
 
 use mock_sienna_pair::contract as mock_sienna_pair;
@@ -71,28 +68,29 @@ fn basic_market_test(
     .unwrap();
 
     let sienna_pair = mock_sienna_pair::InstantiateMsg {}
-    .test_init(
-        MockSiennaPair::default(),
-        &mut app,
-        user.clone(),
-        "sienna_pair",
-        &[],
-    )
-    .unwrap();
+        .test_init(
+            MockSiennaPair::default(),
+            &mut app,
+            user.clone(),
+            "sienna_pair",
+            &[],
+        )
+        .unwrap();
 
     mock_sienna_pair::ExecuteMsg::MockPool {
-                token_a: Contract {
-                    address: primary_token.address,
-                    code_hash: primary_token.code_hash,
-                },
-                amount_a: primary_pool,
-                token_b: Contract {
-                    address: base_token.address,
-                    code_hash: base_token.code_hash,
-                },
-                amount_b: base_pool,
-            }.test_exec(&sienna_pair, &mut app, user.clone(), &[])
-            .unwrap();
+        token_a: Contract {
+            address: primary_token.address,
+            code_hash: primary_token.code_hash,
+        },
+        amount_a: primary_pool,
+        token_b: Contract {
+            address: base_token.address,
+            code_hash: base_token.code_hash,
+        },
+        amount_b: base_pool,
+    }
+    .test_exec(&sienna_pair, &mut app, user.clone(), &[])
+    .unwrap();
 
     let market_oracle = siennaswap_market_oracle::InstantiateMsg {
         config: InstantiateCommonConfig {
@@ -104,23 +102,34 @@ fn basic_market_test(
         base_peg,
         symbol: symbol.clone(),
         pair: sienna_pair.clone().into(),
-            }.test_init(SiennaSwapMarketOracle::default(), &mut app, user.clone(), "siennaswap-market-oracle", &[]).unwrap();
-            
+    }
+    .test_init(
+        SiennaSwapMarketOracle::default(),
+        &mut app,
+        user.clone(),
+        "siennaswap-market-oracle",
+        &[],
+    )
+    .unwrap();
+
     // Configure router w/ market oracle
     router::ExecuteMsg::UpdateRegistry {
-                operation: router::RegistryOperation::Add {
-                    oracle: Contract {
-                        address: market_oracle.address.clone(),
-                        code_hash: market_oracle.code_hash.clone(),
-                    },
-                    key: symbol.clone(),
-                },
-            }.test_exec(&router, &mut app, user.clone(), &[])
-            .unwrap();
-            let price: PriceResponse = common::OracleQuery::GetPrice { key: symbol.clone() }
-            .test_query(&market_oracle, &app)
-            .unwrap();
-        let data = price.price.data();
+        operation: router::RegistryOperation::Add {
+            oracle: Contract {
+                address: market_oracle.address.clone(),
+                code_hash: market_oracle.code_hash.clone(),
+            },
+            key: symbol.clone(),
+        },
+    }
+    .test_exec(&router, &mut app, user.clone(), &[])
+    .unwrap();
+    let price: PriceResponse = common::OracleQuery::GetPrice {
+        key: symbol.clone(),
+    }
+    .test_query(&market_oracle, &app)
+    .unwrap();
+    let data = price.price.data();
     assert_eq!(
         expected, data.rate,
         "Expected: {} Got: {}",

@@ -127,9 +127,11 @@ fn basic_market_test(
     .test_exec(&router, &mut app, user.clone(), &[])
     .unwrap();
 
-    let price: PriceResponse = common::OracleQuery::GetPrice { key: symbol.clone() }
-        .test_query(&market_oracle, &app)
-        .unwrap();
+    let price: PriceResponse = common::OracleQuery::GetPrice {
+        key: symbol.clone(),
+    }
+    .test_query(&market_oracle, &app)
+    .unwrap();
     let data = price.price.data();
     assert_eq!(
         expected, data.rate,
