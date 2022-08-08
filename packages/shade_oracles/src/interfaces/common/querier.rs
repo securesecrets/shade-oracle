@@ -49,13 +49,13 @@ pub fn query_oracle_prices(
 /// Groups the keys by their respective oracles and sends bulk GetPrices queries to each of those oracles.
 ///
 /// Done to reduce impact on query depth.
-pub fn query_prices(
+pub fn query_prices<'a>(
     router: &Contract,
     querier: &QuerierWrapper,
-    keys: Vec<String>,
+    keys: impl IntoIterator<Item = &'a String>,
 ) -> StdResult<Vec<OraclePrice>> {
     let oracle_resps: Vec<OracleResponse> =
-        RouterQueryMsg::GetOracles { keys }.query(querier, router)?;
+        RouterQueryMsg::GetOracles { keys: keys.into_iter().map(|s| s.to_string()).collect() }.query(querier, router)?;
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
     let mut prices: Vec<OraclePrice> = vec![];
 
@@ -91,23 +91,26 @@ pub fn query_band_price(
     Ok(OraclePrice::new(key, band_response))
 }
 
-pub fn query_band_prices(
+pub fn query_band_prices<'a>(
     router: &Contract,
     querier: &QuerierWrapper,
-    keys: Vec<String>,
+    keys: impl IntoIterator<Item = &'a String>,
 ) -> StdResult<Vec<OraclePrice>> {
     let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(querier, router)?;
-    let quote_symbols = vec![config.quote_symbol; keys.len()];
-
-    let band_response = reference_data_bulk(querier, keys.clone(), quote_symbols, &config.band)?;
-
     let mut prices: Vec<OraclePrice> = vec![];
-    for (index, key) in keys.iter().enumerate() {
-        prices.push(OraclePrice::new(
-            key.to_string(),
-            band_response[index].clone(),
-        ));
-    }
+    let prices_count = prices.len();
+    let base_symbols = keys.into_iter().map(|key| {
+        prices.push(OraclePrice::new(key.to_string(), ReferenceData::default()));
+        key.to_string()
+    }).collect();
+    let quote_symbols = vec![config.quote_symbol; prices_count];
+
+    let band_data = reference_data_bulk(querier, base_symbols, quote_symbols, &config.band)?;
+
+    for i in 0..prices_count {
+        prices[i].data = band_data[i].clone();
+    } 
+
     Ok(prices)
 }
 

@@ -14,7 +14,6 @@ pub mod storage {
 pub mod core {
     pub use better_secret_math;
     pub use cosmwasm_schema;
-    pub use ethnum;
     pub use schemars;
     pub use serde;
     pub use shade_admin::querier::validate_permission;

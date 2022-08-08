@@ -104,7 +104,7 @@ impl Oracle for SiennaswapLpOracle {
         let prices = query_prices(
             &config.router,
             &deps.querier,
-            vec![pair.symbol_0, pair.symbol_1],
+            [pair.symbol_0, pair.symbol_1].as_slice(),
         )?;
         let (price0, price1) = (prices[0].clone(), prices[1].clone());
 

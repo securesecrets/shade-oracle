@@ -46,6 +46,7 @@ fn basic_market_test(
         initial_balances: None,
         prng_seed: to_binary("").ok().unwrap(),
         config: None,
+        query_auth: None,
     }
     .test_init(
         Snip20::default(),
@@ -64,6 +65,7 @@ fn basic_market_test(
         initial_balances: None,
         prng_seed: to_binary("").ok().unwrap(),
         config: None,
+        query_auth: None,
     }
     .test_init(Snip20::default(), &mut app, user.clone(), "base_token", &[])
     .unwrap();
