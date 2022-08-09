@@ -19,9 +19,9 @@ use super::OraclePrice;
 pub fn query_oracle_price(
     oracle: &Contract,
     querier: &QuerierWrapper,
-    key: String,
+    key: impl Into<String>,
 ) -> StdResult<OraclePrice> {
-    let resp: PriceResponse = OracleQuery::GetPrice { key }.query(querier, oracle)?;
+    let resp: PriceResponse = OracleQuery::GetPrice { key: key.into() }.query(querier, oracle)?;
     Ok(resp.price)
 }
 
@@ -31,8 +31,9 @@ pub fn query_oracle_price(
 pub fn query_price(
     router: &Contract,
     querier: &QuerierWrapper,
-    key: String,
+    key: impl Into<String>,
 ) -> StdResult<OraclePrice> {
+    let key: String = key.into();
     let oracle_resp: OracleResponse =
         RouterQueryMsg::GetOracle { key: key.clone() }.query(querier, router)?;
     query_oracle_price(&oracle_resp.oracle, querier, key)
@@ -82,9 +83,10 @@ pub fn query_prices<'a>(
 pub fn query_band_price(
     router: &Contract,
     querier: &QuerierWrapper,
-    key: String,
+    key: impl Into<String>,
 ) -> StdResult<OraclePrice> {
     let config: RouterConfig = RouterQueryMsg::GetConfig {}.query(querier, router)?;
+    let key: String = key.into();
     let band_response = reference_data(
         querier,
         key.clone(),
@@ -121,14 +123,14 @@ pub fn query_band_prices<'a>(
 }
 
 /// Gets the admin auth contract from the router and uses it to check if the user is an admin for the router.
-pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: Addr) -> StdResult<()> {
+pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: impl Into<String>) -> StdResult<()> {
     let get_admin_auth_req: AdminAuthResponse =
         RouterQueryMsg::GetAdminAuth {}.query(querier, contract)?;
     let admin_auth = get_admin_auth_req.admin_auth;
     validate_permission(
         querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
-        &user,
+        user,
         &contract.address,
         &admin_auth,
     )
@@ -141,11 +143,11 @@ pub fn query_token_info(contract: &Contract, querier: &QuerierWrapper) -> StdRes
 pub fn query_token_balance(
     contract: &Contract,
     querier: &QuerierWrapper,
-    address: String,
-    key: String,
+    address: impl Into<String>,
+    key: impl Into<String>,
 ) -> StdResult<Uint128> {
     let answer: Snip20QueryAnswer =
-        Snip20QueryMsg::Balance { address, key }.query(querier, contract)?;
+        Snip20QueryMsg::Balance { address: address.into(), key: key.into() }.query(querier, contract)?;
     match answer {
         Snip20QueryAnswer::Balance { amount } => Ok(amount),
         Snip20QueryAnswer::ViewingKeyError { msg } => Err(StdError::generic_err(msg)),
