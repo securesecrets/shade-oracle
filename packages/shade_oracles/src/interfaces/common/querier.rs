@@ -6,6 +6,7 @@ use crate::{
     },
 };
 use cosmwasm_std::{Addr, QuerierWrapper, StdResult};
+use shade_admin::querier::validate_permission;
 use shade_protocol::{
     contract_interfaces::snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},
     snip20::helpers::{token_info, TokenInfo},
@@ -124,10 +125,11 @@ pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: Addr) -
     let get_admin_auth_req: AdminAuthResponse =
         RouterQueryMsg::GetAdminAuth {}.query(querier, contract)?;
     let admin_auth = get_admin_auth_req.admin_auth;
-    shade_admin::querier::validate_permission(
+    validate_permission(
         querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
         &user,
+        &contract.address,
         &admin_auth,
     )
 }
