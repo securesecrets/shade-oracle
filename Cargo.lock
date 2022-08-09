@@ -5,10 +5,19 @@ version = 3
 [[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#3fc4832089c95f222d14fdfc7e325c5bbd4fd40d"
+source = "git+https://github.com/securesecrets/shadeadmin.git#be816bd532ddca50d1908a7578ee9c318a78cb69"
 dependencies = [
  "cosmwasm-std",
  "shade-admin",
+]
+
+[[package]]
+name = "android_system_properties"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7ed72e1635e121ca3e79420540282af22da58be50de153d36f81ddc6b83aa9e"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -123,10 +132,11 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.20"
+version = "0.4.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6127248204b9aba09a362f6c930ef6a78f2c1b2215f8a7b398c06e1083f17af0"
+checksum = "3f725f340c3854e3cb3ab736dc21f0cca183303acea3b3ffec30f141503ac8eb"
 dependencies = [
+ "iana-time-zone",
  "js-sys",
  "num-integer",
  "num-traits",
@@ -140,6 +150,22 @@ name = "const-oid"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
+
+[[package]]
+name = "core-foundation"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "194a7a9e6de53fa55116934067c844d9d749312f75c6f6d0980e8c252f8c2146"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
+]
+
+[[package]]
+name = "core-foundation-sys"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
 name = "cosmwasm-crypto"
@@ -164,7 +190,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-schema"
 version = "1.0.0"
-source = "git+https://github.com/CosmWasm/cosmwasm#060230a2fe1ab1253b7c6c25cb99529e86a59860"
+source = "git+https://github.com/CosmWasm/cosmwasm#33fbbeeedb180d0a28884dc69f5de9a1fc999262"
 dependencies = [
  "cosmwasm-schema-derive",
  "schemars 0.8.10",
@@ -176,7 +202,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-schema-derive"
 version = "1.0.0"
-source = "git+https://github.com/CosmWasm/cosmwasm#060230a2fe1ab1253b7c6c25cb99529e86a59860"
+source = "git+https://github.com/CosmWasm/cosmwasm#33fbbeeedb180d0a28884dc69f5de9a1fc999262"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -530,6 +556,19 @@ checksum = "2a2a2320eb7ec0ebe8da8f744d7812d9fc4cb4d09344ac01898dbcb6a20ae69b"
 dependencies = [
  "crypto-mac",
  "digest",
+]
+
+[[package]]
+name = "iana-time-zone"
+version = "0.1.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1779539f58004e5dba1c1f093d44325ebeb244bfc04b791acdc0aaeca9c04570"
+dependencies = [
+ "android_system_properties",
+ "core-foundation",
+ "js-sys",
+ "wasm-bindgen",
+ "winapi",
 ]
 
 [[package]]
@@ -1153,9 +1192,9 @@ checksum = "93f6841e709003d68bb2deee8c343572bf446003ec20a583e76f7b15cebf3711"
 
 [[package]]
 name = "serde"
-version = "1.0.142"
+version = "1.0.143"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e590c437916fb6b221e1d00df6e3294f3fccd70ca7e92541c475d6ed6ef5fee2"
+checksum = "53e8e5d5b70924f74ff5c6d64d9a5acd91422117c60f48c4e07855238a254553"
 dependencies = [
  "serde_derive",
 ]
@@ -1180,9 +1219,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.142"
+version = "1.0.143"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34b5b8d809babe02f538c2cfec6f2c1ed10804c0e5a6a041a049a4f5588ccc2e"
+checksum = "d3d8e8de557aee63c26b85b947f5e59b690d0454c753f3adeb5cd7835ab88391"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1238,7 +1277,7 @@ dependencies = [
 [[package]]
 name = "shade-admin"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#3fc4832089c95f222d14fdfc7e325c5bbd4fd40d"
+source = "git+https://github.com/securesecrets/shadeadmin.git#be816bd532ddca50d1908a7578ee9c318a78cb69"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1252,7 +1291,7 @@ dependencies = [
 [[package]]
 name = "shade-admin-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#3fc4832089c95f222d14fdfc7e325c5bbd4fd40d"
+source = "git+https://github.com/securesecrets/shadeadmin.git#be816bd532ddca50d1908a7578ee9c318a78cb69"
 dependencies = [
  "admin",
  "anyhow",
