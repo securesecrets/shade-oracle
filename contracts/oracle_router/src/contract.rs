@@ -34,7 +34,7 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
-    is_admin(deps.as_ref(), info.sender)?;
+    is_admin(deps.as_ref(), info.sender, &env)?;
     pad_handle_result(
         match msg {
             ExecuteMsg::UpdateConfig { config } => {
@@ -58,12 +58,13 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
     )
 }
 
-fn is_admin(deps: Deps, user: Addr) -> StdResult<()> {
+fn is_admin(deps: Deps, user: Addr, env: &Env) -> StdResult<()> {
     let config = CONFIG.load(deps.storage)?;
     validate_permission(
         &deps.querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
         &user,
+        &env.contract.address,
         &config.admin_auth,
     )
 }
