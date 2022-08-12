@@ -19,6 +19,7 @@ market = ["dep:shadeswap-market-oracle", "dep:siennaswap-market-oracle"]
 lp = ["dep:siennaswap-lp-oracle", "dep:siennaswap-lp-spot-oracle"]
 
 [dependencies]
+strum = { version = "0.24", features = ["derive"] }
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test" ] }
 shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "snip20" ] }
 multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }

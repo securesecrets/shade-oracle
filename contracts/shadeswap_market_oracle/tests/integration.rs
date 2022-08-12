@@ -32,8 +32,8 @@ fn basic_market_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
-    let router = oracle_core.router;
+    let oracle_core = OracleCore { deps: HashMap::new(), superadmin: user.clone() }.setup(&mut app, prices, None, None, None, None).unwrap();
+    let router = oracle_core.oracle_router();
 
     // Setup tokens
     let primary_token = snip20::InstantiateMsg {
