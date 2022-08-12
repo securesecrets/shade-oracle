@@ -18,53 +18,85 @@ use shade_protocol::{
 };
 
 pub struct OracleCore {
-    pub band: ContractInfo,
-    pub band_proxy: ContractInfo,
-    pub router: ContractInfo,
-    pub admin_auth: ContractInfo,
-    pub admin: Addr,
+    pub deps: HashMap<String, ContractInfo>,
+    pub superadmin: Addr,
+}
+
+#[derive(strum::Display)]
+pub enum OracleDeps{
+    Band,
+    ProxyBand,
+    OracleRouter,
+    AdminAuth,
 }
 
 impl OracleCore {
+    pub fn band(&self) -> ContractInfo { self.deps.get(&OracleDeps::Band.to_string()).unwrap().clone() }
+    pub fn admin_auth(&self) -> ContractInfo { self.deps.get(&OracleDeps::AdminAuth.to_string()).unwrap().clone() }
+    pub fn proxy_band(&self) -> ContractInfo { self.deps.get(&OracleDeps::ProxyBand.to_string()).unwrap().clone() }
+    pub fn oracle_router(&self) -> ContractInfo { self.deps.get(&OracleDeps::OracleRouter.to_string()).unwrap().clone() }
     /// Initializes the core dependencies for testing all oracles which are
     /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
     /// based off the prices argument with them being quoted in "USD".
-    pub fn setup(app: &mut App, prices: HashMap<String, Uint128>) -> AnyResult<OracleCore> {
+    pub fn setup(
+        mut self,
+        app: &mut App, 
+        prices: HashMap<String, Uint128>,
+        band: Option<ContractInfo>,
+        proxy_band: Option<ContractInfo>,
+        oracle_router: Option<ContractInfo>,
+        admin_auth: Option<ContractInfo>,
+
+    ) -> AnyResult<Self> {
         let admin = Addr::unchecked("superadmin");
+        self.superadmin = admin.clone();
 
-        let admin_auth = shade_admin::admin::InstantiateMsg { super_admin: None }.test_init(
-            AdminAuth::default(),
-            app,
-            admin.clone(),
-            "admin-auth",
-            &[],
-        )?;
+        let admin_auth = admin_auth.unwrap_or_else(|| {
+            shade_admin::admin::InstantiateMsg { super_admin: None }.test_init(
+                AdminAuth::default(),
+                app,
+                admin.clone(),
+                "admin-auth",
+                &[],
+            ).unwrap()
+        });
 
-        let band = band::InstantiateMsg {}.test_init(
-            MockBand::default(),
-            app,
-            admin.clone(),
-            "band",
-            &[],
-        )?;
+        self.deps.insert(OracleDeps::AdminAuth.to_string(), admin_auth.clone());
 
-        let router = router::InstantiateMsg {
-            default_oracle: admin_auth.clone().into(),
-            admin_auth: admin_auth.clone().into(),
-            band: band.clone().into(),
+        let band = band.unwrap_or_else(|| {
+            band::InstantiateMsg {}.test_init(
+                MockBand::default(),
+                app,
+                admin.clone(),
+                "band",
+                &[],
+            ).unwrap()
+        });
+
+        self.deps.insert(OracleDeps::Band.to_string(), band.clone());
+
+        let oracle_router = oracle_router.unwrap_or_else(|| {
+            router::InstantiateMsg {
+                default_oracle: admin_auth.clone().into(),
+                admin_auth: admin_auth.clone().into(),
+                band: band.clone().into(),
+                quote_symbol: "USD".to_string(),
+            }
+            .test_init(
+                OracleRouter::default(),
+                app,
+                admin.clone(),
+                "oracle-router",
+                &[],
+            ).unwrap()
+        });
+
+        self.deps.insert(OracleDeps::OracleRouter.to_string(), oracle_router.clone());
+
+
+        let proxy_band= proxy_band.unwrap_or_else(|| { proxy::InstantiateMsg {
             quote_symbol: "USD".to_string(),
-        }
-        .test_init(
-            OracleRouter::default(),
-            app,
-            admin.clone(),
-            "oracle-router",
-            &[],
-        )?;
-
-        let band_proxy = proxy::InstantiateMsg {
-            quote_symbol: "USD".to_string(),
-            config: InstantiateCommonConfig::new(None, router.clone().into(), true, true),
+            config: InstantiateCommonConfig::new(None, oracle_router.clone().into(), true, true),
             band: band.clone().into(),
         }
         .test_init(
@@ -73,18 +105,20 @@ impl OracleCore {
             admin.clone(),
             "proxy-band",
             &[],
-        )?;
+        ).unwrap() });
+
+        self.deps.insert(OracleDeps::ProxyBand.to_string(), proxy_band.clone());
 
         router::ExecuteMsg::UpdateConfig {
             config: UpdateConfig {
                 admin_auth: None,
-                default_oracle: Some(band_proxy.clone().into()),
+                default_oracle: Some(proxy_band.clone().into()),
                 band: None,
                 quote_symbol: None,
                 enabled: None,
             },
         }
-        .test_exec(&router, app, admin.clone(), &[])
+        .test_exec(&oracle_router, app, admin.clone(), &[])
         .unwrap();
 
         // Configure mock band prices
@@ -99,13 +133,7 @@ impl OracleCore {
             .unwrap();
         }
 
-        Ok(OracleCore {
-            band,
-            band_proxy,
-            router,
-            admin_auth,
-            admin,
-        })
+        Ok(self)
     }
 
     pub fn update_prices(
@@ -121,7 +149,7 @@ impl OracleCore {
                 rate: price,
                 last_updated: Some(last_updated_time),
             }
-            .test_exec(&self.band, app, self.admin.clone(), &[])
+            .test_exec(&self.band(), app, self.superadmin.clone(), &[])
             .unwrap();
         }
     }

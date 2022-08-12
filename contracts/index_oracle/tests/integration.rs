@@ -104,8 +104,8 @@ fn basic_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
-    let router = oracle_core.router;
+    let oracle_core = OracleCore { deps: HashMap::new(), superadmin: user.clone() }.setup(&mut app, prices, None, None, None, None).unwrap();
+    let router = oracle_core.oracle_router();
 
     let index_oracle = index_oracle::InstantiateMsg {
         config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
@@ -273,10 +273,10 @@ fn mod_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore::setup(&mut app, prices).unwrap();
-    let band = oracle_core.band;
-    let _band_proxy = oracle_core.band_proxy;
-    let router = oracle_core.router;
+    let oracle_core = OracleCore { deps: HashMap::new(), superadmin: user.clone() }.setup(&mut app, prices, None, None, None, None).unwrap();
+    let band = oracle_core.band();
+    let _band_proxy = oracle_core.proxy_band();
+    let router = oracle_core.oracle_router();
 
     let index_oracle = index_oracle::InstantiateMsg {
         config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
