@@ -10,7 +10,8 @@ use shade_oracles::{
 use shade_oracles_multi_test::multi::market::siennaswap::SiennaSwapMarketOracle;
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::multi::MockSiennaPair;
-use shade_oracles_multi_test::multi::{helpers::OracleCore, App, MultiTestable};
+use shade_oracles_multi_test::multi::{helpers::OracleCore};
+use shade_oracles_multi_test::{App, MultiTestable};
 use std::collections::HashMap;
 
 use mock_sienna_pair::contract as mock_sienna_pair;

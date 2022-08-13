@@ -8,7 +8,7 @@ use shade_oracles::{
     interfaces::router,
 };
 use shade_oracles_multi_test::{
-    helpers::OracleCore, multi::index::IndexOracle, App, MultiTestable,
+    multi::helpers::OracleCore, multi::index::IndexOracle, App, MultiTestable,
 };
 use std::collections::HashMap;
 use std::str::FromStr;
