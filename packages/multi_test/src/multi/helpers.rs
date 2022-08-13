@@ -18,11 +18,11 @@ use shade_protocol::{
 };
 
 pub struct OracleCore {
-    pub deps: HashMap<String, ContractInfo>,
+    pub deps: HashMap<OracleDeps, ContractInfo>,
     pub superadmin: Addr,
 }
 
-#[derive(strum::Display)]
+#[derive(Hash, PartialEq, Eq)]
 pub enum OracleDeps{
     Band,
     ProxyBand,
@@ -31,10 +31,10 @@ pub enum OracleDeps{
 }
 
 impl OracleCore {
-    pub fn band(&self) -> ContractInfo { self.deps.get(&OracleDeps::Band.to_string()).unwrap().clone() }
-    pub fn admin_auth(&self) -> ContractInfo { self.deps.get(&OracleDeps::AdminAuth.to_string()).unwrap().clone() }
-    pub fn proxy_band(&self) -> ContractInfo { self.deps.get(&OracleDeps::ProxyBand.to_string()).unwrap().clone() }
-    pub fn oracle_router(&self) -> ContractInfo { self.deps.get(&OracleDeps::OracleRouter.to_string()).unwrap().clone() }
+    pub fn band(&self) -> ContractInfo { self.deps.get(&OracleDeps::Band).unwrap().clone() }
+    pub fn admin_auth(&self) -> ContractInfo { self.deps.get(&OracleDeps::AdminAuth).unwrap().clone() }
+    pub fn proxy_band(&self) -> ContractInfo { self.deps.get(&OracleDeps::ProxyBand).unwrap().clone() }
+    pub fn oracle_router(&self) -> ContractInfo { self.deps.get(&OracleDeps::OracleRouter).unwrap().clone() }
     /// Initializes the core dependencies for testing all oracles which are
     /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
     /// based off the prices argument with them being quoted in "USD".
@@ -49,6 +49,7 @@ impl OracleCore {
 
     ) -> AnyResult<Self> {
         let admin = Addr::unchecked("superadmin");
+        let quote_symbol = "USD".to_string();
         self.superadmin = admin.clone();
 
         let admin_auth = admin_auth.unwrap_or_else(|| {
@@ -61,7 +62,7 @@ impl OracleCore {
             ).unwrap()
         });
 
-        self.deps.insert(OracleDeps::AdminAuth.to_string(), admin_auth.clone());
+        self.deps.insert(OracleDeps::AdminAuth, admin_auth.clone());
 
         let band = band.unwrap_or_else(|| {
             band::InstantiateMsg {}.test_init(
@@ -73,14 +74,14 @@ impl OracleCore {
             ).unwrap()
         });
 
-        self.deps.insert(OracleDeps::Band.to_string(), band.clone());
+        self.deps.insert(OracleDeps::Band, band.clone());
 
         let oracle_router = oracle_router.unwrap_or_else(|| {
             router::InstantiateMsg {
                 default_oracle: admin_auth.clone().into(),
                 admin_auth: admin_auth.clone().into(),
                 band: band.clone().into(),
-                quote_symbol: "USD".to_string(),
+                quote_symbol: quote_symbol.clone(),
             }
             .test_init(
                 OracleRouter::default(),
@@ -91,11 +92,11 @@ impl OracleCore {
             ).unwrap()
         });
 
-        self.deps.insert(OracleDeps::OracleRouter.to_string(), oracle_router.clone());
+        self.deps.insert(OracleDeps::OracleRouter, oracle_router.clone());
 
 
         let proxy_band= proxy_band.unwrap_or_else(|| { proxy::InstantiateMsg {
-            quote_symbol: "USD".to_string(),
+            quote_symbol: quote_symbol.clone(),
             config: InstantiateCommonConfig::new(None, oracle_router.clone().into(), true, true),
             band: band.clone().into(),
         }
@@ -107,12 +108,12 @@ impl OracleCore {
             &[],
         ).unwrap() });
 
-        self.deps.insert(OracleDeps::ProxyBand.to_string(), proxy_band.clone());
+        self.deps.insert(OracleDeps::ProxyBand, proxy_band.clone());
 
         router::ExecuteMsg::UpdateConfig {
             config: UpdateConfig {
                 admin_auth: None,
-                default_oracle: Some(proxy_band.clone().into()),
+                default_oracle: Some(proxy_band.into()),
                 band: None,
                 quote_symbol: None,
                 enabled: None,
@@ -125,7 +126,7 @@ impl OracleCore {
         for (sym, price) in prices {
             band::ExecuteMsg::UpdateSymbolPrice {
                 base_symbol: sym,
-                quote_symbol: "USD".to_string(),
+                quote_symbol: quote_symbol.clone(),
                 rate: price,
                 last_updated: None,
             }
@@ -145,7 +146,7 @@ impl OracleCore {
         for (sym, price) in prices {
             band::ExecuteMsg::UpdateSymbolPrice {
                 base_symbol: sym,
-                quote_symbol: "USD".to_string(),
+                quote_symbol: "USD".into(),
                 rate: price,
                 last_updated: Some(last_updated_time),
             }

@@ -1,11 +1,11 @@
 use cosmwasm_std::{
-    entry_point, Decimal, Decimal256, DepsMut, MessageInfo, QueryResponse, Uint128, Uint512,
+    entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, Uint128,
 };
 use cosmwasm_std::{to_binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::common::Oracle;
-use shade_oracles::core::better_secret_math::core::{exp10, muldiv_fp};
+use shade_oracles::core::better_secret_math::core::{muldiv_fp};
 use shade_oracles::interfaces::index_oracle::{
-    BasketResponse, BasketResponseItem, BasketSymbol, BasketSymbols, BtrBasket, BtrBasketItem,
+    BasketResponse, BasketResponseItem, BasketSymbols, BtrBasket,
     Symbol, Target, TargetResponse,
 };
 use std::vec;
@@ -24,7 +24,7 @@ use shade_oracles::{
         },
         index_oracle::{ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg},
     },
-    storage::{GenericItemStorage, GenericMapStorage, ItemStorage, MapStorage},
+    storage::{GenericItemStorage, GenericMapStorage, ItemStorage},
     BLOCK_SIZE,
 };
 
@@ -201,7 +201,7 @@ fn fetch_prices<'a>(
         .into_iter()
         .map(|f| f.to_string())
         .collect::<Vec<String>>();
-    let symbols_slice = symbols.as_slice().as_ref();
+    let symbols_slice = symbols.as_slice();
     let prices_resp = if config.only_band {
         query_band_prices(&config.router, &deps.querier, symbols_slice)
     } else {
@@ -218,7 +218,7 @@ fn fetch_prices<'a>(
                 "Failed to query {} from router {}, '{}'",
                 symbols
                     .into_iter()
-                    .map(|sym| sym.to_string() + ",")
+                    .map(|sym| sym + ",")
                     .collect::<String>(),
                 config.router.address.as_str(),
                 e
