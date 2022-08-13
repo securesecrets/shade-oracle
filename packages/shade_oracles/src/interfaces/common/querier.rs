@@ -5,7 +5,7 @@ use crate::{
         AdminAuthResponse, Config as RouterConfig, OracleResponse, QueryMsg as RouterQueryMsg,
     },
 };
-use cosmwasm_std::{Addr, QuerierWrapper, StdResult};
+use cosmwasm_std::{QuerierWrapper, StdResult};
 use shade_admin::querier::validate_permission;
 use shade_protocol::{
     contract_interfaces::snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},

@@ -5,7 +5,7 @@ use shade_protocol::utils::Query;
 use crate::BLOCK_SIZE;
 use better_secret_math::U256;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal256, Deps, StdResult, Storage, Uint128};
+use cosmwasm_std::{Decimal256, StdResult, Storage, Uint128};
 use shade_protocol::{
     utils::generic_response::ResponseStatus,
     utils::{ExecuteCallback, InstantiateCallback},

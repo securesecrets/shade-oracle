@@ -10,8 +10,8 @@ use shade_oracles::{
 };
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::{
-    helpers::OracleCore,
-    multi::{market::shadeswap::ShadeSwapMarketOracle, MockShadePair},
+    multi::{market::shadeswap::ShadeSwapMarketOracle, MockShadePair,     helpers::OracleCore,
+    },
     App, MultiTestable,
 };
 use std::collections::HashMap;
