@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#be816bd532ddca50d1908a7578ee9c318a78cb69"
+source = "git+https://github.com/securesecrets/shadeadmin.git#535bb4b72fef276a840a36812ac7864f414e4017"
 dependencies = [
  "cosmwasm-std",
  "shade-admin",
@@ -1282,7 +1282,7 @@ dependencies = [
 [[package]]
 name = "shade-admin"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#be816bd532ddca50d1908a7578ee9c318a78cb69"
+source = "git+https://github.com/securesecrets/shadeadmin.git#535bb4b72fef276a840a36812ac7864f414e4017"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1296,7 +1296,7 @@ dependencies = [
 [[package]]
 name = "shade-admin-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#be816bd532ddca50d1908a7578ee9c318a78cb69"
+source = "git+https://github.com/securesecrets/shadeadmin.git#535bb4b72fef276a840a36812ac7864f414e4017"
 dependencies = [
  "admin",
  "anyhow",
