@@ -123,15 +123,14 @@ pub fn query_band_prices<'a>(
 }
 
 /// Gets the admin auth contract from the router and uses it to check if the user is an admin for the router.
-pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: impl Into<String>) -> StdResult<()> {
+pub fn verify_admin(contract: &Contract, querier: &QuerierWrapper, user: impl Into<String> + Clone) -> StdResult<()> {
     let get_admin_auth_req: AdminAuthResponse =
         RouterQueryMsg::GetAdminAuth {}.query(querier, contract)?;
     let admin_auth = get_admin_auth_req.admin_auth;
     validate_permission(
         querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
-        user,
-        &contract.address,
+        &user,
         &admin_auth,
     )
 }

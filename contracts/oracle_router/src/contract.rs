@@ -64,7 +64,6 @@ fn is_admin(deps: Deps, user: Addr, env: &Env) -> StdResult<()> {
         &deps.querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
         &user,
-        &env.contract.address,
         &config.admin_auth,
     )
 }
