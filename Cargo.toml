@@ -16,7 +16,11 @@ members = [
   "contracts/mock_sienna_pair",
   "contracts/mock_shade_pair",
 ]
-exclude = [ "contracts/secretswap_lp_oracle", "contracts/earn_v1_oracle" ]
+exclude = [ 
+  "contracts/secretswap_lp_oracle", 
+  "contracts/earn_v1_oracle",
+  "packages/shade_oracles_integration",
+]
 
 [profile.release]
 opt-level = 3
