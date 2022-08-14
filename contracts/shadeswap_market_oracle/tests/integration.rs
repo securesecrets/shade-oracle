@@ -8,6 +8,7 @@ use shade_oracles::{
     core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::{lp::market as shadeswap_market_oracle, router},
 };
+use shade_oracles_multi_test::multi::helpers::OracleDeps;
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::{
     multi::{market::shadeswap::ShadeSwapMarketOracle, MockShadePair,     helpers::OracleCore,
@@ -32,8 +33,8 @@ fn basic_market_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore { deps: HashMap::new(), superadmin: user.clone() }.setup(&mut app, prices, None, None, None, None).unwrap();
-    let router = oracle_core.oracle_router();
+    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
+    let router = oracle_core.get(OracleDeps::OracleRouter);
 
     // Setup tokens
     let primary_token = snip20::InstantiateMsg {

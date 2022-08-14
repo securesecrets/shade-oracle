@@ -14,11 +14,12 @@ use shade_protocol::{
     c_std::{Addr, ContractInfo, Uint128},
     multi_test::App,
     utils::{ExecuteCallback, InstantiateCallback, MultiTestable},
-    AnyResult,
+    AnyResult, Contract,
 };
 
-pub struct OracleCore {
-    pub deps: HashMap<OracleDeps, ContractInfo>,
+pub struct OracleCore<'a> {
+    pub deps: HashMap<OracleDeps, Contract>,
+    pub app: &'a mut App,
     pub superadmin: Addr,
 }
 
@@ -30,17 +31,14 @@ pub enum OracleDeps{
     AdminAuth,
 }
 
-impl OracleCore {
-    pub fn band(&self) -> ContractInfo { self.deps.get(&OracleDeps::Band).unwrap().clone() }
-    pub fn admin_auth(&self) -> ContractInfo { self.deps.get(&OracleDeps::AdminAuth).unwrap().clone() }
-    pub fn proxy_band(&self) -> ContractInfo { self.deps.get(&OracleDeps::ProxyBand).unwrap().clone() }
-    pub fn oracle_router(&self) -> ContractInfo { self.deps.get(&OracleDeps::OracleRouter).unwrap().clone() }
+impl<'a> OracleCore<'a> {
+    pub fn get(&self, deps: OracleDeps) -> ContractInfo { self.deps.get(&deps).unwrap().clone().into() }
     /// Initializes the core dependencies for testing all oracles which are
     /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
     /// based off the prices argument with them being quoted in "USD".
     pub fn setup(
-        mut self,
-        app: &mut App, 
+        app: &'a mut App,
+        admin: &Addr,
         prices: HashMap<String, Uint128>,
         band: Option<ContractInfo>,
         proxy_band: Option<ContractInfo>,
@@ -48,33 +46,33 @@ impl OracleCore {
         admin_auth: Option<ContractInfo>,
 
     ) -> AnyResult<Self> {
-        let admin = Addr::unchecked("superadmin");
+        let mut core = OracleCore { deps: HashMap::new(), app, superadmin: admin.clone() };
         let quote_symbol = "USD".to_string();
-        self.superadmin = admin.clone();
+        core.superadmin = admin.clone();
 
         let admin_auth = admin_auth.unwrap_or_else(|| {
             shade_admin::admin::InstantiateMsg { super_admin: None }.test_init(
                 AdminAuth::default(),
-                app,
+                core.app,
                 admin.clone(),
                 "admin-auth",
                 &[],
             ).unwrap()
         });
 
-        self.deps.insert(OracleDeps::AdminAuth, admin_auth.clone());
+        core.deps.insert(OracleDeps::AdminAuth, admin_auth.clone().into());
 
         let band = band.unwrap_or_else(|| {
             band::InstantiateMsg {}.test_init(
                 MockBand::default(),
-                app,
+                core.app,
                 admin.clone(),
                 "band",
                 &[],
             ).unwrap()
         });
 
-        self.deps.insert(OracleDeps::Band, band.clone());
+        core.deps.insert(OracleDeps::Band, band.clone().into());
 
         let oracle_router = oracle_router.unwrap_or_else(|| {
             router::InstantiateMsg {
@@ -85,14 +83,14 @@ impl OracleCore {
             }
             .test_init(
                 OracleRouter::default(),
-                app,
+                core.app,
                 admin.clone(),
                 "oracle-router",
                 &[],
             ).unwrap()
         });
 
-        self.deps.insert(OracleDeps::OracleRouter, oracle_router.clone());
+        core.deps.insert(OracleDeps::OracleRouter, oracle_router.clone().into());
 
 
         let proxy_band= proxy_band.unwrap_or_else(|| { proxy::InstantiateMsg {
@@ -102,13 +100,13 @@ impl OracleCore {
         }
         .test_init(
             ProxyBandOracle::default(),
-            app,
+            core.app,
             admin.clone(),
             "proxy-band",
             &[],
         ).unwrap() });
 
-        self.deps.insert(OracleDeps::ProxyBand, proxy_band.clone());
+        core.deps.insert(OracleDeps::ProxyBand, proxy_band.clone().into());
 
         router::ExecuteMsg::UpdateConfig {
             config: UpdateConfig {
@@ -119,7 +117,7 @@ impl OracleCore {
                 enabled: None,
             },
         }
-        .test_exec(&oracle_router, app, admin.clone(), &[])
+        .test_exec(&oracle_router, core.app, admin.clone(), &[])
         .unwrap();
 
         // Configure mock band prices
@@ -130,16 +128,15 @@ impl OracleCore {
                 rate: price,
                 last_updated: None,
             }
-            .test_exec(&band, app, admin.clone(), &[])
+            .test_exec(&band, core.app, admin.clone(), &[])
             .unwrap();
         }
 
-        Ok(self)
+        Ok(core)
     }
 
     pub fn update_prices(
-        &self,
-        app: &mut App,
+        &mut self,
         prices: HashMap<String, Uint128>,
         last_updated_time: u64,
     ) {
@@ -150,7 +147,7 @@ impl OracleCore {
                 rate: price,
                 last_updated: Some(last_updated_time),
             }
-            .test_exec(&self.band(), app, self.superadmin.clone(), &[])
+            .test_exec(&self.get(OracleDeps::Band), self.app, self.superadmin.clone(), &[])
             .unwrap();
         }
     }
