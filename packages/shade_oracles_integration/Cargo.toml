@@ -24,14 +24,14 @@ default = []
 [dependencies]
 cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
 cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
-cosmwasm-math-compat = { branch = "dev", git = "https://github.com/securesecrets/shade.git" }
+cosmwasm-math-compat = { tag = "v1.1.0", git = "https://github.com/securesecrets/shade.git" }
 schemars = { version = "0.7" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
 
 colored = "2.0.0"
 chrono = "0.4.19"
 shade-oracles = { version = "0.1.0", path = "../shade_oracles"}
-secretcli = { version = "0.1.0", git = "https://git@github.com/securesecrets/shade-lend.git", branch = "refactor" }
+secretcli = { version = "0.1.0", git = "https://github.com/securesecrets/secret-plus-utils.git" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.67"}
 getrandom = { version = "0.2", features = ["js"] } # Prevents wasm from freaking out when running make
