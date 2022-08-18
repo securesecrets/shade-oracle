@@ -200,13 +200,13 @@ fn deploy_sscrt_shd_lp(
     let stkd_scrt_scrt_lp_oracle = SiennaswapSpotLpOracleContract::new(
         &SiennaSwapLpOracle::InitMsg {
             symbol_0: "SHD".to_string(),
-            symbol_1: "SSCRT".to_string(),
+            symbol_1: "SCRT".to_string(),
             router,
             exchange: sienna_sscrt_shd_lp,
             supported_key: "SHD/SSCRT SiennaSwap LP".to_string(),
         },
         Some(HOOMP_KEY),
-        Some("stkd_scrt_scrt_lp_oracle"),
+        Some("shd_scrt_lp_oracle"),
     )?;
 
     Ok(stkd_scrt_scrt_lp_oracle)
