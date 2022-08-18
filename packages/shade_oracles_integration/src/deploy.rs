@@ -40,7 +40,7 @@ fn main() -> Result<()> {
     // oracle_router.update_oracle(HOOMP_KEY, "SHD", shd_oracle.as_contract())?;
     // oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
     //oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT/SCRT SiennaSwap LP", stkd_scrt_scrt_lp_oracle.as_contract())?;
-    oracle_router.update_oracle(HOOMP_KEY, "SHD/sSCRT SiennaSwap LP", shd_scrt_lp_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "SHD/SSCRT SiennaSwap LP", shd_scrt_lp_oracle.as_contract())?;
     // oracle_router.update_registry(
     //     RegistryOperation::UpdateAlias {
     //         alias: "SSCRT".to_string(),
@@ -48,7 +48,7 @@ fn main() -> Result<()> {
     //     },
     //     Some(HOOMP_KEY),
     // )?;
-    let price = oracle_router.query_price("SHD/sSCRT SiennaSwap LP".to_string());
+    let price = oracle_router.query_price("SHD/SSCRT SiennaSwap LP".to_string());
     match price {
         Ok(price) => println!("SHD/sSCRT Price is: {}", price.data.rate),
         Err(err) => println!("{}", err),

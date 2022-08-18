@@ -24,7 +24,7 @@ backtraces = ["shade-oracles/backtraces"]
 cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
 cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
-cosmwasm-math-compat = { tag = "v1.1.0", git = "https://github.com/securesecrets/shade.git" }
+cosmwasm-math-compat = { git = "https://github.com/securesecrets/shade.git", tag = "v1.2.0" }
 shade_admin = { git = "https://github.com/securesecrets/shadeadmin.git", tag = "v1.0" }
 
 schemars = "0.7"

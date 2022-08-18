@@ -2,7 +2,6 @@
 members = [
   "packages/shade_oracles",
   "packages/shade_oracles_ensemble",
-  "packages/shade_oracles_integration",
 
   "contracts/index_oracle",
   "contracts/proxy_band_oracle",
@@ -15,6 +14,10 @@ members = [
 
   "contracts/mock_sienna_pair",
   "contracts/mock_shade_pair",
+]
+exclude = [
+  # This needs to be disabled otherwise cargo will try to compile it for wasm32 during build and fail.
+  "packages/shade_oracles_integration",
 ]
 
 [profile.release]
