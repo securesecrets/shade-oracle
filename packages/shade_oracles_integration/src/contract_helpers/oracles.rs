@@ -1,7 +1,7 @@
 use super::{GasLog, TestableContract};
 use crate::constants::*;
 use cosmwasm_math_compat::Uint128;
-use secretcli::{cli_types::NetContract, secretcli::query_contract};
+use secretcli::{cli_types::NetContract, secretcli::query};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
@@ -38,15 +38,15 @@ impl OracleRouterContract {
     }
 
     pub fn query_config(&self) -> Result<router::Config> {
-        query_contract(self.get_info(), router::QueryMsg::GetConfig {})
+        query(self.get_info(), router::QueryMsg::GetConfig {}, None)
     }
 
     pub fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
-        query_contract(self.get_info(), router::QueryMsg::GetPrice { key })
+        query(self.get_info(), router::QueryMsg::GetPrice { key }, None)
     }
 
     pub fn query_oracle(&self, key: String) -> Result<router::OracleResponse> {
-        query_contract(self.get_info(), router::QueryMsg::GetOracle { key })
+        query(self.get_info(), router::QueryMsg::GetOracle { key }, None)
     }
 
     pub fn update_config(&self, config: UpdateConfig, sender_key: Option<&str>) -> Result<GasLog> {
@@ -207,15 +207,17 @@ where
     Self: TestableContract,
 {
     fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
-        query_contract(
+        query(
             self.get_info(),
             shade_oracles::common::QueryMsg::GetPrice { key },
+            None
         )
     }
     fn query_config<Response: serde::de::DeserializeOwned>(&self) -> Result<Response> {
-        query_contract(
+        query(
             self.get_info(),
             shade_oracles::common::QueryMsg::GetConfig {},
+            None
         )
     }
 }
@@ -327,11 +329,11 @@ impl IndexOracleContract {
     }
 
     pub fn query_config(&self, key: String) -> Result<index_oracle::Config> {
-        query_contract(self.get_info(), index_oracle::QueryMsg::GetPrice { key })
+        query(self.get_info(), index_oracle::QueryMsg::GetPrice { key }, None)
     }
 
     pub fn query_basket(&self) -> Result<index_oracle::QueryAnswer> {
-        query_contract(self.get_info(), index_oracle::QueryMsg::Basket {})
+        query(self.get_info(), index_oracle::QueryMsg::Basket {}, None)
     }
 
     pub fn update_config(
