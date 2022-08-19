@@ -75,6 +75,12 @@ pub struct BtrReferenceData {
     pub last_updated_quote: u64,
 }
 
+impl Into<ReferenceData> for BtrReferenceData {
+    fn into(self) -> ReferenceData {
+        ReferenceData { rate: self.rate.into(), last_updated_base: self.last_updated_base, last_updated_quote: self.last_updated_quote }
+    }
+}
+
 #[cw_serde]
 pub struct ReferenceDataBulk {
     pub data: Vec<ReferenceData>,

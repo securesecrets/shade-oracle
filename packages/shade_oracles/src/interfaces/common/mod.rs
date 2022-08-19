@@ -149,8 +149,8 @@ pub enum HandleAnswer {
 
 #[cw_serde]
 pub struct OraclePrice {
-    key: String,
-    data: ReferenceData,
+    pub key: String,
+    pub data: ReferenceData,
 }
 
 impl OraclePrice {
@@ -169,9 +169,10 @@ impl OraclePrice {
 }
 
 /// Variant of OraclePrice that is optimized for math.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 pub struct BtrOraclePrice {
-    key: String,
-    data: BtrReferenceData,
+    pub key: String,
+    pub data: BtrReferenceData,
 }
 
 impl From<OraclePrice> for BtrOraclePrice {
@@ -179,6 +180,15 @@ impl From<OraclePrice> for BtrOraclePrice {
         BtrOraclePrice {
             key: o.key.clone(),
             data: o.data().clone().into(),
+        }
+    }
+}
+
+impl Into<OraclePrice> for BtrOraclePrice {
+    fn into(self) -> OraclePrice {
+        OraclePrice {
+            key: self.key.clone(),
+            data: self.data.clone().into(),
         }
     }
 }
