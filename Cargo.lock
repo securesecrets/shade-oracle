@@ -5,8 +5,9 @@ version = 3
 [[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#535bb4b72fef276a840a36812ac7864f414e4017"
+source = "git+https://github.com/securesecrets/shadeadmin.git#fa56686142eb28e2bb68a623d6a2cb860a47f74b"
 dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
  "shade-admin",
 ]
@@ -22,9 +23,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.61"
+version = "1.0.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "508b352bb5c066aac251f6daf6b36eccd03e8a88e8081cd44959ea277a3af9a8"
+checksum = "1485d4d2cc45e7b201ee3767015c96faa5904387c9d87c6efdd0fb511f12d305"
 
 [[package]]
 name = "autocfg"
@@ -102,9 +103,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.10.0"
+version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37ccbd214614c6783386c1af30caf03192f17891059cecc394b4fb119e363de3"
+checksum = "c1ad822118d20d2c234f427000d5acc36eabe1e29a348c89b63dd60b13f28e5d"
 
 [[package]]
 name = "byteorder"
@@ -180,7 +181,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-schema"
 version = "1.0.0"
-source = "git+https://github.com/CosmWasm/cosmwasm#33fbbeeedb180d0a28884dc69f5de9a1fc999262"
+source = "git+https://github.com/CosmWasm/cosmwasm#af3ed179b2a8f7807c7eccb9e23fb110b213c248"
 dependencies = [
  "cosmwasm-schema-derive",
  "schemars 0.8.10",
@@ -192,7 +193,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-schema-derive"
 version = "1.0.0"
-source = "git+https://github.com/CosmWasm/cosmwasm#33fbbeeedb180d0a28884dc69f5de9a1fc999262"
+source = "git+https://github.com/CosmWasm/cosmwasm#af3ed179b2a8f7807c7eccb9e23fb110b213c248"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -226,9 +227,9 @@ dependencies = [
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59a6001667ab124aebae2a495118e11d30984c3a653e99d86d58971708cf5e4b"
+checksum = "1079fb8528d9f9c888b1e8aa651e6e079ade467323d58f75faf1d30b1808f540"
 dependencies = [
  "libc",
 ]
@@ -344,9 +345,9 @@ dependencies = [
 
 [[package]]
 name = "either"
-version = "1.7.0"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f107b87b6afc2a64fd13cac55fe06d6c8859f12d4b14cbcdd2c67d0976781be"
+checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 
 [[package]]
 name = "elliptic-curve"
@@ -369,7 +370,7 @@ dependencies = [
 [[package]]
 name = "ethnum"
 version = "1.2.1"
-source = "git+https://github.com/securesecrets/ethnum-rs#e473d52fc0a6bf9975052e8afe25ef735fc9576a"
+source = "git+https://github.com/securesecrets/ethnum-rs#284e0e6308f1024b3bddb9e5192b6bbf6bba5bb1"
 dependencies = [
  "cosmwasm-std",
  "schemars 0.8.10",
@@ -556,9 +557,9 @@ dependencies = [
 
 [[package]]
 name = "iana-time-zone"
-version = "0.1.44"
+version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "808cf7d67cf4a22adc5be66e75ebdf769b3f2ea032041437a7061f97a63dad4b"
+checksum = "ad2bfd338099682614d3ee3fe0cd72e0b6a41ca6a87f6a74a3bd593c91650501"
 dependencies = [
  "android_system_properties",
  "core-foundation-sys",
@@ -616,9 +617,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.131"
+version = "0.2.132"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04c3b4822ccebfa39c02fc03d1534441b22ead323fa0f48bb7ddd8e6ba076a40"
+checksum = "8371e4e5341c3a96db127eb2465ac681ced4c433e01dd0e938adbef26ba93ba5"
 
 [[package]]
 name = "log"
@@ -669,7 +670,7 @@ dependencies = [
 [[package]]
 name = "multi-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#3e09481a6119e382f79483bed965936005ead284"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#351e837b69136b6c6ed63b1ac953fa15a515ddb5"
 
 [[package]]
 name = "nanoid"
@@ -701,9 +702,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.13.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
+checksum = "074864da206b4973b84eb91683020dbefd6a8c3f0f38e054d93954e891935e4e"
 
 [[package]]
 name = "opaque-debug"
@@ -1048,13 +1049,12 @@ dependencies = [
 [[package]]
 name = "secret-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#f525106b68f067d93a4275fbc6d983f07442d2c1"
+source = "git+https://github.com/securesecrets/secret-plus-utils#9385be530b4e9c60150c2dee48ff9f52a2851c55"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
  "cosmwasm-storage",
  "derivative",
- "getrandom 0.2.7",
  "itertools",
  "nanoid",
  "prost",
@@ -1068,7 +1068,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#f525106b68f067d93a4275fbc6d983f07442d2c1"
+source = "git+https://github.com/securesecrets/secret-plus-utils#9385be530b4e9c60150c2dee48ff9f52a2851c55"
 dependencies = [
  "better-secret-math",
  "bincode2",
@@ -1180,10 +1180,9 @@ dependencies = [
 [[package]]
 name = "secret-utils"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#f525106b68f067d93a4275fbc6d983f07442d2c1"
+source = "git+https://github.com/securesecrets/secret-plus-utils#9385be530b4e9c60150c2dee48ff9f52a2851c55"
 dependencies = [
  "cosmwasm-std",
- "getrandom 0.2.7",
  "schemars 0.8.10",
  "serde",
  "thiserror",
@@ -1282,11 +1281,10 @@ dependencies = [
 [[package]]
 name = "shade-admin"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#535bb4b72fef276a840a36812ac7864f414e4017"
+source = "git+https://github.com/securesecrets/shadeadmin.git#fa56686142eb28e2bb68a623d6a2cb860a47f74b"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "getrandom 0.2.7",
  "schemars 0.8.10",
  "serde",
  "shade-protocol",
@@ -1296,7 +1294,7 @@ dependencies = [
 [[package]]
 name = "shade-admin-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shadeadmin.git#535bb4b72fef276a840a36812ac7864f414e4017"
+source = "git+https://github.com/securesecrets/shadeadmin.git#fa56686142eb28e2bb68a623d6a2cb860a47f74b"
 dependencies = [
  "admin",
  "anyhow",
@@ -1309,10 +1307,9 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#3e09481a6119e382f79483bed965936005ead284"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#351e837b69136b6c6ed63b1ac953fa15a515ddb5"
 dependencies = [
  "multi-derive",
- "shade-admin",
  "shade-protocol",
  "snip20",
 ]
@@ -1360,7 +1357,7 @@ dependencies = [
 [[package]]
 name = "shade-protocol"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#3e09481a6119e382f79483bed965936005ead284"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#351e837b69136b6c6ed63b1ac953fa15a515ddb5"
 dependencies = [
  "anyhow",
  "base64 0.12.3",
@@ -1472,7 +1469,7 @@ dependencies = [
 [[package]]
 name = "snip20"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#3e09481a6119e382f79483bed965936005ead284"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#351e837b69136b6c6ed63b1ac953fa15a515ddb5"
 dependencies = [
  "cosmwasm-std",
  "shade-protocol",
