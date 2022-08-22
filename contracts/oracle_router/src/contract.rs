@@ -1,17 +1,20 @@
-use crate::{
-    registry::{batch_update_registry, get_price, get_prices, resolve_alias, update_registry},
-    state::*,
-};
-use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    Storage,
-};
+use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use shade_oracles::{
-    common::SHADE_ORACLE_ADMIN_PERMISSION,
-    core::{pad_handle_result, pad_query_result, validate_permission, Contract},
-    interfaces::router::*,
+    common::{
+        querier::{query_oracle_price, query_oracle_prices},
+        OraclePrice, PriceResponse, PricesResponse, SHADE_ORACLE_ADMIN_PERMISSION,
+    },
+    core::{
+        mulberry::{common::GlobalStatus, create_attr_action},
+        pad_handle_result, pad_query_result,
+        ssp::ItemStorage,
+        validate_permission,
+    },
+    interfaces::router::{error::*, msg::*, registry::*},
     BLOCK_SIZE,
 };
+
+create_attr_action!("oracle-router_");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -19,89 +22,121 @@ pub fn instantiate(
     env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<Response> {
+) -> OracleRouterResult<Response> {
     let config = Config {
         admin_auth: msg.admin_auth,
         default_oracle: msg.default_oracle,
         address: env.contract.address,
         band: msg.band,
         quote_symbol: msg.quote_symbol,
-        enabled: true,
     };
-    CONFIG.save(deps.storage, &config)?;
-    Ok(Response::default())
+    OracleRouter::init_status(deps.storage)?;
+    config.save(deps.storage)?;
+    Ok(Response::default().add_attributes(vec![attr_action!("instantiate")]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
-    is_admin(deps.as_ref(), info.sender, &env)?;
-    pad_handle_result(
-        match msg {
-            ExecuteMsg::UpdateConfig { config } => {
-                CONFIG.update(deps.storage, |mut new_config| -> StdResult<_> {
-                    new_config.admin_auth = config.admin_auth.unwrap_or(new_config.admin_auth);
-                    new_config.default_oracle =
-                        config.default_oracle.unwrap_or(new_config.default_oracle);
-                    new_config.band = config.band.unwrap_or(new_config.band);
-                    new_config.quote_symbol =
-                        config.quote_symbol.unwrap_or(new_config.quote_symbol);
-                    Ok(new_config)
-                })?;
-                Ok(Response::default())
-            }
-            ExecuteMsg::UpdateRegistry { operation } => update_registry(deps, env, operation),
-            ExecuteMsg::BatchUpdateRegistry { operations } => {
-                batch_update_registry(deps, env, operations)
-            }
-        },
-        BLOCK_SIZE,
-    )
-}
-
-fn is_admin(deps: Deps, user: Addr, env: &Env) -> StdResult<()> {
-    let config = CONFIG.load(deps.storage)?;
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> OracleRouterResult<Response> {
+    let router = OracleRouter::load(deps.storage)?;
+    // Ensure sender is admin
     validate_permission(
         &deps.querier,
         SHADE_ORACLE_ADMIN_PERMISSION,
-        &user,
-        &config.admin_auth,
-    )
-}
+        &info.sender,
+        &router.config.admin_auth,
+    )?;
 
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    pad_query_result(
-        match msg {
-            QueryMsg::GetConfig {} => {
-                let config = CONFIG.load(deps.storage)?;
-                to_binary(&config)
-            }
-            QueryMsg::GetOracle { key } => {
-                let oracle = get_oracle(deps.storage, &key)?;
-                to_binary(&OracleResponse { oracle, key })
-            }
-            QueryMsg::GetPrice { key } => get_price(deps, key),
-            QueryMsg::GetOracles { keys } => {
-                let mut oracles = vec![];
-                for key in keys {
-                    let oracle = get_oracle(deps.storage, &key)?;
-                    oracles.push(OracleResponse { key, oracle })
+    let result = match msg {
+        ExecuteMsg::SetStatus { status } => {
+            OracleRouter::update_status(deps.storage, status)?;
+            Ok(Response::default().add_attributes(vec![attr_action!("set_status")]))
+        }
+        _ => {
+            router.require_can_run(deps.storage, true, true, false)?;
+            match msg {
+                ExecuteMsg::UpdateConfig { config } => {
+                    router.update_config(config).config.save(deps.storage)?;
+                    Ok(Response::new().add_attributes(vec![attr_action!("update_config")]))
                 }
-                to_binary(&oracles)
+                ExecuteMsg::UpdateRegistry { operation } => {
+                    OracleRouter::resolve_registry_operation(deps.storage, operation)?;
+                    Ok(Response::new().add_attributes(vec![attr_action!("update_registry")]))
+                }
+                ExecuteMsg::BatchUpdateRegistry { operations } => {
+                    for operation in operations {
+                        OracleRouter::resolve_registry_operation(deps.storage, operation)?;
+                    }
+                    Ok(Response::new().add_attributes(vec![attr_action!("batch_update_registry")]))
+                }
+                ExecuteMsg::SetStatus { .. } => panic!("Code should never get here."),
             }
-            QueryMsg::GetPrices { keys } => get_prices(deps, keys),
-            QueryMsg::GetAdminAuth {} => to_binary(&AdminAuthResponse {
-                admin_auth: CONFIG.load(deps.storage)?.admin_auth,
-            }),
-        },
-        BLOCK_SIZE,
-    )
+        }
+    };
+    Ok(pad_handle_result(result, BLOCK_SIZE)?)
 }
 
-pub fn get_oracle(storage: &dyn Storage, key: &str) -> StdResult<Contract> {
-    let config = CONFIG.load(storage)?;
-    let resolved_key = resolve_alias(storage, key.to_string())?;
-    match ORACLES.may_load(storage, resolved_key)? {
-        Some(contract) => Ok(contract),
-        None => Ok(config.default_oracle),
+/// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.
+pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> OracleRouterResult<Binary> {
+    let oracle = router.get_oracle(deps.storage, &key)?;
+    Ok(to_binary(&PriceResponse {
+        price: query_oracle_price(&oracle, &deps.querier, &key)?,
+    })?)
+}
+
+/// Builds bulk queries using the keys given.
+pub fn get_prices(
+    deps: Deps,
+    router: OracleRouter,
+    keys: Vec<String>,
+) -> OracleRouterResult<Binary> {
+    let map = router.group_keys_by_oracle(deps.storage, keys.as_slice())?;
+    let mut prices: Vec<OraclePrice> = vec![];
+
+    for (key, value) in map {
+        if value.len() == 1 {
+            let queried_price = query_oracle_price(&key, &deps.querier, value[0].clone())?;
+            prices.push(queried_price);
+        } else {
+            let mut queried_prices = query_oracle_prices(&key, &deps.querier, value)?;
+            prices.append(&mut queried_prices);
+        }
     }
+    Ok(to_binary(&PricesResponse { prices })?)
+}
+
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> OracleRouterResult<Binary> {
+    let router = OracleRouter::load(deps.storage)?;
+    let resp = match msg {
+        QueryMsg::GetConfig {} => to_binary(&ConfigResponse {
+            config: router.config,
+            status: OracleRouter::load_status(deps.storage)?,
+        }),
+        _ => {
+            // If deprecated or frozen, throw error so dependencies cannot query it.
+            router.require_can_run(deps.storage, true, false, false)?;
+            match msg {
+                QueryMsg::GetOracle { key } => {
+                    let oracle = router.get_oracle(deps.storage, &key)?;
+                    to_binary(&OracleResponse { oracle, key })
+                }
+                QueryMsg::GetPrice { key } => Ok(get_price(deps, router, key)?),
+                QueryMsg::GetOracles { keys } => {
+                    let mut oracles = vec![];
+                    for key in keys {
+                        let oracle = router.get_oracle(deps.storage, &key)?;
+                        oracles.push(OracleResponse { key, oracle })
+                    }
+                    to_binary(&oracles)
+                }
+                QueryMsg::GetPrices { keys } => Ok(get_prices(deps, router, keys)?),
+                _ => panic!("Code should never go here."),
+            }
+        }
+    };
+    Ok(pad_query_result(resp, BLOCK_SIZE)?)
 }

@@ -11,8 +11,7 @@ use shade_oracles::{
 use shade_oracles_multi_test::multi::helpers::OracleDeps;
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::{
-    multi::{market::shadeswap::ShadeSwapMarketOracle, MockShadePair,     helpers::OracleCore,
-    },
+    multi::{helpers::OracleCore, market::shadeswap::ShadeSwapMarketOracle, MockShadePair},
     App, MultiTestable,
 };
 use std::collections::HashMap;
@@ -116,8 +115,8 @@ fn basic_market_test(
 
     // Configure router w/ market oracle
 
-    router::ExecuteMsg::UpdateRegistry {
-        operation: router::RegistryOperation::Replace {
+    router::msg::ExecuteMsg::UpdateRegistry {
+        operation: router::registry::RegistryOperation::Replace {
             oracle: Contract {
                 address: market_oracle.address.clone(),
                 code_hash: market_oracle.code_hash.clone(),

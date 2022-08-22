@@ -12,10 +12,11 @@ pub mod storage {
 }
 #[cfg(feature = "core")]
 pub mod core {
-    pub use secret_storage_plus as ssp;
     pub use better_secret_math;
     pub use cosmwasm_schema;
+    pub use mulberry;
     pub use schemars;
+    pub use secret_storage_plus as ssp;
     pub use serde;
     pub use shade_admin::querier::validate_permission;
     pub use shade_protocol::snip20;
@@ -30,3 +31,6 @@ pub mod core {
     #[cfg(feature = "scrt")]
     pub use {cosmwasm_std, cosmwasm_std::*};
 }
+
+#[macro_use]
+pub extern crate mulberry;

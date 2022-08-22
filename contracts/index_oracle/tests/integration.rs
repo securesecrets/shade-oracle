@@ -8,7 +8,9 @@ use shade_oracles::{
     interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::helpers::{OracleCore, OracleDeps}, multi::index::IndexOracle, App, MultiTestable,
+    multi::helpers::{OracleCore, OracleDeps},
+    multi::index::IndexOracle,
+    App, MultiTestable,
 };
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -123,8 +125,8 @@ fn basic_index_test(
     .unwrap();
 
     // Configure router w/ index oracle
-    router::ExecuteMsg::UpdateRegistry {
-        operation: router::RegistryOperation::Add {
+    router::msg::ExecuteMsg::UpdateRegistry {
+        operation: router::registry::RegistryOperation::Add {
             oracle: index_oracle.into(),
             key: symbol.clone(),
         },
@@ -294,8 +296,8 @@ fn mod_index_test(
     .unwrap();
 
     // Configure router w/ index oracle
-    router::ExecuteMsg::UpdateRegistry {
-        operation: router::RegistryOperation::Add {
+    router::msg::ExecuteMsg::UpdateRegistry {
+        operation: router::registry::RegistryOperation::Add {
             oracle: index_oracle.clone().into(),
             key: symbol.clone(),
         },

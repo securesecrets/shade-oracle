@@ -1,12 +1,9 @@
-use cosmwasm_std::{
-    entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, Uint128,
-};
+use cosmwasm_std::{entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, Uint128};
 use cosmwasm_std::{to_binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::common::Oracle;
-use shade_oracles::core::better_secret_math::core::{muldiv_fp};
+use shade_oracles::core::better_secret_math::core::muldiv_fp;
 use shade_oracles::interfaces::index_oracle::{
-    BasketResponse, BasketResponseItem, BasketSymbols, BtrBasket,
-    Symbol, Target, TargetResponse,
+    BasketResponse, BasketResponseItem, BasketSymbols, BtrBasket, Symbol, Target, TargetResponse,
 };
 use std::vec;
 use std::{cmp::min, collections::HashMap};
@@ -216,10 +213,7 @@ fn fetch_prices<'a>(
         Err(e) => {
             return Err(StdError::generic_err(format!(
                 "Failed to query {} from router {}, '{}'",
-                symbols
-                    .into_iter()
-                    .map(|sym| sym + ",")
-                    .collect::<String>(),
+                symbols.into_iter().map(|sym| sym + ",").collect::<String>(),
                 config.router.address.as_str(),
                 e
             )))
