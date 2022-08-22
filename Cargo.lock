@@ -1047,7 +1047,7 @@ dependencies = [
 [[package]]
 name = "secret-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#acfb274c368cb7bbaf89730c22d8036b094dfab3"
+source = "git+https://github.com/securesecrets/secret-plus-utils#e1aa232bc9eb8a0e27f2a038cad844730eafcc5a"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
@@ -1066,7 +1066,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#acfb274c368cb7bbaf89730c22d8036b094dfab3"
+source = "git+https://github.com/securesecrets/secret-plus-utils#e1aa232bc9eb8a0e27f2a038cad844730eafcc5a"
 dependencies = [
  "better-secret-math",
  "bincode2",
@@ -1178,7 +1178,7 @@ dependencies = [
 [[package]]
 name = "secret-utils"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#acfb274c368cb7bbaf89730c22d8036b094dfab3"
+source = "git+https://github.com/securesecrets/secret-plus-utils#e1aa232bc9eb8a0e27f2a038cad844730eafcc5a"
 dependencies = [
  "cosmwasm-std",
  "schemars 0.8.10",
