@@ -121,8 +121,8 @@ where
 
 pub mod proxy {
     use crate::common::{CommonConfig, InstantiateCommonConfig};
-    use shade_protocol::secret_storage_plus::Item;
-    use shade_protocol::utils::{asset::RawContract, storage::plus::ItemStorage};
+    use crate::ssp::{ItemStorage, Item};
+    use shade_protocol::utils::{asset::RawContract};
 
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)

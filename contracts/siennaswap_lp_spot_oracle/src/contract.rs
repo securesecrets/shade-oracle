@@ -14,7 +14,7 @@ use shade_oracles::{
         siennaswap::{resolve_pair, ConfigResponse, InstantiateMsg, PairData, EXCHANGE},
     },
     protocols::siennaswap::{SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse},
-    storage::ItemStorage,
+    ssp::ItemStorage,
     BLOCK_SIZE,
 };
 use std::cmp::min;

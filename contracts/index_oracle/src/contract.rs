@@ -24,7 +24,7 @@ use shade_oracles::{
         },
         index_oracle::{ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg},
     },
-    storage::{GenericItemStorage, GenericMapStorage, ItemStorage},
+    ssp::{GenericItemStorage, GenericMapStorage, ItemStorage},
     BLOCK_SIZE,
 };
 

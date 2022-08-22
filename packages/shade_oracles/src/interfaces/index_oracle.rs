@@ -95,7 +95,7 @@ pub use state::*;
 #[cfg(feature = "index")]
 pub mod state {
     use super::*;
-    use crate::storage::{Bincode2, GenericItemStorage, GenericMapStorage, Item, ItemStorage, Map};
+    use crate::ssp::{Bincode2, GenericItemStorage, GenericMapStorage, Item, ItemStorage, Map};
 
     /// (weight, constant)
     pub type BtrBasketItem = (U256, U256);

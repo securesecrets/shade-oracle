@@ -11,9 +11,7 @@ use cosmwasm_std::{
 };
 use shade_protocol::utils::asset::{Contract, RawContract};
 use shade_protocol::{
-    secret_storage_plus::Item,
     utils::generic_response::ResponseStatus,
-    utils::storage::plus::ItemStorage,
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
 };
 
@@ -256,177 +254,180 @@ pub fn is_disabled(enabled: bool) -> StdResult<()> {
 }
 
 #[cfg(feature = "core")]
-impl ItemStorage for CommonConfig {
-    const ITEM: Item<'static, Self> = Item::new("commonconfig");
-}
-
+pub use state::*;
 #[cfg(feature = "core")]
-pub fn oracle_exec(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-    oracle: impl Oracle,
-) -> StdResult<Response> {
-    let mut config = oracle.verify_admin(deps.storage, &deps.querier, info)?;
-    let msg = match msg {
-        ExecuteMsg::UpdateConfig { updates } => {
-            oracle.try_update_config(deps, updates, &mut config)
-        }
-    };
-    pad_handle_result(msg, BLOCK_SIZE)
-}
+mod state {
+    use super::*;
+    use crate::ssp::{Item, ItemStorage};
 
-#[cfg(feature = "core")]
-pub fn oracle_query(
-    deps: Deps,
-    env: Env,
-    msg: OracleQuery,
-    oracle: impl Oracle,
-) -> StdResult<QueryResponse> {
-    let resp = match msg {
-        OracleQuery::GetConfig {} => {
-            let config = CommonConfig::load(deps.storage)?;
-            to_binary(&oracle.config_resp(config))
-        }
-        OracleQuery::GetPrice { key } => {
-            let config = oracle.can_query_price(deps, &key)?;
-            to_binary(&oracle.price_resp(oracle.try_query_price(deps, &env, key, &config)?))
-        }
-        OracleQuery::GetPrices { keys } => {
-            let config = oracle.can_query_prices(deps, keys.as_slice())?;
-            to_binary(&oracle.prices_resp(oracle.try_query_prices(deps, &env, keys, &config)?))
-        }
-    };
-    pad_query_result(resp, BLOCK_SIZE)
-}
-
-#[cfg(feature = "core")]
-pub struct OracleImpl;
-
-#[cfg(feature = "core")]
-impl Oracle for OracleImpl {
-    fn try_query_price(
-        &self,
-        _deps: Deps,
-        _env: &Env,
-        _key: String,
-        _config: &CommonConfig,
-    ) -> StdResult<OraclePrice> {
-        Err(StdError::generic_err("Need to be implemented."))
+    impl ItemStorage for CommonConfig {
+        const ITEM: Item<'static, Self> = Item::new("commonconfig");
     }
-}
-
-#[cfg(feature = "core")]
-pub trait Oracle {
-    /// Instantiates a CommonConfig from InstantiateCommonConfig, saving it to store.
-    fn init_config(
-        &self,
-        storage: &mut dyn Storage,
-        api: &dyn Api,
-        config: InstantiateCommonConfig,
-    ) -> StdResult<CommonConfig> {
-        let config = config.into_valid(api)?;
-        config.save(storage)?;
-        Ok(config)
-    }
-
-    /// The first step before resolution of any execute msg for oracles.
-    fn verify_admin(
-        &self,
-        storage: &mut dyn Storage,
-        querier: &QuerierWrapper,
-        info: MessageInfo,
-    ) -> StdResult<CommonConfig> {
-        let config = CommonConfig::load(storage)?;
-        verify_admin(&config.router, querier, info.sender)?;
-        Ok(config)
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn try_update_config(
-        &self,
+    
+    pub fn oracle_exec(
         deps: DepsMut,
-        updates: ConfigUpdates,
-        config: &mut CommonConfig,
+        _env: Env,
+        info: MessageInfo,
+        msg: ExecuteMsg,
+        oracle: impl Oracle,
     ) -> StdResult<Response> {
-        config.supported_keys = updates
-            .supported_keys
-            .unwrap_or_else(|| config.supported_keys.clone());
-        config.only_band = updates.only_band.unwrap_or(config.only_band);
-        config.enabled = updates.enabled.unwrap_or(config.enabled);
-        if let Some(router) = updates.router {
-            config.router = router.into_valid(deps.api)?;
-        }
-
-        config.save(deps.storage)?;
-
-        Ok(
-            Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
-                status: ResponseStatus::Success,
-            })?),
-        )
+        let mut config = oracle.verify_admin(deps.storage, &deps.querier, info)?;
+        let msg = match msg {
+            ExecuteMsg::UpdateConfig { updates } => {
+                oracle.try_update_config(deps, updates, &mut config)
+            }
+        };
+        pad_handle_result(msg, BLOCK_SIZE)
     }
-
-    fn config_resp(&self, config: CommonConfig) -> ConfigResponse {
-        ConfigResponse { config }
-    }
-
-    fn price_resp(&self, price: OraclePrice) -> PriceResponse {
-        PriceResponse { price }
-    }
-
-    fn prices_resp(&self, prices: Vec<OraclePrice>) -> PricesResponse {
-        PricesResponse { prices }
-    }
-
-    /// Internal implementation of the query price method.
-    fn try_query_price(
-        &self,
+    
+    pub fn oracle_query(
         deps: Deps,
-        env: &Env,
-        key: String,
-        config: &CommonConfig,
-    ) -> StdResult<OraclePrice>;
-
-    /// Checks if user can query for prices
-    fn can_query_prices(&self, deps: Deps, keys: &[String]) -> StdResult<CommonConfig> {
-        let config = CommonConfig::load(deps.storage)?;
-        is_disabled(config.enabled)?;
-        let supported_keys = config.supported_keys.as_slice();
-        let mut key = "";
-        if !supported_keys.is_empty()
-            && !keys.iter().any(|k| -> bool {
-                key = k;
-                !supported_keys.contains(k)
-            })
-        {
-            return Err(throw_unsupported_symbol_error(key.to_string()));
-        }
-        Ok(config)
+        env: Env,
+        msg: OracleQuery,
+        oracle: impl Oracle,
+    ) -> StdResult<QueryResponse> {
+        let resp = match msg {
+            OracleQuery::GetConfig {} => {
+                let config = CommonConfig::load(deps.storage)?;
+                to_binary(&oracle.config_resp(config))
+            }
+            OracleQuery::GetPrice { key } => {
+                let config = oracle.can_query_price(deps, &key)?;
+                to_binary(&oracle.price_resp(oracle.try_query_price(deps, &env, key, &config)?))
+            }
+            OracleQuery::GetPrices { keys } => {
+                let config = oracle.can_query_prices(deps, keys.as_slice())?;
+                to_binary(&oracle.prices_resp(oracle.try_query_prices(deps, &env, keys, &config)?))
+            }
+        };
+        pad_query_result(resp, BLOCK_SIZE)
     }
-
-    fn can_query_price(&self, deps: Deps, key: &String) -> StdResult<CommonConfig> {
-        let config = CommonConfig::load(deps.storage)?;
-        is_disabled(config.enabled)?;
-        let supported_keys = config.supported_keys.as_slice();
-        if !supported_keys.is_empty() && !supported_keys.contains(key) {
-            return Err(throw_unsupported_symbol_error(key.to_string()));
+    
+    pub struct OracleImpl;
+    
+    impl Oracle for OracleImpl {
+        fn try_query_price(
+            &self,
+            _deps: Deps,
+            _env: &Env,
+            _key: String,
+            _config: &CommonConfig,
+        ) -> StdResult<OraclePrice> {
+            Err(StdError::generic_err("Need to be implemented."))
         }
-        Ok(config)
     }
-
-    fn try_query_prices(
-        &self,
-        deps: Deps,
-        env: &Env,
-        keys: Vec<String>,
-        config: &CommonConfig,
-    ) -> StdResult<Vec<OraclePrice>> {
-        let mut prices = vec![];
-        for key in keys {
-            prices.push(self.try_query_price(deps, env, key, config)?);
+    
+    pub trait Oracle {
+        /// Instantiates a CommonConfig from InstantiateCommonConfig, saving it to store.
+        fn init_config(
+            &self,
+            storage: &mut dyn Storage,
+            api: &dyn Api,
+            config: InstantiateCommonConfig,
+        ) -> StdResult<CommonConfig> {
+            let config = config.into_valid(api)?;
+            config.save(storage)?;
+            Ok(config)
         }
-        Ok(prices)
+    
+        /// The first step before resolution of any execute msg for oracles.
+        fn verify_admin(
+            &self,
+            storage: &mut dyn Storage,
+            querier: &QuerierWrapper,
+            info: MessageInfo,
+        ) -> StdResult<CommonConfig> {
+            let config = CommonConfig::load(storage)?;
+            verify_admin(&config.router, querier, info.sender)?;
+            Ok(config)
+        }
+    
+        #[allow(clippy::too_many_arguments)]
+        fn try_update_config(
+            &self,
+            deps: DepsMut,
+            updates: ConfigUpdates,
+            config: &mut CommonConfig,
+        ) -> StdResult<Response> {
+            config.supported_keys = updates
+                .supported_keys
+                .unwrap_or_else(|| config.supported_keys.clone());
+            config.only_band = updates.only_band.unwrap_or(config.only_band);
+            config.enabled = updates.enabled.unwrap_or(config.enabled);
+            if let Some(router) = updates.router {
+                config.router = router.into_valid(deps.api)?;
+            }
+    
+            config.save(deps.storage)?;
+    
+            Ok(
+                Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
+                    status: ResponseStatus::Success,
+                })?),
+            )
+        }
+    
+        fn config_resp(&self, config: CommonConfig) -> ConfigResponse {
+            ConfigResponse { config }
+        }
+    
+        fn price_resp(&self, price: OraclePrice) -> PriceResponse {
+            PriceResponse { price }
+        }
+    
+        fn prices_resp(&self, prices: Vec<OraclePrice>) -> PricesResponse {
+            PricesResponse { prices }
+        }
+    
+        /// Internal implementation of the query price method.
+        fn try_query_price(
+            &self,
+            deps: Deps,
+            env: &Env,
+            key: String,
+            config: &CommonConfig,
+        ) -> StdResult<OraclePrice>;
+    
+        /// Checks if user can query for prices
+        fn can_query_prices(&self, deps: Deps, keys: &[String]) -> StdResult<CommonConfig> {
+            let config = CommonConfig::load(deps.storage)?;
+            is_disabled(config.enabled)?;
+            let supported_keys = config.supported_keys.as_slice();
+            let mut key = "";
+            if !supported_keys.is_empty()
+                && !keys.iter().any(|k| -> bool {
+                    key = k;
+                    !supported_keys.contains(k)
+                })
+            {
+                return Err(throw_unsupported_symbol_error(key.to_string()));
+            }
+            Ok(config)
+        }
+    
+        fn can_query_price(&self, deps: Deps, key: &String) -> StdResult<CommonConfig> {
+            let config = CommonConfig::load(deps.storage)?;
+            is_disabled(config.enabled)?;
+            let supported_keys = config.supported_keys.as_slice();
+            if !supported_keys.is_empty() && !supported_keys.contains(key) {
+                return Err(throw_unsupported_symbol_error(key.to_string()));
+            }
+            Ok(config)
+        }
+    
+        fn try_query_prices(
+            &self,
+            deps: Deps,
+            env: &Env,
+            keys: Vec<String>,
+            config: &CommonConfig,
+        ) -> StdResult<Vec<OraclePrice>> {
+            let mut prices = vec![];
+            for key in keys {
+                prices.push(self.try_query_price(deps, env, key, config)?);
+            }
+            Ok(prices)
+        }
     }
+    
 }

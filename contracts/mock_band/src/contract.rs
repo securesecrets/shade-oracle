@@ -5,7 +5,7 @@ use shade_oracles::core::ResponseStatus;
 use shade_oracles::interfaces::band::{
     ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg, ReferenceData,
 };
-use shade_oracles::storage::Map;
+use shade_oracles::ssp::Map;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 

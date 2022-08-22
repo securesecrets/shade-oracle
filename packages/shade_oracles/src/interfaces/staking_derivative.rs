@@ -1,9 +1,9 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
 use cosmwasm_std::Uint128;
-use shade_protocol::secret_storage_plus::Item;
 use shade_protocol::utils::asset::{Contract, RawContract};
-use shade_protocol::utils::storage::plus::ItemStorage;
+#[cfg(feature = "core")]
+use crate::ssp::{Item, ItemStorage};
 use shade_protocol::utils::InstantiateCallback;
 
 pub mod shade {
