@@ -29,6 +29,8 @@ secret-toolkit = { version = "0.2", features = ["permit"] }
 
 colored = "2.0.0"
 shade-oracles = { version = "0.1.0", path = "../shade_oracles"}
-secretcli = { version = "0.1.0", git = "https://github.com/securesecrets/secret-plus-utils.git" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.67"}
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+secretcli = { version = "0.1.0", git = "https://github.com/securesecrets/secret-plus-utils.git" }

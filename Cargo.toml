@@ -1,7 +1,9 @@
 [workspace]
+resolver = "2" 
 members = [
   "packages/shade_oracles",
   "packages/shade_oracles_ensemble",
+  "packages/shade_oracles_integration",
 
   "contracts/index_oracle",
   "contracts/proxy_band_oracle",
@@ -17,7 +19,6 @@ members = [
 ]
 exclude = [
   # This needs to be disabled otherwise cargo will try to compile it for wasm32 during build and fail.
-  "packages/shade_oracles_integration",
 ]
 
 [profile.release]
