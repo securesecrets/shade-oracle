@@ -10,7 +10,7 @@ use shade_oracles::{
     core::get_precision,
     interfaces::staking_derivative::shade::{querier::query_derivative_price, InstantiateMsg},
     interfaces::{band::ReferenceData, staking_derivative::shade::StakingDerivativeConfig},
-    storage::ItemStorage,
+    ssp::ItemStorage,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]

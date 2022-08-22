@@ -18,7 +18,7 @@ use shade_oracles::{
         SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
         SimulationResponse, TokenTypeAmount,
     },
-    storage::ItemStorage,
+    ssp::ItemStorage,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]

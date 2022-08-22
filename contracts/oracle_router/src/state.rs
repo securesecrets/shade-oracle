@@ -1,7 +1,7 @@
 use shade_oracles::{
     core::Contract,
     interfaces::router::Config,
-    storage::{Item, Map},
+    ssp::{Item, Map},
 };
 
 pub const CONFIG: Item<Config> = Item::new("YteGsgSZyO");

@@ -3,7 +3,7 @@ use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse, Uint128};
 use shade_oracles::common::{oracle_exec, oracle_query, ExecuteMsg, Oracle};
 use shade_oracles::core::snip20::helpers::TokenInfo;
 use shade_oracles::core::Query;
-use shade_oracles::storage::ItemStorage;
+use shade_oracles::ssp::ItemStorage;
 use shade_oracles::{
     common::{
         querier::{query_band_price, query_price, query_token_info},

@@ -6,7 +6,7 @@ use shade_oracles::interfaces::band::proxy::QuoteSymbol;
 use shade_oracles::{
     common::{OraclePrice, OracleQuery},
     interfaces::band::{proxy::InstantiateMsg, reference_data, reference_data_bulk, ReferenceData},
-    storage::{Item, ItemStorage},
+    ssp::{Item, ItemStorage},
 };
 
 const BAND: Item<Contract> = Item::new("band-contract");

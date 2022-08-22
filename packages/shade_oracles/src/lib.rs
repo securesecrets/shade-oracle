@@ -4,14 +4,15 @@ pub const BLOCK_SIZE: usize = 256;
 pub mod protocols;
 
 #[cfg(feature = "storage")]
+pub use storage::*;
+#[cfg(feature = "storage")]
 pub mod storage {
     pub use cosmwasm_storage::*;
-    pub use shade_protocol::secret_storage_plus::*;
-    pub use shade_protocol::utils::storage::default::*;
-    pub use shade_protocol::utils::storage::plus::*;
+    pub use secret_storage_plus as ssp;
 }
 #[cfg(feature = "core")]
 pub mod core {
+    pub use secret_storage_plus as ssp;
     pub use better_secret_math;
     pub use cosmwasm_schema;
     pub use schemars;

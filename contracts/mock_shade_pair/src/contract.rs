@@ -6,7 +6,7 @@ use shade_oracles::{
     protocols::shadeswap::{
         EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenPair, TokenType,
     },
-    storage::Item,
+    ssp::Item,
 };
 
 pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
