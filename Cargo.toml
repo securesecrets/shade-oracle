@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
   "packages/shade_oracles",
   "packages/multi_test",
