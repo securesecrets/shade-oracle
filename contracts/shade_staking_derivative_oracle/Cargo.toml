@@ -18,7 +18,7 @@ default = []
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-shade-oracles = { path = "../../packages/shade_oracles", features = [ "core", "shd-staking-derivative" ] }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["shd-staking-derivative" ] }
 
 [dev-dependencies]
 shade-oracles-multi-test = { path = "../../packages/multi_test", features = [  "multi-test", "staking-derivative" ] }

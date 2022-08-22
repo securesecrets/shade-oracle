@@ -121,6 +121,7 @@ where
 
 pub mod proxy {
     use crate::common::{CommonConfig, InstantiateCommonConfig};
+    #[cfg(feature = "proxy-band")]
     use crate::ssp::{ItemStorage, Item};
     use shade_protocol::utils::{asset::RawContract};
 
