@@ -37,7 +37,7 @@ jobs:
       - uses: actions-rs/cargo@v1.0.3
         with:
           command: build
-          args: --release --target wasm32-unknown-unknown --manifest-path=${{matrix.dir}}
+          args: --release --target wasm32-unknown-unknown --locked --manifest-path=${{matrix.dir}}
 
   find-packages: # Job that list subdirectories
     runs-on: ubuntu-latest
