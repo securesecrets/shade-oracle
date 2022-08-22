@@ -26,10 +26,11 @@ cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
 cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
 schemars = { version = "0.7" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
-
 colored = "2.0.0"
-chrono = "0.4.19"
-shade-oracles = { version = "0.1.0", path = "../shade_oracles"}
-secretcli = { version = "0.1.0", git = "https://github.com/securesecrets/secret-plus-utils.git" }
+shade-oracles = { version = "0.1.0", path = "../packages/shade_oracles"}
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.67"}
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+secretcli = { version = "0.1.0", git = "https://github.com/securesecrets/secret-plus-utils.git" }
+chrono = "0.4.19"
