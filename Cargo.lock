@@ -713,7 +713,7 @@ dependencies = [
 [[package]]
 name = "mulberry"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-lend?branch=develop#98c86dbb3e727fa22daa2213ef15684e48b6456f"
+source = "git+https://github.com/securesecrets/shade-lend?branch=develop#175b4f3743bbb0e8ce9991c9f1af3f72f713c4ec"
 dependencies = [
  "better-secret-math",
  "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm?rev=1e05e7e)",
@@ -733,7 +733,7 @@ dependencies = [
 [[package]]
 name = "mulberry-macros"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-lend?branch=develop#98c86dbb3e727fa22daa2213ef15684e48b6456f"
+source = "git+https://github.com/securesecrets/shade-lend?branch=develop#175b4f3743bbb0e8ce9991c9f1af3f72f713c4ec"
 dependencies = [
  "proc-macro2",
  "quote",
