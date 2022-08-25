@@ -53,14 +53,11 @@ mod state {
 
     use super::{error::*, msg::*, *};
     use crate::{
-        common::{OraclePrice},
+        common::OraclePrice,
         interfaces::band::ReferenceData,
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
-    use better_secret_math::{
-        core::{muldiv_fp},
-        U256,
-    };
+    use better_secret_math::{core::muldiv_fp, U256};
     use cosmwasm_std::{Storage, Timestamp, Uint128};
     use mulberry::common::GlobalStatus;
 
@@ -129,7 +126,11 @@ mod state {
                 weight_sum += weight;
                 asset_symbols.push(sym.clone());
                 match basket.insert(sym.to_string(), basket_item) {
-                    Some(_) => return Err(IndexOracleError::RecursiveSymbol { symbol: sym.to_string() }),
+                    Some(_) => {
+                        return Err(IndexOracleError::RecursiveSymbol {
+                            symbol: sym.to_string(),
+                        })
+                    }
                     None => continue,
                 }
             }
@@ -197,13 +198,19 @@ mod state {
                 // Symbol is to be removed and it existed before
                 if self.asset_symbols.contains(&mod_sym) && mod_weight.is_zero() {
                     // Guaranteed to find it since it's existed before
-                    weights.swap_remove(weights.iter().position(|(sym, _)| mod_sym.eq(sym)).unwrap());
-                    self.asset_symbols.swap_remove(self.asset_symbols.iter().position(|sym| mod_sym.eq(sym)).unwrap());
+                    weights
+                        .swap_remove(weights.iter().position(|(sym, _)| mod_sym.eq(sym)).unwrap());
+                    self.asset_symbols.swap_remove(
+                        self.asset_symbols
+                            .iter()
+                            .position(|sym| mod_sym.eq(sym))
+                            .unwrap(),
+                    );
                     match self.basket.remove(&mod_sym) {
                         None => {
                             return Err(IndexOracleError::BasketAssetNotFound { asset: mod_sym });
                         }
-                        Some(_) => {   }
+                        Some(_) => {}
                     }
                 }
 
@@ -213,7 +220,10 @@ mod state {
                         weights.swap_remove(prev_pos);
                     }
                     weights.push((mod_sym.clone(), mod_weight));
-                    self.basket.entry(mod_sym.clone()).or_insert_with(|| BtrAssetWeights::new(mod_weight.into(), U256::ZERO)).initial = mod_weight.into();
+                    self.basket
+                        .entry(mod_sym.clone())
+                        .or_insert_with(|| BtrAssetWeights::new(mod_weight.into(), U256::ZERO))
+                        .initial = mod_weight.into();
                 }
             }
 
@@ -323,7 +333,11 @@ mod state {
             }
             Ok(())
         }
-        fn _compute_target(&self, prices: &[OraclePrice], now: u64) -> IndexOracleResult<(U256, u64)> {
+        fn _compute_target(
+            &self,
+            prices: &[OraclePrice],
+            now: u64,
+        ) -> IndexOracleResult<(U256, u64)> {
             let mut new_target = U256::ZERO;
             let mut last_updated_base = now;
             let mut last_updated_quote = now;
@@ -344,10 +358,16 @@ mod state {
     #[cfg(test)]
     #[cfg(feature = "index")]
     mod test {
-        use crate::{common::OraclePrice, unit_test_interface::prices::generate_price_feed, interfaces::index};
-        use better_secret_math::{core::{exp10, muldiv}, ud60x18::assert_with_precision};
-        use mulberry::constants::time;
         use super::{msg::InitialBasketItem, *};
+        use crate::{
+            common::OraclePrice, interfaces::index,
+            unit_test_interface::prices::generate_price_feed,
+        };
+        use better_secret_math::{
+            core::{exp10, muldiv},
+            ud60x18::assert_with_precision,
+        };
+        use mulberry::constants::time;
         use rstest::*;
 
         fn basic_basket() -> Vec<InitialBasketItem> {
@@ -364,7 +384,7 @@ mod state {
                 ("USD", "1.00", 0),
                 ("EURO", "1.0196", 0),
                 ("GDP", "1.208", 0),
-                ("JPY", "0.0074", 0)
+                ("JPY", "0.0074", 0),
             ])
         }
 
@@ -373,7 +393,7 @@ mod state {
                 ("USD", "1.00", 0),
                 ("EURO", "1.30", 0),
                 ("GDP", "1.208", 0),
-                ("JPY", "0.0074", 0)
+                ("JPY", "0.0074", 0),
             ])
         }
 
@@ -382,22 +402,30 @@ mod state {
                 ("USD", "1.00", 0),
                 ("EURO", "0.0196", 0),
                 ("GDP", "1.208", 0),
-                ("JPY", "0.0074", 0)
+                ("JPY", "0.0074", 0),
             ])
         }
-        
+
         fn feed_3() -> Vec<OraclePrice> {
             generate_price_feed(vec![
                 ("USD", "1.00", 0),
                 ("EURO", "1.0526", 0),
                 ("GDP", "1.075", 0),
-                ("JPY", "0.0094", 0)
+                ("JPY", "0.0094", 0),
             ])
         }
 
         fn basic_index_init(target: U256) -> IndexOracle {
             let timestamp = Timestamp::from_seconds(0);
-            IndexOracle::init("SILK".into(), Contract::default(), Uint64::new(SIX_HOURS), basic_basket(), target.into(), &timestamp).unwrap()
+            IndexOracle::init(
+                "SILK".into(),
+                Contract::default(),
+                Uint64::new(SIX_HOURS),
+                basic_basket(),
+                target.into(),
+                &timestamp,
+            )
+            .unwrap()
         }
 
         #[test]
@@ -406,11 +434,15 @@ mod state {
             let timestamp = Timestamp::from_seconds(0);
             let mut index_oracle = basic_index_init(target);
             index_oracle.compute_fixed_weights(&feed_0()).unwrap();
-            index_oracle.compute_target(Some(&feed_0()), &timestamp).unwrap();
+            index_oracle
+                .compute_target(Some(&feed_0()), &timestamp)
+                .unwrap();
 
             assert_with_precision(index_oracle.target.value, target, exp10(16));
 
-            index_oracle.compute_target(Some(&feed_1()), &timestamp).unwrap();
+            index_oracle
+                .compute_target(Some(&feed_1()), &timestamp)
+                .unwrap();
 
             let target = U256::new(112u128) * exp10(16);
             assert_with_precision(index_oracle.target.value, target, exp10(16));
@@ -423,18 +455,21 @@ mod state {
             let mut index_oracle = basic_index_init(target);
             index_oracle.compute_fixed_weights(&feed_0()).unwrap();
 
-            index_oracle.compute_target(Some(&feed_0()), &timestamp).unwrap();
+            index_oracle
+                .compute_target(Some(&feed_0()), &timestamp)
+                .unwrap();
 
             assert_with_precision(index_oracle.target.value, target, exp10(16));
 
             let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
 
-            index_oracle.compute_target(Some(&feed_1()), &new_timestamp).unwrap();
+            index_oracle
+                .compute_target(Some(&feed_1()), &new_timestamp)
+                .unwrap();
 
             assert!(index_oracle.target.frozen);
             assert_eq!(index_oracle.target.last_updated, 0u64);
             assert_with_precision(index_oracle.target.value, target, exp10(16));
-
         }
 
         #[test]
@@ -445,26 +480,30 @@ mod state {
             let mut index_oracle = basic_index_init(target);
             index_oracle.compute_fixed_weights(&feed_2()).unwrap();
 
-            index_oracle.compute_target(Some(&feed_2()), &timestamp).unwrap();
+            index_oracle
+                .compute_target(Some(&feed_2()), &timestamp)
+                .unwrap();
 
             assert_with_precision(index_oracle.target.value, target, exp10(16));
 
             let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
 
-            index_oracle.compute_target(Some(&feed_3()), &new_timestamp).unwrap();
+            index_oracle
+                .compute_target(Some(&feed_3()), &new_timestamp)
+                .unwrap();
 
             assert!(index_oracle.target.frozen);
             assert_eq!(index_oracle.target.last_updated, 0u64);
             assert_with_precision(index_oracle.target.value, target, exp10(16));
 
             index_oracle.rollback(&feed_3(), &timestamp).unwrap();
-            index_oracle.compute_target(Some(&feed_3()), &timestamp).unwrap();
+            index_oracle
+                .compute_target(Some(&feed_3()), &timestamp)
+                .unwrap();
 
             assert!(!index_oracle.target.frozen);
             assert_eq!(index_oracle.target.last_updated, 0u64);
             assert_with_precision(index_oracle.target.value, target, exp10(16));
-
         }
-        
     }
 }

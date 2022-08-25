@@ -116,7 +116,7 @@ impl Oracle for SiennaswapLpOracle {
                 price1 = price;
             }
         }
-        
+
         let pair_info_response: SiennaSwapPairInfoResponse =
             deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
                 contract_addr: exchange.address.to_string(),

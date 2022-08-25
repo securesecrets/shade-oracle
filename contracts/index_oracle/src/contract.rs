@@ -1,28 +1,22 @@
-use cosmwasm_std::{
-    attr, entry_point, Binary, Decimal256, DepsMut, MessageInfo, Uint128, Uint64,
-};
+use cosmwasm_std::{attr, entry_point, Binary, Decimal256, DepsMut, MessageInfo, Uint128, Uint64};
 use cosmwasm_std::{to_binary, Deps, Env, Response};
-use shade_oracles::common::querier::{validate_permission};
+use shade_oracles::common::querier::validate_permission;
 use shade_oracles::common::{PriceResponse, PricesResponse, ShadeOraclePermissions};
 use shade_oracles::core::{Contract, RawContract};
 use shade_oracles::interfaces::index::{error::*, msg::*, *};
 use shade_oracles::mulberry::create_attr_action;
-use std::vec;
 use shade_oracles::{
-    core::{
-        pad_handle_result, pad_query_result,
-    },
+    core::{pad_handle_result, pad_query_result},
     interfaces::{
         band::ReferenceData,
-        common::{
-            querier::{query_band_prices}, OraclePrice,
-        },
+        common::{querier::query_band_prices, OraclePrice},
         router::querier::get_admin_auth,
     },
     mulberry::common::GlobalStatus,
-    ssp::{ItemStorage},
+    ssp::ItemStorage,
     BLOCK_SIZE,
 };
+use std::vec;
 
 create_attr_action!("_index_oracle");
 
@@ -88,7 +82,11 @@ pub fn try_compute_index(
     ]))
 }
 
-pub fn try_unfreeze(deps: DepsMut, env: Env, mut oracle: IndexOracle) -> IndexOracleResult<Response> {
+pub fn try_unfreeze(
+    deps: DepsMut,
+    env: Env,
+    mut oracle: IndexOracle,
+) -> IndexOracleResult<Response> {
     let prices = query_band_prices(
         &oracle.config.router,
         &deps.querier,
@@ -208,9 +206,7 @@ pub fn fetch_prices<'a>(
         .collect::<Vec<String>>();
     let symbols_slice = symbols.as_slice();
     match query_band_prices(router, &deps.querier, symbols_slice) {
-        Ok(prices) => {
-            Ok(Some(prices))
-        },
+        Ok(prices) => Ok(Some(prices)),
         Err(_) => Ok(None),
     }
 }
@@ -223,11 +219,7 @@ pub fn try_mod_basket(
 ) -> IndexOracleResult<Response> {
     // Compute target with old weights
     let router = oracle.config.router.clone();
-    let prices = query_band_prices(
-        &router,
-        &deps.querier,
-        oracle.asset_symbols.as_slice(),
-    )?;
+    let prices = query_band_prices(&router, &deps.querier, oracle.asset_symbols.as_slice())?;
     oracle.compute_target(Some(&prices), &env.block.time)?;
     // Update weights
     oracle.update_basket(mod_basket)?;
@@ -252,7 +244,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
             if key != oracle.config.symbol {
                 return Err(IndexOracleError::UnsupportedSymbol { symbol: key });
             }
-            let prices = fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
+            let prices =
+                fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
             oracle.compute_target(prices.as_ref(), &env.block.time)?;
             let price = OraclePrice::new(
                 oracle.config.symbol,
@@ -268,10 +261,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
             oracle.require_can_run(deps.storage, true, false, false)?;
             for key in &keys {
                 if key.eq(&oracle.config.symbol) {
-                    return Err(IndexOracleError::UnsupportedSymbol { symbol: key.clone() });
+                    return Err(IndexOracleError::UnsupportedSymbol {
+                        symbol: key.clone(),
+                    });
                 }
             }
-            let prices = fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
+            let prices =
+                fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
             oracle.compute_target(prices.as_ref(), &env.block.time)?;
             let price = OraclePrice::new(
                 oracle.config.symbol,
@@ -286,7 +282,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
         }
         QueryMsg::GetIndexData {} => {
             oracle.require_can_run(deps.storage, true, true, false)?;
-            let prices = fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
+            let prices =
+                fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
             oracle.compute_target(prices.as_ref(), &env.block.time)?;
             let basket = oracle
                 .basket

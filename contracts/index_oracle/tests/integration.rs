@@ -1,14 +1,15 @@
-#![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping, clippy::too_many_arguments)]
+#![allow(
+    clippy::zero_prefixed_literal,
+    clippy::inconsistent_digit_grouping,
+    clippy::too_many_arguments
+)]
 
 use cosmwasm_std::{Addr, Decimal256, Uint128, Uint64};
 use rstest::*;
 use shade_oracles::{
-    common::{PriceResponse},
+    common::PriceResponse,
     core::{ExecuteCallback, InstantiateCallback, Query},
-    interfaces::index::{
-        msg::*,
-        *,
-    },
+    interfaces::index::{msg::*, *},
     interfaces::router,
 };
 use shade_oracles_multi_test::{
@@ -388,11 +389,9 @@ fn mod_index_test(
     };
 
     // check price doesn't change on mod_price
-    let price: PriceResponse = QueryMsg::GetPrice {
-        key: symbol,
-    }
-    .test_query(&router, &app)
-    .unwrap();
+    let price: PriceResponse = QueryMsg::GetPrice { key: symbol }
+        .test_query(&router, &app)
+        .unwrap();
     let data = price.price.data();
     {
         let err = if data.rate > expected_final {
