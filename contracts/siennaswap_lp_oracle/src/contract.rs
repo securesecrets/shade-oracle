@@ -104,10 +104,19 @@ impl Oracle for SiennaswapLpOracle {
         let prices = query_prices(
             &config.router,
             &deps.querier,
-            [pair.symbol_0, pair.symbol_1].as_slice(),
+            [pair.symbol_0.clone(), pair.symbol_1.clone()].as_slice(),
         )?;
-        let (price0, price1) = (prices[0].clone(), prices[1].clone());
 
+        let mut price0 = OraclePrice::default();
+        let mut price1 = OraclePrice::default();
+        for price in prices {
+            if price.key.eq(&pair.symbol_0) {
+                price0 = price;
+            } else {
+                price1 = price;
+            }
+        }
+        
         let pair_info_response: SiennaSwapPairInfoResponse =
             deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
                 contract_addr: exchange.address.to_string(),

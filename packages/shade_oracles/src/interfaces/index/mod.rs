@@ -263,13 +263,14 @@ mod state {
                 // Can't overflow because initial weight cannot be greater than 10^19 and target will
                 // always be reasonably small (we can arbitrarily say 10^30 is worst case), but
                 // it will initially be at 10^18 if it is 1.05.
-                let fixed_weight = (weight.fixed * price) / new_target;
+                let new_weight = (weight.fixed * price) / new_target;
                 self.basket
                     .entry(asset_symbol.to_string())
                     .and_modify(|weight| {
-                        weight.fixed = fixed_weight;
+                        weight.initial = new_weight;
                     });
             }
+            self.compute_fixed_weights(prices)?;
             self.target.frozen = false;
             self.target.last_updated = now;
             Ok(())
@@ -341,15 +342,14 @@ mod state {
     }
 
     #[cfg(test)]
+    #[cfg(feature = "index")]
     mod test {
-        use std::str::FromStr;
-
-        use crate::{common::OraclePrice, interfaces::band::ReferenceData};
-        use better_secret_math::core::{exp10, muldiv};
+        use crate::{common::OraclePrice, unit_test_interface::prices::generate_price_feed, interfaces::index};
+        use better_secret_math::{core::{exp10, muldiv}, ud60x18::assert_with_precision};
+        use mulberry::constants::time;
         use super::{msg::InitialBasketItem, *};
         use rstest::*;
 
-        #[fixture]
         fn basic_basket() -> Vec<InitialBasketItem> {
             vec![
                 ("USD".into(), Decimal256::percent(25)),
@@ -359,28 +359,112 @@ mod state {
             ]
         }
 
-        #[fixture]
-        fn basic_price_feed() -> Vec<OraclePrice> {
-            vec![
-                OraclePrice::new("USD".into(), price_data("1.00", 0)),
-                OraclePrice::new("EURO".into(), price_data("1.0196", 0)),
-                OraclePrice::new("GDP".into(), price_data("1.208", 0)),
-                OraclePrice::new("JPY".into(), price_data("0.0074", 0)),
-            ]
+        fn feed_0() -> Vec<OraclePrice> {
+            generate_price_feed(vec![
+                ("USD", "1.00", 0),
+                ("EURO", "1.0196", 0),
+                ("GDP", "1.208", 0),
+                ("JPY", "0.0074", 0)
+            ])
         }
 
-        fn price_data(price: &str, last_updated: u64) -> ReferenceData {
-            let price: U256 = Decimal256::from_str(price).unwrap().into();
-            ReferenceData {
-                rate: Uint128::new(price.as_u128()),
-                last_updated_base: last_updated,
-                last_updated_quote: last_updated,
-            }
+        fn feed_1() -> Vec<OraclePrice> {
+            generate_price_feed(vec![
+                ("USD", "1.00", 0),
+                ("EURO", "1.30", 0),
+                ("GDP", "1.208", 0),
+                ("JPY", "0.0074", 0)
+            ])
+        }
+
+        fn feed_2() -> Vec<OraclePrice> {
+            generate_price_feed(vec![
+                ("USD", "1.00", 0),
+                ("EURO", "0.0196", 0),
+                ("GDP", "1.208", 0),
+                ("JPY", "0.0074", 0)
+            ])
+        }
+        
+        fn feed_3() -> Vec<OraclePrice> {
+            generate_price_feed(vec![
+                ("USD", "1.00", 0),
+                ("EURO", "1.0526", 0),
+                ("GDP", "1.075", 0),
+                ("JPY", "0.0094", 0)
+            ])
+        }
+
+        fn basic_index_init(target: U256) -> IndexOracle {
+            let timestamp = Timestamp::from_seconds(0);
+            IndexOracle::init("SILK".into(), Contract::default(), Uint64::new(SIX_HOURS), basic_basket(), target.into(), &timestamp).unwrap()
         }
 
         #[test]
         fn index_test_1() {
-            //Vec<(String, Decimal256)>
+            let target = U256::new(105u128) * exp10(16);
+            let timestamp = Timestamp::from_seconds(0);
+            let mut index_oracle = basic_index_init(target);
+            index_oracle.compute_fixed_weights(&feed_0()).unwrap();
+            index_oracle.compute_target(Some(&feed_0()), &timestamp).unwrap();
+
+            assert_with_precision(index_oracle.target.value, target, exp10(16));
+
+            index_oracle.compute_target(Some(&feed_1()), &timestamp).unwrap();
+
+            let target = U256::new(112u128) * exp10(16);
+            assert_with_precision(index_oracle.target.value, target, exp10(16));
         }
+
+        #[test]
+        fn freeze_1() {
+            let target = U256::new(105u128) * exp10(16);
+            let timestamp = Timestamp::from_seconds(0);
+            let mut index_oracle = basic_index_init(target);
+            index_oracle.compute_fixed_weights(&feed_0()).unwrap();
+
+            index_oracle.compute_target(Some(&feed_0()), &timestamp).unwrap();
+
+            assert_with_precision(index_oracle.target.value, target, exp10(16));
+
+            let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
+
+            index_oracle.compute_target(Some(&feed_1()), &new_timestamp).unwrap();
+
+            assert!(index_oracle.target.frozen);
+            assert_eq!(index_oracle.target.last_updated, 0u64);
+            assert_with_precision(index_oracle.target.value, target, exp10(16));
+
+        }
+
+        #[test]
+        #[cfg(feature = "index")]
+        fn rollback_1() {
+            let target = U256::new(105u128) * exp10(16);
+            let timestamp = Timestamp::from_seconds(0);
+            let mut index_oracle = basic_index_init(target);
+            index_oracle.compute_fixed_weights(&feed_2()).unwrap();
+
+            index_oracle.compute_target(Some(&feed_2()), &timestamp).unwrap();
+
+            assert_with_precision(index_oracle.target.value, target, exp10(16));
+
+            let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
+
+            index_oracle.compute_target(Some(&feed_3()), &new_timestamp).unwrap();
+
+            assert!(index_oracle.target.frozen);
+            assert_eq!(index_oracle.target.last_updated, 0u64);
+            assert_with_precision(index_oracle.target.value, target, exp10(16));
+
+            index_oracle.rollback(&feed_3(), &timestamp).unwrap();
+            index_oracle.compute_target(Some(&feed_3()), &timestamp).unwrap();
+
+            assert!(!index_oracle.target.frozen);
+            assert_eq!(index_oracle.target.last_updated, 0u64);
+            assert_with_precision(index_oracle.target.value, target, exp10(16));
+
+        }
+        
     }
 }
