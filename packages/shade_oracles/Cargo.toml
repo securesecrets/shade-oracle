@@ -42,7 +42,5 @@ secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-util
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20", "math"] }
 shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git" }
 
-mulberry = { git = "ssh://git@github.com/securesecrets/shade-lend.git", branch = "LEND-175-redemption-model" }
-
 [dev-dependencies]
 rstest = "0.15.0"

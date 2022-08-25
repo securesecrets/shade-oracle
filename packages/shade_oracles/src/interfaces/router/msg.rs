@@ -1,8 +1,6 @@
 use super::registry::{Config, RegistryOperation, UpdateConfig};
-use crate::common::{PriceResponse, PricesResponse};
-use crate::mulberry::impl_msg_callbacks;
+use crate::{common::{PriceResponse, PricesResponse, status::ContractStatus}, impl_msg_callbacks};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use mulberry::common::ContractStatus;
 use shade_protocol::Contract;
 
 impl_msg_callbacks!();

@@ -1,7 +1,6 @@
-use crate::common::{PriceResponse, PricesResponse};
+use crate::{common::{PriceResponse, PricesResponse, status::ContractStatus}, impl_msg_callbacks};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal256, Uint128, Uint64};
-use mulberry::common::ContractStatus;
 use shade_protocol::{utils::asset::RawContract, Contract};
 
 use super::{AssetSymbol, AssetWeights, Target};
