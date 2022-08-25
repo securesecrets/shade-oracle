@@ -1,3 +1,5 @@
+#![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping, clippy::too_many_arguments)]
+
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{to_binary, Addr};
 use shade_oracles::common::PriceResponse;
@@ -127,7 +129,7 @@ fn basic_market_test(
     .test_exec(&router, &mut app, user.clone(), &[])
     .unwrap();
     let price: PriceResponse = common::OracleQuery::GetPrice {
-        key: symbol.clone(),
+        key: symbol,
     }
     .test_query(&market_oracle, &app)
     .unwrap();

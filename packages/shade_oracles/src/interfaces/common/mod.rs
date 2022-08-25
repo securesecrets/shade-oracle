@@ -15,11 +15,28 @@ use shade_protocol::{
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
 };
 
+pub mod config;
+mod error;
 pub mod querier;
 
 use super::band::{BtrReferenceData, ReferenceData};
 
-pub const SHADE_ORACLE_ADMIN_PERMISSION: &str = "SHADE_ORACLE_ADMIN";
+pub enum ShadeOraclePermissions {
+    SuperAdmin,
+    SilkAssembly,
+}
+
+#[allow(clippy::inherent_to_string)]
+impl ShadeOraclePermissions {
+    pub fn to_string(&self) -> String {
+        match self {
+            ShadeOraclePermissions::SuperAdmin => "SHADE_ORACLE_ADMIN",
+            ShadeOraclePermissions::SilkAssembly => "SHADE_ORACLE_SILK_INDEX",
+        }
+        .to_string()
+    }
+}
+
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
@@ -87,6 +104,8 @@ pub struct ConfigUpdates {
 /// enabled - can we use this oracle?
 ///
 /// only_band - will this oracle go directly to band rather than through the router?
+///
+/// will be deprecated
 pub struct InstantiateCommonConfig {
     pub supported_keys: Option<Vec<String>>,
     pub router: RawContract,
@@ -186,7 +205,7 @@ impl Into<OraclePrice> for BtrOraclePrice {
     fn into(self) -> OraclePrice {
         OraclePrice {
             key: self.key.clone(),
-            data: self.data.clone().into(),
+            data: self.data.into(),
         }
     }
 }

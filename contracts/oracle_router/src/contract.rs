@@ -2,7 +2,7 @@ use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageIn
 use shade_oracles::{
     common::{
         querier::{query_oracle_price, query_oracle_prices},
-        OraclePrice, PriceResponse, PricesResponse, SHADE_ORACLE_ADMIN_PERMISSION,
+        OraclePrice, PriceResponse, PricesResponse, ShadeOraclePermissions,
     },
     core::{
         mulberry::{common::GlobalStatus, create_attr_action},
@@ -46,7 +46,7 @@ pub fn execute(
     // Ensure sender is admin
     validate_permission(
         &deps.querier,
-        SHADE_ORACLE_ADMIN_PERMISSION,
+        &ShadeOraclePermissions::SuperAdmin.to_string(),
         &info.sender,
         &router.config.admin_auth,
     )?;
