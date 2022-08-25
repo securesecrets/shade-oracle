@@ -1,10 +1,8 @@
 use super::*;
 use crate::{
     interfaces::band::{reference_data, reference_data_bulk},
-    interfaces::{
-        router::msg::{
-            ConfigResponse as RouterConfigResponse, OracleResponse, QueryMsg as RouterQueryMsg,
-        },
+    interfaces::router::msg::{
+        ConfigResponse as RouterConfigResponse, OracleResponse, QueryMsg as RouterQueryMsg,
     },
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
