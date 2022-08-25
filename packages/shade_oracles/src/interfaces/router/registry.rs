@@ -39,11 +39,10 @@ pub use state::*;
 mod state {
     use std::collections::HashMap;
 
-    use crate::interfaces::router::error::{OracleRouterError, OracleRouterResult};
+    use crate::{interfaces::router::error::{OracleRouterError, OracleRouterResult}, impl_global_status};
 
     use super::*;
     use cosmwasm_std::Storage;
-    use mulberry::common::GlobalStatus;
     use secret_storage_plus::{GenericMapStorage, Item, ItemStorage, Map};
 
     impl_global_status!(OracleRouter, OracleRouterError);

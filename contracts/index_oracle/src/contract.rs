@@ -3,8 +3,8 @@ use cosmwasm_std::{to_binary, Deps, Env, Response};
 use shade_oracles::common::querier::validate_permission;
 use shade_oracles::common::{PriceResponse, PricesResponse, ShadeOraclePermissions};
 use shade_oracles::core::{Contract, RawContract};
+use shade_oracles::create_attr_action;
 use shade_oracles::interfaces::index::{error::*, msg::*, *};
-use shade_oracles::mulberry::create_attr_action;
 use shade_oracles::{
     core::{pad_handle_result, pad_query_result},
     interfaces::{
@@ -12,7 +12,7 @@ use shade_oracles::{
         common::{querier::query_band_prices, OraclePrice},
         router::querier::get_admin_auth,
     },
-    mulberry::common::GlobalStatus,
+    common::status::GlobalStatus,
     ssp::ItemStorage,
     BLOCK_SIZE,
 };
