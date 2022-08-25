@@ -1,12 +1,13 @@
 use super::*;
 use crate::{
     interfaces::band::{reference_data, reference_data_bulk},
-    interfaces::router::msg::{
-        ConfigResponse as RouterConfigResponse, OracleResponse, QueryMsg as RouterQueryMsg,
+    interfaces::{
+        router::msg::{
+            ConfigResponse as RouterConfigResponse, OracleResponse, QueryMsg as RouterQueryMsg,
+        },
     },
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
-use shade_admin::querier::validate_permission;
 use shade_protocol::{
     contract_interfaces::snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},
     snip20::helpers::{token_info, TokenInfo},
@@ -105,14 +106,14 @@ pub fn query_band_prices<'a>(
     let resp: RouterConfigResponse = RouterQueryMsg::GetConfig {}.query(querier, router)?;
     let config = resp.config;
     let mut prices: Vec<OraclePrice> = vec![];
-    let prices_count = prices.len();
     let base_symbols = keys
         .into_iter()
         .map(|key| {
             prices.push(OraclePrice::new(key.to_string(), ReferenceData::default()));
             key.to_string()
         })
-        .collect();
+        .collect::<Vec<String>>();
+    let prices_count = base_symbols.len();
     let quote_symbols = vec![config.quote_symbol; prices_count];
 
     let band_data = reference_data_bulk(querier, base_symbols, quote_symbols, &config.band)?;
@@ -133,7 +134,21 @@ pub fn verify_admin(
     let get_admin_auth_req: RouterConfigResponse =
         RouterQueryMsg::GetConfig {}.query(querier, contract)?;
     let admin_auth = get_admin_auth_req.config.admin_auth;
-    validate_permission(querier, SHADE_ORACLE_ADMIN_PERMISSION, &user, &admin_auth)
+    validate_permission(
+        querier,
+        ShadeOraclePermissions::SuperAdmin,
+        &user,
+        &admin_auth,
+    )
+}
+
+pub fn validate_permission(
+    querier: &QuerierWrapper,
+    permission: ShadeOraclePermissions,
+    user: &(impl Into<String> + Clone),
+    admin_auth: &(impl Into<Contract> + Clone),
+) -> StdResult<()> {
+    shade_admin::querier::validate_permission(querier, &permission.to_string(), user, admin_auth)
 }
 
 pub fn query_token_info(contract: &Contract, querier: &QuerierWrapper) -> StdResult<TokenInfo> {

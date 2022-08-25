@@ -59,9 +59,9 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
 name = "base64ct"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bdca834647821e0b13d9539a8634eb62d3501b6b6c2cec1722786ee6671b851"
+checksum = "ea2b2456fd614d856680dcd9fcc660a51a820fa09daef2e49772b56a193c8474"
 
 [[package]]
 name = "bech32"
@@ -72,11 +72,14 @@ checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 [[package]]
 name = "better-secret-math"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math#482b2402b72bec21d053d312773b90c8141911d1"
+source = "git+https://github.com/securesecrets/better-secret-math#78e1a9b770626e2b4df036ba17803a22c9427d63"
 dependencies = [
+ "btr-macros",
  "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
  "cosmwasm-std",
+ "derive-from-ext",
  "ethnum",
+ "paste",
  "schemars 0.8.10",
  "serde",
  "thiserror",
@@ -99,6 +102,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "btr-macros"
+version = "0.1.0"
+source = "git+https://github.com/securesecrets/better-secret-math#78e1a9b770626e2b4df036ba17803a22c9427d63"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -713,14 +726,14 @@ dependencies = [
 [[package]]
 name = "mulberry"
 version = "0.1.0"
-source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=develop#b1fe6259af2607447a7677b404772a2c201bf9e3"
+source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=LEND-175-redemption-model#a355f34f8340434e8480613fed995a0c8c240683"
 dependencies = [
  "better-secret-math",
+ "btr-macros",
  "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm?rev=1e05e7e)",
  "cosmwasm-std",
  "derive-from-ext",
  "derive-getters",
- "mulberry-macros",
  "num_enum",
  "paste",
  "schemars 0.8.10",
@@ -728,16 +741,6 @@ dependencies = [
  "serde",
  "shade-protocol",
  "thiserror",
-]
-
-[[package]]
-name = "mulberry-macros"
-version = "0.1.0"
-source = "git+ssh://git@github.com/securesecrets/shade-lend.git?branch=develop#b1fe6259af2607447a7677b404772a2c201bf9e3"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -1430,12 +1433,14 @@ name = "shade-oracles"
 version = "0.1.0"
 dependencies = [
  "better-secret-math",
+ "btr-macros",
  "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
  "cosmwasm-std",
  "cosmwasm-storage",
+ "derive-from-ext",
  "mulberry",
- "mulberry-macros",
  "paste",
+ "rstest",
  "schemars 0.8.10",
  "secret-storage-plus",
  "serde",

@@ -1,10 +1,14 @@
-use cosmwasm_std::{Addr, Decimal256, Uint128};
+#![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping, clippy::too_many_arguments)]
+
+use cosmwasm_std::{Addr, Decimal256, Uint128, Uint64};
 use rstest::*;
 use shade_oracles::{
-    common::{InstantiateCommonConfig, PriceResponse},
+    common::{PriceResponse},
     core::{ExecuteCallback, InstantiateCallback, Query},
-    interfaces::band::{self},
-    interfaces::index_oracle,
+    interfaces::index::{
+        msg::*,
+        *,
+    },
     interfaces::router,
 };
 use shade_oracles_multi_test::{
@@ -109,11 +113,12 @@ fn basic_index_test(
     let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
     let router = oracle_core.get(OracleDeps::OracleRouter);
 
-    let index_oracle = index_oracle::InstantiateMsg {
-        config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
-        symbol: symbol.clone(),
-        target,
+    let index_oracle = InstantiateMsg {
+        router: router.clone().into(),
         basket,
+        target,
+        symbol: symbol.clone(),
+        when_stale: Uint64::new(SIX_HOURS),
     }
     .test_init(
         IndexOracle::default(),
@@ -134,7 +139,7 @@ fn basic_index_test(
     .test_exec(&router, &mut app, user, &[])
     .unwrap();
 
-    let price: PriceResponse = index_oracle::QueryMsg::GetPrice { key: symbol }
+    let price: PriceResponse = QueryMsg::GetPrice { key: symbol }
         .test_query(&router, &app)
         .unwrap();
     let data = price.price.data();
@@ -210,8 +215,8 @@ fn basic_index_test(
         // new prices
         vec![
             ("USD", 0_03 * 10u128.pow(16)), // $0.03
-            ("BTC", 45_000 * 10u128.pow(18)), // $0.98
-            ("ETH", 3_000 * 10u128.pow(18)), // $0.98
+            ("BTC", 45_000 * 10u128.pow(18)), // $45,000
+            ("ETH", 3_000 * 10u128.pow(18)), // $3,000
         ],
         // mod basket
         vec![
@@ -234,7 +239,6 @@ fn basic_index_test(
         10u128.pow(10), // .000001% error
     )
 ]
-#[allow(clippy::too_many_arguments)]
 fn mod_index_test(
     #[case] symbol: String,
     #[case] basket: Vec<(&str, &str)>,
@@ -280,11 +284,12 @@ fn mod_index_test(
     let _band_proxy = oracle_core.get(OracleDeps::ProxyBand);
     let router = oracle_core.get(OracleDeps::OracleRouter);
 
-    let index_oracle = index_oracle::InstantiateMsg {
-        config: InstantiateCommonConfig::new(None, router.clone().into(), true, false),
-        symbol: symbol.clone(),
-        target,
+    let index_oracle = InstantiateMsg {
+        router: router.clone().into(),
         basket,
+        target,
+        symbol: symbol.clone(),
+        when_stale: Uint64::new(SIX_HOURS),
     }
     .test_init(
         IndexOracle::default(),
@@ -305,19 +310,18 @@ fn mod_index_test(
     .test_exec(&router, &mut app, user.clone(), &[])
     .unwrap();
 
-    let price: PriceResponse = index_oracle::QueryMsg::GetPrice {
+    let price: PriceResponse = QueryMsg::GetPrice {
         key: symbol.clone(),
     }
     .test_query(&router, &app)
     .unwrap();
     let data = price.price.data();
     {
-        let mut err = Uint128::zero();
-        if data.rate > expected_initial {
-            err = data.rate - expected_initial;
+        let err = if data.rate > expected_initial {
+            data.rate - expected_initial
         } else {
-            err = expected_initial - data.rate;
-        }
+            expected_initial - data.rate
+        };
         let acceptable = expected_initial.multiply_ratio(error, 10u128.pow(18));
 
         assert!(
@@ -328,15 +332,9 @@ fn mod_index_test(
         );
     };
 
-    /* TODO
-     * - Update new prices
-     * - mod basket
-     * - check final price
-     */
-
     // Update mock band prices
-    for (sym, price) in new_prices.clone() {
-        band::ExecuteMsg::UpdateSymbolPrice {
+    for (sym, price) in new_prices {
+        shade_oracles::interfaces::band::ExecuteMsg::UpdateSymbolPrice {
             base_symbol: sym,
             quote_symbol: "USD".to_string(),
             rate: price,
@@ -346,19 +344,18 @@ fn mod_index_test(
         .unwrap();
     }
 
-    let price: PriceResponse = index_oracle::QueryMsg::GetPrice {
+    let price: PriceResponse = QueryMsg::GetPrice {
         key: symbol.clone(),
     }
     .test_query(&router, &app)
     .unwrap();
     let data = price.price.data();
     {
-        let mut err = Uint128::zero();
-        if data.rate > expected_final {
-            err = data.rate - expected_final;
+        let err = if data.rate > expected_final {
+            data.rate - expected_final
         } else {
-            err = expected_final - data.rate;
-        }
+            expected_final - data.rate
+        };
         let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
         assert!(
@@ -370,42 +367,39 @@ fn mod_index_test(
     };
 
     // Update basket
-    index_oracle::ExecuteMsg::ModBasket { basket: mod_basket }
+    ExecuteMsg::Admin(AdminMsg::ModBasket { basket: mod_basket })
         .test_exec(&index_oracle, &mut app, user, &[])
         .unwrap();
 
     // check basket changed
-    match (index_oracle::QueryMsg::Basket {}
+    let BasketResponse { mut basket } = QueryMsg::GetBasket {}
         .test_query(&index_oracle, &app)
-        .unwrap())
+        .unwrap();
     {
-        index_oracle::BasketResponse { mut basket } => {
-            basket.sort();
-            for (sym, w, _) in basket {
-                assert!(
-                    expected_weights.contains(&(sym.clone(), w.clone())),
-                    "Bad symbol found {}, {}",
-                    sym,
-                    w
-                );
-            }
+        basket.sort();
+        for (sym, w, _) in basket {
+            assert!(
+                expected_weights.contains(&(sym.clone(), w)),
+                "Bad symbol found {}, {}",
+                sym,
+                w
+            );
         }
     };
 
     // check price doesn't change on mod_price
-    let price: PriceResponse = index_oracle::QueryMsg::GetPrice {
-        key: symbol.clone(),
+    let price: PriceResponse = QueryMsg::GetPrice {
+        key: symbol,
     }
     .test_query(&router, &app)
     .unwrap();
     let data = price.price.data();
     {
-        let mut err = Uint128::zero();
-        if data.rate > expected_final {
-            err = data.rate - expected_final;
+        let err = if data.rate > expected_final {
+            data.rate - expected_final
         } else {
-            err = expected_final - data.rate;
-        }
+            expected_final - data.rate
+        };
         let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
         assert!(

@@ -34,3 +34,6 @@ pub mod core {
 
 #[macro_use]
 pub extern crate mulberry;
+
+#[macro_use]
+pub extern crate better_secret_math;
