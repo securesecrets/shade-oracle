@@ -3,6 +3,9 @@ pub use interfaces::common;
 pub const BLOCK_SIZE: usize = 256;
 pub mod protocols;
 
+#[cfg(test)]
+pub mod unit_test_interface;
+
 #[cfg(feature = "storage")]
 pub use storage::*;
 #[cfg(feature = "storage")]

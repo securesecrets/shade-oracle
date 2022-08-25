@@ -2,7 +2,7 @@ use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageIn
 use shade_oracles::{
     common::{
         querier::{query_oracle_price, query_oracle_prices},
-        OraclePrice, PriceResponse, PricesResponse, ShadeOraclePermissions,
+        PriceResponse, PricesResponse, ShadeOraclePermissions,
     },
     core::{
         mulberry::{common::GlobalStatus, create_attr_action},
@@ -88,14 +88,14 @@ pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> OracleRouterR
     })?)
 }
 
-/// Builds bulk queries using the keys given.
+/// Builds bulk queries using the keys given. Does not preserve order.
 pub fn get_prices(
     deps: Deps,
     router: OracleRouter,
     keys: Vec<String>,
 ) -> OracleRouterResult<Binary> {
     let map = router.group_keys_by_oracle(deps.storage, keys.as_slice())?;
-    let mut prices: Vec<OraclePrice> = vec![];
+    let mut prices = vec![];
 
     for (key, value) in map {
         if value.len() == 1 {
@@ -106,6 +106,7 @@ pub fn get_prices(
             prices.append(&mut queried_prices);
         }
     }
+
     Ok(to_binary(&PricesResponse { prices })?)
 }
 

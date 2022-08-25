@@ -165,6 +165,7 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
+#[derive(Default)]
 pub struct OraclePrice {
     pub key: String,
     pub data: ReferenceData,
