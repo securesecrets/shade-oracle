@@ -57,7 +57,7 @@ pub fn execute(
             Ok(Response::default().add_attributes(vec![attr_action!("set_status")]))
         }
         _ => {
-            router.require_can_run(deps.storage, true, true, false)?;
+            OracleRouter::require_can_run(deps.storage, true, true, false)?;
             match msg {
                 ExecuteMsg::UpdateConfig { config } => {
                     router.update_config(config).config.save(deps.storage)?;
@@ -119,7 +119,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> OracleRouterResult<Binary>
         }),
         _ => {
             // If deprecated or frozen, throw error so dependencies cannot query it.
-            router.require_can_run(deps.storage, true, false, false)?;
+            OracleRouter::require_can_run(deps.storage, true, false, false)?;
             match msg {
                 QueryMsg::GetOracle { key } => {
                     let oracle = router.get_oracle(deps.storage, &key)?;

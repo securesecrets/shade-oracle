@@ -23,19 +23,17 @@ impl Default for ContractStatus {
 }
 
 pub trait GlobalStatus<T: Error> {
-    fn normal_err(&self) -> T;
-    fn deprecated_err(&self) -> T;
-    fn frozen_err(&self) -> T;
-    fn not_found(&self) -> T;
+    fn normal_err() -> T;
+    fn deprecated_err() -> T;
+    fn frozen_err() -> T;
+    fn not_found() -> T;
     fn require_can_run(
-        &self,
         storage: &dyn Storage,
         when_normal: bool,
         when_deprecated: bool,
         when_frozen: bool,
-    ) -> Result<&Self, T>
+    ) -> Result<(), T>
     where
-        Self: std::marker::Sized,
     {
         match ContractStatus::load(storage) {
             Ok(status) => {
@@ -43,13 +41,13 @@ pub trait GlobalStatus<T: Error> {
                     when_normal,
                     when_deprecated,
                     when_frozen,
-                    self.normal_err(),
-                    self.deprecated_err(),
-                    self.frozen_err(),
+                    Self::normal_err(),
+                    Self::deprecated_err(),
+                    Self::frozen_err(),
                 )?;
-                Ok(self)
+                Ok(())
             }
-            Err(_) => Err(self.not_found()),
+            Err(_) => Err(Self::not_found()),
         }
     }
     fn update_status(
@@ -110,19 +108,19 @@ impl ItemStorage for ContractStatus {
 macro_rules! impl_global_status {
     ($struct:ident, $err:ident) => {
         impl $crate::common::GlobalStatus<$err> for $struct {
-            fn normal_err(&self) -> $err {
+            fn normal_err() -> $err {
                 $err::Normal
             }
 
-            fn deprecated_err(&self) -> $err {
+            fn deprecated_err() -> $err {
                 $err::Deprecated
             }
 
-            fn frozen_err(&self) -> $err {
+            fn frozen_err() -> $err {
                 $err::Frozen
             }
 
-            fn not_found(&self) -> $err {
+            fn not_found() -> $err {
                 $err::Std(cosmwasm_std::StdError::NotFound {
                     kind: "global status".to_string(),
                 })
