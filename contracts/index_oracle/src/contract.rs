@@ -69,7 +69,7 @@ pub fn try_compute_index(
     _info: MessageInfo,
     mut oracle: IndexOracle,
 ) -> IndexOracleResult<Response> {
-    oracle.require_can_run(deps.storage, true, false, false)?;
+    IndexOracle::require_can_run(deps.storage, true, false, false)?;
     let router = oracle.config.router.clone();
     let symbols = oracle.asset_symbols.clone();
     let prices = fetch_prices(deps.as_ref(), &router, &symbols)?;
@@ -175,7 +175,7 @@ pub fn try_admin_msg(
                 Ok(Response::new().add_attributes(vec![attr_action!("update_status")]))
             }
             _ => {
-                oracle.require_can_run(deps.storage, true, true, false)?;
+                IndexOracle::require_can_run(deps.storage, true, true, false)?;
                 match msg {
                     AdminMsg::ModBasket { basket } => try_mod_basket(deps, env, basket, oracle),
                     AdminMsg::UpdateConfig {
@@ -240,7 +240,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
 
     let binary = match msg {
         QueryMsg::GetPrice { key } => {
-            oracle.require_can_run(deps.storage, true, false, false)?;
+            IndexOracle::require_can_run(deps.storage, true, false, false)?;
             if key != oracle.config.symbol {
                 return Err(IndexOracleError::UnsupportedSymbol { symbol: key });
             }
@@ -258,7 +258,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
             to_binary(&PriceResponse { price })
         }
         QueryMsg::GetPrices { keys } => {
-            oracle.require_can_run(deps.storage, true, false, false)?;
+            IndexOracle::require_can_run(deps.storage, true, false, false)?;
             for key in &keys {
                 if key.eq(&oracle.config.symbol) {
                     return Err(IndexOracleError::UnsupportedSymbol {
@@ -281,7 +281,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
             to_binary(&PricesResponse { prices })
         }
         QueryMsg::GetIndexData {} => {
-            oracle.require_can_run(deps.storage, true, true, false)?;
+            IndexOracle::require_can_run(deps.storage, true, true, false)?;
             let prices =
                 fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
             oracle.compute_target(prices.as_ref(), &env.block.time)?;
@@ -302,7 +302,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
             })
         }
         QueryMsg::GetBasket {} => {
-            oracle.require_can_run(deps.storage, true, true, false)?;
+            IndexOracle::require_can_run(deps.storage, true, true, false)?;
             let basket = oracle
                 .basket
                 .iter()
