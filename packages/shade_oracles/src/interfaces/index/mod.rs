@@ -53,11 +53,10 @@ mod state {
 
     use super::{error::*, msg::*, *};
     use crate::{
-        common::{
-            OraclePrice
-        },
+        common::OraclePrice,
+        impl_global_status,
         interfaces::band::ReferenceData,
-        ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage}, impl_global_status,
+        ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{core::muldiv_fp, U256};
     use cosmwasm_std::{Storage, Timestamp, Uint128};
@@ -360,14 +359,8 @@ mod state {
     #[cfg(feature = "index")]
     mod test {
         use super::{msg::InitialBasketItem, *};
-        use crate::{
-            common::OraclePrice,
-            unit_test_interface::prices::generate_price_feed,
-        };
-        use better_secret_math::{
-            core::{exp10},
-            ud60x18::assert_with_precision,
-        };
+        use crate::{common::OraclePrice, unit_test_interface::prices::generate_price_feed};
+        use better_secret_math::{core::exp10, ud60x18::assert_with_precision};
 
         fn basic_basket() -> Vec<InitialBasketItem> {
             vec![

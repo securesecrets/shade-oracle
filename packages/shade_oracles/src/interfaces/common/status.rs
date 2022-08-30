@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use secret_storage_plus::{ItemStorage, Item};
+use secret_storage_plus::{Item, ItemStorage};
 
 use super::*;
 
@@ -33,8 +33,7 @@ pub trait GlobalStatus<T: Error> {
         when_deprecated: bool,
         when_frozen: bool,
     ) -> Result<(), T>
-    where
-    {
+where {
         match ContractStatus::load(storage) {
             Ok(status) => {
                 status.require_can_run(

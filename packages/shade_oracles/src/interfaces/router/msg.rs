@@ -1,5 +1,8 @@
 use super::registry::{Config, RegistryOperation, UpdateConfig};
-use crate::{common::{PriceResponse, PricesResponse, status::ContractStatus}, impl_msg_callbacks};
+use crate::{
+    common::{status::ContractStatus, PriceResponse, PricesResponse},
+    impl_msg_callbacks,
+};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use shade_protocol::Contract;
 

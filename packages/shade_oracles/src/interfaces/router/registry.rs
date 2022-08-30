@@ -39,7 +39,10 @@ pub use state::*;
 mod state {
     use std::collections::HashMap;
 
-    use crate::{interfaces::router::error::{OracleRouterError, OracleRouterResult}, impl_global_status};
+    use crate::{
+        impl_global_status,
+        interfaces::router::error::{OracleRouterError, OracleRouterResult},
+    };
 
     use super::*;
     use cosmwasm_std::Storage;
