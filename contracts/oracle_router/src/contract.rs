@@ -1,17 +1,13 @@
 use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use shade_oracles::{
     common::{
-        GlobalStatus,
         querier::{query_oracle_price, query_oracle_prices},
-        PriceResponse, PricesResponse, ShadeOraclePermissions,
+        GlobalStatus, PriceResponse, PricesResponse, ShadeOraclePermissions,
     },
-    core::{
-        pad_handle_result, pad_query_result,
-        ssp::ItemStorage,
-        validate_permission,
-    },
+    core::{pad_handle_result, pad_query_result, ssp::ItemStorage, validate_permission},
+    create_attr_action,
     interfaces::router::{error::*, msg::*, registry::*},
-    BLOCK_SIZE, create_attr_action,
+    BLOCK_SIZE,
 };
 
 create_attr_action!("oracle-router_");

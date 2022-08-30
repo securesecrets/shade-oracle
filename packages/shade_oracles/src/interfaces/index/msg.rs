@@ -1,4 +1,7 @@
-use crate::{common::{PriceResponse, PricesResponse, status::ContractStatus}, impl_msg_callbacks};
+use crate::{
+    common::{status::ContractStatus, PriceResponse, PricesResponse},
+    impl_msg_callbacks,
+};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal256, Uint128, Uint64};
 use shade_protocol::{utils::asset::RawContract, Contract};
