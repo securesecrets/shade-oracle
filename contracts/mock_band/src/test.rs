@@ -11,7 +11,7 @@ fn update_config() {
     let mut deps = mock_dependencies();
     let _mock_coins = coins(1000, "earth");
     let env = mock_env();
-    let user1 = mock_info("test", &vec![]);
+    let user1 = mock_info("test", &[]);
     let msg = InstantiateMsg {};
     let _res = instantiate(deps.as_mut(), env.clone(), user1.clone(), msg).unwrap();
 
@@ -24,7 +24,7 @@ fn update_config() {
         last_updated: Some(time),
     };
 
-    let res = execute(deps.as_mut(), env.clone(), user1.clone(), msg).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), user1, msg).unwrap();
     assert_eq!(0, res.messages.len());
 
     // it worked, let's query the state
