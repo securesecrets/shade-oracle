@@ -1,3 +1,9 @@
+#![allow(
+    clippy::zero_prefixed_literal,
+    clippy::inconsistent_digit_grouping,
+    clippy::too_many_arguments
+)]
+
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{to_binary, Addr};
 use mock_shade_pair::contract as mock_shade_pair;
@@ -11,8 +17,7 @@ use shade_oracles::{
 use shade_oracles_multi_test::multi::helpers::OracleDeps;
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::{
-    multi::{market::shadeswap::ShadeSwapMarketOracle, MockShadePair,     helpers::OracleCore,
-    },
+    multi::{helpers::OracleCore, market::shadeswap::ShadeSwapMarketOracle, MockShadePair},
     App, MultiTestable,
 };
 use std::collections::HashMap;
@@ -116,8 +121,8 @@ fn basic_market_test(
 
     // Configure router w/ market oracle
 
-    router::ExecuteMsg::UpdateRegistry {
-        operation: router::RegistryOperation::Replace {
+    router::msg::ExecuteMsg::UpdateRegistry {
+        operation: router::registry::RegistryOperation::Replace {
             oracle: Contract {
                 address: market_oracle.address.clone(),
                 code_hash: market_oracle.code_hash.clone(),
@@ -128,11 +133,9 @@ fn basic_market_test(
     .test_exec(&router, &mut app, user.clone(), &[])
     .unwrap();
 
-    let price: PriceResponse = common::OracleQuery::GetPrice {
-        key: symbol.clone(),
-    }
-    .test_query(&market_oracle, &app)
-    .unwrap();
+    let price: PriceResponse = common::OracleQuery::GetPrice { key: symbol }
+        .test_query(&market_oracle, &app)
+        .unwrap();
     let data = price.price.data();
     assert_eq!(
         expected, data.rate,

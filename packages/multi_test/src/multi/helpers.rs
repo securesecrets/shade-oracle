@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use shade_admin_multi_test::multi::AdminAuth;
+use shade_oracles::interfaces::router::registry::UpdateConfig;
 use shade_oracles::{
     common::InstantiateCommonConfig,
     interfaces::{
         band::{self, proxy},
-        router::{self, UpdateConfig},
+        router::{self},
     },
 };
 //use shade_multi_test::multi::snip20::Snip20;
@@ -24,7 +25,7 @@ pub struct OracleCore<'a> {
 }
 
 #[derive(Hash, PartialEq, Eq)]
-pub enum OracleDeps{
+pub enum OracleDeps {
     Band,
     ProxyBand,
     OracleRouter,
@@ -32,7 +33,9 @@ pub enum OracleDeps{
 }
 
 impl<'a> OracleCore<'a> {
-    pub fn get(&self, deps: OracleDeps) -> ContractInfo { self.deps.get(&deps).unwrap().clone().into() }
+    pub fn get(&self, deps: OracleDeps) -> ContractInfo {
+        self.deps.get(&deps).unwrap().clone().into()
+    }
     /// Initializes the core dependencies for testing all oracles which are
     /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
     /// based off the prices argument with them being quoted in "USD".
@@ -44,38 +47,40 @@ impl<'a> OracleCore<'a> {
         proxy_band: Option<ContractInfo>,
         oracle_router: Option<ContractInfo>,
         admin_auth: Option<ContractInfo>,
-
     ) -> AnyResult<Self> {
-        let mut core = OracleCore { deps: HashMap::new(), app, superadmin: admin.clone() };
+        let mut core = OracleCore {
+            deps: HashMap::new(),
+            app,
+            superadmin: admin.clone(),
+        };
         let quote_symbol = "USD".to_string();
         core.superadmin = admin.clone();
 
         let admin_auth = admin_auth.unwrap_or_else(|| {
-            shade_admin::admin::InstantiateMsg { super_admin: None }.test_init(
-                AdminAuth::default(),
-                core.app,
-                admin.clone(),
-                "admin-auth",
-                &[],
-            ).unwrap()
+            shade_admin::admin::InstantiateMsg { super_admin: None }
+                .test_init(
+                    AdminAuth::default(),
+                    core.app,
+                    admin.clone(),
+                    "admin-auth",
+                    &[],
+                )
+                .unwrap()
         });
 
-        core.deps.insert(OracleDeps::AdminAuth, admin_auth.clone().into());
+        core.deps
+            .insert(OracleDeps::AdminAuth, admin_auth.clone().into());
 
         let band = band.unwrap_or_else(|| {
-            band::InstantiateMsg {}.test_init(
-                MockBand::default(),
-                core.app,
-                admin.clone(),
-                "band",
-                &[],
-            ).unwrap()
+            band::InstantiateMsg {}
+                .test_init(MockBand::default(), core.app, admin.clone(), "band", &[])
+                .unwrap()
         });
 
         core.deps.insert(OracleDeps::Band, band.clone().into());
 
         let oracle_router = oracle_router.unwrap_or_else(|| {
-            router::InstantiateMsg {
+            router::msg::InstantiateMsg {
                 default_oracle: admin_auth.clone().into(),
                 admin_auth: admin_auth.clone().into(),
                 band: band.clone().into(),
@@ -87,34 +92,43 @@ impl<'a> OracleCore<'a> {
                 admin.clone(),
                 "oracle-router",
                 &[],
-            ).unwrap()
+            )
+            .unwrap()
         });
 
-        core.deps.insert(OracleDeps::OracleRouter, oracle_router.clone().into());
+        core.deps
+            .insert(OracleDeps::OracleRouter, oracle_router.clone().into());
 
+        let proxy_band = proxy_band.unwrap_or_else(|| {
+            proxy::InstantiateMsg {
+                quote_symbol: quote_symbol.clone(),
+                config: InstantiateCommonConfig::new(
+                    None,
+                    oracle_router.clone().into(),
+                    true,
+                    true,
+                ),
+                band: band.clone().into(),
+            }
+            .test_init(
+                ProxyBandOracle::default(),
+                core.app,
+                admin.clone(),
+                "proxy-band",
+                &[],
+            )
+            .unwrap()
+        });
 
-        let proxy_band= proxy_band.unwrap_or_else(|| { proxy::InstantiateMsg {
-            quote_symbol: quote_symbol.clone(),
-            config: InstantiateCommonConfig::new(None, oracle_router.clone().into(), true, true),
-            band: band.clone().into(),
-        }
-        .test_init(
-            ProxyBandOracle::default(),
-            core.app,
-            admin.clone(),
-            "proxy-band",
-            &[],
-        ).unwrap() });
+        core.deps
+            .insert(OracleDeps::ProxyBand, proxy_band.clone().into());
 
-        core.deps.insert(OracleDeps::ProxyBand, proxy_band.clone().into());
-
-        router::ExecuteMsg::UpdateConfig {
+        router::msg::ExecuteMsg::UpdateConfig {
             config: UpdateConfig {
                 admin_auth: None,
                 default_oracle: Some(proxy_band.into()),
                 band: None,
                 quote_symbol: None,
-                enabled: None,
             },
         }
         .test_exec(&oracle_router, core.app, admin.clone(), &[])
@@ -135,11 +149,7 @@ impl<'a> OracleCore<'a> {
         Ok(core)
     }
 
-    pub fn update_prices(
-        &mut self,
-        prices: HashMap<String, Uint128>,
-        last_updated_time: u64,
-    ) {
+    pub fn update_prices(&mut self, prices: HashMap<String, Uint128>, last_updated_time: u64) {
         for (sym, price) in prices {
             band::ExecuteMsg::UpdateSymbolPrice {
                 base_symbol: sym,
@@ -147,7 +157,12 @@ impl<'a> OracleCore<'a> {
                 rate: price,
                 last_updated: Some(last_updated_time),
             }
-            .test_exec(&self.get(OracleDeps::Band), self.app, self.superadmin.clone(), &[])
+            .test_exec(
+                &self.get(OracleDeps::Band),
+                self.app,
+                self.superadmin.clone(),
+                &[],
+            )
             .unwrap();
         }
     }
