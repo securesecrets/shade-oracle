@@ -1,7 +1,11 @@
 [package]
 name = "shade-oracles-integration"
 version = "0.1.0"
-authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
+authors = [
+  "sbeem <sbeem@pm.me>",
+  "scrtreddev <scrtredev@protonmail.com",
+  "hoomp <flammable.shower939@anonaddy.me>",
+]
 edition = "2021"
 
 exclude = [
@@ -14,6 +18,10 @@ exclude = [
 [[bin]]
 name = "deploy"
 path = "src/deploy.rs"
+
+[[bin]]
+name = "local"
+path = "src/local_deploy.rs"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -28,9 +36,9 @@ schemars = { version = "0.7" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
 
 colored = "2.0.0"
-shade-oracles = { version = "0.1.0", path = "../shade_oracles"}
+shade-oracles = { version = "0.1.0", path = "../shade_oracles" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-serde_json = { version = "1.0.67"}
+serde_json = { version = "1.0.67" }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 secretcli = { version = "0.1.0", git = "https://github.com/securesecrets/secret-plus-utils.git" }

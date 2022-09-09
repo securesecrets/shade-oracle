@@ -32,8 +32,9 @@ impl OracleRouterContract {
         msg: &router::InitMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(OracleRouterContract { info })
     }
 
@@ -151,8 +152,9 @@ impl SiennaMarketOracleContract {
         msg: &shade_oracles::siennaswap_market_oracle::InitMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(SiennaMarketOracleContract { info })
     }
 }
@@ -210,21 +212,26 @@ where
         query(
             self.get_info(),
             shade_oracles::common::QueryMsg::GetPrice { key },
-            None
+            None,
         )
     }
     fn query_config<Response: serde::de::DeserializeOwned>(&self) -> Result<Response> {
         query(
             self.get_info(),
             shade_oracles::common::QueryMsg::GetConfig {},
-            None
+            None,
         )
     }
 }
 
 impl BandContract {
-    pub fn new(msg: &band::InitMsg, account_key: Option<&str>, name: Option<&str>) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+    pub fn new(
+        msg: &band::InitMsg,
+        account_key: Option<&str>,
+        name: Option<&str>,
+        label: &str,
+    ) -> Result<Self> {
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(BandContract { info })
     }
 
@@ -252,13 +259,14 @@ impl ProxyBandOracleContract {
         band: Contract,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<Self> {
         let msg = proxy_band_oracle::InitMsg {
             quote_symbol: quote_symbol.to_string(),
             band,
             admin_auth,
         };
-        let info = Self::wrap_init(&msg, account_key, name)?;
+        let info = Self::wrap_init(&msg, account_key, name, label)?;
         Ok(ProxyBandOracleContract { info })
     }
 }
@@ -268,8 +276,9 @@ impl SiennaswapSpotLpOracleContract {
         msg: &lp_oracle::siennaswap::InitMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(SiennaswapSpotLpOracleContract { info })
     }
 }
@@ -279,8 +288,9 @@ impl ShadeStakingDerivativeOracleContract {
         msg: &shade_oracles::staking_derivative::shade::InitMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(ShadeStakingDerivativeOracleContract { info })
     }
 }
@@ -292,13 +302,14 @@ impl EarnV1OracleContract {
         strategy: Contract,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<Self> {
         let msg = earn_v1_oracle::InitMsg {
             owner,
             deposit_token_oracle,
             strategy,
         };
-        let info = Self::wrap_init(&msg, account_key, name)?;
+        let info = Self::wrap_init(&msg, account_key, name, label)?;
         Ok(EarnV1OracleContract { info })
     }
 }
@@ -323,13 +334,18 @@ impl IndexOracleContract {
         msg: &index_oracle::InitMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(IndexOracleContract { info })
     }
 
     pub fn query_config(&self, key: String) -> Result<index_oracle::Config> {
-        query(self.get_info(), index_oracle::QueryMsg::GetPrice { key }, None)
+        query(
+            self.get_info(),
+            index_oracle::QueryMsg::GetPrice { key },
+            None,
+        )
     }
 
     pub fn query_basket(&self) -> Result<index_oracle::QueryAnswer> {

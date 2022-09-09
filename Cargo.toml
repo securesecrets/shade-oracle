@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2" 
+# resolver = "2" 
 members = [
   "packages/shade_oracles",
   "packages/shade_oracles_ensemble",

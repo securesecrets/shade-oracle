@@ -1,11 +1,9 @@
-use crate::{
-    constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY},
-};
+use crate::constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY};
 use cosmwasm_std::HumanAddr;
 use secretcli::{
     cli_types::NetContract,
+    secretcli::{init_cache, test_contract_handle},
     utils::generate_label,
-    secretcli::{test_contract_handle, init_cache},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
@@ -56,11 +54,14 @@ pub trait TestableContract {
         msg: &Message,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: &str,
     ) -> Result<NetContract> {
+        let uuid = generate_label(16);
+        let label = format!("{}-{}", label, uuid);
         init_cache(
             msg,
             Self::get_file(),
-            &generate_label(8),
+            &label,
             account_key.unwrap_or(USER_A_KEY),
             Some(STORE_GAS),
             Some(GAS),

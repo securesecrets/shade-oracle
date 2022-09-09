@@ -14,7 +14,7 @@ rm ./$(1).wasm
 endef
 
 #ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle siennaswap_market_oracle shadeswap_market_oracle index_oracle
-ORACLES = siennaswap_lp_spot_oracle oracle_router
+ORACLES = siennaswap_lp_spot_oracle oracle_router proxy_band_oracle
 MOCKS = mock_band mock_sienna_pair mock_shade_pair
 
 CONTRACTS = ${ORACLES} ${MOCKS}
@@ -35,6 +35,10 @@ build_debug:
 
 deploy-testnet:
 	cd packages/shade_oracles_integration && export RUST_BACKTRACE=full && cargo run --bin "deploy"
+
+
+deploy-local:
+	cd packages/shade_oracles_integration && export RUST_BACKTRACE=full && cargo run --bin "local"
 
 compress: setup $(CONTRACTS);
 

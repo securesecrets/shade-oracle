@@ -1,0 +1,13 @@
+{
+  "update_registry": {
+    "operation": {
+      "add": {
+        "oracle": {
+          "address": "test",
+          "code_hash": "test"
+        },
+        "key": "scrt"
+      }
+    }
+  }
+}

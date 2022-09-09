@@ -18,7 +18,6 @@ packages/cached_contracts/
 
 # Auto-gen
 .cargo-ok
-*.lock
 
 *.pyc
 __pycache__/
