@@ -26,3 +26,4 @@ logs
 external_compiled
 
 ui/nohup.out
+*.done

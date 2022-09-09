@@ -56,12 +56,12 @@ pub trait TestableContract {
         name: Option<&str>,
         label: &str,
     ) -> Result<NetContract> {
-        let uuid = generate_label(16);
-        let label = format!("{}-{}", label, uuid);
+        //let uuid = generate_label(16);
+        //let label = format!("{}-{}", label, uuid);
         init_cache(
             msg,
             Self::get_file(),
-            &label,
+            label,
             account_key.unwrap_or(USER_A_KEY),
             Some(STORE_GAS),
             Some(GAS),
