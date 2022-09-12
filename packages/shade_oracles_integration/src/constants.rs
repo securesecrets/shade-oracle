@@ -43,6 +43,8 @@ pub mod mainnet {
 
     pub const OSMO_TOKEN_NAME: &str = "Secret OSMO";
     pub const ATOM_TOKEN_NAME: &str = "Secret ATOM";
+    pub const SSCRT_TOKEN_NAME: &str = "ssecret";
+    pub const STKD_SCRT_TOKEN_NAME: &str = "Staked SCRT Derivative (Shade)";
 
     pub mod sienna {
 

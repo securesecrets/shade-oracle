@@ -10,6 +10,7 @@ use secretcli::secretcli::account_address;
 use serde::Serialize;
 use serde_json::Result;
 use shade_oracles::common::Contract;
+use shade_oracles::router::UpdateConfig;
 use shade_oracles::siennaswap_market_oracle;
 use shade_oracles::{
     band, index_oracle, lp::siennaswap as SiennaSwapLpOracle, router, router::RegistryOperation,
@@ -57,6 +58,30 @@ fn main() -> Result<()> {
     let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a.clone(), router.as_contract())?;
     let stkd_scrt_shd_lp_oracle = deploy_stkd_scrt_shd_lp(user_a.clone(), router.as_contract())?;
 
+    // router.update_config(
+    //     UpdateConfig {
+    //         admin_auth: None,
+    //         band: None,
+    //         default_oracle: Some(proxy_band_oracle.as_contract()),
+    //         enabled: None,
+    //         quote_symbol: None,
+    //     },
+    //     Some(DEPLOY_KEY),
+    // )?;
+
+    router.batch_update_registry(
+        vec![
+            RegistryOperation::UpdateAlias {
+                alias: STKD_SCRT_TOKEN_NAME.to_string(),
+                key: keys::STKD_SCRT.to_string(),
+            },
+            RegistryOperation::UpdateAlias {
+                alias: SSCRT_TOKEN_NAME.to_string(),
+                key: keys::SCRT.to_string(),
+            },
+        ],
+        Some(DEPLOY_KEY),
+    )?;
     // router.update_oracle(
     //     DEPLOY_KEY,
     //     keys::STKD_SCRT_SCRT_LP,
@@ -89,31 +114,31 @@ fn main() -> Result<()> {
     //     Some(DEPLOY_KEY),
     // )?;
 
-    router.batch_update_registry(
-        vec![
-            RegistryOperation::UpdateAlias {
-                alias: sienna::SHD_SSCRT_TOKEN_NAME.to_string(),
-                key: keys::SHD_SSCRT_LP.to_string(),
-            },
-            RegistryOperation::UpdateAlias {
-                alias: sienna::STKD_SCRT_SHD_TOKEN_NAME.to_string(),
-                key: keys::STKD_SCRT_SHD_LP.to_string(),
-            },
-            RegistryOperation::UpdateAlias {
-                alias: sienna::STKD_SCRT_SCRT_TOKEN_NAME.to_string(),
-                key: keys::STKD_SCRT_SCRT_LP.to_string(),
-            },
-            RegistryOperation::UpdateAlias {
-                alias: OSMO_TOKEN_NAME.to_string(),
-                key: "OSMO".to_string(),
-            },
-            RegistryOperation::UpdateAlias {
-                alias: ATOM_TOKEN_NAME.to_string(),
-                key: "ATOM".to_string(),
-            },
-        ],
-        Some(DEPLOY_KEY),
-    )?;
+    // router.batch_update_registry(
+    //     vec![
+    //         RegistryOperation::UpdateAlias {
+    //             alias: sienna::SHD_SSCRT_TOKEN_NAME.to_string(),
+    //             key: keys::SHD_SSCRT_LP.to_string(),
+    //         },
+    //         RegistryOperation::UpdateAlias {
+    //             alias: sienna::STKD_SCRT_SHD_TOKEN_NAME.to_string(),
+    //             key: keys::STKD_SCRT_SHD_LP.to_string(),
+    //         },
+    //         RegistryOperation::UpdateAlias {
+    //             alias: sienna::STKD_SCRT_SCRT_TOKEN_NAME.to_string(),
+    //             key: keys::STKD_SCRT_SCRT_LP.to_string(),
+    //         },
+    //         RegistryOperation::UpdateAlias {
+    //             alias: OSMO_TOKEN_NAME.to_string(),
+    //             key: "OSMO".to_string(),
+    //         },
+    //         RegistryOperation::UpdateAlias {
+    //             alias: ATOM_TOKEN_NAME.to_string(),
+    //             key: "ATOM".to_string(),
+    //         },
+    //     ],
+    //     Some(DEPLOY_KEY),
+    // )?;
 
     // let silk_oracle = deploy_silk(user_a.clone(), router.as_contract())?;
 
@@ -200,8 +225,8 @@ fn deploy_proxy(admin_auth: Contract, band: Contract) -> Result<ProxyBandOracleC
         "USD",
         band.clone(),
         Some(DEPLOY_KEY),
-        Some("proxy_band_oracle"),
-        "proxy_band_usd_denom_shade_oracle_0.1",
+        Some("proxy_band_oracle_2"),
+        "proxy_band_usd_denom_shade_oracle_0.2",
     )
 }
 

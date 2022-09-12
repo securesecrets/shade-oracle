@@ -105,17 +105,6 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let config = CONFIG.load(&deps.storage)?;
     is_disabled(config.enabled)?;
 
-    if key == "SHD" {
-        return to_binary(&OraclePrice::new(
-            key,
-            ReferenceData {
-                rate: Uint128::from(13450000000000000000u128),
-                last_updated_base: 1654019032,
-                last_updated_quote: 1654019032,
-            },
-        ));
-    }
-
     let band_response = reference_data(
         &deps.querier,
         key.clone(),
