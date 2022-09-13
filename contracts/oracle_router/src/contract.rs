@@ -1,7 +1,4 @@
-use crate::{
-    registry::{batch_update_registry, get_price, get_prices, resolve_alias, update_registry},
-    state::*,
-};
+use crate::registry::{batch_update_registry, get_keys, get_price, get_prices, update_registry};
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
     Storage,
@@ -10,8 +7,13 @@ use shade_oracles::{
     common::SHADE_ORACLE_ADMIN_PERMISSION,
     core::{pad_handle_result, pad_query_result, validate_permission, Contract},
     interfaces::router::*,
+    ssp::{Item, Map},
     BLOCK_SIZE,
 };
+
+pub const CONFIG: Item<Config> = Item::new("YteGsgSZyO");
+pub const ORACLES: Map<String, Contract> = Map::new("d3a17d1b");
+pub const KEYS: Item<Vec<String>> = Item::new("iaunwdioafj");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -28,6 +30,7 @@ pub fn instantiate(
         quote_symbol: msg.quote_symbol,
         enabled: true,
     };
+    KEYS.save(deps.storage, &vec![])?;
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::default())
 }
@@ -58,7 +61,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
     )
 }
 
-fn is_admin(deps: Deps, user: Addr, env: &Env) -> StdResult<()> {
+fn is_admin(deps: Deps, user: Addr, _env: &Env) -> StdResult<()> {
     let config = CONFIG.load(deps.storage)?;
     validate_permission(
         &deps.querier,
@@ -92,6 +95,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             QueryMsg::GetAdminAuth {} => to_binary(&AdminAuthResponse {
                 admin_auth: CONFIG.load(deps.storage)?.admin_auth,
             }),
+            QueryMsg::GetKeys => get_keys(deps),
         },
         BLOCK_SIZE,
     )
@@ -99,8 +103,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn get_oracle(storage: &dyn Storage, key: &str) -> StdResult<Contract> {
     let config = CONFIG.load(storage)?;
-    let resolved_key = resolve_alias(storage, key.to_string())?;
-    match ORACLES.may_load(storage, resolved_key)? {
+    match ORACLES.may_load(storage, key.to_string())? {
         Some(contract) => Ok(contract),
         None => Ok(config.default_oracle),
     }

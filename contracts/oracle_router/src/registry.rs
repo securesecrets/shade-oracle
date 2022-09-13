@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{contract::get_oracle, state::*};
+use crate::contract::{get_oracle, KEYS, ORACLES};
 use cosmwasm_std::{
     to_binary, Api, Binary, Deps, DepsMut, Env, Response, StdError, StdResult, Storage,
 };
@@ -35,11 +35,10 @@ pub fn batch_update_registry(
 
 /// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.
 pub fn get_price(deps: Deps, key: String) -> StdResult<Binary> {
-    let resolved_key = resolve_alias(deps.storage, key)?;
-    let oracle = get_oracle(deps.storage, &resolved_key)?;
+    let oracle = get_oracle(deps.storage, &key)?;
 
     to_binary(&PriceResponse {
-        price: query_oracle_price(&oracle, &deps.querier, resolved_key)?,
+        price: query_oracle_price(&oracle, &deps.querier, key)?,
     })
 }
 
@@ -48,12 +47,11 @@ pub fn get_prices(deps: Deps, keys: Vec<String>) -> StdResult<Binary> {
     // Maps oracle to the symbols it is responsible for
     let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
 
-    for current_key in keys {
-        let resolved_key = resolve_alias(deps.storage, current_key.clone())?;
-        let oracle = get_oracle(deps.storage, &resolved_key)?;
+    for key in keys {
+        let oracle = get_oracle(deps.storage, &key)?;
 
         // Get the current vector of symbols at that oracle and add the current key to it
-        map.entry(oracle).or_insert(vec![]).push(resolved_key);
+        map.entry(oracle).or_insert(vec![]).push(key);
     }
 
     let mut prices: Vec<OraclePrice> = vec![];
@@ -70,16 +68,9 @@ pub fn get_prices(deps: Deps, keys: Vec<String>) -> StdResult<Binary> {
     to_binary(&PricesResponse { prices })
 }
 
-pub fn resolve_alias(storage: &dyn Storage, alias: String) -> StdResult<String> {
-    match ALIASES.may_load(storage, alias.clone()) {
-        Ok(key) => match key {
-            Some(key) => Ok(key),
-            None => Ok(alias),
-        },
-        Err(_) => Err(StdError::generic_err(
-            "Failed to fetch from the ALIASES storage.",
-        )),
-    }
+pub fn get_keys(deps: Deps) -> StdResult<Binary> {
+    let keys = KEYS.load(deps.storage)?;
+    to_binary(&KeysResponse { keys })
 }
 
 fn resolve_registry_operation(
@@ -89,11 +80,32 @@ fn resolve_registry_operation(
 ) -> StdResult<()> {
     match operation {
         RegistryOperation::Remove { key } => {
-            ORACLES.remove(storage, key);
+            ORACLES.remove(storage, key.clone());
+            KEYS.update(storage, |mut keys| -> StdResult<_> {
+                keys.retain(|k| key.ne(k));
+                Ok(keys)
+            })?;
             Ok(())
         }
         RegistryOperation::Replace { oracle, key } => {
-            ORACLES.update(storage, key, |_| -> StdResult<_> { Ok(oracle) })?;
+            ORACLES.update(storage, key.clone(), |old_oracle| -> StdResult<_> {
+                match old_oracle {
+                    Some(_) => Ok(oracle),
+                    None => Err(StdError::generic_err(format!(
+                        "Cannot replace oracle at key {} if there wasn't one already there.",
+                        key
+                    ))),
+                }
+            })?;
+            KEYS.update(storage, |mut keys| -> StdResult<_> {
+                let position = keys.iter().position(|k| key.eq(k));
+                if position.is_some() {
+                    let index = position.unwrap();
+                    keys.swap_remove(index);
+                    keys.push(key);
+                }
+                Ok(keys)
+            })?;
             Ok(())
         }
         RegistryOperation::Add { oracle, key } => {
@@ -106,14 +118,9 @@ fn resolve_registry_operation(
                     None => Ok(oracle),
                 }
             })?;
-            Ok(())
-        }
-        RegistryOperation::UpdateAlias { alias, key } => {
-            ALIASES.update(storage, alias, |old_key| -> StdResult<_> {
-                match old_key {
-                    Some(_) => Ok(key),
-                    None => Ok(key),
-                }
+            KEYS.update(storage, |mut keys| -> StdResult<_> {
+                keys.push(key);
+                Ok(keys)
             })?;
             Ok(())
         }

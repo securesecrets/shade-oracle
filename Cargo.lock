@@ -7,7 +7,7 @@ name = "admin"
 version = "0.2.0"
 source = "git+https://github.com/securesecrets/shadeadmin.git#fa56686142eb28e2bb68a623d6a2cb860a47f74b"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
  "cosmwasm-std",
  "shade-admin",
 ]
@@ -74,7 +74,7 @@ name = "better-secret-math"
 version = "0.1.0"
 source = "git+https://github.com/securesecrets/better-secret-math#482b2402b72bec21d053d312773b90c8141911d1"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
  "cosmwasm-std",
  "ethnum",
  "schemars 0.8.10",
@@ -181,13 +181,35 @@ dependencies = [
 [[package]]
 name = "cosmwasm-schema"
 version = "1.0.0"
-source = "git+https://github.com/CosmWasm/cosmwasm#af3ed179b2a8f7807c7eccb9e23fb110b213c248"
+source = "git+https://github.com/CosmWasm/cosmwasm?rev=1e05e7e#1e05e7eeac406b4e9f15e0700f8997a7baf0c7f6"
 dependencies = [
- "cosmwasm-schema-derive",
+ "cosmwasm-schema-derive 1.0.0 (git+https://github.com/CosmWasm/cosmwasm?rev=1e05e7e)",
  "schemars 0.8.10",
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "cosmwasm-schema"
+version = "1.0.0"
+source = "git+https://github.com/CosmWasm/cosmwasm#af3ed179b2a8f7807c7eccb9e23fb110b213c248"
+dependencies = [
+ "cosmwasm-schema-derive 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
+ "schemars 0.8.10",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "cosmwasm-schema-derive"
+version = "1.0.0"
+source = "git+https://github.com/CosmWasm/cosmwasm?rev=1e05e7e#1e05e7eeac406b4e9f15e0700f8997a7baf0c7f6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -795,7 +817,7 @@ version = "0.1.0"
 source = "git+https://github.com/securesecrets/query-authentication?branch=cosmwasm_v1_upgrade#e2ead5e85dc2ac4f77b2cbf86a90d166bdbb5950"
 dependencies = [
  "bech32",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
  "cosmwasm-std",
  "remain",
  "ripemd160",
@@ -1281,7 +1303,7 @@ name = "shade-admin"
 version = "0.1.0"
 source = "git+https://github.com/securesecrets/shadeadmin.git#fa56686142eb28e2bb68a623d6a2cb860a47f74b"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
  "cosmwasm-std",
  "schemars 0.8.10",
  "serde",
@@ -1317,7 +1339,7 @@ name = "shade-oracles"
 version = "0.1.0"
 dependencies = [
  "better-secret-math",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm?rev=1e05e7e)",
  "cosmwasm-std",
  "cosmwasm-storage",
  "schemars 0.8.10",
@@ -1360,7 +1382,7 @@ dependencies = [
  "anyhow",
  "base64 0.12.3",
  "chrono",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.0.0 (git+https://github.com/CosmWasm/cosmwasm)",
  "cosmwasm-std",
  "cosmwasm-storage",
  "query-authentication",
