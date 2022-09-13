@@ -183,7 +183,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-math-compat"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade.git?tag=v1.2.0#9e43008786536564443fd9832713b7b2bca9fb5b"
+source = "git+https://github.com/securesecrets/shade?tag=v1.2.0#9e43008786536564443fd9832713b7b2bca9fb5b"
 dependencies = [
  "schemars 0.7.6",
  "secret-cosmwasm-std",
@@ -1269,7 +1269,7 @@ dependencies = [
 [[package]]
 name = "shade-protocol"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade.git?tag=v1.2.0#9e43008786536564443fd9832713b7b2bca9fb5b"
+source = "git+https://github.com/securesecrets/shade?tag=v1.2.0#9e43008786536564443fd9832713b7b2bca9fb5b"
 dependencies = [
  "cosmwasm-math-compat",
  "cosmwasm-schema 0.10.1",

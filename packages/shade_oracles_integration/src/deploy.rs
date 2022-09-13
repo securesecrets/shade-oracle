@@ -79,6 +79,10 @@ fn main() -> Result<()> {
                 alias: SSCRT_TOKEN_NAME.to_string(),
                 key: keys::SCRT.to_string(),
             },
+            RegistryOperation::UpdateAlias {
+                alias: SHADE_TOKEN_NAME.to_string(),
+                key: keys::SHD.to_string(),
+            },
         ],
         Some(DEPLOY_KEY),
     )?;
