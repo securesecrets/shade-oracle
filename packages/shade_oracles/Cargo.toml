@@ -1,7 +1,11 @@
 [package]
 name = "shade-oracles"
 version = "0.1.0"
-authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
+authors = [
+  "sbeem <sbeem@pm.me>",
+  "scrtreddev <scrtredev@protonmail.com",
+  "hoomp <flammable.shower939@anonaddy.me>",
+]
 edition = "2021"
 
 [lib]
@@ -28,12 +32,20 @@ lp = ["core"]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 # Core re-exports (no need to re-export cosmwasm-std because that has to be included in contracts for them to build)
 cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", commit = "1e05e7e" }
+cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", rev = "1e05e7e" }
 schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
+serde = { version = "1.0.103", default-features = false, features = [
+  "derive",
+  "alloc",
+] }
 thiserror = "1.0"
 
 better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20", "math"] }
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [
+  "utils",
+  "interface",
+  "snip20",
+  "math",
+] }
 shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git" }

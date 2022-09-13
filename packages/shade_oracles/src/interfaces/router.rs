@@ -52,7 +52,6 @@ pub enum RegistryOperation {
     Remove { key: String },
     Replace { oracle: Contract, key: String },
     Add { oracle: Contract, key: String },
-    UpdateAlias { alias: String, key: String },
 }
 
 #[cw_serde]
@@ -86,6 +85,13 @@ pub enum QueryMsg {
     GetPrices { keys: Vec<String> },
     #[returns(AdminAuthResponse)]
     GetAdminAuth {},
+    #[returns(KeysResponse)]
+    GetKeys,
+}
+
+#[cw_serde]
+pub struct KeysResponse {
+    pub keys: Vec<String>,
 }
 
 #[cw_serde]
