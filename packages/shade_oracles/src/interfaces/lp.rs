@@ -1,9 +1,9 @@
 use crate::common::CommonConfig;
+#[cfg(feature = "core")]
+use crate::ssp::{Item, ItemStorage};
 use crate::BLOCK_SIZE;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{StdResult, Uint128, Uint256};
-#[cfg(feature="core")]
-use crate::ssp::{ItemStorage, Item};
 use shade_protocol::{utils::InstantiateCallback, Contract};
 
 pub mod market {
