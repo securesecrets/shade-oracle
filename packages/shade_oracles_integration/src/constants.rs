@@ -71,7 +71,7 @@ pub mod mainnet {
 
     // TODO
     pub const BAND: &str = "secret1ezamax2vrhjpy92fnujlpwfj2dpredaafss47k";
-    pub const BAND_HASH: &str = "00230665fa8dc8bb3706567cf0a61f282edc34d2f7df56192b2891fd9cd27b06";
+    pub const BAND_HASH: &str = "00230665FA8DC8BB3706567CF0A61F282EDC34D2F7DF56192B2891FD9CD27B06";
 
     pub const STKD_SCRT: &str = "secret1k6u0cy4feepm6pehnz804zmwakuwdapm69tuc4";
     pub const STKD_SCRT_HASH: &str =
