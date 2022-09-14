@@ -77,7 +77,11 @@ pub struct BtrReferenceData {
 
 impl Into<ReferenceData> for BtrReferenceData {
     fn into(self) -> ReferenceData {
-        ReferenceData { rate: self.rate.into(), last_updated_base: self.last_updated_base, last_updated_quote: self.last_updated_quote }
+        ReferenceData {
+            rate: self.rate.into(),
+            last_updated_base: self.last_updated_base,
+            last_updated_quote: self.last_updated_quote,
+        }
     }
 }
 
@@ -122,8 +126,8 @@ where
 pub mod proxy {
     use crate::common::{CommonConfig, InstantiateCommonConfig};
     #[cfg(feature = "proxy-band")]
-    use crate::ssp::{ItemStorage, Item};
-    use shade_protocol::utils::{asset::RawContract};
+    use crate::ssp::{Item, ItemStorage};
+    use shade_protocol::utils::asset::RawContract;
 
     use super::*;
     // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)

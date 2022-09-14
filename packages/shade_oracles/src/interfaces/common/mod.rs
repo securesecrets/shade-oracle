@@ -15,11 +15,30 @@ use shade_protocol::{
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
 };
 
+pub mod status;
+pub use status::GlobalStatus;
+pub mod config;
 pub mod querier;
 
+mod error;
 use super::band::{BtrReferenceData, ReferenceData};
 
-pub const SHADE_ORACLE_ADMIN_PERMISSION: &str = "SHADE_ORACLE_ADMIN";
+pub enum ShadeOraclePermissions {
+    SuperAdmin,
+    SilkAssembly,
+}
+
+#[allow(clippy::inherent_to_string)]
+impl ShadeOraclePermissions {
+    pub fn to_string(&self) -> String {
+        match self {
+            ShadeOraclePermissions::SuperAdmin => "SHADE_ORACLE_ADMIN",
+            ShadeOraclePermissions::SilkAssembly => "SHADE_ORACLE_SILK_INDEX",
+        }
+        .to_string()
+    }
+}
+
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
@@ -87,6 +106,8 @@ pub struct ConfigUpdates {
 /// enabled - can we use this oracle?
 ///
 /// only_band - will this oracle go directly to band rather than through the router?
+///
+/// will be deprecated
 pub struct InstantiateCommonConfig {
     pub supported_keys: Option<Vec<String>>,
     pub router: RawContract,
@@ -146,6 +167,7 @@ pub enum HandleAnswer {
 }
 
 #[cw_serde]
+#[derive(Default)]
 pub struct OraclePrice {
     pub key: String,
     pub data: ReferenceData,
@@ -186,7 +208,7 @@ impl Into<OraclePrice> for BtrOraclePrice {
     fn into(self) -> OraclePrice {
         OraclePrice {
             key: self.key.clone(),
-            data: self.data.clone().into(),
+            data: self.data.into(),
         }
     }
 }
@@ -263,7 +285,7 @@ mod state {
     impl ItemStorage for CommonConfig {
         const ITEM: Item<'static, Self> = Item::new("commonconfig");
     }
-    
+
     pub fn oracle_exec(
         deps: DepsMut,
         _env: Env,
@@ -279,7 +301,7 @@ mod state {
         };
         pad_handle_result(msg, BLOCK_SIZE)
     }
-    
+
     pub fn oracle_query(
         deps: Deps,
         env: Env,
@@ -302,9 +324,9 @@ mod state {
         };
         pad_query_result(resp, BLOCK_SIZE)
     }
-    
+
     pub struct OracleImpl;
-    
+
     impl Oracle for OracleImpl {
         fn try_query_price(
             &self,
@@ -316,7 +338,7 @@ mod state {
             Err(StdError::generic_err("Need to be implemented."))
         }
     }
-    
+
     pub trait Oracle {
         /// Instantiates a CommonConfig from InstantiateCommonConfig, saving it to store.
         fn init_config(
@@ -329,7 +351,7 @@ mod state {
             config.save(storage)?;
             Ok(config)
         }
-    
+
         /// The first step before resolution of any execute msg for oracles.
         fn verify_admin(
             &self,
@@ -341,7 +363,7 @@ mod state {
             verify_admin(&config.router, querier, info.sender)?;
             Ok(config)
         }
-    
+
         #[allow(clippy::too_many_arguments)]
         fn try_update_config(
             &self,
@@ -357,28 +379,28 @@ mod state {
             if let Some(router) = updates.router {
                 config.router = router.into_valid(deps.api)?;
             }
-    
+
             config.save(deps.storage)?;
-    
+
             Ok(
                 Response::new().set_data(to_binary(&HandleAnswer::UpdateConfig {
                     status: ResponseStatus::Success,
                 })?),
             )
         }
-    
+
         fn config_resp(&self, config: CommonConfig) -> ConfigResponse {
             ConfigResponse { config }
         }
-    
+
         fn price_resp(&self, price: OraclePrice) -> PriceResponse {
             PriceResponse { price }
         }
-    
+
         fn prices_resp(&self, prices: Vec<OraclePrice>) -> PricesResponse {
             PricesResponse { prices }
         }
-    
+
         /// Internal implementation of the query price method.
         fn try_query_price(
             &self,
@@ -387,7 +409,7 @@ mod state {
             key: String,
             config: &CommonConfig,
         ) -> StdResult<OraclePrice>;
-    
+
         /// Checks if user can query for prices
         fn can_query_prices(&self, deps: Deps, keys: &[String]) -> StdResult<CommonConfig> {
             let config = CommonConfig::load(deps.storage)?;
@@ -404,7 +426,7 @@ mod state {
             }
             Ok(config)
         }
-    
+
         fn can_query_price(&self, deps: Deps, key: &String) -> StdResult<CommonConfig> {
             let config = CommonConfig::load(deps.storage)?;
             is_disabled(config.enabled)?;
@@ -414,7 +436,7 @@ mod state {
             }
             Ok(config)
         }
-    
+
         fn try_query_prices(
             &self,
             deps: Deps,
@@ -429,5 +451,4 @@ mod state {
             Ok(prices)
         }
     }
-    
 }
