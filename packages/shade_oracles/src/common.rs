@@ -38,7 +38,7 @@ pub enum HandleAnswer {
     UpdateConfig { status: ResponseStatus },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct OraclePrice {
     pub key: String,

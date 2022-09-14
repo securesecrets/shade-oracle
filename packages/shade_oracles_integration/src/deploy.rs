@@ -51,69 +51,76 @@ fn main() -> Result<()> {
         admin_auth.clone(),
     )?;
 
-    let shd_oracle = deploy_shd(user_a.clone(), router.as_contract())?;
-    let stkd_scrt_oracle = deploy_stkd_scrt(user_a.clone(), router.as_contract())?;
+    //let shd_oracle = deploy_shd(user_a.clone(), router.as_contract())?;
+    //let stkd_scrt_oracle = deploy_stkd_scrt(user_a.clone(), router.as_contract())?;
     let shd_scrt_lp_oracle = deploy_sscrt_shd_lp(user_a.clone(), router.as_contract())?;
 
     let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a.clone(), router.as_contract())?;
     let stkd_scrt_shd_lp_oracle = deploy_stkd_scrt_shd_lp(user_a.clone(), router.as_contract())?;
 
     // router.update_config(
-    //     UpdateConfig {
-    //         admin_auth: None,
-    //         band: None,
-    //         default_oracle: Some(proxy_band_oracle.as_contract()),
-    //         enabled: None,
-    //         quote_symbol: None,
+    //     updateconfig {
+    //         admin_auth: none,
+    //         band: none,
+    //         default_oracle: some(proxy_band_oracle.as_contract()),
+    //         enabled: none,
+    //         quote_symbol: none,
     //     },
+    //     some(deploy_key),
+    // )?;
+    // router.batch_update_registry(
+    //     vec![
+    //         RegistryOperation::UpdateAlias {
+    //             alias: STKD_SCRT_TOKEN_NAME.to_string(),
+    //             key: keys::STKD_SCRT.to_string(),
+    //         },
+    //         RegistryOperation::UpdateAlias {
+    //             alias: SSCRT_TOKEN_NAME.to_string(),
+    //             key: keys::SCRT.to_string(),
+    //         },
+    //         RegistryOperation::UpdateAlias {
+    //             alias: SHADE_TOKEN_NAME.to_string(),
+    //             key: keys::SHD.to_string(),
+    //         },
+    //     ],
     //     Some(DEPLOY_KEY),
     // )?;
-
-    router.batch_update_registry(
-        vec![
-            RegistryOperation::UpdateAlias {
-                alias: STKD_SCRT_TOKEN_NAME.to_string(),
-                key: keys::STKD_SCRT.to_string(),
-            },
-            RegistryOperation::UpdateAlias {
-                alias: SSCRT_TOKEN_NAME.to_string(),
-                key: keys::SCRT.to_string(),
-            },
-            RegistryOperation::UpdateAlias {
-                alias: SHADE_TOKEN_NAME.to_string(),
-                key: keys::SHD.to_string(),
-            },
-        ],
-        Some(DEPLOY_KEY),
+    router.update_oracle(
+        DEPLOY_KEY,
+        keys::STKD_SCRT_SCRT_LP,
+        stkd_scrt_scrt_lp_oracle.as_contract(),
     )?;
-    // router.update_oracle(
-    //     DEPLOY_KEY,
-    //     keys::STKD_SCRT_SCRT_LP,
-    //     stkd_scrt_scrt_lp_oracle.as_contract(),
-    // )?;
-    // router.update_oracle(
-    //     DEPLOY_KEY,
-    //     keys::STKD_SCRT_SHD_LP,
-    //     stkd_scrt_shd_lp_oracle.as_contract(),
-    // )?;
+    router.update_oracle(
+        DEPLOY_KEY,
+        keys::STKD_SCRT_SHD_LP,
+        stkd_scrt_shd_lp_oracle.as_contract(),
+    )?;
+    router.update_oracle(
+        DEPLOY_KEY,
+        keys::SHD_SSCRT_LP,
+        shd_scrt_lp_oracle.as_contract(),
+    )?;
+
+    return Ok(());
 
     // router.batch_update_registry(
     //     vec![
-    //         // RegistryOperation::UpdateAlias {
-    //         //     alias: keys::SSCRT.to_string(),
-    //         //     key: keys::SCRT.to_string(),
-    //         // },
-    //         // RegistryOperation::Replace {
-    //         //     oracle: shd_oracle.as_contract(),
-    //         //     key: keys::SHD.to_string(),
-    //         // RegistryOperation::Replace {
-    //         //     oracle: stkd_scrt_oracle.as_contract(),
-    //         //     key: keys::STKD_SCRT.to_string(),
-    //         // },
-    //         // RegistryOperation::Replace {
-    //         //     oracle: shd_scrt_lp_oracle.as_contract(),
-    //         //     key: keys::SHD_SSCRT_LP.to_string(),
-    //         // },
+    //         RegistryOperation::UpdateAlias {
+    //             alias: keys::SSCRT.to_string(),
+    //             key: keys::SCRT.to_string(),
+    //         },
+    //         RegistryOperation::Replace {
+    //             oracle: shd_oracle.as_contract(),
+    //             key: keys::SHD.to_string(),
+    //         },
+    //         RegistryOperation::Replace {
+    //             oracle: stkd_scrt_oracle.as_contract(),
+    //             key: keys::STKD_SCRT.to_string(),
+    //         },
+    //         RegistryOperation::Replace {
+    //             oracle: shd_scrt_lp_oracle.as_contract(),
+    //             key: keys::SHD_SSCRT_LP.to_string(),
+    //         },
     //     ],
     //     Some(DEPLOY_KEY),
     // )?;
@@ -145,18 +152,17 @@ fn main() -> Result<()> {
     // )?;
 
     // let silk_oracle = deploy_silk(user_a.clone(), router.as_contract())?;
-
-    // let stkd_scrt_shd_lp_oracle =
-    //     deploy_stkd_scrt_shd_lp(user_a.clone(), router.as_contract())?;
-    // // router.update_oracle(DEPLOY_KEY, "SILK", silk_oracle.as_contract())?;
-    // // router.update_oracle(DEPLOY_KEY, "SHD", shd_oracle.as_contract())?;
-    // // router.update_oracle(DEPLOY_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
-    // //router.update_oracle(DEPLOY_KEY, "stkd-SCRT/SCRT SiennaSwap LP", stkd_scrt_scrt_lp_oracle.as_contract())?;
+    //
+    // let stkd_scrt_shd_lp_oracle = deploy_stkd_scrt_shd_lp(user_a.clone(), router.as_contract())?;
+    // router.update_oracle(DEPLOY_KEY, "SILK", silk_oracle.as_contract())?;
+    // router.update_oracle(DEPLOY_KEY, "SHD", shd_oracle.as_contract())?;
+    // router.update_oracle(DEPLOY_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
     // router.update_oracle(
     //     DEPLOY_KEY,
-    //     "SHD/SSCRT SiennaSwap LP",
-    //     shd_scrt_lp_oracle.as_contract(),
+    //     "stkd-SCRT/SCRT SiennaSwap LP",
+    //     stkd_scrt_scrt_lp_oracle.as_contract(),
     // )?;
+
     // router.update_oracle(
     //     DEPLOY_KEY,
     //     STKD_SCRT_SHD_LP_TOKEN_NAME,
@@ -164,7 +170,7 @@ fn main() -> Result<()> {
     // );
     // router.update_registry(
     //     RegistryOperation::UpdateAlias {
-    //         alias: STKD_SCRT_SHD_LP_KEY.to_string(),
+    //         alias: keys::STKD_SCRT_SHD_LP.to_string(),
     //         key: STKD_SCRT_SHD_LP_TOKEN_NAME.to_string(),
     //     },
     //     Some(DEPLOY_KEY),
@@ -181,7 +187,6 @@ fn main() -> Result<()> {
     //     Ok(price) => println!("SHD/sSCRT Price is: {}", price.data.rate),
     //     Err(err) => println!("{}", err),
     // }
-    Ok(())
 }
 
 #[allow(clippy::mistyped_literal_suffixes, clippy::zero_prefixed_literal)]
@@ -292,8 +297,8 @@ fn deploy_stkd_scrt(
             router,
         },
         Some(DEPLOY_KEY),
-        Some("stkd_scrt_oracle"),
-        "stkd_scrt_oracle_shade_0.1",
+        Some("stkd_scrt_oracle_2"),
+        "stkd_scrt_oracle_shade_0.2",
     )?;
 
     Ok(stkd_scrt_oracle)
@@ -318,8 +323,8 @@ fn deploy_stkd_scrt_scrt_lp(
             supported_key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
         },
         Some(DEPLOY_KEY),
-        Some("stkd_scrt_scrt_lp_oracle"),
-        "sienna_stkd_scrt_scrt_lp_oracle_shade_0.1",
+        Some("stkd_scrt_scrt_lp_oracle_2"),
+        "sienna_stkd_scrt_scrt_lp_oracle_shade_0.2",
     )?;
 
     Ok(stkd_scrt_scrt_lp_oracle)
@@ -341,14 +346,13 @@ fn deploy_sscrt_shd_lp(user_a: String, router: Contract) -> Result<SiennaswapSpo
             supported_key: "SHD/SSCRT SiennaSwap LP".to_string(),
         },
         Some(DEPLOY_KEY),
-        Some("shd_scrt_lp_oracle"),
-        "sienna_shd_sscrt_lp_oracle_shade_0.1",
+        Some("shd_scrt_lp_oracle_2"),
+        "sienna_shd_sscrt_lp_oracle_shade_0.2",
     )?;
 
     Ok(stkd_scrt_scrt_lp_oracle)
 }
 
-// TODO fix
 fn deploy_stkd_scrt_shd_lp(
     user_a: String,
     router: Contract,
@@ -361,15 +365,15 @@ fn deploy_stkd_scrt_shd_lp(
     println!("Deploying STKD_SCRT/SHD Siennaswap LP oracle.");
     let stkd_scrt_scrt_lp_oracle = SiennaswapSpotLpOracleContract::new(
         &SiennaSwapLpOracle::InitMsg {
-            symbol_0: "SHD".to_string(),
-            symbol_1: "stkd-SCRT".to_string(),
+            symbol_0: "stkd-SCRT".to_string(),
+            symbol_1: "SHD".to_string(),
             router,
             exchange: sienna_stkd_scrt_shd_lp,
             supported_key: keys::STKD_SCRT_SHD_LP.to_string(),
         },
         Some(DEPLOY_KEY),
-        Some("stkd_scrt_shd_lp_oracle"),
-        "sienna_stkd_scrt_shd_lp_oracle_shade_0.11",
+        Some("stkd_scrt_shd_lp_oracle_4"),
+        "sienna_stkd_scrt_shd_lp_oracle_shade_0.2",
     )?;
 
     Ok(stkd_scrt_scrt_lp_oracle)

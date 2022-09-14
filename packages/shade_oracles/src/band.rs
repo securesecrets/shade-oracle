@@ -38,7 +38,7 @@ pub enum BandQuery {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct ReferenceData {
     pub rate: Uint128,
     pub last_updated_base: u64,

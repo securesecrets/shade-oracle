@@ -154,10 +154,18 @@ fn try_query_price<S: Storage, A: Api, Q: Querier>(
     let prices = query_prices(
         &config.router,
         &deps.querier,
-        vec![config.symbol_0, config.symbol_1],
+        vec![config.symbol_0.clone(), config.symbol_1],
     )?;
-    let (price0, price1) = (prices[0].clone(), prices[1].clone());
 
+    let (mut price0, mut price1) = (OraclePrice::default(), OraclePrice::default());
+
+    for price in prices {
+        if price.key.eq(&config.symbol_0) {
+            price0 = price.clone();
+        } else {
+            price1 = price.clone();
+        }
+    }
     let pair_info_response: SiennaSwapPairInfoResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: config.exchange.address.clone(),
