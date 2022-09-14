@@ -85,23 +85,21 @@ fn main() -> Result<()> {
     //     ],
     //     Some(DEPLOY_KEY),
     // )?;
-    router.update_oracle(
-        DEPLOY_KEY,
-        keys::STKD_SCRT_SCRT_LP,
-        stkd_scrt_scrt_lp_oracle.as_contract(),
-    )?;
-    router.update_oracle(
-        DEPLOY_KEY,
-        keys::STKD_SCRT_SHD_LP,
-        stkd_scrt_shd_lp_oracle.as_contract(),
-    )?;
-    router.update_oracle(
-        DEPLOY_KEY,
-        keys::SHD_SSCRT_LP,
-        shd_scrt_lp_oracle.as_contract(),
-    )?;
-
-    return Ok(());
+    // router.update_oracle(
+    //     DEPLOY_KEY,
+    //     keys::STKD_SCRT_SCRT_LP,
+    //     stkd_scrt_scrt_lp_oracle.as_contract(),
+    // )?;
+    // router.update_oracle(
+    //     DEPLOY_KEY,
+    //     keys::STKD_SCRT_SHD_LP,
+    //     stkd_scrt_shd_lp_oracle.as_contract(),
+    // )?;
+    // router.update_oracle(
+    //     DEPLOY_KEY,
+    //     keys::SHD_SSCRT_LP,
+    //     shd_scrt_lp_oracle.as_contract(),
+    // )?;
 
     // router.batch_update_registry(
     //     vec![
@@ -125,31 +123,33 @@ fn main() -> Result<()> {
     //     Some(DEPLOY_KEY),
     // )?;
 
-    // router.batch_update_registry(
-    //     vec![
-    //         RegistryOperation::UpdateAlias {
-    //             alias: sienna::SHD_SSCRT_TOKEN_NAME.to_string(),
-    //             key: keys::SHD_SSCRT_LP.to_string(),
-    //         },
-    //         RegistryOperation::UpdateAlias {
-    //             alias: sienna::STKD_SCRT_SHD_TOKEN_NAME.to_string(),
-    //             key: keys::STKD_SCRT_SHD_LP.to_string(),
-    //         },
-    //         RegistryOperation::UpdateAlias {
-    //             alias: sienna::STKD_SCRT_SCRT_TOKEN_NAME.to_string(),
-    //             key: keys::STKD_SCRT_SCRT_LP.to_string(),
-    //         },
-    //         RegistryOperation::UpdateAlias {
-    //             alias: OSMO_TOKEN_NAME.to_string(),
-    //             key: "OSMO".to_string(),
-    //         },
-    //         RegistryOperation::UpdateAlias {
-    //             alias: ATOM_TOKEN_NAME.to_string(),
-    //             key: "ATOM".to_string(),
-    //         },
-    //     ],
-    //     Some(DEPLOY_KEY),
-    // )?;
+    router.batch_update_registry(
+        vec![
+            // RegistryOperation::UpdateAlias {
+            //     alias: sienna::SHD_SSCRT_TOKEN_NAME.to_string(),
+            //     key: keys::SHD_SSCRT_LP.to_string(),
+            // },
+            // RegistryOperation::UpdateAlias {
+            //     alias: sienna::STKD_SCRT_SHD_TOKEN_NAME.to_string(),
+            //     key: keys::STKD_SCRT_SHD_LP.to_string(),
+            // },
+            // RegistryOperation::UpdateAlias {
+            //     alias: sienna::STKD_SCRT_SCRT_TOKEN_NAME.to_string(),
+            //     key: keys::STKD_SCRT_SCRT_LP.to_string(),
+            // },
+            RegistryOperation::UpdateAlias {
+                alias: OSMO_TOKEN_SYM.to_string(),
+                key: "OSMO".to_string(),
+            },
+            RegistryOperation::UpdateAlias {
+                alias: ATOM_TOKEN_SYM.to_string(),
+                key: "ATOM".to_string(),
+            },
+        ],
+        Some(DEPLOY_KEY),
+    )?;
+
+    return Ok(());
 
     // let silk_oracle = deploy_silk(user_a.clone(), router.as_contract())?;
     //
