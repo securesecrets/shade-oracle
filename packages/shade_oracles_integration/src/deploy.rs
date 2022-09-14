@@ -316,15 +316,15 @@ fn deploy_stkd_scrt_scrt_lp(
     println!("Deploying stkd-SCRT/SCRT Siennaswap LP oracle.");
     let stkd_scrt_scrt_lp_oracle = SiennaswapSpotLpOracleContract::new(
         &SiennaSwapLpOracle::InitMsg {
-            symbol_0: "stkd-SCRT".to_string(),
-            symbol_1: "SCRT".to_string(),
+            symbol_0: "SCRT".to_string(),
+            symbol_1: "stkd-SCRT".to_string(),
             router,
             exchange: sienna_stkd_scrt_scrt_lp,
             supported_key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
         },
         Some(DEPLOY_KEY),
-        Some("stkd_scrt_scrt_lp_oracle_2"),
-        "sienna_stkd_scrt_scrt_lp_oracle_shade_0.2",
+        Some("stkd_scrt_scrt_lp_oracle_3"),
+        "sienna_stkd_scrt_scrt_lp_oracle_shade_0.3",
     )?;
 
     Ok(stkd_scrt_scrt_lp_oracle)
