@@ -33,8 +33,11 @@ build_release:
 build_debug:
 	(cd ${contracts_dir}; RUSTFLAGS='-C link-arg=-s' cargo build --release --target wasm32-unknown-unknown)
 
-deploy-testnet:
+deploy:
 	cd packages/shade_oracles_integration && export RUST_BACKTRACE=full && cargo run --bin "deploy"
+
+deploy-testnet:
+	cd packages/shade_oracles_integration && export RUST_BACKTRACE=full && cargo run --bin "testnet"
 
 
 deploy-local:

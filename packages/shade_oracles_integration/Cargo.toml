@@ -23,6 +23,10 @@ path = "src/deploy.rs"
 name = "local"
 path = "src/local_deploy.rs"
 
+[[bin]]
+name = "testnet"
+path = "src/testnet_deploy.rs"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
