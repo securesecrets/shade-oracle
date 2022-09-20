@@ -28,7 +28,7 @@ use shade_oracles_integration::contract_helpers::{
     TestableContract,
 };
 
-const JSON_PATH: &str = "../../../jsons/";
+const JSON_PATH: &str = "../../jsons/";
 
 pub fn save_json(name: &str, msg: &impl Serialize) -> io::Result<()> {
     let path = format!("{}{}.json", JSON_PATH, name);
@@ -43,6 +43,23 @@ fn main() -> Result<()> {
 
     println!("Account A: {}", user_a.blue());
 
+    let msg = router::HandleMsg::BatchUpdateRegistry {
+        operations: vec![
+            RegistryOperation::UpdateAlias {
+                alias: sienna::SHD_SSCRT_TOKEN_NAME.to_string(),
+                key: keys::SHD_SSCRT_LP.to_string(),
+            },
+            RegistryOperation::UpdateAlias {
+                alias: sienna::STKD_SCRT_SHD_TOKEN_NAME.to_string(),
+                key: keys::STKD_SCRT_SHD_LP.to_string(),
+            },
+            RegistryOperation::UpdateAlias {
+                alias: sienna::STKD_SCRT_SCRT_TOKEN_NAME.to_string(),
+                key: keys::STKD_SCRT_SCRT_LP.to_string(),
+            },
+        ],
+    };
+    save_json("batch", &msg).unwrap();
     //let proxy_band_oracle = deploy_proxy(admin_auth.clone(), band.clone())?;
 
     let router = OracleRouterContract {
@@ -68,6 +85,27 @@ fn main() -> Result<()> {
     //let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a.clone(), router.as_contract())?;
     let stkd_scrt_shd_lp_oracle = deploy_stkd_scrt_shd_lp(user_a.clone(), router.as_contract())?;
 
+    save_json(
+        "test",
+        &router::HandleMsg::UpdateRegistry {
+            operation: RegistryOperation::UpdateAlias {
+                alias: sienna::SHD_SSCRT_TOKEN_NAME.to_string(),
+                key: keys::SHD_SSCRT_LP.to_string(),
+            },
+        },
+    )
+    .unwrap();
+
+    save_json(
+        "oracle",
+        &router::HandleMsg::UpdateRegistry {
+            operation: RegistryOperation::Replace {
+                oracle: stkd_scrt_shd_lp_oracle.as_contract(),
+                key: keys::STKD_SCRT_SHD_LP.to_string(),
+            },
+        },
+    )
+    .unwrap();
     // router.update_config(
     //     updateconfig {
     //         admin_auth: none,
