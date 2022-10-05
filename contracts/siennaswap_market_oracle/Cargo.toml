@@ -1,0 +1,26 @@
+[package]
+name = "siennaswap-market-oracle"
+version = "0.1.0"
+authors = ["DrPresident <jacksonswenson@securesecrets.org"]
+edition = "2021"
+
+exclude = [
+  "contract.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+
+[dependencies]
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["market-lp"] }
+
+[dev-dependencies]
+shade-oracles-multi-test = { path = "../../packages/multi_test", features = [  "multi-test", "market", "snip20" ] }
+snip20-reference-impl = { git = "https://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
+mock-sienna-pair = { path = "../mock_sienna_pair" }

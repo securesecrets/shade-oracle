@@ -2,14 +2,14 @@ use crate::{
     constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY},
     utils::generate_label,
 };
+use cosmwasm_std::Addr;
 use secretcli::{
     cli_types::NetContract,
     secretcli::{test_contract_handle, test_inst_init},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use shade_oracles::{common::Contract};
-use cosmwasm_std::HumanAddr;
+use shade_oracles::common::Contract;
 
 pub mod oracles;
 
@@ -27,7 +27,7 @@ pub trait TestableContract {
     fn as_contract(&self) -> Contract {
         let net = self.get_info();
         Contract {
-            address: HumanAddr(net.address.clone()),
+            address: Addr(net.address.clone()),
             code_hash: net.code_hash.clone(),
         }
     }

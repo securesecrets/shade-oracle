@@ -1,139 +1,186 @@
 use colored::*;
-use secretcli::cli_types::NetContract;
-use secretcli::secretcli::{account_address, query_contract, test_contract_handle, test_inst_init};
+use cosmwasm_std::Uint128;
+use secretcli::secretcli::account_address;
 use serde_json::Result;
-use shade_oracles::router;
+use shade_oracles::common::Contract;
 use shade_oracles::{
-    band, common as common_oracles, lp::siennaswap as SiennaSwapLpOracle,
-    router::RegistryOperation, staking_derivative::shade as shd_stkd,
+    index_oracle, lp::siennaswap as SiennaSwapLpOracle, router::RegistryOperation,
+    staking_derivative::shade as shd_stkd,
 };
-use shade_oracles::{
-    common::{self, Contract},
-    protocols,
-};
-use cosmwasm_std::{HumanAddr, Uint128};
+use shade_oracles::{router, siennaswap_market_oracle};
 use shade_oracles_integration::constants::testnet::*;
 use shade_oracles_integration::constants::*;
-use shade_oracles_integration::contract_helpers::oracles::ShadeStakingDerivativeOracleContract;
 use shade_oracles_integration::contract_helpers::{
     oracles::{
-        BandContract, EarnV1OracleContract, OracleContract, OracleRouterContract,
-        ProxyBandOracleContract, SiennaswapSpotLpOracleContract,
+        IndexOracleContract, OracleRouterContract, ProxyBandOracleContract,
+        ShadeStakingDerivativeOracleContract, SiennaMarketOracleContract,
+        SiennaswapSpotLpOracleContract,
     },
     TestableContract,
 };
 
 fn main() -> Result<()> {
     let user_a = account_address(HOOMP_KEY).unwrap_or_default();
+    let band = Contract::new(BAND.to_string(), BAND_HASH.to_string());
 
     println!("Account A: {}", user_a.blue());
 
-    deploy(user_a)?;
+    let oracle_router = deploy_router(user_a.clone(), band)?;
+    let shd_oracle = deploy_shd(user_a.clone(), oracle_router.as_contract())?;
+    let silk_oracle = deploy_silk(user_a.clone(), oracle_router.as_contract())?;
+    let stkd_scrt_oracle = deploy_stkd_scrt(user_a.clone(), oracle_router.as_contract())?;
+    let stkd_scrt_scrt_lp_oracle = deploy_stkd_scrt_scrt_lp(user_a, oracle_router.as_contract())?;
+
+    oracle_router.update_oracle(HOOMP_KEY, "SILK", silk_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "SHD", shd_oracle.as_contract())?;
+    oracle_router.update_oracle(HOOMP_KEY, "stkd-SCRT", stkd_scrt_oracle.as_contract())?;
+    oracle_router.update_oracle(
+        HOOMP_KEY,
+        "stkd-SCRT/SCRT SiennaSwap LP",
+        stkd_scrt_scrt_lp_oracle.as_contract(),
+    )?;
+    oracle_router.update_registry(
+        RegistryOperation::UpdateAlias {
+            alias: "SSCRT".to_string(),
+            key: "SCRT".to_string(),
+        },
+        Some(HOOMP_KEY),
+    )?;
+    let shd_price = oracle_router.query_price("SHD".to_string());
+    match shd_price {
+        Ok(price) => println!("SHD Price is: {}", price.data().rate),
+        Err(err) => println!("{}", err),
+    }
     Ok(())
 }
 
-fn deploy_test(user_a: String) -> Result<()> {
-    let band = Contract {
-        address: HumanAddr::from(BAND.to_string()),
-        code_hash: BAND_HASH.to_string(),
-    };
+#[allow(clippy::mistyped_literal_suffixes, clippy::zero_prefixed_literal)]
+fn deploy_silk(_user_a: String, router: Contract) -> Result<IndexOracleContract> {
+    println!("Deploying SILK oracle.");
 
-    println!("Deploying Proxy Band Oracle.");
-    let scrt_oracle = ProxyBandOracleContract::new(
-        user_a.clone(),
-         "USD",
-        band,
+    let silk_oracle = IndexOracleContract::new(
+        &index_oracle::InstantiateMsg {
+            router,
+            symbol: "SILK".to_string(),
+            basket: vec![
+                ("USD", 39_33 * 10u128.pow(14)), //  39.32%
+                ("CNY", 7_13 * 10u128.pow(14)),  //  7.13%
+                ("EUR", 15_97 * 10u128.pow(14)), // 15.97%
+                ("JPY", 7_64 * 10u128.pow(14)),  //  7.64%
+                ("GBP", 3_40 * 10u128.pow(14)),  //  3.4%
+                ("CAD", 4_58 * 10u128.pow(14)),  //  4.58%
+                ("KRW", 1_53 * 10u128.pow(14)),  //  1.53%
+                ("AUD", 2_32 * 10u128.pow(14)),  //  2.32%
+                ("IDR", 2_50 * 10u128.pow(14)),  //  2.5%
+                ("CHF", 4_44 * 10u128.pow(14)),  //  4.44%
+                ("SEK", 0_84 * 10u128.pow(14)),  //  0.84%
+                ("NOK", 0_82 * 10u128.pow(14)),  //  0.82%
+                ("SGD", 2_50 * 10u128.pow(14)),  //  2.5%
+                ("XAU", 5_00 * 10u128.pow(14)),  //  5.0%
+                ("WBTC", 2_00 * 10u128.pow(14)), //  2.0%
+            ]
+            .into_iter()
+            .map(|(sym, w)| (sym.to_string(), Uint128::from(w)))
+            .collect(),
+            target: Uint128::from(1_05 * 10u128.pow(16)), // $1.05
+            only_band: true,
+        },
         Some(HOOMP_KEY),
-        Some("scrt_oracle"),
+        Some("silk-oracle"),
     )?;
 
-    Ok(())
+    Ok(silk_oracle)
 }
 
-fn deploy(user_a: String) -> Result<()> {
-
-    let band = Contract::new(BAND.to_string(), BAND_HASH.to_string());
-
-    let staking_derivative = Contract::new(STKD_SCRT.to_string(), STKD_SCRT_HASH.to_string());
-
-    let sienna_stkd_scrt_scrt_lp = Contract::new(STKD_SCRT_SCRT_POOL.to_string(), STKD_SCRT_SCRT_POOL_HASH.to_string());
+fn deploy_router(_user_a: String, band: Contract) -> Result<OracleRouterContract> {
+    let admin_auth = Contract::new(ADMIN_AUTH.to_string(), ADMIN_AUTH_HASH.to_string());
 
     println!("Deploying Band Oracle.");
     let scrt_oracle = ProxyBandOracleContract::new(
-        user_a.clone(),
+        admin_auth.clone(),
         "USD",
-        band,
+        band.clone(),
         Some(HOOMP_KEY),
         Some("band_oracle"),
     )?;
 
-    println!("Deploying oracle router and configuring it.");
+    println!("Deploying oracle router.");
     let router = OracleRouterContract::new(
-        &router::InitMsg {
-            owner: HumanAddr(user_a.clone()),
+        &router::InstantiateMsg {
+            admin_auth,
             default_oracle: scrt_oracle.as_contract(),
+            band,
+            quote_symbol: "USD".to_string(),
         },
         Some(HOOMP_KEY),
         Some("oracle_router"),
     )?;
 
-    println!("Updating registry.");
-    let txn = router.update_registry(
-        RegistryOperation::Add {
-            oracle: scrt_oracle.as_contract(),
-            key: "SCRT".to_string(),
+    Ok(router)
+}
+
+fn deploy_shd(user_a: String, router: Contract) -> Result<(SiennaMarketOracleContract)> {
+    println!("Deploying SHD oracle looking at Sienna SHD/SSCRT base pegged to SCRT.");
+    let sienna_scrt_shd = Contract::new(
+        SIENNA_SHD_SSCRT_PAIR.to_string(),
+        SIENNA_SHD_SSCRT_PAIR_HASH.to_string(),
+    );
+    let shd_oracle = SiennaMarketOracleContract::new(
+        &siennaswap_market_oracle::InstantiateMsg {
+            router,
+            pair: sienna_scrt_shd,
+            symbol: "SHD".into(),
+            base_peg: Some("SCRT".to_string()),
+            only_band: true,
         },
         Some(HOOMP_KEY),
-    )?.txhash;
-    println!("Completed tx: {}", txn);
+        Some("sienna-market-shd-oracle"),
+    )?;
+    Ok(shd_oracle)
+}
 
-    let scrt_rate = router.query_price("SCRT".to_string())?.price.rate;
-    println!("Router price of SCRT: {}", scrt_rate);
+fn deploy_stkd_scrt(
+    user_a: String,
+    router: Contract,
+) -> Result<ShadeStakingDerivativeOracleContract> {
+    let staking_derivative = Contract::new(STKD_SCRT.to_string(), STKD_SCRT_HASH.to_string());
 
     println!("Deploying stkd-SCRT oracle.");
     let stkd_scrt_oracle = ShadeStakingDerivativeOracleContract::new(
-        &shd_stkd::InitMsg {
-            owner: HumanAddr(user_a.clone()),
-            supported_symbol: "stkd-SCRT".to_string(),
+        &shd_stkd::InstantiateMsg {
+            supported_key: "stkd-SCRT".to_string(),
             underlying_symbol: "SCRT".to_string(),
             staking_derivative,
-            router: router.as_contract(),
+            router,
         },
         Some(HOOMP_KEY),
         Some("stkd_scrt_oracle"),
     )?;
 
-    println!("Registering stkd-SCRT oracle to router.");
-    router.update_registry(
-        RegistryOperation::Add {
-            oracle: stkd_scrt_oracle.as_contract(),
-            key: "stkd-SCRT".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?;
+    Ok(stkd_scrt_oracle)
+}
+
+fn deploy_stkd_scrt_scrt_lp(
+    user_a: String,
+    router: Contract,
+) -> Result<SiennaswapSpotLpOracleContract> {
+    let sienna_stkd_scrt_scrt_lp = Contract::new(
+        STKD_SCRT_SCRT_POOL.to_string(),
+        STKD_SCRT_SCRT_POOL_HASH.to_string(),
+    );
 
     println!("Deploying stkd-SCRT / SCRT Siennaswap LP oracle.");
     let stkd_scrt_scrt_lp_oracle = SiennaswapSpotLpOracleContract::new(
-        &SiennaSwapLpOracle::InitMsg {
-            owner: HumanAddr(user_a),
+        &SiennaSwapLpOracle::InstantiateMsg {
             symbol_0: "stkd-SCRT".to_string(),
             symbol_1: "SCRT".to_string(),
-            router: router.as_contract(),
-            factory: sienna_stkd_scrt_scrt_lp,
-            supported_symbol: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
+            router,
+            exchange: sienna_stkd_scrt_scrt_lp,
+            supported_key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
         },
         Some(HOOMP_KEY),
         Some("stkd_scrt_scrt_lp_oracle"),
     )?;
 
-    println!("Registering stkd-SCRT/SCRT oracle to router.");
-    router.update_registry(
-        RegistryOperation::Replace {
-            oracle: stkd_scrt_scrt_lp_oracle.as_contract(),
-            key: "stkd-SCRT/SCRT SiennaSwap LP".to_string(),
-        },
-        Some(HOOMP_KEY),
-    )?;
-
-    Ok(())
+    Ok(stkd_scrt_scrt_lp_oracle)
 }
