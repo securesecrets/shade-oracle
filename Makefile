@@ -3,23 +3,28 @@ contracts_dir=contracts
 compiled_dir=compiled
 checksum_dir=${compiled_dir}/checksum
 
+build-release=RUSTFLAGS='-C link-arg=-s' cargo build --release --target wasm32-unknown-unknown
+
 # Compresses the wasm file, args: compressed_file_name, built_file_name
-define compress_wasm =
-{ \
-(cd $(contracts_dir)/$(1); cargo unit-test);\
-TARGET_FILE=`echo $(2) | cut -f 2 -d /`;\
-wasm-opt -Oz ./target/wasm32-unknown-unknown/release/$$TARGET_FILE.wasm -o ./$$TARGET_FILE.wasm;\
-echo $(md5sum $$TARGET_FILE.wasm | cut -f 1 -d " ") >> ${checksum_dir}/$(1).txt;\
-cat ./$$TARGET_FILE.wasm | gzip -n -9 > ${compiled_dir}/$(1).wasm.gz;\
-rm ./$$TARGET_FILE.wasm;\
-}
+define opt_and_compress = 
+wasm-opt -Oz ./target/wasm32-unknown-unknown/release/$(2).wasm -o ./$(1).wasm
+echo $(md5sum $(1).wasm | cut -f 1 -d " ") >> ${checksum_dir}/$(1).txt
+cat ./$(1).wasm | gzip -n -9 > ${compiled_dir}/$(1).wasm.gz
+rm ./$(1).wasm
 endef
 
-# ORACLES = oracle_router proxy_band_oracle secretswap_lp_oracle siennaswap_lp_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle earn_v1_oracle mock_band
-ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle
-CONTRACTS = ${ORACLES}
+#ORACLES = proxy_band_oracle siennaswap_lp_spot_oracle shade_staking_derivative_oracle oracle_router siennaswap_lp_oracle siennaswap_market_oracle shadeswap_market_oracle index_oracle
+ORACLES = siennaswap_lp_spot_oracle oracle_router
+MOCKS = mock_band mock_sienna_pair mock_shade_pair
+
+CONTRACTS = ${ORACLES} ${MOCKS}
+
+PKGS = shade_oracles shade_oracles_ensemble shade_oracles_integration
 
 COMPILED = ${CONTRACTS:=.wasm.gz}
+
+test:
+	cargo nextest run
 
 release: build_release compress
 
@@ -46,8 +51,21 @@ setup_external: $(external_compiled_dir) $(external_checksum_dir)
 $(external_compiled_dir) $(external_checksum_dir):
 	mkdir $@
 
-$(CONTRACTS):
-	$(call compress_wasm,$@,$@)
+compress_all: setup
+	@$(MAKE) $(addprefix compress-,$(CONTRACTS))
+
+compress-%: setup
+	$(call opt_and_compress,$*,$*)
+
+test-%: %
+	(cd ${contracts_dir}/$*; cargo test)
+
+$(CONTRACTS): setup
+	(cd ${contracts_dir}/$@; ${build-release})
+	@$(MAKE) $(addprefix compress-,$(@))
+
+$(PKGS):
+	(cd packages/$@; ${build-release})
 
 setup: $(compiled_dir) $(checksum_dir) $(sub_dirs)
 
@@ -65,8 +83,16 @@ clippy:
 	cargo clippy
 
 clean:
+	find . -name "Cargo.lock" -delete
+	rm -rf target
 	rm -r $(compiled_dir)
+	rm -r $(checksum_dir)
 
 format:
 	cargo fmt
 	
+schema: schema-siennaswap-market
+
+schema-siennaswap_market:
+	cd contracts/siennaswap_market_oracle \
+	&& cargo schema \

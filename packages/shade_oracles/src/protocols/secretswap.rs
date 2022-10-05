@@ -1,13 +1,11 @@
 use core::fmt;
 
-use cosmwasm_std::{Api, CanonicalAddr, Extern, HumanAddr, Querier, StdResult, Storage, Uint128};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{CanonicalAddr, Deps, Addr, StdResult, Uint128};
 
-use crate::common::Contract;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+use shade_protocol::utils::asset::{UnvalidatedContract, Contract};
+#[cw_serde]
 pub struct Asset {
     pub info: AssetInfo,
     pub amount: Uint128,
@@ -24,9 +22,9 @@ impl Asset {
         self.info.is_native_token()
     }
 
-    pub fn to_raw<S: Storage, A: Api, Q: Querier>(
+    pub fn to_raw(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<AssetRaw> {
         Ok(AssetRaw {
             info: match &self.info {
@@ -40,7 +38,7 @@ impl Asset {
                 } => AssetInfoRaw::Token {
                     contract_addr: deps
                         .api
-                        .canonical_address(&HumanAddr::from(contract_addr.as_str()))?,
+                        .canonical_address(&Addr::from(contract_addr.as_str()))?,
                     token_code_hash: token_code_hash.clone(),
                     viewing_key: viewing_key.clone(),
                 },
@@ -50,8 +48,7 @@ impl Asset {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum AssetInfo {
     Token {
         contract_addr: String,
@@ -73,9 +70,9 @@ impl fmt::Display for AssetInfo {
 }
 
 impl AssetInfo {
-    pub fn to_raw<S: Storage, A: Api, Q: Querier>(
+    pub fn to_raw(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<AssetInfoRaw> {
         match self {
             AssetInfo::NativeToken { denom } => Ok(AssetInfoRaw::NativeToken {
@@ -88,7 +85,7 @@ impl AssetInfo {
             } => Ok(AssetInfoRaw::Token {
                 contract_addr: deps
                     .api
-                    .canonical_address(&HumanAddr::from(contract_addr.as_str()))?,
+                    .canonical_address(&Addr::from(contract_addr.as_str()))?,
                 viewing_key: viewing_key.clone(),
                 token_code_hash: token_code_hash.clone(),
             }),
@@ -122,16 +119,16 @@ impl AssetInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct AssetRaw {
     pub info: AssetInfoRaw,
     pub amount: Uint128,
 }
 
 impl AssetRaw {
-    pub fn to_normal<S: Storage, A: Api, Q: Querier>(
+    pub fn to_normal(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<Asset> {
         Ok(Asset {
             info: match &self.info {
@@ -153,7 +150,7 @@ impl AssetRaw {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub enum AssetInfoRaw {
     Token {
         contract_addr: CanonicalAddr,
@@ -166,9 +163,9 @@ pub enum AssetInfoRaw {
 }
 
 impl AssetInfoRaw {
-    pub fn to_normal<S: Storage, A: Api, Q: Querier>(
+    pub fn to_normal(
         &self,
-        deps: &Extern<S, A, Q>,
+        deps: Deps,
     ) -> StdResult<AssetInfo> {
         match self {
             AssetInfoRaw::NativeToken { denom } => Ok(AssetInfo::NativeToken {
@@ -215,25 +212,24 @@ impl AssetInfoRaw {
     }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[cw_serde]
 pub struct SecretSwapPairInfo {
     pub asset_infos: [AssetInfo; 2],
-    pub contract_addr: HumanAddr,
-    pub liquidity_token: HumanAddr,
+    pub contract_addr: Addr,
+    pub liquidity_token: Addr,
     pub token_code_hash: String,
     pub asset0_volume: Uint128,
     pub asset1_volume: Uint128,
     pub factory: Contract,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct SecretSwapPoolResponse {
     pub assets: [Asset; 2],
     pub total_share: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum SecretSwapPairQueryMsg {
     Pair {},
     Pool {},

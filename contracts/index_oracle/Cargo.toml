@@ -1,0 +1,28 @@
+[package]
+name = "index-oracle"
+version = "0.1.0"
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>", "DrPresident <jacksonswenson@securesecrets.org"]
+
+edition = "2021"
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+[dependencies]
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["index"] }
+
+[dev-dependencies]
+shade-oracles-multi-test = { path = "../../packages/multi_test", features = [ "multi-test", "index-oracle" ] }
+rstest = "0.15.0"
