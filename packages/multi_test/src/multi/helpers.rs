@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use shade_admin_multi_test::multi::AdminAuth;
+use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
+use shade_multi_test::multi::admin::init_admin_auth;
 use shade_oracles::interfaces::router::registry::UpdateConfig;
 use shade_oracles::{
     common::InstantiateCommonConfig,
@@ -9,8 +10,6 @@ use shade_oracles::{
         router::{self},
     },
 };
-//use shade_multi_test::multi::snip20::Snip20;
-use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
 use shade_protocol::{
     c_std::{Addr, ContractInfo, Uint128},
     multi_test::App,
@@ -56,17 +55,7 @@ impl<'a> OracleCore<'a> {
         let quote_symbol = "USD".to_string();
         core.superadmin = admin.clone();
 
-        let admin_auth = admin_auth.unwrap_or_else(|| {
-            shade_admin::admin::InstantiateMsg { super_admin: None }
-                .test_init(
-                    AdminAuth::default(),
-                    core.app,
-                    admin.clone(),
-                    "admin-auth",
-                    &[],
-                )
-                .unwrap()
-        });
+        let admin_auth = admin_auth.unwrap_or_else(|| init_admin_auth(core.app, admin));
 
         core.deps
             .insert(OracleDeps::AdminAuth, admin_auth.clone().into());

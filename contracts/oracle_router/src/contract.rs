@@ -2,9 +2,13 @@ use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageIn
 use shade_oracles::{
     common::{
         querier::{query_oracle_price, query_oracle_prices},
-        GlobalStatus, OraclePrice, PriceResponse, PricesResponse, ShadeOraclePermissions,
+        GlobalStatus, OraclePrice, PriceResponse, PricesResponse,
     },
-    core::{pad_handle_result, pad_query_result, ssp::ItemStorage, validate_permission},
+    core::{
+        admin::helpers::{validate_admin, AdminPermissions},
+        pad_handle_result, pad_query_result,
+        ssp::ItemStorage,
+    },
     create_attr_action,
     interfaces::{
         band::ReferenceData,
@@ -44,9 +48,9 @@ pub fn execute(
 ) -> OracleRouterResult<Response> {
     let router = OracleRouter::load(deps.storage)?;
     // Ensure sender is admin
-    validate_permission(
+    validate_admin(
         &deps.querier,
-        &ShadeOraclePermissions::SuperAdmin.to_string(),
+        AdminPermissions::OraclesAdmin,
         &info.sender,
         &router.config.admin_auth,
     )?;
