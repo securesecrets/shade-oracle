@@ -58,10 +58,10 @@ pub struct ReferenceData {
     pub last_updated_quote: u64,
 }
 
-impl From<ReferenceData> for BtrReferenceData {
-    fn from(r: ReferenceData) -> Self {
-        BtrReferenceData {
-            rate: U256::new(r.rate.u128()),
+impl From<BtrReferenceData> for ReferenceData {
+    fn from(r: BtrReferenceData) -> Self {
+        ReferenceData {
+            rate: r.rate.into(),
             last_updated_base: r.last_updated_base,
             last_updated_quote: r.last_updated_quote,
         }
@@ -75,12 +75,12 @@ pub struct BtrReferenceData {
     pub last_updated_quote: u64,
 }
 
-impl Into<ReferenceData> for BtrReferenceData {
-    fn into(self) -> ReferenceData {
-        ReferenceData {
-            rate: self.rate.into(),
-            last_updated_base: self.last_updated_base,
-            last_updated_quote: self.last_updated_quote,
+impl From<ReferenceData> for BtrReferenceData {
+    fn from(r: ReferenceData) -> Self {
+        BtrReferenceData {
+            rate: r.rate.into(),
+            last_updated_base: r.last_updated_base,
+            last_updated_quote: r.last_updated_quote,
         }
     }
 }

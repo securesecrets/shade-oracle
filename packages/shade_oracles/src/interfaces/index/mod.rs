@@ -23,7 +23,6 @@ pub struct AssetSymbols;
 
 make_btr! {
     /// The initial weight and computed fixed weight of an asset.
-    #[derive(Default)]
     AssetWeights {
         initial: Decimal256, U256, "Initial weight of the asset (out of 100%)";
         fixed: Decimal256, U256, "Fixed weight of the asset with respect to its value and percentage of peg"
@@ -32,7 +31,6 @@ make_btr! {
 
 make_btr! {
     /// The target peg of the basket token
-    #[derive(Default)]
     Target {
         value: Uint128, U256, "Target price of the index asset";
         frozen: bool, bool, "Whether or not this value is frozen";

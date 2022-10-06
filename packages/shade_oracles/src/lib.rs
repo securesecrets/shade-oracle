@@ -20,14 +20,16 @@ pub mod core {
     pub use schemars;
     pub use secret_storage_plus as ssp;
     pub use serde;
-    pub use shade_admin::querier::validate_permission;
-    pub use shade_protocol::snip20;
-    pub use shade_protocol::utils::asset::{Contract, RawContract};
-    pub use shade_protocol::utils::calc::sqrt;
-    pub use shade_protocol::utils::generic_response::ResponseStatus;
-    pub use shade_protocol::utils::price::{get_precision, normalize_price, translate_price};
-    pub use shade_protocol::utils::{
-        pad_handle_result, pad_query_result, ExecuteCallback, InstantiateCallback, Query,
+    pub use shade_protocol::{
+        admin, snip20,
+        utils::{
+            asset::{Contract, RawContract},
+            calc::sqrt,
+            generic_response::ResponseStatus,
+            pad_handle_result, pad_query_result,
+            price::{get_precision, normalize_price, translate_price},
+            ExecuteCallback, InstantiateCallback, Query,
+        },
     };
     pub use thiserror;
     #[cfg(feature = "scrt")]

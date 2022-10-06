@@ -7,7 +7,14 @@ use crate::{
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
 use shade_protocol::{
-    contract_interfaces::snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},
+    admin::PermissionsResponse,
+    contract_interfaces::{
+        admin::{
+            helpers::{validate_admin, AdminPermissions},
+            QueryMsg as AdminQueryMsg,
+        },
+        snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},
+    },
     snip20::helpers::{token_info, TokenInfo},
     Contract,
 };
@@ -126,27 +133,14 @@ pub fn query_band_prices<'a>(
 /// Gets the admin auth contract from the router and uses it to check if the user is an admin for the router.
 pub fn verify_admin(
     contract: &Contract,
+    permission: AdminPermissions,
     querier: &QuerierWrapper,
     user: impl Into<String> + Clone,
 ) -> StdResult<()> {
     let get_admin_auth_req: RouterConfigResponse =
         RouterQueryMsg::GetConfig {}.query(querier, contract)?;
     let admin_auth = get_admin_auth_req.config.admin_auth;
-    validate_permission(
-        querier,
-        ShadeOraclePermissions::SuperAdmin,
-        &user,
-        &admin_auth,
-    )
-}
-
-pub fn validate_permission(
-    querier: &QuerierWrapper,
-    permission: ShadeOraclePermissions,
-    user: &(impl Into<String> + Clone),
-    admin_auth: &(impl Into<Contract> + Clone),
-) -> StdResult<()> {
-    shade_admin::querier::validate_permission(querier, &permission.to_string(), user, admin_auth)
+    validate_admin(querier, permission, user, &admin_auth)
 }
 
 pub fn query_token_info(contract: &Contract, querier: &QuerierWrapper) -> StdResult<TokenInfo> {
