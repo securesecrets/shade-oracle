@@ -1,0 +1,125 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+COMPILED_DIR = "artifacts"
+CHECKSUM_DIR = "${COMPILED_DIR}/checksum"
+DOCKER_IMAGE_VERSION = "v0.2"
+
+[env.contracts]
+CARGO_MAKE_WORKSPACE_SKIP_MEMBERS = "packages/*"
+
+[tasks.schema]
+workspace = false
+script = '''
+for d in contracts/*;
+    do
+        [ -d $d ] && cd "$d" && echo Entering into $d and generating schema. && cargo schema
+        cd ..
+    done;
+'''
+
+[tasks.build]
+workspace = false
+dependencies = ["schema", "optimizoor", "create_compile_dir", "create_checksum_dir"]
+
+[tasks.optimizoor]
+private = true
+workspace = false
+command = "cargo"
+args = ["cw-optimizoor"]
+
+[tasks.compress-all]
+private = true
+workspace = false
+script = '''
+for f in ${BUILD}/*.wasm;
+	do
+		wasm-opt -Oz ${BUILD_TARGET}$f.wasm -o ./$f.wasm
+		echo $(md5sum $f.wasm | cut -f 1 -d " ") >> ${CHECKSUM_DIR}/$f.txt
+		cat ./$f.wasm | gzip -n -9 > ${COMPILED_DIR}/$f.wasm.gz
+		rm ./$f.wasm
+'''
+
+[tasks.docs]
+command = "cargo"
+args = ["doc", "--no-deps", "--open"]
+
+[tasks.test]
+workspace = false
+command = "cargo"
+args = ["nextest", "run", "--package", "${@}"]
+
+[tasks.test-all]
+workspace = false
+command = "cargo"
+args = ["nextest", "run"]
+
+[tasks.fmt]
+workspace = false
+command = "cargo"
+args = ["fmt"]
+
+[tasks.bacon]
+workspace = false
+command = "bacon"
+args = ["-s", "-w"]
+
+# Cleanup
+
+[tasks.clean]
+workspace = false
+dependencies = ["remove_compile_dir", "create_compile_dir", "create_checksum_dir"]
+
+[tasks.remove_compile_dir]
+private = true
+workspace = false
+command = "rm"
+args = ["-r", "${COMPILED_DIR}", "-f"]
+
+[tasks.create_compile_dir]
+private = true
+workspace = false
+command = "mkdir"
+args = ["${COMPILED_DIR}"]
+
+[tasks.create_checksum_dir]
+private = true
+workspace = false
+command = "mkdir"
+args = ["${CHECKSUM_DIR}"]
+
+# Docker support - can be run with `cargo make server start|connect|download
+[tasks.server]
+private = false
+workspace = false
+extend = "subcommand"
+env = { "SUBCOMMAND_PREFIX" = "server" }
+
+[tasks.subcommand]
+private = true
+workspace = false
+script = '''
+#!@duckscript
+
+cm_run_task ${SUBCOMMAND_PREFIX}-${1}
+'''
+
+
+[tasks.server-download]
+workspace = false
+script = '''
+docker pull securesecrets/sn-testnet:${DOCKER_IMAGE_VERSION}
+'''
+
+[tasks.server-start]
+workspace = false
+script = '''
+docker run -it --rm \
+	 -p 26657:26657 -p 26656:26656 -p 1337:1337 \
+	 -v $$(pwd):/root/code --name shade-testnet securesecrets/sn-testnet:${DOCKER_IMAGE_VERSION}
+'''
+
+[tasks.server-connect]
+workspace = false
+script = '''
+docker exec -it shade-testnet /bin/bash
+'''
