@@ -8,6 +8,10 @@ authors = [
 ]
 edition = "2021"
 
+[[bin]]
+name = "schemas"
+path = "src/schemas.rs"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

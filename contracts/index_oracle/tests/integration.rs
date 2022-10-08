@@ -13,7 +13,7 @@ use shade_oracles::{
     interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::helpers::{OracleCore, OracleDeps},
+    multi::helpers::{OracleCore, OracleDeps, SharedApp},
     multi::index::IndexOracle,
     App, MultiTestable,
 };
@@ -109,9 +109,10 @@ fn basic_index_test(
         .collect();
 
     let user = Addr::unchecked("superadmin");
-    let mut app = App::default();
+    let app = SharedApp::new(App::default());
 
-    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
+    let oracle_core =
+        OracleCore::setup(app.clone(), &user, prices, None, None, None, None).unwrap();
     let router = oracle_core.get(OracleDeps::OracleRouter);
 
     let index_oracle = InstantiateMsg {
@@ -123,7 +124,7 @@ fn basic_index_test(
     }
     .test_init(
         IndexOracle::default(),
-        &mut app,
+        &mut app.get_mut(),
         user.clone(),
         "index-oracle",
         &[],
@@ -137,11 +138,11 @@ fn basic_index_test(
             key: symbol.clone(),
         },
     }
-    .test_exec(&router, &mut app, user, &[])
+    .test_exec(&router, &mut app.get_mut(), user, &[])
     .unwrap();
 
     let price: PriceResponse = QueryMsg::GetPrice { key: symbol }
-        .test_query(&router, &app)
+        .test_query(&router, &app.get())
         .unwrap();
     let data = price.price.data();
 
@@ -278,9 +279,10 @@ fn mod_index_test(
         .map(|(sym, p)| (sym.to_string(), p.into()))
         .collect();
     let user = Addr::unchecked("superadmin");
-    let mut app = App::default();
+    let app = SharedApp::new(App::default());
 
-    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
+    let oracle_core =
+        OracleCore::setup(app.clone(), &user, prices, None, None, None, None).unwrap();
     let band = oracle_core.get(OracleDeps::Band);
     let _band_proxy = oracle_core.get(OracleDeps::ProxyBand);
     let router = oracle_core.get(OracleDeps::OracleRouter);
@@ -294,7 +296,7 @@ fn mod_index_test(
     }
     .test_init(
         IndexOracle::default(),
-        &mut app,
+        &mut app.get_mut(),
         user.clone(),
         "index-oracle",
         &[],
@@ -308,13 +310,13 @@ fn mod_index_test(
             key: symbol.clone(),
         },
     }
-    .test_exec(&router, &mut app, user.clone(), &[])
+    .test_exec(&router, &mut app.get_mut(), user.clone(), &[])
     .unwrap();
 
     let price: PriceResponse = QueryMsg::GetPrice {
         key: symbol.clone(),
     }
-    .test_query(&router, &app)
+    .test_query(&router, &app.get())
     .unwrap();
     let data = price.price.data();
     {
@@ -341,14 +343,14 @@ fn mod_index_test(
             rate: price,
             last_updated: None,
         }
-        .test_exec(&band, &mut app, user.clone(), &[])
+        .test_exec(&band, &mut app.get_mut(), user.clone(), &[])
         .unwrap();
     }
 
     let price: PriceResponse = QueryMsg::GetPrice {
         key: symbol.clone(),
     }
-    .test_query(&router, &app)
+    .test_query(&router, &app.get())
     .unwrap();
     let data = price.price.data();
     {
@@ -369,12 +371,12 @@ fn mod_index_test(
 
     // Update basket
     ExecuteMsg::Admin(AdminMsg::ModBasket { basket: mod_basket })
-        .test_exec(&index_oracle, &mut app, user, &[])
+        .test_exec(&index_oracle, &mut app.get_mut(), user, &[])
         .unwrap();
 
     // check basket changed
     let BasketResponse { mut basket } = QueryMsg::GetBasket {}
-        .test_query(&index_oracle, &app)
+        .test_query(&index_oracle, &app.get())
         .unwrap();
     {
         basket.sort();
@@ -390,7 +392,7 @@ fn mod_index_test(
 
     // check price doesn't change on mod_price
     let price: PriceResponse = QueryMsg::GetPrice { key: symbol }
-        .test_query(&router, &app)
+        .test_query(&router, &app.get())
         .unwrap();
     let data = price.price.data();
     {

@@ -26,3 +26,6 @@ logs
 external_compiled
 
 ui/nohup.out
+
+node_modules/
+artifacts/

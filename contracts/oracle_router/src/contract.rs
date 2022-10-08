@@ -152,10 +152,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> OracleRouterResult<Binary>
                         let oracle = router.get_oracle(deps.storage, &key)?;
                         oracles.push(OracleResponse { key, oracle })
                     }
-                    to_binary(&oracles)
+                    to_binary(&OraclesResponse { oracles })
                 }
                 QueryMsg::GetPrices { keys } => Ok(get_prices(deps, router, keys)?),
-                QueryMsg::GetKeys => Ok(OracleRouter::get_keys(deps)?),
+                QueryMsg::GetKeys {} => Ok(OracleRouter::get_keys(deps)?),
                 _ => panic!("Code should never go here."),
             }
         }
