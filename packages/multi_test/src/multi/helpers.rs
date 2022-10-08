@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
 use shade_multi_test::multi::admin::init_admin_auth;
+use shade_oracles::core::Query;
 use shade_oracles::interfaces::router::registry::UpdateConfig;
 use shade_oracles::{
     common::InstantiateCommonConfig,
@@ -12,8 +13,11 @@ use shade_oracles::{
         router::{self},
     },
 };
+use shade_protocol::c_std::Coin;
+use shade_protocol::multi_test::AppResponse;
+use shade_protocol::serde::de::DeserializeOwned;
 use shade_protocol::{
-    c_std::{Addr, ContractInfo, Uint128},
+    c_std::{Addr, ContractInfo, StdResult, Uint128},
     multi_test::App,
     utils::{ExecuteCallback, InstantiateCallback, MultiTestable},
     AnyResult, Contract,
@@ -36,6 +40,46 @@ impl SharedApp {
     }
     pub fn get(&self) -> Ref<App> {
         self.app.borrow()
+    }
+    pub fn query<T: DeserializeOwned>(
+        &self,
+        msg: &impl Query,
+        contract: &ContractInfo,
+    ) -> StdResult<T> {
+        msg.test_query(contract, &self.get())
+    }
+    pub fn init(
+        &self,
+        sender: &Addr,
+        msg: &impl InstantiateCallback,
+        testable: impl MultiTestable,
+        label: &str,
+        send_funds: &[Coin],
+    ) -> AnyResult<ContractInfo> {
+        msg.test_init(
+            testable,
+            &mut self.get_mut(),
+            sender.clone(),
+            label,
+            send_funds,
+        )
+    }
+    pub fn exec(
+        &mut self,
+        sender: &Addr,
+        msg: &(impl ExecuteCallback + std::fmt::Debug),
+        contract: &ContractInfo,
+    ) -> AnyResult<AppResponse> {
+        msg.test_exec(contract, &mut self.get_mut(), sender.clone(), &[])
+    }
+    pub fn exec_with_funds(
+        &mut self,
+        sender: &Addr,
+        msg: &(impl ExecuteCallback + std::fmt::Debug),
+        contract: &ContractInfo,
+        send_funds: &[Coin],
+    ) -> AnyResult<AppResponse> {
+        msg.test_exec(contract, &mut self.get_mut(), sender.clone(), send_funds)
     }
 }
 
@@ -84,11 +128,11 @@ impl OracleCore {
             .insert(OracleDeps::AdminAuth, admin_auth.clone().into());
 
         let band = band.unwrap_or_else(|| {
-            band::InstantiateMsg {}
-                .test_init(
+            core.app
+                .init(
+                    admin,
+                    &band::InstantiateMsg {},
                     MockBand::default(),
-                    &mut core.app.get_mut(),
-                    admin.clone(),
                     "band",
                     &[],
                 )
