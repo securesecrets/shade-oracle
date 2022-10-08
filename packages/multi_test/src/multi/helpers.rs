@@ -65,7 +65,7 @@ impl SharedApp {
         )
     }
     pub fn exec(
-        &mut self,
+        &self,
         sender: &Addr,
         msg: &(impl ExecuteCallback + std::fmt::Debug),
         contract: &ContractInfo,
@@ -73,7 +73,7 @@ impl SharedApp {
         msg.test_exec(contract, &mut self.get_mut(), sender.clone(), &[])
     }
     pub fn exec_with_funds(
-        &mut self,
+        &self,
         sender: &Addr,
         msg: &(impl ExecuteCallback + std::fmt::Debug),
         contract: &ContractInfo,
