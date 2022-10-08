@@ -35,12 +35,17 @@ pub enum QueryMsg {
     /// Get price of oracle at that key
     #[returns(PriceResponse)]
     GetPrice { key: String },
-    #[returns(Vec<OracleResponse>)]
+    #[returns(OraclesResponse)]
     GetOracles { keys: Vec<String> },
     #[returns(PricesResponse)]
     GetPrices { keys: Vec<String> },
     #[returns(KeysResponse)]
-    GetKeys,
+    GetKeys {},
+}
+
+#[cw_serde]
+pub struct OraclesResponse {
+    pub oracles: Vec<OracleResponse>,
 }
 
 #[cw_serde]

@@ -1,42 +1,51 @@
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
-COMPILED_DIR = "artifacts"
-CHECKSUM_DIR = "${COMPILED_DIR}/checksum"
+ARTIFACTS_DIR = "artifacts"
 DOCKER_IMAGE_VERSION = "v0.2"
 
 [env.contracts]
 CARGO_MAKE_WORKSPACE_SKIP_MEMBERS = "packages/*"
 
-[tasks.schema]
+# Cleanup
+[tasks.clean]
+workspace = false
+dependencies = ["remove_artifacts_dir"]
+
+[tasks.remove_artifacts_dir]
+private = true
+workspace = false
+command = "rm"
+args = ["-r", "${ARTIFACTS_DIR}", "-f"]
+	
+[tasks.schemas]
 workspace = false
 script = '''
-for d in contracts/*;
-    do
-        [ -d $d ] && cd "$d" && echo Entering into $d and generating schema. && cargo schema
-        cd ..
-    done;
+cargo run --package shade-oracles --bin schemas
 '''
 
 [tasks.build]
 workspace = false
-dependencies = ["schema", "optimizoor", "create_compile_dir", "create_checksum_dir"]
+dependencies = ["schemas", "optimizoor", "compress", "bundle"]
 
 [tasks.optimizoor]
-private = true
 workspace = false
 command = "cargo"
 args = ["cw-optimizoor"]
 
-[tasks.compress-all]
-private = true
+[tasks.compress]
 workspace = false
 script = '''
-for f in ${BUILD}/*.wasm;
+for f in ${ARTIFACTS_DIR}/*.wasm;
 	do
-		wasm-opt -Oz ${BUILD_TARGET}$f.wasm -o ./$f.wasm
-		echo $(md5sum $f.wasm | cut -f 1 -d " ") >> ${CHECKSUM_DIR}/$f.txt
-		cat ./$f.wasm | gzip -n -9 > ${COMPILED_DIR}/$f.wasm.gz
-		rm ./$f.wasm
+		cat ./$f | gzip -n -9 > $f.gz
+		rm ./$f
+	done;
+'''
+
+[tasks.bundle]
+workspace = false
+script = '''
+./bundle.sh ./artifacts
 '''
 
 [tasks.docs]
@@ -62,30 +71,6 @@ args = ["fmt"]
 workspace = false
 command = "bacon"
 args = ["-s", "-w"]
-
-# Cleanup
-
-[tasks.clean]
-workspace = false
-dependencies = ["remove_compile_dir", "create_compile_dir", "create_checksum_dir"]
-
-[tasks.remove_compile_dir]
-private = true
-workspace = false
-command = "rm"
-args = ["-r", "${COMPILED_DIR}", "-f"]
-
-[tasks.create_compile_dir]
-private = true
-workspace = false
-command = "mkdir"
-args = ["${COMPILED_DIR}"]
-
-[tasks.create_checksum_dir]
-private = true
-workspace = false
-command = "mkdir"
-args = ["${CHECKSUM_DIR}"]
 
 # Docker support - can be run with `cargo make server start|connect|download
 [tasks.server]

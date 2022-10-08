@@ -1,4 +1,6 @@
+use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
 use shade_multi_test::multi::admin::init_admin_auth;
@@ -17,9 +19,29 @@ use shade_protocol::{
     AnyResult, Contract,
 };
 
-pub struct OracleCore<'a> {
+#[derive(Clone)]
+/// Allows an instance of the Multitest App to be shared across different structs.
+pub struct SharedApp {
+    app: Rc<RefCell<App>>,
+}
+
+impl SharedApp {
+    pub fn new(app: App) -> Self {
+        SharedApp {
+            app: Rc::new(RefCell::new(app)),
+        }
+    }
+    pub fn get_mut(&self) -> RefMut<App> {
+        self.app.borrow_mut()
+    }
+    pub fn get(&self) -> Ref<App> {
+        self.app.borrow()
+    }
+}
+
+pub struct OracleCore {
     pub deps: HashMap<OracleDeps, Contract>,
-    pub app: &'a mut App,
+    pub app: SharedApp,
     pub superadmin: Addr,
 }
 
@@ -31,7 +53,7 @@ pub enum OracleDeps {
     AdminAuth,
 }
 
-impl<'a> OracleCore<'a> {
+impl OracleCore {
     pub fn get(&self, deps: OracleDeps) -> ContractInfo {
         self.deps.get(&deps).unwrap().clone().into()
     }
@@ -39,7 +61,7 @@ impl<'a> OracleCore<'a> {
     /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
     /// based off the prices argument with them being quoted in "USD".
     pub fn setup(
-        app: &'a mut App,
+        app: SharedApp,
         admin: &Addr,
         prices: HashMap<String, Uint128>,
         band: Option<ContractInfo>,
@@ -55,14 +77,21 @@ impl<'a> OracleCore<'a> {
         let quote_symbol = "USD".to_string();
         core.superadmin = admin.clone();
 
-        let admin_auth = admin_auth.unwrap_or_else(|| init_admin_auth(core.app, admin));
+        let admin_auth =
+            admin_auth.unwrap_or_else(|| init_admin_auth(&mut core.app.get_mut(), admin));
 
         core.deps
             .insert(OracleDeps::AdminAuth, admin_auth.clone().into());
 
         let band = band.unwrap_or_else(|| {
             band::InstantiateMsg {}
-                .test_init(MockBand::default(), core.app, admin.clone(), "band", &[])
+                .test_init(
+                    MockBand::default(),
+                    &mut core.app.get_mut(),
+                    admin.clone(),
+                    "band",
+                    &[],
+                )
                 .unwrap()
         });
 
@@ -77,7 +106,7 @@ impl<'a> OracleCore<'a> {
             }
             .test_init(
                 OracleRouter::default(),
-                core.app,
+                &mut core.app.get_mut(),
                 admin.clone(),
                 "oracle-router",
                 &[],
@@ -101,7 +130,7 @@ impl<'a> OracleCore<'a> {
             }
             .test_init(
                 ProxyBandOracle::default(),
-                core.app,
+                &mut core.app.get_mut(),
                 admin.clone(),
                 "proxy-band",
                 &[],
@@ -120,7 +149,7 @@ impl<'a> OracleCore<'a> {
                 quote_symbol: None,
             },
         }
-        .test_exec(&oracle_router, core.app, admin.clone(), &[])
+        .test_exec(&oracle_router, &mut core.app.get_mut(), admin.clone(), &[])
         .unwrap();
 
         // Configure mock band prices
@@ -131,14 +160,14 @@ impl<'a> OracleCore<'a> {
                 rate: price,
                 last_updated: None,
             }
-            .test_exec(&band, core.app, admin.clone(), &[])
+            .test_exec(&band, &mut core.app.get_mut(), admin.clone(), &[])
             .unwrap();
         }
 
         Ok(core)
     }
 
-    pub fn update_prices(&mut self, prices: HashMap<String, Uint128>, last_updated_time: u64) {
+    pub fn update_prices(&self, prices: HashMap<String, Uint128>, last_updated_time: u64) {
         for (sym, price) in prices {
             band::ExecuteMsg::UpdateSymbolPrice {
                 base_symbol: sym,
@@ -148,7 +177,7 @@ impl<'a> OracleCore<'a> {
             }
             .test_exec(
                 &self.get(OracleDeps::Band),
-                self.app,
+                &mut self.app.get_mut(),
                 self.superadmin.clone(),
                 &[],
             )

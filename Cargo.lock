@@ -730,7 +730,6 @@ dependencies = [
  "schemars 0.8.11",
  "serde",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -741,7 +740,6 @@ dependencies = [
  "schemars 0.8.11",
  "serde",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -1151,7 +1149,7 @@ dependencies = [
 [[package]]
 name = "secret-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#e2912882fc21893ad4e79a1a9564e5c0e1c6e7c8"
+source = "git+https://github.com/securesecrets/secret-plus-utils.git#8034b523a7a9842b2369a8bec29b48bd9282a906"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
@@ -1161,7 +1159,7 @@ dependencies = [
  "nanoid",
  "prost",
  "schemars 0.8.11",
- "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/secret-plus-utils)",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/secret-plus-utils.git)",
  "secret-utils",
  "serde",
  "thiserror",
@@ -1181,7 +1179,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#e2912882fc21893ad4e79a1a9564e5c0e1c6e7c8"
+source = "git+https://github.com/securesecrets/secret-plus-utils.git#8034b523a7a9842b2369a8bec29b48bd9282a906"
 dependencies = [
  "bincode2",
  "cosmwasm-std",
@@ -1292,7 +1290,7 @@ dependencies = [
 [[package]]
 name = "secret-utils"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#e2912882fc21893ad4e79a1a9564e5c0e1c6e7c8"
+source = "git+https://github.com/securesecrets/secret-plus-utils.git#8034b523a7a9842b2369a8bec29b48bd9282a906"
 dependencies = [
  "cosmwasm-std",
  "schemars 0.8.11",
@@ -1461,7 +1459,7 @@ dependencies = [
  "remain",
  "schemars 0.8.11",
  "secret-multi-test",
- "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/secret-plus-utils)",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/secret-plus-utils.git)",
  "serde",
  "sha2",
  "subtle",
