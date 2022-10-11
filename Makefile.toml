@@ -67,6 +67,11 @@ workspace = false
 command = "cargo"
 args = ["fmt"]
 
+[tasks.bacon-test]
+workspace = false
+command = "bacon"
+args = ["test", "-s", "-w"]
+
 [tasks.bacon]
 workspace = false
 command = "bacon"
