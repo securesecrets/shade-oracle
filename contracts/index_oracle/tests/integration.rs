@@ -111,8 +111,7 @@ fn basic_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core =
-        OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
+    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
     let router = oracle_core.get(OracleDeps::OracleRouter);
 
     let index_oracle = InstantiateMsg {
@@ -281,10 +280,8 @@ fn mod_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core =
-        OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
+    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
     let band = oracle_core.get(OracleDeps::Band);
-    let _band_proxy = oracle_core.get(OracleDeps::ProxyBand);
     let router = oracle_core.get(OracleDeps::OracleRouter);
 
     let index_oracle = InstantiateMsg {

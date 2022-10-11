@@ -11,7 +11,6 @@ impl_msg_callbacks!();
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admin_auth: Contract,
-    pub default_oracle: Contract,
     pub band: Contract,
     pub quote_symbol: String,
 }

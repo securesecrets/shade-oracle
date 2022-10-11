@@ -2,14 +2,14 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::multi::{MockBand, OracleRouter, ProxyBandOracle};
+use crate::multi::{MockBand, OracleRouter};
 use shade_multi_test::multi::admin::init_admin_auth;
 use shade_oracles::core::Query;
 use shade_oracles::interfaces::router::registry::UpdateConfig;
 use shade_oracles::{
     common::InstantiateCommonConfig,
     interfaces::{
-        band::{self, proxy},
+        band::{self},
         router::{self},
     },
 };
@@ -31,7 +31,6 @@ pub struct OracleCore {
 #[derive(Hash, PartialEq, Eq)]
 pub enum OracleDeps {
     Band,
-    ProxyBand,
     OracleRouter,
     AdminAuth,
 }
@@ -59,21 +58,21 @@ impl OracleCore {
         let quote_symbol = "USD".to_string();
         core.superadmin = admin.clone();
 
-        let admin_auth =
-            admin_auth.unwrap_or_else(|| init_admin_auth(app, admin));
+        let admin_auth = admin_auth.unwrap_or_else(|| init_admin_auth(app, admin));
 
         core.deps
             .insert(OracleDeps::AdminAuth, admin_auth.clone().into());
 
         let band = band.unwrap_or_else(|| {
-            band::InstantiateMsg {}.test_init(MockBand::default(), app, admin.clone(), "band", &[]).unwrap()
+            band::InstantiateMsg {}
+                .test_init(MockBand::default(), app, admin.clone(), "band", &[])
+                .unwrap()
         });
 
         core.deps.insert(OracleDeps::Band, band.clone().into());
 
         let oracle_router = oracle_router.unwrap_or_else(|| {
             router::msg::InstantiateMsg {
-                default_oracle: admin_auth.clone().into(),
                 admin_auth: admin_auth.clone().into(),
                 band: band.clone().into(),
                 quote_symbol: quote_symbol.clone(),
@@ -91,34 +90,9 @@ impl OracleCore {
         core.deps
             .insert(OracleDeps::OracleRouter, oracle_router.clone().into());
 
-        let proxy_band = proxy_band.unwrap_or_else(|| {
-            proxy::InstantiateMsg {
-                quote_symbol: quote_symbol.clone(),
-                config: InstantiateCommonConfig::new(
-                    None,
-                    oracle_router.clone().into(),
-                    true,
-                    true,
-                ),
-                band: band.clone().into(),
-            }
-            .test_init(
-                ProxyBandOracle::default(),
-                app,
-                admin.clone(),
-                "proxy-band",
-                &[],
-            )
-            .unwrap()
-        });
-
-        core.deps
-            .insert(OracleDeps::ProxyBand, proxy_band.clone().into());
-
         router::msg::ExecuteMsg::UpdateConfig {
             config: UpdateConfig {
                 admin_auth: None,
-                default_oracle: Some(proxy_band.into()),
                 band: None,
                 quote_symbol: None,
             },
@@ -141,7 +115,12 @@ impl OracleCore {
         Ok(core)
     }
 
-    pub fn update_prices(&self, app: &mut App, prices: HashMap<String, Uint128>, last_updated_time: u64) {
+    pub fn update_prices(
+        &self,
+        app: &mut App,
+        prices: HashMap<String, Uint128>,
+        last_updated_time: u64,
+    ) {
         for (sym, price) in prices {
             band::ExecuteMsg::UpdateSymbolPrice {
                 base_symbol: sym,

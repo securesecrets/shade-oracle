@@ -122,37 +122,3 @@ where
     }
     .query(querier, band)
 }
-
-pub mod proxy {
-    use crate::common::{CommonConfig, InstantiateCommonConfig};
-    #[cfg(feature = "proxy-band")]
-    use crate::ssp::{Item, ItemStorage};
-    use shade_protocol::utils::asset::RawContract;
-
-    use super::*;
-    // base_asset quoted in quote_asset, Ex: BTC (base) quoted in USD(quote)
-    #[cw_serde]
-    pub struct InstantiateMsg {
-        pub config: InstantiateCommonConfig,
-        pub band: RawContract,
-        pub quote_symbol: String,
-    }
-
-    #[cw_serde]
-    pub struct ConfigResponse {
-        pub config: CommonConfig,
-        pub quote_symbol: String,
-    }
-
-    #[cw_serde]
-    pub struct QuoteSymbol(pub String);
-
-    #[cfg(feature = "proxy-band")]
-    impl ItemStorage for QuoteSymbol {
-        const ITEM: Item<'static, Self> = Item::new("quotesymbol");
-    }
-
-    impl InstantiateCallback for InstantiateMsg {
-        const BLOCK_SIZE: usize = BLOCK_SIZE;
-    }
-}

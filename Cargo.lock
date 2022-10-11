@@ -873,15 +873,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proxy-band-oracle"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "shade-oracles",
- "shade-oracles-multi-test",
-]
-
-[[package]]
 name = "query-authentication"
 version = "0.1.0"
 source = "git+https://github.com/securesecrets/query-authentication?branch=cosmwasm_v1_upgrade#e2ead5e85dc2ac4f77b2cbf86a90d166bdbb5950"
@@ -1429,7 +1420,6 @@ dependencies = [
  "mock-sienna-pair",
  "multi-derive",
  "oracle-router",
- "proxy-band-oracle",
  "shade-multi-test",
  "shade-oracles",
  "shade-protocol",
