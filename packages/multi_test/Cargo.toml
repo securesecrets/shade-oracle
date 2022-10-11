@@ -22,7 +22,6 @@ lp = ["dep:siennaswap-lp-oracle", "dep:siennaswap-lp-spot-oracle"]
 strum = { version = "0.24", features = ["derive"] }
 shade-oracles = { path = "../shade_oracles" }
 oracle-router = { path = "../../contracts/oracle_router" }
-proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
 
 mock-band = { path = "../../contracts/mock_band" }
 mock-sienna-pair = { path = "../../contracts/mock_sienna_pair" }

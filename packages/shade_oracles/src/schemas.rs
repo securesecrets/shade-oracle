@@ -58,8 +58,6 @@ fn main() {
         out_dir,
         "index_oracle",
         index::msg,
-        "mock_band",
-        band,
         "oracle_router",
         router::msg
     );
