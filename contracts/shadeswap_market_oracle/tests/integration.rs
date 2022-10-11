@@ -14,7 +14,7 @@ use shade_oracles::{
     core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::{lp::market as shadeswap_market_oracle, router},
 };
-use shade_oracles_multi_test::multi::helpers::{OracleDeps, SharedApp};
+use shade_oracles_multi_test::multi::helpers::{OracleDeps};
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::{
     multi::{helpers::OracleCore, market::shadeswap::ShadeSwapMarketOracle, MockShadePair},
@@ -36,10 +36,10 @@ fn basic_market_test(
     expected: Uint128,
 ) {
     let user = Addr::unchecked("superadmin");
-    let app = SharedApp::new(App::default());
+    let mut app = App::default();
 
     let oracle_core =
-        OracleCore::setup(app.clone(), &user, prices, None, None, None, None).unwrap();
+        OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
     let router = oracle_core.get(OracleDeps::OracleRouter);
 
     // Setup tokens
@@ -55,7 +55,7 @@ fn basic_market_test(
     }
     .test_init(
         Snip20::default(),
-        &mut app.get_mut(),
+        &mut app,
         user.clone(),
         "primary_token",
         &[],
@@ -74,7 +74,7 @@ fn basic_market_test(
     }
     .test_init(
         Snip20::default(),
-        &mut app.get_mut(),
+        &mut app,
         user.clone(),
         "base_token",
         &[],
@@ -84,7 +84,7 @@ fn basic_market_test(
     let shade_pair = mock_shade_pair::InstantiateMsg {}
         .test_init(
             MockShadePair::default(),
-            &mut app.get_mut(),
+            &mut app,
             user.clone(),
             "shade_pair",
             &[],
@@ -103,7 +103,7 @@ fn basic_market_test(
         },
         amount_b: base_pool,
     }
-    .test_exec(&shade_pair, &mut app.get_mut(), user.clone(), &[])
+    .test_exec(&shade_pair, &mut app, user.clone(), &[])
     .unwrap();
 
     let market_oracle = shadeswap_market_oracle::InstantiateMsg {
@@ -119,7 +119,7 @@ fn basic_market_test(
     }
     .test_init(
         ShadeSwapMarketOracle::default(),
-        &mut app.get_mut(),
+        &mut app,
         user.clone(),
         "shade-swap-market-oracle",
         &[],
@@ -137,11 +137,11 @@ fn basic_market_test(
             key: symbol.clone(),
         },
     }
-    .test_exec(&router, &mut app.get_mut(), user.clone(), &[])
+    .test_exec(&router, &mut app, user.clone(), &[])
     .unwrap();
 
     let price: PriceResponse = common::OracleQuery::GetPrice { key: symbol }
-        .test_query(&market_oracle, &app.get())
+        .test_query(&market_oracle, &app)
         .unwrap();
     let data = price.price.data();
     assert_eq!(

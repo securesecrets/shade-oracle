@@ -23,69 +23,8 @@ use shade_protocol::{
     AnyResult, Contract,
 };
 
-#[derive(Clone)]
-/// Allows an instance of the Multitest App to be shared across different structs.
-pub struct SharedApp {
-    app: Rc<RefCell<App>>,
-}
-
-impl SharedApp {
-    pub fn new(app: App) -> Self {
-        SharedApp {
-            app: Rc::new(RefCell::new(app)),
-        }
-    }
-    pub fn get_mut(&self) -> RefMut<App> {
-        self.app.borrow_mut()
-    }
-    pub fn get(&self) -> Ref<App> {
-        self.app.borrow()
-    }
-    pub fn query<T: DeserializeOwned>(
-        &self,
-        msg: &impl Query,
-        contract: &ContractInfo,
-    ) -> StdResult<T> {
-        msg.test_query(contract, &self.get())
-    }
-    pub fn init(
-        &self,
-        sender: &Addr,
-        msg: &impl InstantiateCallback,
-        testable: impl MultiTestable,
-        label: &str,
-        send_funds: &[Coin],
-    ) -> AnyResult<ContractInfo> {
-        msg.test_init(
-            testable,
-            &mut self.get_mut(),
-            sender.clone(),
-            label,
-            send_funds,
-        )
-    }
-    pub fn exec(
-        &self,
-        sender: &Addr,
-        msg: &(impl ExecuteCallback + std::fmt::Debug),
-        contract: &ContractInfo,
-    ) -> AnyResult<AppResponse> {
-        msg.test_exec(contract, &mut self.get_mut(), sender.clone(), &[])
-    }
-    pub fn exec_with_funds(
-        &self,
-        sender: &Addr,
-        msg: &(impl ExecuteCallback + std::fmt::Debug),
-        contract: &ContractInfo,
-        send_funds: &[Coin],
-    ) -> AnyResult<AppResponse> {
-        msg.test_exec(contract, &mut self.get_mut(), sender.clone(), send_funds)
-    }
-}
-
 pub struct OracleCore {
     pub deps: HashMap<OracleDeps, Contract>,
-    pub app: SharedApp,
     pub superadmin: Addr,
 }
 
@@ -105,7 +44,7 @@ impl OracleCore {
     /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
     /// based off the prices argument with them being quoted in "USD".
     pub fn setup(
-        app: SharedApp,
+        app: &mut App,
         admin: &Addr,
         prices: HashMap<String, Uint128>,
         band: Option<ContractInfo>,
@@ -115,28 +54,19 @@ impl OracleCore {
     ) -> AnyResult<Self> {
         let mut core = OracleCore {
             deps: HashMap::new(),
-            app,
             superadmin: admin.clone(),
         };
         let quote_symbol = "USD".to_string();
         core.superadmin = admin.clone();
 
         let admin_auth =
-            admin_auth.unwrap_or_else(|| init_admin_auth(&mut core.app.get_mut(), admin));
+            admin_auth.unwrap_or_else(|| init_admin_auth(app, admin));
 
         core.deps
             .insert(OracleDeps::AdminAuth, admin_auth.clone().into());
 
         let band = band.unwrap_or_else(|| {
-            core.app
-                .init(
-                    admin,
-                    &band::InstantiateMsg {},
-                    MockBand::default(),
-                    "band",
-                    &[],
-                )
-                .unwrap()
+            band::InstantiateMsg {}.test_init(MockBand::default(), app, admin.clone(), "band", &[]).unwrap()
         });
 
         core.deps.insert(OracleDeps::Band, band.clone().into());
@@ -150,7 +80,7 @@ impl OracleCore {
             }
             .test_init(
                 OracleRouter::default(),
-                &mut core.app.get_mut(),
+                app,
                 admin.clone(),
                 "oracle-router",
                 &[],
@@ -174,7 +104,7 @@ impl OracleCore {
             }
             .test_init(
                 ProxyBandOracle::default(),
-                &mut core.app.get_mut(),
+                app,
                 admin.clone(),
                 "proxy-band",
                 &[],
@@ -193,7 +123,7 @@ impl OracleCore {
                 quote_symbol: None,
             },
         }
-        .test_exec(&oracle_router, &mut core.app.get_mut(), admin.clone(), &[])
+        .test_exec(&oracle_router, app, admin.clone(), &[])
         .unwrap();
 
         // Configure mock band prices
@@ -204,14 +134,14 @@ impl OracleCore {
                 rate: price,
                 last_updated: None,
             }
-            .test_exec(&band, &mut core.app.get_mut(), admin.clone(), &[])
+            .test_exec(&band, app, admin.clone(), &[])
             .unwrap();
         }
 
         Ok(core)
     }
 
-    pub fn update_prices(&self, prices: HashMap<String, Uint128>, last_updated_time: u64) {
+    pub fn update_prices(&self, app: &mut App, prices: HashMap<String, Uint128>, last_updated_time: u64) {
         for (sym, price) in prices {
             band::ExecuteMsg::UpdateSymbolPrice {
                 base_symbol: sym,
@@ -221,7 +151,7 @@ impl OracleCore {
             }
             .test_exec(
                 &self.get(OracleDeps::Band),
-                &mut self.app.get_mut(),
+                app,
                 self.superadmin.clone(),
                 &[],
             )
