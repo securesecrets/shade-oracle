@@ -137,4 +137,65 @@ impl OracleCore {
             .unwrap();
         }
     }
+
+    pub fn add_oracle(
+        &self,
+        app: &mut App,
+        oracle: Contract,
+        key: String,
+    ) {
+        router::msg::ExecuteMsg::UpdateRegistry {
+            operation: router::registry::RegistryOperation::Add {
+                oracle,
+                key,
+            }
+        }
+        .test_exec(
+            &self.get(OracleDeps::OracleRouter),
+            app,
+            self.superadmin.clone(),
+            &[],
+        )
+        .unwrap();
+    }
+
+    pub fn remove_oracle(
+        &self,
+        app: &mut App,
+        key: String,
+    ) {
+        router::msg::ExecuteMsg::UpdateRegistry {
+            operation: router::registry::RegistryOperation::Remove {
+                key,
+            }
+        }
+        .test_exec(
+            &self.get(OracleDeps::OracleRouter),
+            app,
+            self.superadmin.clone(),
+            &[],
+        )
+        .unwrap();
+    }
+
+    pub fn replace_oracle(
+        &self,
+        app: &mut App,
+        oracle: Contract,
+        key: String,
+    ) {
+        router::msg::ExecuteMsg::UpdateRegistry {
+            operation: router::registry::RegistryOperation::Replace {
+                oracle,
+                key,
+            }
+        }
+        .test_exec(
+            &self.get(OracleDeps::OracleRouter),
+            app,
+            self.superadmin.clone(),
+            &[],
+        )
+        .unwrap();
+    }
 }
