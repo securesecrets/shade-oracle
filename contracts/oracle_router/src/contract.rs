@@ -3,7 +3,7 @@ use cosmwasm_std::{
 };
 use shade_oracles::{
     common::{
-        querier::{query_oracle_price, query_oracle_prices},
+        querier::{query_price as query_oracle_price, query_prices as query_oracle_prices},
         GlobalStatus, OraclePrice, PriceResponse, PricesResponse,
     },
     core::{
@@ -147,7 +147,7 @@ pub fn get_prices(
         let mut queried_prices = if oracle.eq(&router.config.this) {
             query_prices(deps, &router, symbols)
         } else {
-            query_oracle_prices(&oracle, &deps.querier, symbols)
+            query_oracle_prices(&oracle, &deps.querier, &symbols)
         }?;
         unordered_prices.append(&mut queried_prices);
     }
