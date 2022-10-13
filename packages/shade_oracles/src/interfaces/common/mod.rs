@@ -241,9 +241,9 @@ impl BtrOraclePrice {
         current_time: &Timestamp,
     ) -> StdResult<bool> {
         if self.time_since_updated(current_time)?.gt(&delay_tolerance) {
-            return Ok(false);
+            return Ok(true);
         }
-        Ok(true)
+        Ok(false)
     }
 }
 
