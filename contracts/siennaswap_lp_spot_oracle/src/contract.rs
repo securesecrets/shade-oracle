@@ -104,7 +104,7 @@ impl Oracle for SiennaswapLpOracle {
         let prices = query_prices(
             &config.router,
             &deps.querier,
-            [pair.symbol_0.clone(), pair.symbol_1.clone()].as_slice(),
+            &vec![pair.symbol_0.clone(), pair.symbol_1.clone()],
         )?;
 
         let mut price0 = OraclePrice::default();
