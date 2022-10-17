@@ -6,6 +6,11 @@ DOCKER_IMAGE_VERSION = "v0.2"
 [env.contracts]
 CARGO_MAKE_WORKSPACE_SKIP_MEMBERS = "packages/*"
 
+[tasks.cranky]
+workspace = false
+command = "cargo"
+args = ["cranky", "--color", "always"]
+
 # Cleanup
 [tasks.clean]
 workspace = false
@@ -16,7 +21,7 @@ private = true
 workspace = false
 command = "rm"
 args = ["-r", "${ARTIFACTS_DIR}", "-f"]
-	
+
 [tasks.schemas]
 workspace = false
 script = '''
