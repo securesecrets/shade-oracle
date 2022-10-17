@@ -1,0 +1,115 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+ARTIFACTS_DIR = "artifacts"
+DOCKER_IMAGE_VERSION = "v0.2"
+
+[env.contracts]
+CARGO_MAKE_WORKSPACE_SKIP_MEMBERS = "packages/*"
+
+# Cleanup
+[tasks.clean]
+workspace = false
+dependencies = ["remove_artifacts_dir"]
+
+[tasks.remove_artifacts_dir]
+private = true
+workspace = false
+command = "rm"
+args = ["-r", "${ARTIFACTS_DIR}", "-f"]
+	
+[tasks.schemas]
+workspace = false
+script = '''
+cargo run --package shade-oracles --bin schemas
+'''
+
+[tasks.build]
+workspace = false
+dependencies = ["schemas", "optimizoor", "compress", "bundle"]
+
+[tasks.optimizoor]
+workspace = false
+command = "cargo"
+args = ["cw-optimizoor"]
+
+[tasks.compress]
+workspace = false
+script = '''
+for f in ${ARTIFACTS_DIR}/*.wasm;
+	do
+		cat ./$f | gzip -n -9 > $f.gz
+		rm ./$f
+	done;
+'''
+
+[tasks.bundle]
+workspace = false
+script = '''
+./bundle.sh ./artifacts
+'''
+
+[tasks.docs]
+command = "cargo"
+args = ["doc", "--no-deps", "--open"]
+
+[tasks.test]
+workspace = false
+command = "cargo"
+args = ["nextest", "run", "--package", "${@}"]
+
+[tasks.test-all]
+workspace = false
+command = "cargo"
+args = ["nextest", "run"]
+
+[tasks.fmt]
+workspace = false
+command = "cargo"
+args = ["fmt"]
+
+[tasks.bacon-test]
+workspace = false
+command = "bacon"
+args = ["test", "-s", "-w"]
+
+[tasks.bacon]
+workspace = false
+command = "bacon"
+args = ["-s", "-w"]
+
+# Docker support - can be run with `cargo make server start|connect|download
+[tasks.server]
+private = false
+workspace = false
+extend = "subcommand"
+env = { "SUBCOMMAND_PREFIX" = "server" }
+
+[tasks.subcommand]
+private = true
+workspace = false
+script = '''
+#!@duckscript
+
+cm_run_task ${SUBCOMMAND_PREFIX}-${1}
+'''
+
+
+[tasks.server-download]
+workspace = false
+script = '''
+docker pull securesecrets/sn-testnet:${DOCKER_IMAGE_VERSION}
+'''
+
+[tasks.server-start]
+workspace = false
+script = '''
+docker run -it --rm \
+	 -p 26657:26657 -p 26656:26656 -p 1337:1337 \
+	 -v $$(pwd):/root/code --name shade-testnet securesecrets/sn-testnet:${DOCKER_IMAGE_VERSION}
+'''
+
+[tasks.server-connect]
+workspace = false
+script = '''
+docker exec -it shade-testnet /bin/bash
+'''

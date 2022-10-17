@@ -20,10 +20,8 @@ lp = ["dep:siennaswap-lp-oracle", "dep:siennaswap-lp-spot-oracle"]
 
 [dependencies]
 strum = { version = "0.24", features = ["derive"] }
-shade-admin = { git = "https://github.com/securesecrets/shadeadmin.git" }
 shade-oracles = { path = "../shade_oracles" }
 oracle-router = { path = "../../contracts/oracle_router" }
-proxy-band-oracle = { path = "../../contracts/proxy_band_oracle" }
 
 mock-band = { path = "../../contracts/mock_band" }
 mock-sienna-pair = { path = "../../contracts/mock_sienna_pair" }
@@ -41,6 +39,5 @@ siennaswap-lp-spot-oracle = { path = "../../contracts/siennaswap_lp_spot_oracle"
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test" ] }
-shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "snip20" ] }
+shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "snip20", "admin" ] }
 multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
-shade-admin-multi-test = { git = "https://github.com/securesecrets/shadeadmin.git" }

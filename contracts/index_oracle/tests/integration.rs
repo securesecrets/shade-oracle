@@ -282,7 +282,6 @@ fn mod_index_test(
 
     let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
     let band = oracle_core.get(OracleDeps::Band);
-    let _band_proxy = oracle_core.get(OracleDeps::ProxyBand);
     let router = oracle_core.get(OracleDeps::OracleRouter);
 
     let index_oracle = InstantiateMsg {
