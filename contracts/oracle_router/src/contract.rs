@@ -86,42 +86,11 @@ pub fn execute(
     Ok(pad_handle_result(result, BLOCK_SIZE)?)
 }
 
-fn query_price(deps: Deps, router: &OracleRouter, key: String) -> StdResult<OraclePrice> {
-    let band_response = reference_data(
-        &deps.querier,
-        key.clone(),
-        router.config.quote_symbol.clone(),
-        &router.config.band,
-    )?;
-    Ok(OraclePrice::new(key, band_response))
-}
-
-fn query_prices(
-    deps: Deps,
-    router: &OracleRouter,
-    keys: Vec<String>,
-) -> StdResult<Vec<OraclePrice>> {
-    let quote_symbol = router.config.quote_symbol.clone();
-    let quote_symbols = vec![quote_symbol; keys.len()];
-    let band = &router.config.band;
-
-    let band_response = reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, band)?;
-
-    let mut prices: Vec<OraclePrice> = vec![];
-    for (index, key) in keys.iter().enumerate() {
-        prices.push(OraclePrice::new(
-            key.to_string(),
-            band_response[index].clone(),
-        ));
-    }
-    Ok(prices)
-}
-
 /// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.
 pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> OracleRouterResult<Binary> {
     let oracle = router.get_oracle(deps.storage, &key)?;
     let price = if oracle.eq(&router.config.this) {
-        query_price(deps, &router, key)
+        query_band_price(deps, &router, key)
     } else {
         query_oracle_price(&oracle, &deps.querier, &key)
     }?;
@@ -145,7 +114,7 @@ pub fn get_prices(
 
     for (oracle, symbols) in map {
         let mut queried_prices = if oracle.eq(&router.config.this) {
-            query_prices(deps, &router, symbols)
+            query_band_prices(deps, &router, symbols)
         } else {
             query_oracle_prices(&oracle, &deps.querier, &symbols)
         }?;
@@ -196,4 +165,35 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> OracleRouterResult<Binary>
         }
     };
     Ok(pad_query_result(resp, BLOCK_SIZE)?)
+}
+
+fn query_band_price(deps: Deps, router: &OracleRouter, key: String) -> StdResult<OraclePrice> {
+    let band_response = reference_data(
+        &deps.querier,
+        key.clone(),
+        router.config.quote_symbol.clone(),
+        &router.config.band,
+    )?;
+    Ok(OraclePrice::new(key, band_response))
+}
+
+fn query_band_prices(
+    deps: Deps,
+    router: &OracleRouter,
+    keys: Vec<String>,
+) -> StdResult<Vec<OraclePrice>> {
+    let quote_symbol = router.config.quote_symbol.clone();
+    let quote_symbols = vec![quote_symbol; keys.len()];
+    let band = &router.config.band;
+
+    let band_response = reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, band)?;
+
+    let mut prices: Vec<OraclePrice> = vec![];
+    for (index, key) in keys.iter().enumerate() {
+        prices.push(OraclePrice::new(
+            key.to_string(),
+            band_response[index].clone(),
+        ));
+    }
+    Ok(prices)
 }
