@@ -1,3 +1,4 @@
+//! Router will use Band for the quote if an oracle has not been registered for that symbol.
 pub mod error;
 pub mod msg;
 pub mod registry;

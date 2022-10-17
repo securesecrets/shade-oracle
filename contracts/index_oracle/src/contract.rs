@@ -1,17 +1,16 @@
 use cosmwasm_std::{attr, entry_point, Binary, Decimal256, DepsMut, MessageInfo, Uint128, Uint64};
 use cosmwasm_std::{to_binary, Deps, Env, Response};
-use shade_oracles::common::querier::validate_permission;
-use shade_oracles::common::{PriceResponse, PricesResponse, ShadeOraclePermissions};
+use shade_oracles::common::querier::verify_admin;
+use shade_oracles::common::{PriceResponse, PricesResponse};
 use shade_oracles::core::{Contract, RawContract};
 use shade_oracles::create_attr_action;
 use shade_oracles::interfaces::index::{error::*, msg::*, *};
 use shade_oracles::{
     common::status::GlobalStatus,
-    core::{pad_handle_result, pad_query_result},
+    core::{admin::helpers::AdminPermissions, pad_handle_result, pad_query_result},
     interfaces::{
         band::ReferenceData,
         common::{querier::query_band_prices, OraclePrice},
-        router::querier::get_admin_auth,
     },
     ssp::ItemStorage,
     BLOCK_SIZE,
@@ -151,44 +150,31 @@ pub fn try_admin_msg(
     oracle: IndexOracle,
 ) -> IndexOracleResult<Response> {
     let router = oracle.config.router.clone();
-    let admin_auth = get_admin_auth(&router, &deps.querier)?.config.admin_auth;
-    let no_perms = validate_permission(
+    verify_admin(
+        &router,
+        AdminPermissions::OraclesAdmin,
         &deps.querier,
-        ShadeOraclePermissions::SuperAdmin,
         &info.sender,
-        &admin_auth,
-    )
-    .is_err()
-        && validate_permission(
-            &deps.querier,
-            ShadeOraclePermissions::SilkAssembly,
-            &info.sender,
-            &admin_auth,
-        )
-        .is_err();
-    if no_perms {
-        Err(IndexOracleError::Unauthorized { user: info.sender })
-    } else {
-        match msg {
-            AdminMsg::UpdateStatus { status } => {
-                IndexOracle::update_status(deps.storage, status)?;
-                Ok(Response::new().add_attributes(vec![attr_action!("update_status")]))
-            }
-            _ => {
-                IndexOracle::require_can_run(deps.storage, true, true, false)?;
-                match msg {
-                    AdminMsg::ModBasket { basket } => try_mod_basket(deps, env, basket, oracle),
-                    AdminMsg::UpdateConfig {
-                        symbol,
-                        router,
-                        when_stale,
-                    } => try_update_config(deps, env, oracle, symbol, router, when_stale),
-                    AdminMsg::UpdateTarget { new_target } => {
-                        try_update_target(deps, env, oracle, new_target)
-                    }
-                    AdminMsg::Unfreeze {} => try_unfreeze(deps, env, oracle),
-                    _ => panic!("code should never come here"),
+    )?;
+    match msg {
+        AdminMsg::UpdateStatus { status } => {
+            IndexOracle::update_status(deps.storage, status)?;
+            Ok(Response::new().add_attributes(vec![attr_action!("update_status")]))
+        }
+        _ => {
+            IndexOracle::require_can_run(deps.storage, true, true, false)?;
+            match msg {
+                AdminMsg::ModBasket { basket } => try_mod_basket(deps, env, basket, oracle),
+                AdminMsg::UpdateConfig {
+                    symbol,
+                    router,
+                    when_stale,
+                } => try_update_config(deps, env, oracle, symbol, router, when_stale),
+                AdminMsg::UpdateTarget { new_target } => {
+                    try_update_target(deps, env, oracle, new_target)
                 }
+                AdminMsg::Unfreeze {} => try_unfreeze(deps, env, oracle),
+                _ => panic!("code should never come here"),
             }
         }
     }
