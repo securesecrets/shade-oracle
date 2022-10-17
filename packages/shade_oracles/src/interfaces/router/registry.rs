@@ -1,12 +1,10 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Addr;
 use shade_protocol::Contract;
 
 #[cw_serde]
 pub struct Config {
-    pub address: Addr,
+    pub this: Contract,
     pub admin_auth: Contract,
-    pub default_oracle: Contract,
     pub band: Contract,
     pub quote_symbol: String,
 }
@@ -21,7 +19,6 @@ pub enum RegistryOperation {
 #[cw_serde]
 pub struct UpdateConfig {
     pub admin_auth: Option<Contract>,
-    pub default_oracle: Option<Contract>,
     pub band: Option<Contract>,
     pub quote_symbol: Option<String>,
 }
@@ -127,7 +124,7 @@ mod state {
         pub fn get_oracle(&self, storage: &dyn Storage, key: &str) -> OracleRouterResult<Contract> {
             match Oracle::may_load(storage, key)? {
                 Some(contract) => Ok(contract),
-                None => Ok(self.config.default_oracle.clone()),
+                None => Ok(self.config.this.clone()),
             }
         }
 
@@ -154,7 +151,6 @@ mod state {
         pub fn update_config(mut self, config: UpdateConfig) -> Self {
             let mut new_config = self.config;
             new_config.admin_auth = config.admin_auth.unwrap_or(new_config.admin_auth);
-            new_config.default_oracle = config.default_oracle.unwrap_or(new_config.default_oracle);
             new_config.band = config.band.unwrap_or(new_config.band);
             new_config.quote_symbol = config.quote_symbol.unwrap_or(new_config.quote_symbol);
             self.config = new_config;

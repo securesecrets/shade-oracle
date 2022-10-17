@@ -12,7 +12,7 @@ pub mod mocks {
 }
 
 pub use crate::multi::{
-    band::{mock::MockBand, proxy::ProxyBandOracle},
+    band::mock::MockBand,
     mocks::{shade_pair::MockShadePair, sienna_pair::MockSiennaPair},
     router::OracleRouter,
 };
@@ -24,10 +24,6 @@ pub mod router {
 }
 
 pub mod band {
-    pub mod proxy {
-        use proxy_band_oracle;
-        multi_derive::implement_multi!(ProxyBandOracle, proxy_band_oracle);
-    }
     pub mod mock {
         use mock_band;
         multi_derive::implement_multi!(MockBand, mock_band);

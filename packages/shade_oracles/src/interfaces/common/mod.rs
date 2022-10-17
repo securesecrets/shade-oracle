@@ -23,22 +23,6 @@ pub mod querier;
 mod error;
 use super::band::{BtrReferenceData, ReferenceData};
 
-pub enum ShadeOraclePermissions {
-    SuperAdmin,
-    SilkAssembly,
-}
-
-#[allow(clippy::inherent_to_string)]
-impl ShadeOraclePermissions {
-    pub fn to_string(&self) -> String {
-        match self {
-            ShadeOraclePermissions::SuperAdmin => "SHADE_ORACLE_ADMIN",
-            ShadeOraclePermissions::SilkAssembly => "SHADE_ORACLE_SILK_INDEX",
-        }
-        .to_string()
-    }
-}
-
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
@@ -257,9 +241,9 @@ impl BtrOraclePrice {
         current_time: &Timestamp,
     ) -> StdResult<bool> {
         if self.time_since_updated(current_time)?.gt(&delay_tolerance) {
-            return Ok(false);
+            return Ok(true);
         }
-        Ok(true)
+        Ok(false)
     }
 }
 
@@ -279,6 +263,8 @@ pub fn is_disabled(enabled: bool) -> StdResult<()> {
 pub use state::*;
 #[cfg(feature = "core")]
 mod state {
+    use shade_protocol::admin::helpers::AdminPermissions;
+
     use super::*;
     use crate::ssp::{Item, ItemStorage};
 
@@ -360,7 +346,12 @@ mod state {
             info: MessageInfo,
         ) -> StdResult<CommonConfig> {
             let config = CommonConfig::load(storage)?;
-            verify_admin(&config.router, querier, info.sender)?;
+            verify_admin(
+                &config.router,
+                AdminPermissions::OraclesAdmin,
+                querier,
+                info.sender,
+            )?;
             Ok(config)
         }
 
