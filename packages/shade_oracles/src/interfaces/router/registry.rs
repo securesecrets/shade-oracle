@@ -61,20 +61,20 @@ mod state {
     pub const KEYS: Item<Vec<String>> = Item::new("oraclerouterkeys");
 
     impl OracleRouter {
-        pub fn load(storage: &dyn Storage) -> OracleRouterResult<Self> {
+        pub fn load(storage: &dyn Storage) -> StdResult<Self> {
             let config = Config::load(storage)?;
             Ok(OracleRouter { config })
         }
 
-        pub fn get_keys(deps: Deps) -> OracleRouterResult<Binary> {
+        pub fn get_keys(deps: Deps) -> StdResult<Binary> {
             let keys = KEYS.load(deps.storage)?;
-            Ok(to_binary(&KeysResponse { keys })?)
+            to_binary(&KeysResponse { keys })
         }
 
         pub fn resolve_registry_operation(
             storage: &mut dyn Storage,
             operation: RegistryOperation,
-        ) -> OracleRouterResult<()> {
+        ) -> StdResult<()> {
             match operation {
                 RegistryOperation::Remove { key } => {
                     Oracle::MAP.remove(storage, &key);
@@ -121,7 +121,7 @@ mod state {
             Ok(())
         }
 
-        pub fn get_oracle(&self, storage: &dyn Storage, key: &str) -> OracleRouterResult<Contract> {
+        pub fn get_oracle(&self, storage: &dyn Storage, key: &str) -> StdResult<Contract> {
             match Oracle::may_load(storage, key)? {
                 Some(contract) => Ok(contract),
                 None => Ok(self.config.this.clone()),
@@ -132,7 +132,7 @@ mod state {
             &self,
             storage: &dyn Storage,
             keys: &[String],
-        ) -> OracleRouterResult<HashMap<Contract, Vec<String>>> {
+        ) -> StdResult<HashMap<Contract, Vec<String>>> {
             // Maps oracle to the symbols it is responsible for
             let mut map: HashMap<Contract, Vec<String>> = HashMap::new();
 

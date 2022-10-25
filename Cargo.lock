@@ -29,6 +29,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98161a4e3e2184da77bb14f02184cdd111e83bbbcc9979dfee3c44b9a85f5602"
 
 [[package]]
+name = "atty"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
+dependencies = [
+ "hermit-abi",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -207,6 +218,17 @@ dependencies = [
  "num-integer",
  "num-traits",
  "time",
+ "winapi",
+]
+
+[[package]]
+name = "colored"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
+dependencies = [
+ "atty",
+ "lazy_static",
  "winapi",
 ]
 
@@ -648,6 +670,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
 
 [[package]]
+name = "hermit-abi"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -664,7 +695,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "index-oracle"
+name = "index_oracle"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
@@ -702,6 +733,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lazy_static"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+
+[[package]]
 name = "libc"
 version = "0.2.134"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -714,7 +751,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
-name = "mock-band"
+name = "mock_band"
 version = "0.2.0"
 dependencies = [
  "cosmwasm-std",
@@ -723,7 +760,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mock-shade-pair"
+name = "mock_shade_pair"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
@@ -733,7 +770,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mock-sienna-pair"
+name = "mock_sienna_pair"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
@@ -788,10 +825,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
-name = "oracle-router"
+name = "oracle_router"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
+ "rstest",
  "shade-oracles",
  "shade-oracles-multi-test",
 ]
@@ -1290,6 +1328,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "secretcli"
+version = "0.1.0"
+source = "git+https://github.com/securesecrets/secret-plus-utils.git#8034b523a7a9842b2369a8bec29b48bd9282a906"
+dependencies = [
+ "colored",
+ "cosmwasm-std",
+ "nanoid",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1411,23 +1461,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "shade-oracles-integration"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "colored",
+ "schemars 0.7.6",
+ "secretcli",
+ "serde",
+ "serde_json",
+ "shade-oracles",
+]
+
+[[package]]
 name = "shade-oracles-multi-test"
 version = "0.1.0"
 dependencies = [
- "index-oracle",
- "mock-band",
- "mock-shade-pair",
- "mock-sienna-pair",
+ "index_oracle",
+ "mock_band",
+ "mock_shade_pair",
+ "mock_sienna_pair",
  "multi-derive",
- "oracle-router",
+ "oracle_router",
  "shade-multi-test",
  "shade-oracles",
  "shade-protocol",
- "shade-staking-derivative-oracle",
- "shadeswap-market-oracle",
- "siennaswap-lp-oracle",
- "siennaswap-lp-spot-oracle",
- "siennaswap-market-oracle",
+ "shade_staking_derivative_oracle",
+ "shadeswap_market_oracle",
+ "siennaswap_lp_oracle",
+ "siennaswap_lp_spot_oracle",
+ "siennaswap_market_oracle",
  "strum",
 ]
 
@@ -1457,7 +1520,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "shade-staking-derivative-oracle"
+name = "shade_staking_derivative_oracle"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
@@ -1466,26 +1529,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "shadeswap-market-oracle"
+name = "shadeswap_market_oracle"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "mock-shade-pair",
+ "mock_shade_pair",
  "shade-oracles",
  "shade-oracles-multi-test",
 ]
 
 [[package]]
-name = "siennaswap-lp-oracle"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "shade-oracles",
- "shade-oracles-multi-test",
-]
-
-[[package]]
-name = "siennaswap-lp-spot-oracle"
+name = "siennaswap_lp_oracle"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
@@ -1494,11 +1548,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "siennaswap-market-oracle"
+name = "siennaswap_lp_spot_oracle"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "mock-sienna-pair",
+ "shade-oracles",
+ "shade-oracles-multi-test",
+]
+
+[[package]]
+name = "siennaswap_market_oracle"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "mock_sienna_pair",
  "shade-oracles",
  "shade-oracles-multi-test",
  "snip20-reference-impl",

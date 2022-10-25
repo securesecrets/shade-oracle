@@ -1,5 +1,5 @@
 [package]
-name = "shadeswap-market-oracle"
+name = "shadeswap_market_oracle"
 version = "0.1.0"
 authors = ["DrPresident <jacksonswenson@securesecrets.org"]
 edition = "2021"
@@ -22,4 +22,4 @@ shade-oracles = { path = "../../packages/shade_oracles", features = ["market-lp"
 
 [dev-dependencies]
 shade-oracles-multi-test = { path = "../../packages/multi_test", features = [  "multi-test", "market", "snip20" ] }
-mock-shade-pair = { path = "../mock_shade_pair" }
+mock_shade_pair = { path = "../mock_shade_pair" }

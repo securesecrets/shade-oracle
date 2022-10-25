@@ -57,7 +57,7 @@ mod state {
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{core::muldiv_fp, U256};
-    use cosmwasm_std::{Storage, Timestamp, Uint128};
+    use cosmwasm_std::{StdResult, Storage, Timestamp, Uint128};
 
     impl ItemStorage for Config {
         const ITEM: Item<'static, Self> = Item::new("indexconfig");
@@ -87,7 +87,7 @@ mod state {
     impl_global_status!(IndexOracle, IndexOracleError);
 
     impl IndexOracle {
-        pub fn load(storage: &dyn Storage) -> IndexOracleResult<Self> {
+        pub fn load(storage: &dyn Storage) -> StdResult<Self> {
             let config = Config::load(storage)?;
             let asset_symbols = AssetSymbols::load(storage)?;
             let mut basket = HashMap::new();
@@ -110,9 +110,9 @@ mod state {
             weights: Vec<InitialBasketItem>,
             target: Uint128,
             time: &Timestamp,
-        ) -> IndexOracleResult<Self> {
+        ) -> StdResult<Self> {
             if weights.is_empty() {
-                return Err(IndexOracleError::EmptyBasket {});
+                return Err(IndexOracleError::EmptyBasket {}.into());
             }
 
             let mut asset_symbols: Vec<String> = vec![];
@@ -127,7 +127,8 @@ mod state {
                     Some(_) => {
                         return Err(IndexOracleError::RecursiveSymbol {
                             symbol: sym.to_string(),
-                        })
+                        }
+                        .into())
                     }
                     None => continue,
                 }
@@ -139,12 +140,13 @@ mod state {
                 if symbol.eq(&index_symbol) {
                     return Err(IndexOracleError::RecursiveSymbol {
                         symbol: index_symbol,
-                    });
+                    }
+                    .into());
                 }
             }
 
             if weight_sum != Decimal256::percent(100) {
-                return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum });
+                return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum }.into());
             }
 
             let target = BtrTarget::new(target.into(), false, time.seconds());
@@ -240,7 +242,7 @@ mod state {
             }
             Ok(new_symbols)
         }
-        pub fn compute_fixed_weights(&mut self, prices: &[OraclePrice]) -> IndexOracleResult<()> {
+        pub fn compute_fixed_weights(&mut self, prices: &[OraclePrice]) -> StdResult<()> {
             for price in prices {
                 let asset_symbol = price.key();
                 let weight = &self.basket[asset_symbol];
@@ -287,7 +289,7 @@ mod state {
             &mut self,
             prices: Option<&Vec<OraclePrice>>,
             time: &Timestamp,
-        ) -> IndexOracleResult<OraclePrice> {
+        ) -> StdResult<OraclePrice> {
             let now = time.seconds();
             let symbol = &self.config.symbol;
             let mut resp = OraclePrice::new(
@@ -331,11 +333,7 @@ mod state {
             }
             Ok(())
         }
-        fn _compute_target(
-            &self,
-            prices: &[OraclePrice],
-            now: u64,
-        ) -> IndexOracleResult<(U256, u64)> {
+        fn _compute_target(&self, prices: &[OraclePrice], now: u64) -> StdResult<(U256, u64)> {
             let mut new_target = U256::ZERO;
             let mut last_updated_base = now;
             let mut last_updated_quote = now;

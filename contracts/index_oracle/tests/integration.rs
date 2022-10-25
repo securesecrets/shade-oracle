@@ -125,7 +125,7 @@ fn basic_index_test(
         IndexOracle::default(),
         &mut app,
         user.clone(),
-        "index-oracle",
+        "index_oracle",
         &[],
     )
     .unwrap();
@@ -268,7 +268,7 @@ fn mod_index_test(
     let expected_initial: Uint128 = expected_initial.into();
     let expected_final: Uint128 = expected_final.into();
     let error: Uint128 = error.into();
-
+    
     let prices: HashMap<String, Uint128> = prices
         .into_iter()
         .map(|(sym, p)| (sym.to_string(), p.into()))
@@ -295,7 +295,7 @@ fn mod_index_test(
         IndexOracle::default(),
         &mut app,
         user.clone(),
-        "index-oracle",
+        "index_oracle",
         &[],
     )
     .unwrap();

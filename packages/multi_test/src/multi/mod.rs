@@ -30,7 +30,7 @@ pub mod band {
     }
 }
 
-#[cfg(feature = "index-oracle")]
+#[cfg(feature = "index_oracle")]
 pub mod index {
     use index_oracle;
     multi_derive::implement_multi!(IndexOracle, index_oracle);

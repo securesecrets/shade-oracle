@@ -22,7 +22,7 @@ impl Default for ContractStatus {
     }
 }
 
-pub trait GlobalStatus<T: Error> {
+pub trait GlobalStatus<T: Error + Into<StdError>> {
     fn normal_err() -> T;
     fn deprecated_err() -> T;
     fn frozen_err() -> T;
@@ -32,7 +32,7 @@ pub trait GlobalStatus<T: Error> {
         when_normal: bool,
         when_deprecated: bool,
         when_frozen: bool,
-    ) -> Result<(), T>
+    ) -> StdResult<()>
 where {
         match ContractStatus::load(storage) {
             Ok(status) => {
@@ -40,13 +40,13 @@ where {
                     when_normal,
                     when_deprecated,
                     when_frozen,
-                    Self::normal_err(),
-                    Self::deprecated_err(),
-                    Self::frozen_err(),
+                    Self::normal_err().into(),
+                    Self::deprecated_err().into(),
+                    Self::frozen_err().into(),
                 )?;
                 Ok(())
             }
-            Err(_) => Err(Self::not_found()),
+            Err(_) => Err(Self::not_found().into()),
         }
     }
     fn update_status(
@@ -77,15 +77,15 @@ impl ContractStatus {
         self.eq(&ContractStatus::Normal)
     }
     /// Throws an error if some function cannot be run under the following conditions.
-    pub fn require_can_run<T: Error>(
+    pub fn require_can_run(
         &self,
         when_normal: bool,
         when_deprecated: bool,
         when_frozen: bool,
-        normal_err: T,
-        deprecated_err: T,
-        frozen_err: T,
-    ) -> Result<(), T> {
+        normal_err: StdError,
+        deprecated_err: StdError,
+        frozen_err: StdError,
+    ) -> StdResult<()> {
         if self.is_normal() && !when_normal {
             return Err(normal_err);
         }

@@ -87,22 +87,18 @@ pub fn execute(
 }
 
 /// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.
-pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> OracleRouterResult<Binary> {
+pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> StdResult<Binary> {
     let oracle = router.get_oracle(deps.storage, &key)?;
     let price = if oracle.eq(&router.config.this) {
         query_band_price(deps, &router, key)
     } else {
         query_oracle_price(&oracle, &deps.querier, &key)
     }?;
-    Ok(to_binary(&PriceResponse { price })?)
+    to_binary(&PriceResponse { price })
 }
 
 /// Builds bulk queries using the keys given.
-pub fn get_prices(
-    deps: Deps,
-    router: OracleRouter,
-    keys: Vec<String>,
-) -> OracleRouterResult<Binary> {
+pub fn get_prices(deps: Deps, router: OracleRouter, keys: Vec<String>) -> StdResult<Binary> {
     let map = router.group_keys_by_oracle(deps.storage, keys.as_slice())?;
     // Preserve symbol order
     let mut prices: Vec<OraclePrice> = keys
@@ -131,10 +127,11 @@ pub fn get_prices(
         }
     }
 
-    Ok(to_binary(&PricesResponse { prices })?)
+    to_binary(&PricesResponse { prices })
 }
 
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> OracleRouterResult<Binary> {
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let router = OracleRouter::load(deps.storage)?;
     let resp = match msg {
         QueryMsg::GetConfig {} => to_binary(&ConfigResponse {
@@ -164,7 +161,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> OracleRouterResult<Binary>
             }
         }
     };
-    Ok(pad_query_result(resp, BLOCK_SIZE)?)
+    pad_query_result(resp, BLOCK_SIZE)
 }
 
 fn query_band_price(deps: Deps, router: &OracleRouter, key: String) -> StdResult<OraclePrice> {

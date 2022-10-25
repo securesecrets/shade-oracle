@@ -63,8 +63,14 @@ impl OracleCore {
         core.deps
             .insert(OracleDeps::AdminAuth, admin_auth.clone().into());
 
+        let mut initial_prices = vec![];
+        // Configure mock band prices
+        for (sym, price) in prices {
+            initial_prices.push((sym, quote_symbol.clone(), price));
+        }
+
         let band = band.unwrap_or_else(|| {
-            band::InstantiateMsg {}
+            band::InstantiateMsg { initial_prices }
                 .test_init(MockBand::default(), app, admin.clone(), "band", &[])
                 .unwrap()
         });
@@ -81,7 +87,7 @@ impl OracleCore {
                 OracleRouter::default(),
                 app,
                 admin.clone(),
-                "oracle-router",
+                "oracle_router",
                 &[],
             )
             .unwrap()
@@ -99,18 +105,6 @@ impl OracleCore {
         }
         .test_exec(&oracle_router, app, admin.clone(), &[])
         .unwrap();
-
-        // Configure mock band prices
-        for (sym, price) in prices {
-            band::ExecuteMsg::UpdateSymbolPrice {
-                base_symbol: sym,
-                quote_symbol: quote_symbol.clone(),
-                rate: price,
-                last_updated: None,
-            }
-            .test_exec(&band, app, admin.clone(), &[])
-            .unwrap();
-        }
 
         Ok(core)
     }
@@ -138,17 +132,9 @@ impl OracleCore {
         }
     }
 
-    pub fn add_oracle(
-        &self,
-        app: &mut App,
-        oracle: Contract,
-        key: String,
-    ) {
+    pub fn add_oracle(&self, app: &mut App, oracle: Contract, key: String) {
         router::msg::ExecuteMsg::UpdateRegistry {
-            operation: router::registry::RegistryOperation::Add {
-                oracle,
-                key,
-            }
+            operation: router::registry::RegistryOperation::Add { oracle, key },
         }
         .test_exec(
             &self.get(OracleDeps::OracleRouter),
@@ -159,15 +145,9 @@ impl OracleCore {
         .unwrap();
     }
 
-    pub fn remove_oracle(
-        &self,
-        app: &mut App,
-        key: String,
-    ) {
+    pub fn remove_oracle(&self, app: &mut App, key: String) {
         router::msg::ExecuteMsg::UpdateRegistry {
-            operation: router::registry::RegistryOperation::Remove {
-                key,
-            }
+            operation: router::registry::RegistryOperation::Remove { key },
         }
         .test_exec(
             &self.get(OracleDeps::OracleRouter),
@@ -178,17 +158,9 @@ impl OracleCore {
         .unwrap();
     }
 
-    pub fn replace_oracle(
-        &self,
-        app: &mut App,
-        oracle: Contract,
-        key: String,
-    ) {
+    pub fn replace_oracle(&self, app: &mut App, oracle: Contract, key: String) {
         router::msg::ExecuteMsg::UpdateRegistry {
-            operation: router::registry::RegistryOperation::Replace {
-                oracle,
-                key,
-            }
+            operation: router::registry::RegistryOperation::Replace { oracle, key },
         }
         .test_exec(
             &self.get(OracleDeps::OracleRouter),

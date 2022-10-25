@@ -1,14 +1,16 @@
+use shade_oracles::core::{Addr, Contract};
+
 // Math
 pub const DECIMAL_FACTOR: u128 = 10u128.pow(6);
 
 // Smart contracts
-pub const STORE_GAS: &str = "10000000";
-pub const GAS: &str = "800000";
+pub const STORE_GAS: &str = "30000000";
+pub const GAS: &str = "10000000";
 pub const VIEW_KEY: &str = "password";
 
-pub const ORACLE_ROUTER_FILE: &str = "../../compiled/oracle_router.wasm.gz";
-pub const MOCK_BAND_FILE: &str = "../../compiled/mock_band.wasm.gz";
-pub const PROXY_BAND_ORACLE_FILE: &str = "../../compiled/proxy_band_oracle.wasm.gz";
+pub const ORACLE_ROUTER_FILE: &str = "./artifacts/oracle_router/oracle_router.wasm.gz";
+pub const MOCK_BAND_FILE: &str = "./artifacts/mock_band/mock_band.wasm.gz";
+
 pub const SIENNASWAP_LP_SPOT_ORACLE_FILE: &str = "../../compiled/siennaswap_lp_spot_oracle.wasm.gz";
 pub const SHADE_STAKING_DERIVATIVE_ORACLE_FILE: &str =
     "../../compiled/shade_staking_derivative_oracle.wasm.gz";
@@ -21,8 +23,28 @@ pub const USER_A_KEY: &str = "a";
 pub const USER_B_KEY: &str = "b";
 pub const USER_C_KEY: &str = "c";
 pub const USER_D_KEY: &str = "d";
-pub const HOOMP_KEY: &str = "hoomp";
+pub const DEPLOY_KEY: &str = "mulberry";
 pub const BACKEND: &str = "test";
+
+pub struct DeployedContracts {
+    pub admin_auth: Contract,
+    pub query_auth: Contract,
+}
+
+impl DeployedContracts {
+    pub fn docker() -> Self {
+        DeployedContracts {
+            admin_auth: Contract::new(
+                &Addr::unchecked("secret1pg606jw68d9mnh9czrgm7celc3rq9x5w8duhhr"),
+                &String::from("8dd3d519e7a7a05260688d1f4b39fa3d1d76d7692de8c9ae579d6c8d58c5f7dd"),
+            ),
+            query_auth: Contract::new(
+                &Addr::unchecked("secret1veyys5806ng294ty5q5kv9hjrr53e2h0jjxyrw"),
+                &String::from("af3d7567ab0016477aedf405995b0a47cf448abfdf49c523d74886903355351c"),
+            ),
+        }
+    }
+}
 
 pub mod testnet {
 

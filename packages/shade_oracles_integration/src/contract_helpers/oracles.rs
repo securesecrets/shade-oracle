@@ -1,16 +1,21 @@
 use super::{GasLog, TestableContract};
 use crate::constants::*;
-use cosmwasm_std::Uint128;
-use secretcli::{cli_types::NetContract, secretcli::query_contract};
+use secretcli::{cli_types::NetContract, secretcli::query};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_oracles::{
-    band,
-    band::proxy as proxy_band_oracle,
-    common as common_oracles,
-    common::Contract,
-    earn as earn_v1_oracle, index_oracle, lp as lp_oracle,
-    router::{self, RegistryOperation, UpdateConfig},
+    common::{PriceResponse, PricesResponse},
+    core::{Contract, Decimal256, RawContract, Uint128, Uint64},
+    interfaces::{
+        band, common as common_oracles,
+        index::{self, msg::AdminMsg as IndexAdminMsg},
+        lp as lp_oracle,
+        router::{
+            self, msg as Router,
+            registry::{RegistryOperation, UpdateConfig},
+        },
+        staking_derivative,
+    },
 };
 
 #[derive(Serialize, Deserialize)]
@@ -29,47 +34,52 @@ impl TestableContract for OracleRouterContract {
 
 impl OracleRouterContract {
     pub fn new(
-        msg: &router::InstantiateMsg,
+        msg: &Router::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: Option<&str>,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(OracleRouterContract { info })
     }
 
-    pub fn query_config(&self) -> Result<router::Config> {
-        query_contract(self.get_info(), router::QueryMsg::GetConfig {})
+    pub fn query_config(&self) -> Result<Router::ConfigResponse> {
+        query(self.get_info(), Router::QueryMsg::GetConfig {}, None)
     }
 
-    pub fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
-        query_contract(self.get_info(), router::QueryMsg::GetPrice { key })
+    pub fn query_price(&self, key: String) -> Result<PriceResponse> {
+        query(self.get_info(), Router::QueryMsg::GetPrice { key }, None)
     }
 
-    pub fn query_oracle(&self, key: String) -> Result<router::OracleResponse> {
-        query_contract(self.get_info(), router::QueryMsg::GetOracle { key })
+    pub fn query_prices(&self, keys: Vec<String>) -> Result<PricesResponse> {
+        query(self.get_info(), Router::QueryMsg::GetPrices { keys }, None)
+    }
+
+    pub fn query_oracle(&self, key: String) -> Result<Router::OracleResponse> {
+        query(self.get_info(), Router::QueryMsg::GetOracle { key }, None)
     }
 
     pub fn update_config(&self, config: UpdateConfig, sender_key: Option<&str>) -> Result<GasLog> {
-        let msg = router::ExecuteMsg::UpdateConfig { config };
-        self.wrap_handle(&msg, sender_key)
+        let msg = Router::ExecuteMsg::UpdateConfig { config };
+        self.wrap_execute(&msg, sender_key)
     }
 
     pub fn update_registry(
         &self,
-        operation: router::RegistryOperation,
+        operation: RegistryOperation,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = router::ExecuteMsg::UpdateRegistry { operation };
-        self.wrap_handle(&msg, sender_key)
+        let msg = Router::ExecuteMsg::UpdateRegistry { operation };
+        self.wrap_execute(&msg, sender_key)
     }
 
     pub fn batch_update_registry(
         &self,
-        operations: Vec<router::RegistryOperation>,
+        operations: Vec<RegistryOperation>,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = router::ExecuteMsg::BatchUpdateRegistry { operations };
-        self.wrap_handle(&msg, sender_key)
+        let msg = Router::ExecuteMsg::BatchUpdateRegistry { operations };
+        self.wrap_execute(&msg, sender_key)
     }
 
     pub fn update_oracle(
@@ -118,21 +128,6 @@ impl TestableContract for BandContract {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ProxyBandOracleContract {
-    pub info: NetContract,
-}
-
-impl OracleContract for ProxyBandOracleContract {}
-impl TestableContract for ProxyBandOracleContract {
-    fn get_info(&self) -> &NetContract {
-        &self.info
-    }
-    fn get_file() -> &'static str {
-        PROXY_BAND_ORACLE_FILE
-    }
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct SiennaMarketOracleContract {
     pub info: NetContract,
 }
@@ -148,11 +143,12 @@ impl TestableContract for SiennaMarketOracleContract {
 
 impl SiennaMarketOracleContract {
     pub fn new(
-        msg: &shade_oracles::siennaswap_market_oracle::InstantiateMsg,
+        msg: &shade_oracles::interfaces::lp::market::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: Option<&str>,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(SiennaMarketOracleContract { info })
     }
 }
@@ -207,22 +203,29 @@ where
     Self: TestableContract,
 {
     fn query_price(&self, key: String) -> Result<common_oracles::OraclePrice> {
-        query_contract(
+        query(
             self.get_info(),
-            shade_oracles::common::QueryMsg::GetPrice { key },
+            shade_oracles::common::OracleQuery::GetPrice { key },
+            None,
         )
     }
     fn query_config<Response: serde::de::DeserializeOwned>(&self) -> Result<Response> {
-        query_contract(
+        query(
             self.get_info(),
-            shade_oracles::common::QueryMsg::GetConfig {},
+            shade_oracles::common::OracleQuery::GetConfig {},
+            None,
         )
     }
 }
 
 impl BandContract {
-    pub fn new(msg: &band::InstantiateMsg, account_key: Option<&str>, name: Option<&str>) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+    pub fn new(
+        msg: &band::InstantiateMsg,
+        account_key: Option<&str>,
+        name: Option<&str>,
+        label: Option<&str>,
+    ) -> Result<Self> {
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(BandContract { info })
     }
 
@@ -233,31 +236,13 @@ impl BandContract {
         last_updated: Option<u64>,
         account_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = shade_oracles::band::ExecuteMsg::UpdateSymbolPrice {
+        let msg = band::ExecuteMsg::UpdateSymbolPrice {
             base_symbol: pair.0.to_string(),
             quote_symbol: pair.1.to_string(),
             rate,
             last_updated,
         };
-        self.wrap_handle(&msg, account_key)
-    }
-}
-
-impl ProxyBandOracleContract {
-    pub fn new(
-        admin_auth: Contract,
-        quote_symbol: &str,
-        band: Contract,
-        account_key: Option<&str>,
-        name: Option<&str>,
-    ) -> Result<Self> {
-        let msg = proxy_band_oracle::InstantiateMsg {
-            quote_symbol: quote_symbol.to_string(),
-            band,
-            admin_auth,
-        };
-        let info = Self::wrap_init(&msg, account_key, name)?;
-        Ok(ProxyBandOracleContract { info })
+        self.wrap_execute(&msg, account_key)
     }
 }
 
@@ -266,38 +251,22 @@ impl SiennaswapSpotLpOracleContract {
         msg: &lp_oracle::siennaswap::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: Option<&str>,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(SiennaswapSpotLpOracleContract { info })
     }
 }
 
 impl ShadeStakingDerivativeOracleContract {
     pub fn new(
-        msg: &shade_oracles::staking_derivative::shade::InstantiateMsg,
+        msg: &staking_derivative::shade::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: Option<&str>,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(ShadeStakingDerivativeOracleContract { info })
-    }
-}
-
-impl EarnV1OracleContract {
-    pub fn new(
-        owner: String,
-        deposit_token_oracle: Contract,
-        strategy: Contract,
-        account_key: Option<&str>,
-        name: Option<&str>,
-    ) -> Result<Self> {
-        let msg = earn_v1_oracle::InstantiateMsg {
-            owner,
-            deposit_token_oracle,
-            strategy,
-        };
-        let info = Self::wrap_init(&msg, account_key, name)?;
-        Ok(EarnV1OracleContract { info })
     }
 }
 
@@ -318,43 +287,44 @@ impl TestableContract for IndexOracleContract {
 
 impl IndexOracleContract {
     pub fn new(
-        msg: &index_oracle::InstantiateMsg,
+        msg: &index::msg::InstantiateMsg,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: Option<&str>,
     ) -> Result<Self> {
-        let info = Self::wrap_init(msg, account_key, name)?;
+        let info = Self::wrap_init(msg, account_key, name, label)?;
         Ok(IndexOracleContract { info })
     }
 
-    pub fn query_config(&self, key: String) -> Result<index_oracle::Config> {
-        query_contract(self.get_info(), index_oracle::QueryMsg::GetPrice { key })
+    pub fn query_index_data(&self, key: String) -> Result<index::msg::IndexDataResponse> {
+        query(self.get_info(), index::msg::QueryMsg::GetIndexData {}, None)
     }
 
-    pub fn query_basket(&self) -> Result<index_oracle::QueryAnswer> {
-        query_contract(self.get_info(), index_oracle::QueryMsg::Basket {})
+    pub fn query_basket(&self) -> Result<index::msg::BasketResponse> {
+        query(self.get_info(), index::msg::QueryMsg::GetBasket {}, None)
     }
 
     pub fn update_config(
         &self,
-        router: Option<Contract>,
-        enabled: Option<bool>,
-        only_band: Option<bool>,
+        router: Option<RawContract>,
+        symbol: Option<String>,
+        when_stale: Option<Uint64>,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = index_oracle::ExecuteMsg::UpdateConfig {
+        let msg = index::msg::ExecuteMsg::Admin(IndexAdminMsg::UpdateConfig {
+            symbol,
             router,
-            enabled,
-            only_band,
-        };
-        self.wrap_handle(&msg, sender_key)
+            when_stale,
+        });
+        self.wrap_execute(&msg, sender_key)
     }
 
     pub fn mod_basket(
         &self,
-        basket: Vec<(String, Uint128)>,
+        basket: Vec<(String, Decimal256)>,
         sender_key: Option<&str>,
     ) -> Result<GasLog> {
-        let msg = index_oracle::ExecuteMsg::ModBasket { basket };
-        self.wrap_handle(&msg, sender_key)
+        let msg = index::msg::ExecuteMsg::Admin(IndexAdminMsg::ModBasket { basket });
+        self.wrap_execute(&msg, sender_key)
     }
 }

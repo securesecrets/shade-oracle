@@ -12,7 +12,9 @@ fn update_config() {
     let _mock_coins = coins(1000, "earth");
     let env = mock_env();
     let user1 = mock_info("test", &[]);
-    let msg = InstantiateMsg {};
+    let msg = InstantiateMsg {
+        initial_prices: vec![],
+    };
     let _res = instantiate(deps.as_mut(), env.clone(), user1.clone(), msg).unwrap();
 
     let time = 1000000u64;
