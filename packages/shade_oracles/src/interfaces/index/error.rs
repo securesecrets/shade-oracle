@@ -1,4 +1,4 @@
-use cosmwasm_std::Decimal256;
+use cosmwasm_std::{Decimal256, StdError};
 
 use crate::build_oracle_error;
 

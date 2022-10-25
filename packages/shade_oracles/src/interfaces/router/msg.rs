@@ -43,6 +43,25 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
+pub enum QueryTestMsg {
+    // #[returns(ConfigResponse)]
+    // GetConfig {},
+    // /// Get oracle at that key
+    // #[returns(OracleResponse)]
+    // GetOracle { key: String },
+    // /// Get price of oracle at that key
+    // #[returns(PriceResponse)]
+    // GetPrice { key: String },
+    // #[returns(OraclesResponse)]
+    // GetOracles { keys: Vec<String> },
+    // #[returns(PricesResponse)]
+    // GetPrices { keys: Vec<String> },
+    #[returns(KeysResponse)]
+    GetKeys {},
+}
+
+#[cw_serde]
 pub struct OraclesResponse {
     pub oracles: Vec<OracleResponse>,
 }

@@ -1,21 +1,34 @@
 use cosmwasm_std::{entry_point, Uint128};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
-use shade_oracles::core::ResponseStatus;
+use shade_oracles::core::{pad_query_result, ResponseStatus};
 use shade_oracles::interfaces::band::{
     ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg, ReferenceData,
 };
 use shade_oracles::ssp::Map;
+use shade_oracles::BLOCK_SIZE;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    _deps: DepsMut,
-    _env: Env,
+    deps: DepsMut,
+    env: Env,
     _info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> StdResult<Response> {
+    let now = env.block.time.seconds();
+    for (base, quote, rate) in msg.initial_prices {
+        MOCK_DATA.save(
+            deps.storage,
+            (base, quote),
+            &ReferenceData {
+                rate,
+                last_updated_base: now,
+                last_updated_quote: now,
+            },
+        )?;
+    }
     Ok(Response::default())
 }
 
@@ -63,23 +76,27 @@ pub fn update_symbol_price(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::GetReferenceData {
-            base_symbol,
-            quote_symbol,
-        } => query_saved_band_data(deps, base_symbol, quote_symbol),
-        QueryMsg::GetReferenceDataBulk {
-            base_symbols,
-            quote_symbols,
-        } => {
-            let mut results = vec![];
+    pad_query_result(
+        match msg {
+            QueryMsg::GetReferenceData {
+                base_symbol,
+                quote_symbol,
+            } => query_saved_band_data(deps, base_symbol, quote_symbol),
+            QueryMsg::GetReferenceDataBulk {
+                base_symbols,
+                quote_symbols,
+            } => {
+                let mut results = vec![];
 
-            for (base, quote) in base_symbols.iter().zip(quote_symbols) {
-                results.push(MOCK_DATA.load(deps.storage, (base.to_string(), quote.to_string()))?);
+                for (base, quote) in base_symbols.iter().zip(quote_symbols) {
+                    results
+                        .push(MOCK_DATA.load(deps.storage, (base.to_string(), quote.to_string()))?);
+                }
+                to_binary(&results)
             }
-            to_binary(&results)
-        }
-    }
+        },
+        BLOCK_SIZE,
+    )
 }
 
 fn query_saved_band_data(

@@ -10,7 +10,9 @@ use shade_protocol::{
 };
 
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub initial_prices: Vec<(String, String, Uint128)>,
+}
 
 impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = BLOCK_SIZE;

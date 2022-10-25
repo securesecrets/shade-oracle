@@ -1,4 +1,7 @@
-use cosmwasm_std::{attr, entry_point, Binary, Decimal256, DepsMut, MessageInfo, Uint128, Uint64};
+use cosmwasm_std::{
+    attr, entry_point, Binary, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint128,
+    Uint64,
+};
 use cosmwasm_std::{to_binary, Deps, Env, Response};
 use shade_oracles::common::querier::verify_admin;
 use shade_oracles::common::{PriceResponse, PricesResponse};
@@ -185,7 +188,7 @@ pub fn fetch_prices<'a>(
     deps: Deps,
     router: &Contract,
     symbols: impl IntoIterator<Item = &'a String>,
-) -> IndexOracleResult<Option<Vec<OraclePrice>>> {
+) -> StdResult<Option<Vec<OraclePrice>>> {
     let symbols = symbols
         .into_iter()
         .map(|f| f.to_string())
@@ -220,7 +223,7 @@ pub fn try_mod_basket(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     let mut oracle = IndexOracle::load(deps.storage)?;
     let now = env.block.time.seconds();
 
@@ -228,7 +231,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
         QueryMsg::GetPrice { key } => {
             IndexOracle::require_can_run(deps.storage, true, false, false)?;
             if key != oracle.config.symbol {
-                return Err(IndexOracleError::UnsupportedSymbol { symbol: key });
+                return Err(IndexOracleError::UnsupportedSymbol { symbol: key }.into());
             }
             let prices =
                 fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
@@ -249,7 +252,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> IndexOracleResult<Binary> {
                 if key.eq(&oracle.config.symbol) {
                     return Err(IndexOracleError::UnsupportedSymbol {
                         symbol: key.clone(),
-                    });
+                    }
+                    .into());
                 }
             }
             let prices =

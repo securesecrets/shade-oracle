@@ -1,15 +1,12 @@
-use crate::{
-    constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY},
-    utils::generate_label,
-};
-use cosmwasm_std::Addr;
+use crate::constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY};
 use secretcli::{
     cli_types::NetContract,
-    secretcli::{test_contract_handle, test_inst_init},
+    secretcli::{init_cache, test_contract_handle},
+    utils::generate_label,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use shade_oracles::common::Contract;
+use shade_oracles::core::{Addr, Contract};
 
 pub mod oracles;
 
@@ -27,11 +24,11 @@ pub trait TestableContract {
     fn as_contract(&self) -> Contract {
         let net = self.get_info();
         Contract {
-            address: Addr(net.address.clone()),
+            address: Addr::unchecked(net.address.clone()),
             code_hash: net.code_hash.clone(),
         }
     }
-    fn wrap_handle<Message: serde::Serialize>(
+    fn wrap_execute<Message: serde::Serialize>(
         &self,
         msg: &Message,
         sender_key: Option<&str>,
@@ -56,11 +53,16 @@ pub trait TestableContract {
         msg: &Message,
         account_key: Option<&str>,
         name: Option<&str>,
+        label: Option<&str>,
     ) -> Result<NetContract> {
-        test_inst_init(
+        let label = match label {
+            Some(label) => label.to_string(),
+            None => generate_label(16),
+        };
+        init_cache(
             msg,
             Self::get_file(),
-            &generate_label(8),
+            &label,
             account_key.unwrap_or(USER_A_KEY),
             Some(STORE_GAS),
             Some(GAS),
