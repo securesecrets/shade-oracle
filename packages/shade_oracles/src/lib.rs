@@ -16,7 +16,6 @@ pub mod storage {
 #[cfg(feature = "core")]
 pub mod core {
     pub use better_secret_math;
-    pub use cosmwasm_schema;
     pub use schemars;
     pub use secret_storage_plus as ssp;
     pub use serde;
