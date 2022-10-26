@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d77edd1f3731eb3cd1a833eafa20bf1d298f475"
+source = "git+https://github.com/securesecrets/shade?branch=update_secret#6b9e3ce8fa04545f43ed5fc7a5616dd41d5ca858"
 dependencies = [
  "secret-cosmwasm-std 1.0.0",
  "shade-protocol",
@@ -220,7 +220,7 @@ checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
 [[package]]
 name = "contract-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d77edd1f3731eb3cd1a833eafa20bf1d298f475"
+source = "git+https://github.com/securesecrets/shade?branch=update_secret#6b9e3ce8fa04545f43ed5fc7a5616dd41d5ca858"
 dependencies = [
  "syn",
 ]
@@ -707,7 +707,7 @@ dependencies = [
 [[package]]
 name = "multi-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d77edd1f3731eb3cd1a833eafa20bf1d298f475"
+source = "git+https://github.com/securesecrets/shade?branch=update_secret#6b9e3ce8fa04545f43ed5fc7a5616dd41d5ca858"
 
 [[package]]
 name = "nanoid"
@@ -1358,7 +1358,7 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d77edd1f3731eb3cd1a833eafa20bf1d298f475"
+source = "git+https://github.com/securesecrets/shade?branch=update_secret#6b9e3ce8fa04545f43ed5fc7a5616dd41d5ca858"
 dependencies = [
  "admin",
  "multi-derive",
@@ -1409,13 +1409,13 @@ dependencies = [
 [[package]]
 name = "shade-protocol"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d77edd1f3731eb3cd1a833eafa20bf1d298f475"
+source = "git+https://github.com/securesecrets/shade?branch=update_secret#6b9e3ce8fa04545f43ed5fc7a5616dd41d5ca858"
 dependencies = [
  "anyhow",
  "base64 0.12.3",
  "chrono",
  "contract-derive",
- "cosmwasm-schema 1.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-schema 1.1.5 (git+https://github.com/CosmWasm/cosmwasm)",
  "query-authentication",
  "rand_chacha 0.2.2",
  "rand_core 0.5.1",
@@ -1522,7 +1522,7 @@ dependencies = [
 [[package]]
 name = "snip20"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d77edd1f3731eb3cd1a833eafa20bf1d298f475"
+source = "git+https://github.com/securesecrets/shade?branch=update_secret#6b9e3ce8fa04545f43ed5fc7a5616dd41d5ca858"
 dependencies = [
  "secret-cosmwasm-std 1.0.0",
  "shade-protocol",
