@@ -38,6 +38,6 @@ siennaswap_lp_oracle = { path = "../../contracts/siennaswap_lp_oracle", optional
 siennaswap_lp_spot_oracle = { path = "../../contracts/siennaswap_lp_spot_oracle", optional = true }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "update_secret", features = [ "multi-test" ] }
-shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "update_secret", features = [ "snip20", "admin" ] }
-multi-derive = { git = "https://github.com/securesecrets/shade", branch = "update_secret" }
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test" ] }
+shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "snip20", "admin" ] }
+multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
