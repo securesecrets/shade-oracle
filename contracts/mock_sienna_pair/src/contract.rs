@@ -3,7 +3,6 @@ use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult, Storage};
 use shade_oracles::storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use shade_oracles::{
-    core::cosmwasm_schema,
     core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::siennaswap::{
         Pair, SiennaDexTokenType as TokenType, SiennaSwapExchangeQueryMsg as PairQuery,
