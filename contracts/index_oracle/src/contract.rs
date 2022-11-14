@@ -249,7 +249,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
         QueryMsg::GetPrices { keys } => {
             IndexOracle::require_can_run(deps.storage, true, false, false)?;
             for key in &keys {
-                if key.eq(&oracle.config.symbol) {
+                if key.ne(&oracle.config.symbol) {
                     return Err(IndexOracleError::UnsupportedSymbol {
                         symbol: key.clone(),
                     }
