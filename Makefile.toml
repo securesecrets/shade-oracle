@@ -82,6 +82,10 @@ rm ./${CURRENT_CRATE}.wasm
 workspace = false
 dependencies = ["schemas", "optimizoor", "compress-opt", "bundle"]
 
+[tasks.build-fast]
+workspace = false
+dependencies = ["optimizoor", "compress-opt"]
+
 [tasks.optimizoor]
 workspace = false
 command = "cargo"
