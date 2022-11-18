@@ -13,9 +13,7 @@ use shade_oracles::{
     interfaces::router,
 };
 use shade_oracles_multi_test::{
-    multi::helpers::{OracleCore, OracleDeps},
-    multi::index::IndexOracle,
-    App, MultiTestable,
+    multi::helpers::OracleCore, multi::index::IndexOracle, App, MultiTestable,
 };
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -111,8 +109,8 @@ fn basic_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
-    let router = oracle_core.get(OracleDeps::OracleRouter);
+    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
+    let router = oracle_core.router.0;
 
     let index_oracle = InstantiateMsg {
         router: router.clone().into(),
@@ -268,7 +266,7 @@ fn mod_index_test(
     let expected_initial: Uint128 = expected_initial.into();
     let expected_final: Uint128 = expected_final.into();
     let error: Uint128 = error.into();
-    
+
     let prices: HashMap<String, Uint128> = prices
         .into_iter()
         .map(|(sym, p)| (sym.to_string(), p.into()))
@@ -280,9 +278,9 @@ fn mod_index_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
-    let band = oracle_core.get(OracleDeps::Band);
-    let router = oracle_core.get(OracleDeps::OracleRouter);
+    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
+    let band = oracle_core.band.0;
+    let router = oracle_core.router.0;
 
     let index_oracle = InstantiateMsg {
         router: router.clone().into(),

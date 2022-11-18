@@ -14,7 +14,6 @@ use shade_oracles::{
     interfaces::{lp::market as siennaswap_market_oracle, router},
 };
 use shade_oracles_multi_test::multi::helpers::OracleCore;
-use shade_oracles_multi_test::multi::helpers::OracleDeps;
 use shade_oracles_multi_test::multi::market::siennaswap::SiennaSwapMarketOracle;
 use shade_oracles_multi_test::multi::mocks::Snip20;
 use shade_oracles_multi_test::multi::MockSiennaPair;
@@ -39,8 +38,8 @@ fn basic_market_test(
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
-    let router = oracle_core.get(OracleDeps::OracleRouter);
+    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
+    let router = oracle_core.router.0;
 
     // Setup tokens
     let primary_token = snip20::InstantiateMsg {

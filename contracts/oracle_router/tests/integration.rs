@@ -12,9 +12,7 @@ use shade_oracles::{
     interfaces::router::{msg::*, *},
 };
 use shade_oracles_multi_test::{
-    multi::helpers::{OracleCore, OracleDeps},
-    multi::router::OracleRouter,
-    App, MultiTestable,
+    multi::helpers::OracleCore, multi::router::OracleRouter, App, MultiTestable,
 };
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -47,8 +45,8 @@ fn basic_query_test(#[case] prices: Vec<(&str, u128)>) {
     let user = Addr::unchecked("superadmin");
     let mut app = App::default();
 
-    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None, None).unwrap();
-    let router = oracle_core.get(OracleDeps::OracleRouter);
+    let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
+    let router = oracle_core.router.0;
 
     let resp: PricesResponse = QueryMsg::GetPrices { keys }
         .test_query(&router, &app)
