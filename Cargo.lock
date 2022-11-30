@@ -73,11 +73,11 @@ checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 [[package]]
 name = "better-secret-math"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math?tag=v0.1.1#5f98a6e16c9fcd73a3ca3df9b5f9fc475e1d27de"
+source = "git+https://github.com/securesecrets/better-secret-math?rev=a3855a3#a3855a3d60d7b5f0b2add9ed2c2f58438a649f4c"
 dependencies = [
  "borsh",
- "btr-macros 0.1.0 (git+https://github.com/securesecrets/better-secret-math?tag=v0.1.1)",
- "cosmwasm-schema 1.1.8 (git+https://github.com/CosmWasm/cosmwasm)",
+ "btr-macros 0.1.0 (git+https://github.com/securesecrets/better-secret-math?rev=a3855a3)",
+ "cosmwasm-schema 1.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive-from-ext",
  "ethnum",
  "paste",
@@ -164,7 +164,7 @@ dependencies = [
 [[package]]
 name = "btr-macros"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math?tag=v0.1.1#5f98a6e16c9fcd73a3ca3df9b5f9fc475e1d27de"
+source = "git+https://github.com/securesecrets/better-secret-math?rev=a3855a3#a3855a3d60d7b5f0b2add9ed2c2f58438a649f4c"
 dependencies = [
  "paste",
  "proc-macro2",
