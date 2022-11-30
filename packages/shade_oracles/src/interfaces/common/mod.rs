@@ -23,6 +23,17 @@ pub mod querier;
 mod error;
 use super::band::{BtrReferenceData, ReferenceData};
 
+/// Can handle amounts that have more than 18 decimal places.
+/// Normalizes to 18 decimal places.
+pub fn normalize_price_uint128(amount: Uint128, decimals: u8) -> StdResult<Uint128> {
+    if decimals == 18 {
+        Ok(amount)
+    } else {
+        let amount: U256 = amount.into();
+        Ok(muldiv(amount, exp10(18), exp10(decimals))?.into())
+    }
+}
+
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.

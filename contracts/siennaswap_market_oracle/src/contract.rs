@@ -4,12 +4,12 @@ use cosmwasm_std::{
 };
 use shade_oracles::{
     common::{
-        oracle_exec, oracle_query,
+        normalize_price_uint128, oracle_exec, oracle_query,
         querier::{query_band_price, query_price, query_token_info},
         ExecuteMsg, Oracle, OraclePrice, OracleQuery,
     },
     core::Query,
-    core::{normalize_price, snip20::helpers::TokenInfo, Contract},
+    core::{snip20::helpers::TokenInfo, Contract},
     interfaces::{
         band::ReferenceData,
         lp::market::{InstantiateMsg, MarketData, BASE_INFO, PRIMARY_INFO, PRIMARY_TOKEN},
@@ -142,7 +142,7 @@ impl Oracle for SiennaswapMarketOracle {
 
         // Normalize to 'rate * 10^18'
         let base_info = BASE_INFO.load(deps.storage)?;
-        let exchange_rate = normalize_price(sim.return_amount, base_info.decimals);
+        let exchange_rate = normalize_price_uint128(sim.return_amount, base_info.decimals)?;
 
         // Query router for base_peg/USD
         let base_usd_price = if config.only_band {
