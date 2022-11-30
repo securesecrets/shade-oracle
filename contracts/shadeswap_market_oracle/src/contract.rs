@@ -1,6 +1,8 @@
 use cosmwasm_std::{entry_point, Deps, Env, Response, StdError, StdResult};
 use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse, Uint128};
-use shade_oracles::common::{oracle_exec, oracle_query, ExecuteMsg, Oracle};
+use shade_oracles::common::{
+    normalize_price_uint128, oracle_exec, oracle_query, ExecuteMsg, Oracle,
+};
 use shade_oracles::core::snip20::helpers::TokenInfo;
 use shade_oracles::core::Query;
 use shade_oracles::ssp::ItemStorage;
@@ -9,7 +11,7 @@ use shade_oracles::{
         querier::{query_band_price, query_price, query_token_info},
         OraclePrice, OracleQuery,
     },
-    core::{normalize_price, Contract},
+    core::Contract,
     interfaces::band::ReferenceData,
     interfaces::lp::market::{InstantiateMsg, MarketData, BASE_INFO, PRIMARY_INFO, PRIMARY_TOKEN},
     protocols::shadeswap::{
@@ -137,7 +139,7 @@ impl Oracle for ShadeswapMarketOracle {
 
         // Normalize to 'rate * 10^18'
         let base_info = BASE_INFO.load(deps.storage)?;
-        let exchange_rate = normalize_price(sim.estimated_price, base_info.decimals);
+        let exchange_rate = normalize_price_uint128(sim.estimated_price, base_info.decimals)?;
 
         // Query router for base_peg/USD
         let base_usd_price = if config.only_band {
