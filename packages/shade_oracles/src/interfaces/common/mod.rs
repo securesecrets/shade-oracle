@@ -408,7 +408,7 @@ mod state {
             let supported_keys = config.supported_keys.as_slice();
             let mut key = "";
             if !supported_keys.is_empty()
-                && !keys.iter().any(|k| -> bool {
+                && keys.iter().any(|k| -> bool {
                     key = k;
                     !supported_keys.contains(k)
                 })
@@ -440,6 +440,34 @@ mod state {
                 prices.push(self.try_query_price(deps, env, key, config)?);
             }
             Ok(prices)
+        }
+    }
+
+    #[cfg(test)]
+    mod test {
+        #[test]
+        fn test_can_query_prices() {
+            // Initialize supported keys.
+            let supported_keys = vec!["aaa", "bbb", "ccc"];
+            let supported_keys = supported_keys.as_slice();
+
+            // Initialize keys.
+            let keys: Vec<&str> = vec!["aaa", "bbb"];
+            let keys = keys.as_slice();
+
+            // Follow the logic in can_query_prices()
+            let mut key = "";
+            let mut result = true;
+            if !supported_keys.is_empty()
+                && keys.iter().any(|k| -> bool {
+                    key = k;
+                    !supported_keys.contains(k)
+                })
+            {
+                result = false; // Return Err
+            }
+
+            assert!(result);
         }
     }
 }
