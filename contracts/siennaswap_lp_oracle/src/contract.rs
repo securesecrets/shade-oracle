@@ -7,7 +7,7 @@ use shade_oracles::common::{oracle_exec, CommonConfig, Oracle};
 use shade_oracles::{
     common::querier::{query_prices, query_token_info},
     common::{ExecuteMsg, OraclePrice, OracleQuery},
-    core::pad_query_result,
+    core::{pad_query_result, Query},
     interfaces::band::ReferenceData,
     interfaces::lp::{
         math::{get_fair_lp_token_price, FairLpPriceInfo},
@@ -26,12 +26,10 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
+    let exchange = msg.exchange.into_valid(deps.api)?;
+
     let pair_info_response: SiennaSwapPairInfoResponse =
-        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: msg.exchange.address.to_string(),
-            code_hash: msg.exchange.code_hash.clone(),
-            msg: to_binary(&SiennaSwapExchangeQueryMsg::PairInfo)?,
-        }))?;
+        SiennaSwapExchangeQueryMsg::PairInfo.query(&deps.querier, &exchange)?;
     let pair_info = pair_info_response.pair_info;
     let tokens = resolve_pair(&pair_info)?;
     let token0_decimals = query_token_info(&tokens.0, &deps.querier)?.decimals;
@@ -46,6 +44,7 @@ pub fn instantiate(
         symbol_1: msg.symbol_1,
     };
 
+    EXCHANGE.save(deps.storage, &exchange)?;
     pair.save(deps.storage)?;
     SiennaswapLpOracle.init_config(deps.storage, deps.api, msg.config)?;
 
