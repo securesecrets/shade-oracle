@@ -147,7 +147,7 @@ pub mod shadeswap {}
 #[cfg(feature = "lp")]
 pub mod math {
     use super::*;
-    use crate::core::{normalize_price, sqrt};
+    use crate::{common::normalize_price_uint128, core::sqrt};
     pub struct FairLpPriceInfo {
         pub reserve: u128,
         pub price: u128,
@@ -161,10 +161,14 @@ pub mod math {
         total_supply: u128,
         lp_token_decimals: u8,
     ) -> StdResult<Uint128> {
-        let normalized_reserve1 =
-            Uint256::from_uint128(normalize_price(Uint128::from(a.reserve), a.decimals));
-        let normalized_reserve2 =
-            Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
+        let normalized_reserve1 = Uint256::from_uint128(normalize_price_uint128(
+            Uint128::from(a.reserve),
+            a.decimals,
+        )?);
+        let normalized_reserve2 = Uint256::from(normalize_price_uint128(
+            Uint128::from(b.reserve),
+            b.decimals,
+        )?);
         let normalized_supply =
             Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
         let safe_price_a = Uint256::from(a.price);
@@ -184,10 +188,14 @@ pub mod math {
         total_supply: u128,
         lp_token_decimals: u8,
     ) -> StdResult<Uint128> {
-        let normalized_reserve1 =
-            Uint256::from(normalize_price(Uint128::from(a.reserve), a.decimals));
-        let normalized_reserve2 =
-            Uint256::from(normalize_price(Uint128::from(b.reserve), b.decimals));
+        let normalized_reserve1 = Uint256::from(normalize_price_uint128(
+            Uint128::from(a.reserve),
+            a.decimals,
+        )?);
+        let normalized_reserve2 = Uint256::from(normalize_price_uint128(
+            Uint128::from(b.reserve),
+            b.decimals,
+        )?);
         let normalized_supply =
             Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
         let r = sqrt(normalized_reserve1.checked_mul(normalized_reserve2)?)?;

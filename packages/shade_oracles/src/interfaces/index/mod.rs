@@ -56,7 +56,10 @@ mod state {
         interfaces::band::ReferenceData,
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
-    use better_secret_math::{core::muldiv_fp, U256};
+    use better_secret_math::{
+        core::{bankers_round, muldiv_fp},
+        U256,
+    };
     use cosmwasm_std::{StdResult, Storage, Timestamp, Uint128};
 
     impl ItemStorage for Config {
@@ -266,6 +269,7 @@ mod state {
         ) -> IndexOracleResult<()> {
             let now = time.seconds();
             let (new_target, _) = self._compute_target(prices, now)?;
+            let mut initial_weight = U256::ZERO;
             for price in prices {
                 let asset_symbol = price.key();
                 let weight = &self.basket[asset_symbol];
@@ -273,10 +277,11 @@ mod state {
                 // Can't overflow because initial weight cannot be greater than 10^19 and target will
                 // always be reasonably small (we can arbitrarily say 10^30 is worst case), but
                 // it will initially be at 10^18 if it is 1.05.
-                let new_weight = (weight.fixed * price) / new_target;
+                let new_weight = bankers_round((weight.fixed * price) / new_target, 1);
                 self.basket
                     .entry(asset_symbol.to_string())
                     .and_modify(|weight| {
+                        initial_weight += new_weight;
                         weight.initial = new_weight;
                     });
             }

@@ -23,6 +23,17 @@ pub mod querier;
 mod error;
 use super::band::{BtrReferenceData, ReferenceData};
 
+/// Can handle amounts that have more than 18 decimal places.
+/// Normalizes to 18 decimal places.
+pub fn normalize_price_uint128(amount: Uint128, decimals: u8) -> StdResult<Uint128> {
+    if decimals == 18 {
+        Ok(amount)
+    } else {
+        let amount: U256 = amount.into();
+        Ok(muldiv(amount, exp10(18), exp10(decimals))?.into())
+    }
+}
+
 /// Default Query API for all oracles.
 ///
 /// Every oracle must support these 3 methods in addition to any specific ones it wants to support.
@@ -408,7 +419,7 @@ mod state {
             let supported_keys = config.supported_keys.as_slice();
             let mut key = "";
             if !supported_keys.is_empty()
-                && !keys.iter().any(|k| -> bool {
+                && keys.iter().any(|k| -> bool {
                     key = k;
                     !supported_keys.contains(k)
                 })
@@ -440,6 +451,34 @@ mod state {
                 prices.push(self.try_query_price(deps, env, key, config)?);
             }
             Ok(prices)
+        }
+    }
+
+    #[cfg(test)]
+    mod test {
+        #[test]
+        fn test_can_query_prices() {
+            // Initialize supported keys.
+            let supported_keys = vec!["aaa", "bbb", "ccc"];
+            let supported_keys = supported_keys.as_slice();
+
+            // Initialize keys.
+            let keys: Vec<&str> = vec!["aaa", "bbb"];
+            let keys = keys.as_slice();
+
+            // Follow the logic in can_query_prices()
+            let mut key = "";
+            let mut result = true;
+            if !supported_keys.is_empty()
+                && keys.iter().any(|k| -> bool {
+                    key = k;
+                    !supported_keys.contains(k)
+                })
+            {
+                result = false; // Return Err
+            }
+
+            assert!(result);
         }
     }
 }
