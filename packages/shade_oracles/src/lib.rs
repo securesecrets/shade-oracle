@@ -26,7 +26,7 @@ pub mod core {
             calc::sqrt,
             generic_response::ResponseStatus,
             pad_handle_result, pad_query_result,
-            price::{get_precision, normalize_price, translate_price},
+            price::{get_precision, translate_price},
             ExecuteCallback, InstantiateCallback, Query,
         },
     };
