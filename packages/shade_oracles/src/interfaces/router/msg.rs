@@ -1,9 +1,10 @@
-use super::registry::{Config, RegistryOperation, UpdateConfig};
+use super::registry::{Config, ProtectedKeyInfo, RegistryOperation, UpdateConfig};
 use crate::{
     common::{status::ContractStatus, PriceResponse, PricesResponse},
     impl_msg_callbacks,
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Uint256;
 use shade_protocol::Contract;
 
 impl_msg_callbacks!();
@@ -18,6 +19,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     SetStatus { status: ContractStatus },
+    UpdateProtectedKeys { prices: Vec<(String, Uint256)> },
     UpdateConfig { config: UpdateConfig },
     UpdateRegistry { operation: RegistryOperation },
     BatchUpdateRegistry { operations: Vec<RegistryOperation> },
@@ -40,25 +42,8 @@ pub enum QueryMsg {
     GetPrices { keys: Vec<String> },
     #[returns(KeysResponse)]
     GetKeys {},
-}
-
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryTestMsg {
-    // #[returns(ConfigResponse)]
-    // GetConfig {},
-    // /// Get oracle at that key
-    // #[returns(OracleResponse)]
-    // GetOracle { key: String },
-    // /// Get price of oracle at that key
-    // #[returns(PriceResponse)]
-    // GetPrice { key: String },
-    // #[returns(OraclesResponse)]
-    // GetOracles { keys: Vec<String> },
-    // #[returns(PricesResponse)]
-    // GetPrices { keys: Vec<String> },
-    #[returns(KeysResponse)]
-    GetKeys {},
+    #[returns(ProtectedKeysResponse)]
+    GetProtectedKeys {},
 }
 
 #[cw_serde]
@@ -69,6 +54,17 @@ pub struct OraclesResponse {
 #[cw_serde]
 pub struct KeysResponse {
     pub keys: Vec<String>,
+}
+
+#[cw_serde]
+pub struct ProtectedKeysResponse {
+    keys: Vec<ProtectedKeyInfo>,
+}
+
+#[cw_serde]
+pub struct ProtectedKeyResponse {
+    pub key: String,
+    pub info: ProtectedKeyInfo,
 }
 
 #[cw_serde]

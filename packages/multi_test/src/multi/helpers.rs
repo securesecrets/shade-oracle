@@ -1,18 +1,59 @@
 use crate::multi::{MockBand, OracleRouter};
 use shade_multi_test::multi::admin::init_admin_auth;
-use shade_oracles::interfaces::router::registry::UpdateConfig;
+use shade_oracles::common::{PriceResponse, PricesResponse};
+use shade_oracles::core::Query;
+use shade_oracles::interfaces::router::msg::QueryMsg;
+use shade_oracles::interfaces::router::registry::{RegistryOperation, UpdateConfig};
 use shade_oracles::interfaces::{
     band::{self},
     router::{self},
 };
+use shade_protocol::admin::ExecuteMsg as AdminAuthExecuteMsg;
+use shade_protocol::c_std::Decimal256;
+use shade_protocol::multi_test::AppResponse;
 use shade_protocol::{
-    c_std::{Addr, ContractInfo, Uint128},
+    c_std::{Addr, ContractInfo, StdResult, Uint128, Uint256},
     multi_test::App,
     utils::{ExecuteCallback, InstantiateCallback, MultiTestable},
     AnyResult, Contract,
 };
 use std::collections::HashMap;
 
+pub struct AdminAuthHelper(pub ContractInfo);
+impl AdminAuthHelper {
+    pub fn update_registry(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        action: shade_protocol::admin::RegistryAction,
+    ) -> AnyResult<AppResponse> {
+        AdminAuthExecuteMsg::UpdateRegistry { action }.test_exec(&self.0, app, sender.clone(), &[])
+    }
+    pub fn grant_access(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        user: String,
+        permissions: Vec<String>,
+    ) {
+        let action = shade_protocol::admin::RegistryAction::GrantAccess { permissions, user };
+        self.update_registry(sender, app, action).unwrap();
+    }
+    pub fn register_admin(&self, sender: &Addr, app: &mut App, user: String) {
+        let action = shade_protocol::admin::RegistryAction::RegisterAdmin { user };
+        self.update_registry(sender, app, action).unwrap();
+    }
+    pub fn revoke_access(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        user: String,
+        permissions: Vec<String>,
+    ) {
+        let action = shade_protocol::admin::RegistryAction::RevokeAccess { permissions, user };
+        self.update_registry(sender, app, action).unwrap();
+    }
+}
 pub struct BandHelper(pub ContractInfo);
 
 impl BandHelper {
@@ -39,28 +80,82 @@ impl BandHelper {
 pub struct OracleRouterHelper(pub ContractInfo);
 
 impl OracleRouterHelper {
+    pub fn update_registry(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        operation: RegistryOperation,
+    ) -> AnyResult<AppResponse> {
+        router::msg::ExecuteMsg::UpdateRegistry { operation }.test_exec(
+            &self.0,
+            app,
+            sender.clone(),
+            &[],
+        )
+    }
     pub fn add_oracle(&self, sender: &Addr, app: &mut App, oracle: Contract, key: String) {
-        router::msg::ExecuteMsg::UpdateRegistry {
-            operation: router::registry::RegistryOperation::Add { oracle, key },
-        }
-        .test_exec(&self.0, app, sender.clone(), &[])
-        .unwrap();
+        self.update_registry(sender, app, RegistryOperation::Add { oracle, key })
+            .unwrap();
     }
 
     pub fn remove_oracle(&self, sender: &Addr, app: &mut App, key: String) {
-        router::msg::ExecuteMsg::UpdateRegistry {
-            operation: router::registry::RegistryOperation::Remove { key },
-        }
-        .test_exec(&self.0, app, sender.clone(), &[])
-        .unwrap();
+        self.update_registry(sender, app, RegistryOperation::Remove { key })
+            .unwrap();
     }
 
     pub fn replace_oracle(&self, sender: &Addr, app: &mut App, oracle: Contract, key: String) {
-        router::msg::ExecuteMsg::UpdateRegistry {
-            operation: router::registry::RegistryOperation::Replace { oracle, key },
-        }
-        .test_exec(&self.0, app, sender.clone(), &[])
-        .unwrap();
+        self.update_registry(sender, app, RegistryOperation::Replace { oracle, key })
+            .unwrap();
+    }
+    pub fn protect_key(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        key: String,
+        deviation: Decimal256,
+        initial_price: Uint256,
+    ) -> AnyResult<AppResponse> {
+        self.update_registry(
+            sender,
+            app,
+            RegistryOperation::Protect {
+                key,
+                deviation,
+                initial_price,
+            },
+        )
+    }
+    pub fn remove_key_protection(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        key: String,
+        deviation: Option<Decimal256>,
+        price: Option<Uint256>,
+    ) -> AnyResult<AppResponse> {
+        self.update_registry(
+            sender,
+            app,
+            RegistryOperation::UpdateProtection {
+                key,
+                deviation,
+                price,
+            },
+        )
+    }
+    pub fn update_key_protection(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        key: String,
+    ) -> AnyResult<AppResponse> {
+        self.update_registry(sender, app, RegistryOperation::RemoveProtection { key })
+    }
+    pub fn query_price(&self, app: &App, key: String) -> StdResult<PriceResponse> {
+        QueryMsg::GetPrice { key }.test_query(&self.0, app)
+    }
+    pub fn query_prices(&self, app: &App, keys: Vec<String>) -> StdResult<PricesResponse> {
+        QueryMsg::GetPrices { keys }.test_query(&self.0, app)
     }
 }
 
