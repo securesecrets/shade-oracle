@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d2871bc8ba6cf926d332ef98a50b8b864a7f133"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#ae1a8faf33da7cec9488b92f9b9862892427e419"
 dependencies = [
  "secret-cosmwasm-std 1.0.0 (git+https://github.com/scrtlabs/cosmwasm?branch=secret)",
  "shade-protocol",
@@ -77,7 +77,7 @@ source = "git+https://github.com/securesecrets/better-secret-math?rev=a3855a3#a3
 dependencies = [
  "borsh",
  "btr-macros 0.1.0 (git+https://github.com/securesecrets/better-secret-math?rev=a3855a3)",
- "cosmwasm-schema 1.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-schema 1.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive-from-ext",
  "ethnum",
  "paste",
@@ -175,7 +175,7 @@ dependencies = [
 [[package]]
 name = "btr-macros"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math#a3855a3d60d7b5f0b2add9ed2c2f58438a649f4c"
+source = "git+https://github.com/securesecrets/better-secret-math#7e2cfc455a359494e94fc4f539e133b14c4b48a8"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -229,7 +229,7 @@ checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
 [[package]]
 name = "contract-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d2871bc8ba6cf926d332ef98a50b8b864a7f133"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#ae1a8faf33da7cec9488b92f9b9862892427e419"
 dependencies = [
  "syn",
 ]
@@ -244,20 +244,20 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-derive"
-version = "1.1.8"
+version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8568b289cc366981319ab39edd85d666456456f7c126433ef065ebe5257f27b2"
+checksum = "6fca30d51f7e5fbfa6440d8b10d7df0231bdf77e97fd3fe5d0cb79cc4822e50c"
 dependencies = [
  "syn",
 ]
 
 [[package]]
 name = "cosmwasm-schema"
-version = "1.1.8"
+version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df88ec704055474b3fad0c02de319b8eb3993a02eefe9ef7f403ba1c56308e31"
+checksum = "04135971e2c3b867eb793ca4e832543c077dbf72edaef7672699190f8fcdb619"
 dependencies = [
- "cosmwasm-schema-derive 1.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-schema-derive 1.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "schemars",
  "serde",
  "serde_json",
@@ -266,10 +266,10 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema"
-version = "1.1.8"
-source = "git+https://github.com/CosmWasm/cosmwasm#43cbe248a52ad2b8a49f2145fce4727e6e1f64b1"
+version = "1.1.9"
+source = "git+https://github.com/CosmWasm/cosmwasm#0b3db002e048dec4cb992479c2f34308a5f01b21"
 dependencies = [
- "cosmwasm-schema-derive 1.1.8 (git+https://github.com/CosmWasm/cosmwasm)",
+ "cosmwasm-schema-derive 1.1.9 (git+https://github.com/CosmWasm/cosmwasm)",
  "schemars",
  "serde",
  "serde_json",
@@ -278,9 +278,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema-derive"
-version = "1.1.8"
+version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d76474b07959925e79f69c04b17bcfd07201aaa41dbdc6a805f63aa5d81f2a2a"
+checksum = "a06c8f516a13ae481016aa35f0b5c4652459e8aee65b15b6fb51547a07cea5a0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -289,8 +289,8 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema-derive"
-version = "1.1.8"
-source = "git+https://github.com/CosmWasm/cosmwasm#43cbe248a52ad2b8a49f2145fce4727e6e1f64b1"
+version = "1.1.9"
+source = "git+https://github.com/CosmWasm/cosmwasm#0b3db002e048dec4cb992479c2f34308a5f01b21"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -699,9 +699,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.137"
+version = "0.2.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
+checksum = "db6d7e329c562c5dfab7a46a2afabc8b987ab9a4834c9d1ca04dc54c1546cef8"
 
 [[package]]
 name = "memchr"
@@ -722,7 +722,7 @@ dependencies = [
 name = "mock_shade_pair"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-schema 1.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "secret-cosmwasm-std 1.0.0 (git+https://github.com/scrtlabs/cosmwasm?branch=secret)",
  "shade-oracles",
 ]
@@ -731,7 +731,7 @@ dependencies = [
 name = "mock_sienna_pair"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-schema 1.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "secret-cosmwasm-std 1.0.0 (git+https://github.com/scrtlabs/cosmwasm?branch=secret)",
  "shade-oracles",
 ]
@@ -739,7 +739,7 @@ dependencies = [
 [[package]]
 name = "multi-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d2871bc8ba6cf926d332ef98a50b8b864a7f133"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#ae1a8faf33da7cec9488b92f9b9862892427e419"
 
 [[package]]
 name = "nanoid"
@@ -873,7 +873,7 @@ version = "0.1.0"
 source = "git+https://github.com/securesecrets/query-authentication?branch=cosmwasm_v1_upgrade#de7a1ead8f2ec8b13a25b1826e5bc541add8d471"
 dependencies = [
  "bech32 0.8.1",
- "cosmwasm-schema 1.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-schema 1.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "remain",
  "ripemd160",
  "schemars",
@@ -1114,7 +1114,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0cf71b9340ef6a67d0e2078a1ca5cda31816aa5028f90ee79864ac231a1fcb6"
 dependencies = [
  "base64 0.13.1",
- "cosmwasm-derive 1.1.8",
+ "cosmwasm-derive 1.1.9",
  "forward_ref",
  "schemars",
  "secret-cosmwasm-crypto 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1318,9 +1318,9 @@ checksum = "e25dfac463d778e353db5be2449d1cce89bd6fd23c9f1ea21310ce6e5a1b29c4"
 
 [[package]]
 name = "serde"
-version = "1.0.148"
+version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e53f64bb4ba0191d6d0676e1b141ca55047d83b74f5607e6d8eb88126c52c2dc"
+checksum = "e326c9ec8042f1b5da33252c8a37e9ffbd2c9bef0155215b6e6c80c790e05f91"
 dependencies = [
  "serde_derive",
 ]
@@ -1336,9 +1336,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.148"
+version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a55492425aa53521babf6137309e7d34c20bbfbbfcfe2c7f3a047fd1f6b92c0c"
+checksum = "42a3df25b0713732468deadad63ab9da1f1fd75a48a15024b50363f128db627e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1394,7 +1394,7 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d2871bc8ba6cf926d332ef98a50b8b864a7f133"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#ae1a8faf33da7cec9488b92f9b9862892427e419"
 dependencies = [
  "admin",
  "multi-derive",
@@ -1408,7 +1408,7 @@ version = "0.1.0"
 dependencies = [
  "better-secret-math",
  "btr-macros 0.1.0 (git+https://github.com/securesecrets/better-secret-math)",
- "cosmwasm-schema 1.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-schema 1.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive-from-ext",
  "paste",
  "rstest",
@@ -1445,13 +1445,13 @@ dependencies = [
 [[package]]
 name = "shade-protocol"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d2871bc8ba6cf926d332ef98a50b8b864a7f133"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#ae1a8faf33da7cec9488b92f9b9862892427e419"
 dependencies = [
  "anyhow",
  "base64 0.12.3",
  "chrono",
  "contract-derive",
- "cosmwasm-schema 1.1.8 (git+https://github.com/CosmWasm/cosmwasm)",
+ "cosmwasm-schema 1.1.9 (git+https://github.com/CosmWasm/cosmwasm)",
  "query-authentication",
  "rand_chacha 0.2.2",
  "rand_core 0.5.1",
@@ -1537,7 +1537,7 @@ dependencies = [
 [[package]]
 name = "snip20"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#1d2871bc8ba6cf926d332ef98a50b8b864a7f133"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#ae1a8faf33da7cec9488b92f9b9862892427e419"
 dependencies = [
  "secret-cosmwasm-std 1.0.0 (git+https://github.com/scrtlabs/cosmwasm?branch=secret)",
  "shade-protocol",
@@ -1603,9 +1603,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.104"
+version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ae548ec36cf198c0ef7710d3c230987c2d6d7bd98ad6edc0274462724c585ce"
+checksum = "60b9b43d45702de4c839cb9b51d9f529c5dd26a4aff255b42b1ebc03e88ee908"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1665,9 +1665,9 @@ dependencies = [
 
 [[package]]
 name = "typenum"
-version = "1.15.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
+checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
 
 [[package]]
 name = "uint"
