@@ -31,9 +31,9 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> OracleRouterResult<Response> {
     let config = Config {
-        admin_auth: msg.admin_auth,
+        admin_auth: msg.admin_auth.into_valid(deps.api)?,
         this: Contract::new(&env.contract.address, &env.contract.code_hash),
-        band: msg.band,
+        band: msg.band.into_valid(deps.api)?,
         quote_symbol: msg.quote_symbol,
     };
     OracleRouter::init_status(deps.storage)?;
