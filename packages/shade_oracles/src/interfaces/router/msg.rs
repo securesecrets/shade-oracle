@@ -5,14 +5,14 @@ use crate::{
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint256;
-use shade_protocol::Contract;
+use shade_protocol::{utils::asset::RawContract, Contract};
 
 impl_msg_callbacks!();
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub admin_auth: Contract,
-    pub band: Contract,
+    pub admin_auth: RawContract,
+    pub band: RawContract,
     pub quote_symbol: String,
 }
 

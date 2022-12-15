@@ -93,19 +93,33 @@ impl OracleRouterHelper {
             &[],
         )
     }
-    pub fn add_oracle(&self, sender: &Addr, app: &mut App, oracle: Contract, key: String) {
+    pub fn add_oracle(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        oracle: Contract,
+        key: String,
+    ) -> AnyResult<AppResponse> {
         self.update_registry(sender, app, RegistryOperation::Add { oracle, key })
-            .unwrap();
     }
 
-    pub fn remove_oracle(&self, sender: &Addr, app: &mut App, key: String) {
+    pub fn remove_oracle(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        key: String,
+    ) -> AnyResult<AppResponse> {
         self.update_registry(sender, app, RegistryOperation::Remove { key })
-            .unwrap();
     }
 
-    pub fn replace_oracle(&self, sender: &Addr, app: &mut App, oracle: Contract, key: String) {
+    pub fn replace_oracle(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        oracle: Contract,
+        key: String,
+    ) -> AnyResult<AppResponse> {
         self.update_registry(sender, app, RegistryOperation::Replace { oracle, key })
-            .unwrap();
     }
     pub fn protect_key(
         &self,
@@ -150,6 +164,19 @@ impl OracleRouterHelper {
         key: String,
     ) -> AnyResult<AppResponse> {
         self.update_registry(sender, app, RegistryOperation::RemoveProtection { key })
+    }
+    pub fn update_protected_keys(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        prices: Vec<(String, Uint256)>,
+    ) -> AnyResult<AppResponse> {
+        router::msg::ExecuteMsg::UpdateProtectedKeys { prices }.test_exec(
+            &self.0,
+            app,
+            sender.clone(),
+            &[],
+        )
     }
     pub fn query_price(&self, app: &App, key: String) -> StdResult<PriceResponse> {
         QueryMsg::GetPrice { key }.test_query(&self.0, app)
@@ -252,15 +279,20 @@ impl OracleCore {
     }
 
     pub fn add_oracle(&self, app: &mut App, oracle: Contract, key: String) {
-        self.router.add_oracle(&self.superadmin, app, oracle, key);
+        self.router
+            .add_oracle(&self.superadmin, app, oracle, key)
+            .unwrap();
     }
 
     pub fn remove_oracle(&self, app: &mut App, key: String) {
-        self.router.remove_oracle(&self.superadmin, app, key);
+        self.router
+            .remove_oracle(&self.superadmin, app, key)
+            .unwrap();
     }
 
     pub fn replace_oracle(&self, app: &mut App, oracle: Contract, key: String) {
         self.router
-            .replace_oracle(&self.superadmin, app, oracle, key);
+            .replace_oracle(&self.superadmin, app, oracle, key)
+            .unwrap();
     }
 }
