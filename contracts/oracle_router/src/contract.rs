@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
+    Response, StdResult,
 };
 use shade_oracles::{
     common::{
@@ -30,15 +31,43 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> OracleRouterResult<Response> {
     let config = Config {
-        admin_auth: msg.admin_auth,
+        admin_auth: msg.admin_auth.into_valid(deps.api)?,
         this: Contract::new(&env.contract.address, &env.contract.code_hash),
-        band: msg.band,
+        band: msg.band.into_valid(deps.api)?,
         quote_symbol: msg.quote_symbol,
     };
     OracleRouter::init_status(deps.storage)?;
     KEYS.save(deps.storage, &vec![])?;
     config.save(deps.storage)?;
     Ok(Response::default().add_attributes(vec![attr_action!("instantiate")]))
+}
+
+fn require_admin(
+    router: &OracleRouter,
+    querier: &QuerierWrapper,
+    sender: &Addr,
+) -> OracleRouterResult<()> {
+    validate_admin(
+        querier,
+        AdminPermissions::OraclesAdmin,
+        sender,
+        &router.config.admin_auth,
+    )?;
+    Ok(())
+}
+
+fn require_bot(
+    router: &OracleRouter,
+    querier: &QuerierWrapper,
+    sender: &Addr,
+) -> OracleRouterResult<()> {
+    validate_admin(
+        querier,
+        AdminPermissions::OraclesPriceBot,
+        sender,
+        &router.config.admin_auth,
+    )?;
+    Ok(())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -49,16 +78,10 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> OracleRouterResult<Response> {
     let router = OracleRouter::load(deps.storage)?;
-    // Ensure sender is admin
-    validate_admin(
-        &deps.querier,
-        AdminPermissions::OraclesAdmin,
-        &info.sender,
-        &router.config.admin_auth,
-    )?;
 
     let result = match msg {
         ExecuteMsg::SetStatus { status } => {
+            require_admin(&router, &deps.querier, &info.sender)?;
             OracleRouter::update_status(deps.storage, status)?;
             Ok(Response::default().add_attributes(vec![attr_action!("set_status")]))
         }
@@ -66,18 +89,28 @@ pub fn execute(
             OracleRouter::require_can_run(deps.storage, true, true, false)?;
             match msg {
                 ExecuteMsg::UpdateConfig { config } => {
+                    require_admin(&router, &deps.querier, &info.sender)?;
                     router.update_config(config).config.save(deps.storage)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_config")]))
                 }
                 ExecuteMsg::UpdateRegistry { operation } => {
+                    require_admin(&router, &deps.querier, &info.sender)?;
                     OracleRouter::resolve_registry_operation(deps.storage, operation)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_registry")]))
                 }
                 ExecuteMsg::BatchUpdateRegistry { operations } => {
+                    require_admin(&router, &deps.querier, &info.sender)?;
                     for operation in operations {
                         OracleRouter::resolve_registry_operation(deps.storage, operation)?;
                     }
                     Ok(Response::new().add_attributes(vec![attr_action!("batch_update_registry")]))
+                }
+                ExecuteMsg::UpdateProtectedKeys { prices } => {
+                    require_bot(&router, &deps.querier, &info.sender)?;
+                    for (key, price) in prices {
+                        OracleRouter::update_protected_key(deps.storage, &key, price)?;
+                    }
+                    Ok(Response::new().add_attributes(vec![attr_action!("update_protected_keys")]))
                 }
                 ExecuteMsg::SetStatus { .. } => panic!("Code should never get here."),
             }
@@ -94,6 +127,7 @@ pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> StdResult<Bin
     } else {
         query_oracle_price(&oracle, &deps.querier, &key)
     }?;
+    OracleRouter::try_deviation_test(deps.storage, &price)?;
     to_binary(&PriceResponse { price })
 }
 
@@ -119,6 +153,7 @@ pub fn get_prices(deps: Deps, router: OracleRouter, keys: Vec<String>) -> StdRes
 
     // For every fetched price, find its position in the original request and replace the placeholder data with the actual data for that symbol.
     for queried_price in unordered_prices {
+        OracleRouter::try_deviation_test(deps.storage, &queried_price)?;
         let position = prices
             .iter()
             .position(|price| price.key.eq(queried_price.key()));
