@@ -22,5 +22,4 @@ shade-oracles = { path = "../../packages/shade_oracles", features = ["market-lp"
 
 [dev-dependencies]
 shade-oracles-multi-test = { path = "../../packages/multi_test", features = [  "multi-test", "market", "snip20" ] }
-snip20-reference-impl = { git = "https://github.com/scrtlabs/snip20-reference-impl.git", branch = "master" }
 mock_sienna_pair = { path = "../mock_sienna_pair" }
