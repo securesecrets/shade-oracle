@@ -1,6 +1,7 @@
 use crate::{
-    common::{status::ContractStatus, PriceResponse, PricesResponse},
+    common::status::ContractStatus,
     impl_msg_callbacks,
+    interfaces::{PriceResponse, PricesResponse},
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal256, Uint128, Uint64};

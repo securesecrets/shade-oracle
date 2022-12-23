@@ -29,6 +29,8 @@ index = ["core"]
 router = ["core"]
 shd-staking-derivative = ["core"]
 siennaswap = ["lp"]
+shadeswap = []
+# remove tags below
 market-lp = ["lp"]
 lp = ["core"]
 
@@ -46,6 +48,7 @@ thiserror = "1.0"
 
 paste = "1.0"
 derive-from-ext = "0.2"
+ts-rs = "6.2"
 
 btr-macros = { git = "https://github.com/securesecrets/better-secret-math" }
 better-secret-math = { git = "https://github.com/securesecrets/better-secret-math", rev = "a3855a3" }

@@ -1,8 +1,8 @@
 use std::error::Error;
 
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{StdError, StdResult, Storage};
 use secret_storage_plus::{Item, ItemStorage};
-
-use super::*;
 
 #[cw_serde]
 /// Normal - all operations allowed except migrations
@@ -106,7 +106,7 @@ impl ItemStorage for ContractStatus {
 #[macro_export(local_inner_macros)]
 macro_rules! impl_global_status {
     ($struct:ident, $err:ident) => {
-        impl $crate::common::GlobalStatus<$err> for $struct {
+        impl $crate::common::status::GlobalStatus<$err> for $struct {
             fn normal_err() -> $err {
                 $err::Normal
             }

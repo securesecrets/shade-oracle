@@ -1,13 +1,12 @@
 use std::cmp::max;
 
-use self::querier::verify_admin;
 use crate::BLOCK_SIZE;
 use better_secret_math::core::{exp10, muldiv};
 use better_secret_math::U256;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     to_binary, Api, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, QueryResponse, Response,
-    StdError, StdResult, Storage, Timestamp, Uint128,
+    StdError, StdResult, Storage, Timestamp,
 };
 use shade_protocol::utils::asset::{Contract, RawContract};
 use shade_protocol::{
@@ -15,24 +14,10 @@ use shade_protocol::{
     utils::{pad_handle_result, pad_query_result, ExecuteCallback, Query},
 };
 
-pub mod status;
-pub use status::GlobalStatus;
 pub mod config;
-pub mod querier;
 
 mod error;
 use super::band::{BtrReferenceData, ReferenceData};
-
-/// Can handle amounts that have more than 18 decimal places.
-/// Normalizes to 18 decimal places.
-pub fn normalize_price_uint128(amount: Uint128, decimals: u8) -> StdResult<Uint128> {
-    if decimals == 18 {
-        Ok(amount)
-    } else {
-        let amount: U256 = amount.into();
-        Ok(muldiv(amount, exp10(18), exp10(decimals))?.into())
-    }
-}
 
 /// Default Query API for all oracles.
 ///
@@ -277,7 +262,10 @@ mod state {
     use shade_protocol::admin::helpers::AdminPermissions;
 
     use super::*;
-    use crate::ssp::{Item, ItemStorage};
+    use crate::{
+        querier::verify_admin,
+        ssp::{Item, ItemStorage},
+    };
 
     impl ItemStorage for CommonConfig {
         const ITEM: Item<'static, Self> = Item::new("commonconfig");

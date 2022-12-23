@@ -1,26 +1,21 @@
-use super::*;
 use crate::{
     interfaces::band::{reference_data, reference_data_bulk},
-    interfaces::router::msg::{
-        ConfigResponse as RouterConfigResponse, OracleResponse, QueryMsg as RouterQueryMsg,
+    interfaces::{
+        band::ReferenceData,
+        router::msg::{ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg},
+        OraclePrice, OracleQuery, PriceResponse, PricesResponse,
     },
 };
-use cosmwasm_std::{QuerierWrapper, StdResult};
+use cosmwasm_std::{QuerierWrapper, StdError, StdResult, Uint128};
 use shade_protocol::{
-    admin::PermissionsResponse,
     contract_interfaces::{
-        admin::{
-            helpers::{validate_admin, AdminPermissions},
-            QueryMsg as AdminQueryMsg,
-        },
+        admin::helpers::{validate_admin, AdminPermissions},
         snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},
     },
     snip20::helpers::{token_info, TokenInfo},
+    utils::Query,
     Contract,
 };
-use std::collections::HashMap;
-
-use super::OraclePrice;
 
 pub fn query_price(
     oracle: &Contract,
@@ -36,7 +31,10 @@ pub fn query_prices(
     querier: &QuerierWrapper,
     keys: &Vec<String>,
 ) -> StdResult<Vec<OraclePrice>> {
-    let resp: PricesResponse = OracleQuery::GetPrices { keys: keys.to_vec() }.query(querier, oracle)?;
+    let resp: PricesResponse = OracleQuery::GetPrices {
+        keys: keys.to_vec(),
+    }
+    .query(querier, oracle)?;
     Ok(resp.prices)
 }
 

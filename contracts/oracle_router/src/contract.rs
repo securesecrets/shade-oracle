@@ -3,10 +3,6 @@ use cosmwasm_std::{
     Response, StdResult,
 };
 use shade_oracles::{
-    common::{
-        querier::{query_price as query_oracle_price, query_prices as query_oracle_prices},
-        GlobalStatus, OraclePrice, PriceResponse, PricesResponse,
-    },
     core::{
         admin::helpers::{validate_admin, AdminPermissions},
         pad_handle_result, pad_query_result,
@@ -17,7 +13,10 @@ use shade_oracles::{
     interfaces::{
         band::{reference_data, reference_data_bulk, ReferenceData},
         router::{error::*, msg::*, registry::*},
+        OraclePrice, PriceResponse, PricesResponse,
     },
+    querier::{query_price, query_prices},
+    status::GlobalStatus,
     BLOCK_SIZE,
 };
 
@@ -90,18 +89,25 @@ pub fn execute(
             match msg {
                 ExecuteMsg::UpdateConfig { config } => {
                     require_admin(&router, &deps.querier, &info.sender)?;
-                    router.update_config(config).config.save(deps.storage)?;
+                    router
+                        .update_config(deps.api, config)?
+                        .config
+                        .save(deps.storage)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_config")]))
                 }
                 ExecuteMsg::UpdateRegistry { operation } => {
                     require_admin(&router, &deps.querier, &info.sender)?;
-                    OracleRouter::resolve_registry_operation(deps.storage, operation)?;
+                    OracleRouter::resolve_registry_operation(deps.api, deps.storage, operation)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_registry")]))
                 }
                 ExecuteMsg::BatchUpdateRegistry { operations } => {
                     require_admin(&router, &deps.querier, &info.sender)?;
                     for operation in operations {
-                        OracleRouter::resolve_registry_operation(deps.storage, operation)?;
+                        OracleRouter::resolve_registry_operation(
+                            deps.api,
+                            deps.storage,
+                            operation,
+                        )?;
                     }
                     Ok(Response::new().add_attributes(vec![attr_action!("batch_update_registry")]))
                 }
@@ -125,7 +131,7 @@ pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> StdResult<Bin
     let price = if oracle.eq(&router.config.this) {
         query_band_price(deps, &router, key)
     } else {
-        query_oracle_price(&oracle, &deps.querier, &key)
+        query_price(&oracle, &deps.querier, &key)
     }?;
     OracleRouter::try_deviation_test(deps.storage, &price)?;
     to_binary(&PriceResponse { price })
@@ -146,7 +152,7 @@ pub fn get_prices(deps: Deps, router: OracleRouter, keys: Vec<String>) -> StdRes
         let mut queried_prices = if oracle.eq(&router.config.this) {
             query_band_prices(deps, &router, symbols)
         } else {
-            query_oracle_prices(&oracle, &deps.querier, &symbols)
+            query_prices(&oracle, &deps.querier, &symbols)
         }?;
         unordered_prices.append(&mut queried_prices);
     }
