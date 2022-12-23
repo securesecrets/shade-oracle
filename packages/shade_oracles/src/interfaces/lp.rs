@@ -1,4 +1,4 @@
-use crate::common::CommonConfig;
+use crate::interfaces::common::CommonConfig;
 #[cfg(feature = "core")]
 use crate::ssp::{Item, ItemStorage};
 use crate::BLOCK_SIZE;
@@ -9,7 +9,7 @@ use shade_protocol::{utils::InstantiateCallback, Contract};
 pub mod market {
     use shade_protocol::{snip20::helpers::TokenInfo, utils::asset::RawContract};
 
-    use crate::common::InstantiateCommonConfig;
+    use crate::interfaces::common::InstantiateCommonConfig;
 
     use super::*;
 
@@ -60,7 +60,7 @@ pub mod siennaswap {
     use shade_protocol::utils::asset::RawContract;
 
     use crate::{
-        common::{CommonConfig, InstantiateCommonConfig},
+        interfaces::common::{CommonConfig, InstantiateCommonConfig},
         protocols::siennaswap::{SiennaDexTokenType, SiennaSwapPairInfo},
     };
 
@@ -147,7 +147,7 @@ pub mod shadeswap {}
 #[cfg(feature = "lp")]
 pub mod math {
     use super::*;
-    use crate::{common::normalize_price_uint128, core::sqrt};
+    use crate::{common::math::TokenMath, core::sqrt};
     pub struct FairLpPriceInfo {
         pub reserve: u128,
         pub price: u128,
@@ -161,14 +161,10 @@ pub mod math {
         total_supply: u128,
         lp_token_decimals: u8,
     ) -> StdResult<Uint128> {
-        let normalized_reserve1 = Uint256::from_uint128(normalize_price_uint128(
-            Uint128::from(a.reserve),
-            a.decimals,
-        )?);
-        let normalized_reserve2 = Uint256::from(normalize_price_uint128(
-            Uint128::from(b.reserve),
-            b.decimals,
-        )?);
+        let normalized_reserve1: Uint256 =
+            TokenMath::normalize_value(a.reserve, a.decimals)?.into();
+        let normalized_reserve2: Uint256 =
+            TokenMath::normalize_value(b.reserve, b.decimals)?.into();
         let normalized_supply =
             Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
         let safe_price_a = Uint256::from(a.price);
@@ -188,14 +184,10 @@ pub mod math {
         total_supply: u128,
         lp_token_decimals: u8,
     ) -> StdResult<Uint128> {
-        let normalized_reserve1 = Uint256::from(normalize_price_uint128(
-            Uint128::from(a.reserve),
-            a.decimals,
-        )?);
-        let normalized_reserve2 = Uint256::from(normalize_price_uint128(
-            Uint128::from(b.reserve),
-            b.decimals,
-        )?);
+        let normalized_reserve1: Uint256 =
+            TokenMath::normalize_value(a.reserve, a.decimals)?.into();
+        let normalized_reserve2: Uint256 =
+            TokenMath::normalize_value(b.reserve, b.decimals)?.into();
         let normalized_supply =
             Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
         let r = sqrt(normalized_reserve1.checked_mul(normalized_reserve2)?)?;

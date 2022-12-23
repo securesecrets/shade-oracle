@@ -5,7 +5,6 @@ use shade_oracles::common::{
 };
 use shade_oracles::core::snip20::helpers::TokenInfo;
 use shade_oracles::core::Query;
-use shade_oracles::ssp::ItemStorage;
 use shade_oracles::{
     common::{
         querier::{query_band_price, query_price, query_token_info},
@@ -13,10 +12,8 @@ use shade_oracles::{
     },
     core::Contract,
     interfaces::band::ReferenceData,
-    interfaces::lp::market::{InstantiateMsg, MarketData, BASE_INFO, PRIMARY_INFO, PRIMARY_TOKEN},
-    protocols::shadeswap::{
-        EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenAmount, TokenType,
-    },
+    interfaces::dex::shadeswap::market::*,
+    protocols::shadeswap::*,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -126,14 +123,16 @@ impl Oracle for ShadeswapMarketOracle {
         let primary_info = PRIMARY_INFO.load(deps.storage)?;
 
         // Simulate trade 1 primary -> 1 base
-        let sim: EstimatedPriceResponse = ShadeSwapQueryMsg::GetEstimatedPrice {
+        let sim: EstimatedPriceResponse = ShadeSwapQueryMsg::SwapSimulation {
             offer: TokenAmount {
                 amount: Uint128::from(10u128.pow(primary_info.decimals.into())),
                 token: TokenType::CustomToken {
                     contract_addr: primary_token.address,
                     token_code_hash: primary_token.code_hash,
+                    oracle_key: 
                 },
             },
+            exclude_fee: Some(true),
         }
         .query(&deps.querier, &market_config.pair)?;
 

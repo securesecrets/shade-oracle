@@ -3,8 +3,9 @@ use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::{
     core::{Contract, ExecuteCallback, InstantiateCallback},
-    protocols::shadeswap::{
-        EstimatedPriceResponse, PairInfoResponse, ShadeSwapQueryMsg, TokenPair, TokenType,
+    interfaces::dex::shadeswap::{
+        Fee, FeeInfo, PairInfoResponse, ShadeSwapQueryMsg, SwapResult, SwapSimulationResponse,
+        TokenPair, TokenType,
     },
     ssp::Item,
 };
@@ -69,24 +70,34 @@ pub fn execute(
                         address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
                     },
-                    factory: Contract {
+                    factory: Some(Contract {
                         address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
-                    },
+                    }),
                     pair: TokenPair(
                         TokenType::CustomToken {
                             contract_addr: token_a.address,
                             token_code_hash: token_a.code_hash,
+                            oracle_key: None,
                         },
                         TokenType::CustomToken {
                             contract_addr: token_b.address,
                             token_code_hash: token_b.code_hash,
+                            oracle_key: None,
                         },
+                        false,
                     ),
                     amount_0: amount_a,
                     amount_1: amount_b,
                     total_liquidity: Uint128::zero(),
-                    contract_version: 0,
+                    contract_version: 1,
+                    fee_info: FeeInfo {
+                        shade_dao_address: Addr::unchecked("".to_string()),
+                        lp_fee: Fee::default(),
+                        shade_dao_fee: Fee::default(),
+                        stable_lp_fee: Fee::default(),
+                        stable_shade_dao_fee: Fee::default(),
+                    },
                 },
             )?;
 
@@ -100,14 +111,15 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: ShadeSwapQueryMsg) -> StdResult<Binary> {
     match msg {
-        ShadeSwapQueryMsg::GetPairInfo => to_binary(&PAIR_INFO.load(deps.storage)?),
-        ShadeSwapQueryMsg::GetEstimatedPrice { offer } => {
+        ShadeSwapQueryMsg::GetPairInfo {} => to_binary(&PAIR_INFO.load(deps.storage)?),
+        ShadeSwapQueryMsg::SwapSimulation { offer, exclude_fee } => {
             //TODO: check swap doesnt exceed pool size
 
             let in_token = match offer.token {
                 TokenType::CustomToken {
                     contract_addr,
                     token_code_hash,
+                    oracle_key,
                 } => Contract {
                     address: contract_addr,
                     code_hash: token_code_hash,
@@ -123,14 +135,21 @@ pub fn query(deps: Deps, _env: Env, msg: ShadeSwapQueryMsg) -> StdResult<Binary>
                 TokenType::CustomToken {
                     contract_addr,
                     token_code_hash: _,
+                    oracle_key: None,
                 } => {
                     if in_token.address == contract_addr {
-                        return to_binary(&EstimatedPriceResponse {
-                            estimated_price: pool_take_amount(
-                                offer.amount,
-                                pair_info.amount_0,
-                                pair_info.amount_1,
-                            ),
+                        return to_binary(&SwapSimulationResponse {
+                            price: String::default(),
+                            total_fee_amount: Uint128::default(),
+                            lp_fee_amount: Uint128::default(),
+                            shade_dao_fee_amount: Uint128::default(),
+                            result: SwapResult {
+                                return_amount: pool_take_amount(
+                                    offer.amount,
+                                    pair_info.amount_0,
+                                    pair_info.amount_1,
+                                ),
+                            },
                         });
                     }
                 }
@@ -143,14 +162,21 @@ pub fn query(deps: Deps, _env: Env, msg: ShadeSwapQueryMsg) -> StdResult<Binary>
                 TokenType::CustomToken {
                     contract_addr,
                     token_code_hash: _,
+                    oracle_key: None,
                 } => {
                     if in_token.address == contract_addr {
-                        return to_binary(&EstimatedPriceResponse {
-                            estimated_price: pool_take_amount(
-                                offer.amount,
-                                pair_info.amount_1,
-                                pair_info.amount_0,
-                            ),
+                        return to_binary(&SwapSimulationResponse {
+                            price: String::default(),
+                            total_fee_amount: Uint128::default(),
+                            lp_fee_amount: Uint128::default(),
+                            shade_dao_fee_amount: Uint128::default(),
+                            result: SwapResult {
+                                return_amount: pool_take_amount(
+                                    offer.amount,
+                                    pair_info.amount_1,
+                                    pair_info.amount_0,
+                                ),
+                            },
                         });
                     }
                 }

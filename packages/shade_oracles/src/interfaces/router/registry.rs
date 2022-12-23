@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal256, Uint256};
-use shade_protocol::Contract;
+use shade_protocol::{utils::asset::RawContract, Contract};
 
 #[cw_serde]
 pub struct Config {
@@ -12,36 +12,25 @@ pub struct Config {
 
 #[cw_serde]
 pub enum RegistryOperation {
-    Remove {
-        key: String,
+    RemoveKeys {
+        keys: Vec<String>,
     },
-    Replace {
-        oracle: Contract,
-        key: String,
+    SetKeys {
+        oracle: RawContract,
+        keys: Vec<String>,
     },
-    Add {
-        oracle: Contract,
-        key: String,
-    },
-    Protect {
-        key: String,
-        deviation: Decimal256,
-        initial_price: Uint256,
-    },
-    UpdateProtection {
-        key: String,
-        deviation: Option<Decimal256>,
-        price: Option<Uint256>,
+    SetProtection {
+        infos: Vec<ProtectedKeyInfo>,
     },
     RemoveProtection {
-        key: String,
+        keys: Vec<String>,
     },
 }
 
 #[cw_serde]
 pub struct UpdateConfig {
-    pub admin_auth: Option<Contract>,
-    pub band: Option<Contract>,
+    pub admin_auth: Option<RawContract>,
+    pub band: Option<RawContract>,
     pub quote_symbol: Option<String>,
 }
 
@@ -52,6 +41,7 @@ pub struct OracleRouter {
 
 #[cw_serde]
 pub struct ProtectedKeyInfo {
+    pub key: String,
     pub deviation: Decimal256,
     pub price: Uint256,
 }
@@ -65,17 +55,13 @@ mod state {
     use std::collections::HashMap;
 
     use crate::{
-        common::OraclePrice,
         impl_global_status,
-        interfaces::router::{
-            error::{OracleRouterError, OracleRouterResult},
-            msg::KeysResponse,
-        },
+        interfaces::router::{error::OracleRouterError, msg::KeysResponse},
+        interfaces::OraclePrice,
     };
 
     use super::*;
-    use cosmwasm_std::{to_binary, Binary, Deps, StdError, StdResult, Storage};
-    use schemars::_serde_json::de;
+    use cosmwasm_std::{to_binary, Api, Binary, Deps, StdError, StdResult, Storage};
     use secret_storage_plus::{GenericMapStorage, Item, ItemStorage, Map};
 
     impl_global_status!(OracleRouter, OracleRouterError);
@@ -157,82 +143,39 @@ mod state {
         }
 
         pub fn resolve_registry_operation(
+            api: &dyn Api,
             storage: &mut dyn Storage,
             operation: RegistryOperation,
         ) -> StdResult<()> {
             match operation {
-                RegistryOperation::Remove { key } => {
-                    Oracle::MAP.remove(storage, &key);
-                    KEYS.update(storage, |mut keys| -> StdResult<_> {
-                        keys.retain(|k| key.ne(k));
-                        Ok(keys)
-                    })?;
+                RegistryOperation::RemoveKeys { keys } => {
+                    let mut current_keys = KEYS.load(storage)?;
+                    for key in &keys {
+                        Oracle::MAP.remove(storage, key);
+                    }
+                    current_keys.retain(|k| !keys.contains(k));
+                    KEYS.save(storage, &current_keys)?;
                 }
-                RegistryOperation::Replace { oracle, key } => {
-                    Oracle::MAP.update(storage, &key, |old_oracle| -> StdResult<_> {
-                        match old_oracle {
-                            Some(_) => Ok(oracle),
-                            None => Err(StdError::generic_err(format!(
-                                "Cannot replace oracle at key {} if there wasn't one already there.",
-                                key
-                            ))),
+                RegistryOperation::SetKeys { oracle, keys } => {
+                    let oracle = oracle.into_valid(api)?;
+                    let mut current_keys = KEYS.load(storage)?;
+                    for key in keys {
+                        Oracle::MAP.save(storage, &key, &oracle)?;
+                        if !current_keys.contains(&key) {
+                            current_keys.push(key);
                         }
-                    })?;
-                    KEYS.update(storage, |mut keys| -> StdResult<_> {
-                        let position = keys.iter().position(|k| key.eq(k));
-                        if let Some(index) = position {
-                            keys.swap_remove(index);
-                            keys.push(key);
-                        }
-                        Ok(keys)
-                    })?;
+                    }
+                    KEYS.save(storage, &current_keys)?;
                 }
-                RegistryOperation::Add { oracle, key } => {
-                    Oracle::MAP.update(storage, &key, |old_oracle| -> StdResult<_> {
-                        match old_oracle {
-                            Some(_) => Err(StdError::generic_err(format!(
-                                "An oracle already exists at the key - {}.",
-                                key
-                            ))),
-                            None => Ok(oracle),
-                        }
-                    })?;
-                    KEYS.update(storage, |mut keys| -> StdResult<_> {
-                        keys.push(key);
-                        Ok(keys)
-                    })?;
+                RegistryOperation::SetProtection { infos } => {
+                    for info in infos {
+                        Self::PROTECTED_KEYS.save(storage, &info.key, &info)?;
+                    }
                 }
-                RegistryOperation::Protect {
-                    key,
-                    deviation,
-                    initial_price,
-                } => Self::PROTECTED_KEYS.save(
-                    storage,
-                    &key,
-                    &ProtectedKeyInfo {
-                        deviation,
-                        price: initial_price,
-                    },
-                )?,
-                RegistryOperation::UpdateProtection {
-                    key,
-                    deviation,
-                    price,
-                } => {
-                    Self::PROTECTED_KEYS.update(storage, &key, |info| match info {
-                        None => Err(StdError::generic_err(format!(
-                            "Cannot update protection for key {} that hasn't been protected yet.",
-                            key
-                        ))),
-                        Some(mut info) => {
-                            info.deviation = deviation.unwrap_or(info.deviation);
-                            info.price = price.unwrap_or(info.price);
-                            Ok(info)
-                        }
-                    })?;
-                }
-                RegistryOperation::RemoveProtection { key } => {
-                    Self::PROTECTED_KEYS.remove(storage, &key)
+                RegistryOperation::RemoveProtection { keys } => {
+                    for key in keys {
+                        Self::PROTECTED_KEYS.remove(storage, &key);
+                    }
                 }
             }
             Ok(())
@@ -265,13 +208,17 @@ mod state {
             Ok(map)
         }
 
-        pub fn update_config(mut self, config: UpdateConfig) -> Self {
+        pub fn update_config(mut self, api: &dyn Api, config: UpdateConfig) -> StdResult<Self> {
             let mut new_config = self.config;
-            new_config.admin_auth = config.admin_auth.unwrap_or(new_config.admin_auth);
-            new_config.band = config.band.unwrap_or(new_config.band);
+            if let Some(admin_auth) = config.admin_auth {
+                new_config.admin_auth = admin_auth.into_valid(api)?;
+            }
+            if let Some(band) = config.band {
+                new_config.band = band.into_valid(api)?;
+            }
             new_config.quote_symbol = config.quote_symbol.unwrap_or(new_config.quote_symbol);
             self.config = new_config;
-            self
+            Ok(self)
         }
     }
 }

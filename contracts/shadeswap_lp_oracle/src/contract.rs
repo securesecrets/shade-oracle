@@ -3,12 +3,13 @@ use cosmwasm_std::{
     to_binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, QueryResponse, Response, StdResult,
     WasmQuery,
 };
+use shade_oracles::common::{oracle_exec, CommonConfig, Oracle};
 use shade_oracles::core::Query;
 use shade_oracles::{
     common::querier::{query_prices, query_token_info},
+    common::{ExecuteMsg, OraclePrice, OracleQuery},
     core::pad_query_result,
     interfaces::band::ReferenceData,
-    interfaces::common::{oracle_exec, CommonConfig, ExecuteMsg, Oracle, OraclePrice, OracleQuery},
     interfaces::lp::{
         math::{get_lp_token_spot_price, FairLpPriceInfo},
         siennaswap::{resolve_pair, ConfigResponse, InstantiateMsg, PairData, EXCHANGE},
@@ -95,7 +96,7 @@ impl Oracle for SiennaswapLpOracle {
         deps: Deps,
         _env: &Env,
         key: String,
-        config: &CommonConfig,
+        config: &shade_oracles::common::CommonConfig,
     ) -> StdResult<OraclePrice> {
         let pair = PairData::load(deps.storage)?;
         let exchange = EXCHANGE.load(deps.storage)?;

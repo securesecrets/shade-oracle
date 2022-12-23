@@ -1,5 +1,6 @@
+pub mod common;
+pub use common::*;
 pub mod interfaces;
-pub use interfaces::common;
 pub const BLOCK_SIZE: usize = 256;
 pub mod protocols;
 

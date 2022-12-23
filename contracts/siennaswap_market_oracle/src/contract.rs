@@ -3,13 +3,13 @@ use cosmwasm_std::{
     Uint128,
 };
 use shade_oracles::{
-    common::{
+    core::Query,
+    core::{snip20::helpers::TokenInfo, Contract},
+    interfaces::common::{
         normalize_price_uint128, oracle_exec, oracle_query,
         querier::{query_band_price, query_price, query_token_info},
         ExecuteMsg, Oracle, OraclePrice, OracleQuery,
     },
-    core::Query,
-    core::{snip20::helpers::TokenInfo, Contract},
     interfaces::{
         band::ReferenceData,
         lp::market::{InstantiateMsg, MarketData, BASE_INFO, PRIMARY_INFO, PRIMARY_TOKEN},

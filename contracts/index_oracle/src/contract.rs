@@ -1,20 +1,17 @@
 use cosmwasm_std::{
-    attr, entry_point, Binary, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint128,
-    Uint64,
+    attr, entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint128, Uint64,
 };
 use cosmwasm_std::{to_binary, Deps, Env, Response};
 use shade_oracles::common::querier::verify_admin;
-use shade_oracles::common::{PriceResponse, PricesResponse};
 use shade_oracles::core::{Contract, RawContract};
 use shade_oracles::create_attr_action;
 use shade_oracles::interfaces::index::{error::*, msg::*, *};
+use shade_oracles::interfaces::{OraclePrice, PriceResponse, PricesResponse};
+use shade_oracles::querier::query_band_prices;
 use shade_oracles::{
     common::status::GlobalStatus,
     core::{admin::helpers::AdminPermissions, pad_handle_result, pad_query_result},
-    interfaces::{
-        band::ReferenceData,
-        common::{querier::query_band_prices, OraclePrice},
-    },
+    interfaces::band::ReferenceData,
     ssp::ItemStorage,
     BLOCK_SIZE,
 };

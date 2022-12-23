@@ -51,9 +51,9 @@ mod state {
 
     use super::{error::*, msg::*, *};
     use crate::{
-        common::OraclePrice,
         impl_global_status,
         interfaces::band::ReferenceData,
+        interfaces::common::OraclePrice,
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{
@@ -360,7 +360,9 @@ mod state {
     #[cfg(feature = "index")]
     mod test {
         use super::{msg::InitialBasketItem, *};
-        use crate::{common::OraclePrice, unit_test_interface::prices::generate_price_feed};
+        use crate::{
+            interfaces::common::OraclePrice, unit_test_interface::prices::generate_price_feed,
+        };
         use better_secret_math::{core::exp10, ud60x18::assert_with_precision};
 
         fn basic_basket() -> Vec<InitialBasketItem> {

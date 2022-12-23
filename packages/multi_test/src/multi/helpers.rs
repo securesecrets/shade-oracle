@@ -98,85 +98,35 @@ impl OracleRouterHelper {
         sender: &Addr,
         app: &mut App,
         oracle: Contract,
-        key: String,
+        keys: Vec<String>,
     ) -> AnyResult<AppResponse> {
-        self.update_registry(sender, app, RegistryOperation::Add { oracle, key })
+        self.update_registry(sender, app, RegistryOperation::SetKeys { oracle, keys })
     }
 
     pub fn remove_oracle(
         &self,
         sender: &Addr,
         app: &mut App,
-        key: String,
+        keys: Vec<String>,
     ) -> AnyResult<AppResponse> {
-        self.update_registry(sender, app, RegistryOperation::Remove { key })
+        self.update_registry(sender, app, RegistryOperation::RemoveKeys { keys })
     }
 
-    pub fn replace_oracle(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        oracle: Contract,
-        key: String,
-    ) -> AnyResult<AppResponse> {
-        self.update_registry(sender, app, RegistryOperation::Replace { oracle, key })
-    }
     pub fn protect_key(
         &self,
         sender: &Addr,
         app: &mut App,
-        key: String,
-        deviation: Decimal256,
-        initial_price: Uint256,
+        infos: Vec<router::registry::ProtectedKeyInfo>,
     ) -> AnyResult<AppResponse> {
-        self.update_registry(
-            sender,
-            app,
-            RegistryOperation::Protect {
-                key,
-                deviation,
-                initial_price,
-            },
-        )
+        self.update_registry(sender, app, RegistryOperation::SetProtection { infos })
     }
     pub fn remove_key_protection(
         &self,
         sender: &Addr,
         app: &mut App,
-        key: String,
-        deviation: Option<Decimal256>,
-        price: Option<Uint256>,
+        keys: Vec<String>,
     ) -> AnyResult<AppResponse> {
-        self.update_registry(
-            sender,
-            app,
-            RegistryOperation::UpdateProtection {
-                key,
-                deviation,
-                price,
-            },
-        )
-    }
-    pub fn update_key_protection(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        key: String,
-    ) -> AnyResult<AppResponse> {
-        self.update_registry(sender, app, RegistryOperation::RemoveProtection { key })
-    }
-    pub fn update_protected_keys(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        prices: Vec<(String, Uint256)>,
-    ) -> AnyResult<AppResponse> {
-        router::msg::ExecuteMsg::UpdateProtectedKeys { prices }.test_exec(
-            &self.0,
-            app,
-            sender.clone(),
-            &[],
-        )
+        self.update_registry(sender, app, RegistryOperation::RemoveProtection { keys })
     }
     pub fn query_price(&self, app: &App, key: String) -> StdResult<PriceResponse> {
         QueryMsg::GetPrice { key }.test_query(&self.0, app)
