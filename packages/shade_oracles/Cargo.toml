@@ -1,6 +1,6 @@
 [package]
 name = "shade-oracles"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
   "sbeem <sbeem@pm.me>",
   "scrtreddev <scrtredev@protonmail.com",
@@ -8,35 +8,21 @@ authors = [
 ]
 edition = "2021"
 
-[[bin]]
-name = "schemas"
-path = "src/schemas.rs"
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-# for quicker tests, cargo test --lib
-scrt = ["core"]
-# for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
-# in order for the build to work )
 core = ["storage"]
 storage = ["shade-protocol/storage_plus"]
-# multi-test = ["secret-multi-test"]
 proxy-band = ["core"]
 index = ["core"]
 router = ["core"]
-shd-staking-derivative = ["core"]
-siennaswap = ["lp"]
-shadeswap = []
-# remove tags below
-market-lp = ["lp"]
-lp = ["core"]
+derivatives = ["core"]
+dex = ["core"]
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-std", branch = "secret" }
-# Core re-exports (no need to re-export cosmwasm-std because that has to be included in contracts for them to build)
 cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-storage", branch = "secret" }
 cosmwasm-schema = "1.1.5"
 schemars = "0.8.1"

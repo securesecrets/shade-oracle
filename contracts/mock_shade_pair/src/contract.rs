@@ -3,9 +3,9 @@ use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult};
 use shade_oracles::{
     core::{Contract, ExecuteCallback, InstantiateCallback},
-    interfaces::dex::shadeswap::{
-        Fee, FeeInfo, PairInfoResponse, ShadeSwapQueryMsg, SwapResult, SwapSimulationResponse,
-        TokenPair, TokenType,
+    protocols::shadeswap::{
+        Fee, FeeInfo, PairInfoResponse, QueryMsg, SwapResult, SwapSimulationResponse, TokenPair,
+        TokenType,
     },
     ssp::Item,
 };
@@ -109,17 +109,20 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: ShadeSwapQueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        ShadeSwapQueryMsg::GetPairInfo {} => to_binary(&PAIR_INFO.load(deps.storage)?),
-        ShadeSwapQueryMsg::SwapSimulation { offer, exclude_fee } => {
+        QueryMsg::GetPairInfo {} => to_binary(&PAIR_INFO.load(deps.storage)?),
+        QueryMsg::SwapSimulation {
+            offer,
+            exclude_fee: _,
+        } => {
             //TODO: check swap doesnt exceed pool size
 
             let in_token = match offer.token {
                 TokenType::CustomToken {
                     contract_addr,
                     token_code_hash,
-                    oracle_key,
+                    oracle_key: _,
                 } => Contract {
                     address: contract_addr,
                     code_hash: token_code_hash,

@@ -1,15 +1,56 @@
-pub mod market;
+use crate::asset::Asset;
 
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Addr;
-use cosmwasm_std::StdError;
-use cosmwasm_std::StdResult;
-use cosmwasm_std::Uint128;
-use shade_protocol::utils::Query;
-use shade_protocol::Contract;
+use super::*;
+pub struct ShadeSwapQuerier;
+
+impl ShadeSwapQuerier {
+    pub fn query_pair_info(
+        querier: &QuerierWrapper,
+        pair: &Contract,
+    ) -> StdResult<PairInfoResponse> {
+        QueryMsg::GetPairInfo {}.query(querier, pair)
+    }
+    pub fn query_swap_simulation(
+        querier: &QuerierWrapper,
+        pair: &Contract,
+        amount: Uint128,
+        token: &Contract,
+    ) -> StdResult<SwapSimulationResponse> {
+        let token = TokenType::CustomToken {
+            contract_addr: token.address.clone(),
+            token_code_hash: token.code_hash.clone(),
+            oracle_key: None,
+        };
+        let offer = TokenAmount { token, amount };
+        QueryMsg::SwapSimulation {
+            offer,
+            exclude_fee: Some(true),
+        }
+        .query(querier, pair)
+    }
+    pub fn query_stableswap_simulation(
+        querier: &QuerierWrapper,
+        pair: &Contract,
+        amount: Uint128,
+        token: &Asset,
+    ) -> StdResult<SwapSimulationResponse> {
+        // Stableswap assets are registered with an oracle key in the ShadeSwap pair.
+        let token = TokenType::CustomToken {
+            contract_addr: token.contract.address.clone(),
+            token_code_hash: token.contract.code_hash.clone(),
+            oracle_key: Some(token.quote_symbol.clone()),
+        };
+        let offer = TokenAmount { token, amount };
+        QueryMsg::SwapSimulation {
+            offer,
+            exclude_fee: Some(true),
+        }
+        .query(querier, pair)
+    }
+}
 
 #[cw_serde]
-pub enum ShadeSwapQueryMsg {
+pub enum QueryMsg {
     GetPairInfo {},
     SwapSimulation {
         offer: TokenAmount,
@@ -17,7 +58,7 @@ pub enum ShadeSwapQueryMsg {
     },
 }
 
-impl Query for ShadeSwapQueryMsg {
+impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
@@ -31,6 +72,12 @@ pub struct PairInfoResponse {
     pub total_liquidity: Uint128,
     pub contract_version: u32,
     pub fee_info: FeeInfo,
+}
+
+impl PairInfoResponse {
+    pub fn is_stableswap(&self) -> bool {
+        self.pair.2
+    }
 }
 
 #[cw_serde]
@@ -76,6 +123,11 @@ impl TokenPair {
             )))
         }
     }
+    pub fn require_has_addresses(&self, token_0: &Addr, token_1: &Addr) -> StdResult<()> {
+        self.require_has_address(token_0)?;
+        self.require_has_address(token_1)?;
+        Ok(())
+    }
     pub fn into_contracts(&self) -> StdResult<[Contract; 2]> {
         let token_a = self.0.clone().into_contract()?;
         let token_b = self.1.clone().into_contract()?;
@@ -116,15 +168,25 @@ impl TokenType {
                 token_code_hash,
                 ..
             } => Ok(Contract::new(contract_addr, token_code_hash)),
-            TokenType::NativeToken { .. } => {
-                Err(StdError::generic_err("Token pair is not a snip20 pair."))
-            }
+            TokenType::NativeToken { .. } => Err(StdError::generic_err(
+                "Pair Error: Token pair is not a snip20 pair.",
+            )),
         }
     }
     pub fn eq_address(&self, address: &Addr) -> bool {
         match self {
             TokenType::CustomToken { contract_addr, .. } => contract_addr.eq(address),
             TokenType::NativeToken { .. } => false,
+        }
+    }
+    pub fn require_address_eq(&self, address: &Addr) -> StdResult<()> {
+        if self.eq_address(address) {
+            Ok(())
+        } else {
+            Err(StdError::generic_err(format!(
+                "Pair Error: Token is not the expected token {}.",
+                address
+            )))
         }
     }
 }

@@ -1,9 +1,9 @@
-use cosmwasm_std::{entry_point, Uint128};
+use cosmwasm_std::{entry_point, Storage};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use shade_oracles::core::{pad_query_result, ResponseStatus};
 use shade_oracles::interfaces::band::{
-    ExecuteMsg, HandleAnswer, InstantiateMsg, QueryMsg, ReferenceData,
+    ExecuteAnswer, ExecuteMsg, InstantiateMsg, MockPrice, QueryMsg, ReferenceData,
 };
 use shade_oracles::ssp::Map;
 use shade_oracles::BLOCK_SIZE;
@@ -40,34 +40,37 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     match msg {
-        ExecuteMsg::UpdateSymbolPrice {
-            base_symbol,
-            quote_symbol,
-            rate,
-            last_updated,
-        } => update_symbol_price(deps, env, base_symbol, quote_symbol, rate, last_updated),
+        ExecuteMsg::SetPrice { price } => set_price(deps, env, price),
+        ExecuteMsg::SetPrices { prices } => set_prices(deps, env, prices),
     }
 }
 
-pub fn update_symbol_price(
-    deps: DepsMut,
-    env: Env,
-    base_symbol: String,
-    quote_symbol: String,
-    rate: Uint128,
-    last_updated: Option<u64>,
-) -> StdResult<Response> {
+pub fn set_mock_price(storage: &mut dyn Storage, now: u64, price: MockPrice) -> StdResult<()> {
     MOCK_DATA.save(
-        deps.storage,
-        (base_symbol, quote_symbol),
+        storage,
+        (price.base_symbol, price.quote_symbol),
         &ReferenceData {
-            rate,
-            last_updated_base: last_updated.unwrap_or_else(|| env.block.time.seconds()),
-            last_updated_quote: last_updated.unwrap_or_else(|| env.block.time.seconds()),
+            rate: price.rate,
+            last_updated_base: price.last_updated.unwrap_or_else(|| now),
+            last_updated_quote: price.last_updated.unwrap_or_else(|| now),
         },
-    )?;
+    )
+}
 
-    let data = to_binary(&HandleAnswer::UpdateSymbolPrice {
+pub fn set_price(deps: DepsMut, env: Env, price: MockPrice) -> StdResult<Response> {
+    set_mock_price(deps.storage, env.block.time.seconds(), price)?;
+    let data = to_binary(&ExecuteAnswer::SetPrice {
+        status: ResponseStatus::Success,
+    })?;
+
+    Ok(Response::new().set_data(data))
+}
+
+pub fn set_prices(deps: DepsMut, env: Env, prices: Vec<MockPrice>) -> StdResult<Response> {
+    for price in prices {
+        set_mock_price(deps.storage, env.block.time.seconds(), price)?;
+    }
+    let data = to_binary(&ExecuteAnswer::SetPrices {
         status: ResponseStatus::Success,
     })?;
 
@@ -104,9 +107,5 @@ fn query_saved_band_data(
     base_symbol: String,
     quote_symbol: String,
 ) -> StdResult<Binary> {
-    /*
-    let data: ReferenceData = MOCK_DATA.load(deps.storage, (base_symbol.clone(), quote_symbol.clone()))?;
-    assert_eq!(data.rate, Uint128::zero(), "MOCK BAND REF");
-    */
     to_binary(&MOCK_DATA.load(deps.storage, (base_symbol, quote_symbol))?)
 }

@@ -1,8 +1,17 @@
 pub mod common;
 pub use common::*;
 pub mod interfaces;
-pub const BLOCK_SIZE: usize = 256;
 pub mod protocols;
+
+pub const BLOCK_SIZE: usize = 256;
+
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{
+    Addr, Api, MessageInfo, QuerierWrapper, StdError, StdResult, Storage, Timestamp, Uint128,
+    Uint256,
+};
+use shade_protocol::utils::asset::{Contract, RawContract};
+use shade_protocol::utils::Query;
 
 #[cfg(test)]
 pub mod unit_test_interface;
@@ -32,8 +41,6 @@ pub mod core {
         },
     };
     pub use thiserror;
-    #[cfg(feature = "scrt")]
-    pub use {cosmwasm_std, cosmwasm_std::*};
 }
 
 #[macro_use]

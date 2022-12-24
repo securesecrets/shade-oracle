@@ -2,8 +2,8 @@ use crate::{
     interfaces::band::{reference_data, reference_data_bulk},
     interfaces::{
         band::ReferenceData,
+        common::{OraclePrice, OracleQuery, PriceResponse, PricesResponse},
         router::msg::{ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg},
-        OraclePrice, OracleQuery, PriceResponse, PricesResponse,
     },
 };
 use cosmwasm_std::{QuerierWrapper, StdError, StdResult, Uint128};
@@ -21,21 +21,19 @@ pub fn query_price(
     oracle: &Contract,
     querier: &QuerierWrapper,
     key: impl Into<String>,
-) -> StdResult<OraclePrice> {
-    let resp: PriceResponse = OracleQuery::GetPrice { key: key.into() }.query(querier, oracle)?;
-    Ok(resp.price)
+) -> StdResult<PriceResponse> {
+    OracleQuery::GetPrice { key: key.into() }.query(querier, oracle)
 }
 
 pub fn query_prices(
     oracle: &Contract,
     querier: &QuerierWrapper,
     keys: &Vec<String>,
-) -> StdResult<Vec<OraclePrice>> {
-    let resp: PricesResponse = OracleQuery::GetPrices {
+) -> StdResult<PricesResponse> {
+    OracleQuery::GetPrices {
         keys: keys.to_vec(),
     }
-    .query(querier, oracle)?;
-    Ok(resp.prices)
+    .query(querier, oracle)
 }
 
 pub fn query_band_price(
@@ -83,7 +81,7 @@ pub fn query_band_prices<'a>(
 }
 
 /// Gets the admin auth contract from the router and uses it to check if the user is an admin for the router.
-pub fn verify_admin(
+pub fn require_admin(
     contract: &Contract,
     permission: AdminPermissions,
     querier: &QuerierWrapper,

@@ -1196,7 +1196,7 @@ dependencies = [
 
 [[package]]
 name = "shade-oracles"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "better-secret-math",
  "btr-macros 0.1.0 (git+https://github.com/securesecrets/better-secret-math)",
@@ -1229,9 +1229,9 @@ dependencies = [
  "shade-protocol",
  "shade_staking_derivative_oracle",
  "shadeswap_market_oracle",
- "siennaswap_lp_oracle",
- "siennaswap_lp_spot_oracle",
  "siennaswap_market_oracle",
+ "siennaswap_reserves_oracle",
+ "siennaswap_spot_oracle",
  "strum",
 ]
 
@@ -1270,15 +1270,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "shadeswap_lp_oracle"
-version = "0.1.0"
-dependencies = [
- "secret-cosmwasm-std",
- "shade-oracles",
- "shade-oracles-multi-test",
-]
-
-[[package]]
 name = "shadeswap_market_oracle"
 version = "0.1.0"
 dependencies = [
@@ -1289,16 +1280,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "siennaswap_lp_oracle"
-version = "0.1.0"
-dependencies = [
- "secret-cosmwasm-std",
- "shade-oracles",
- "shade-oracles-multi-test",
-]
-
-[[package]]
-name = "siennaswap_lp_spot_oracle"
+name = "shadeswap_spot_oracle"
 version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
@@ -1311,6 +1293,24 @@ name = "siennaswap_market_oracle"
 version = "0.1.0"
 dependencies = [
  "mock_sienna_pair",
+ "secret-cosmwasm-std",
+ "shade-oracles",
+ "shade-oracles-multi-test",
+]
+
+[[package]]
+name = "siennaswap_reserves_oracle"
+version = "0.1.0"
+dependencies = [
+ "secret-cosmwasm-std",
+ "shade-oracles",
+ "shade-oracles-multi-test",
+]
+
+[[package]]
+name = "siennaswap_spot_oracle"
+version = "0.1.0"
+dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
  "shade-oracles-multi-test",
@@ -1359,6 +1359,15 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "stride_stkd_derivatives_oracle"
+version = "0.1.0"
+dependencies = [
+ "secret-cosmwasm-std",
+ "shade-oracles",
+ "shade-oracles-multi-test",
+]
 
 [[package]]
 name = "strum"

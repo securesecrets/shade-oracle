@@ -3,14 +3,15 @@ use cosmwasm_std::{
     to_binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, QueryResponse, Response, StdResult,
     WasmQuery,
 };
-use shade_oracles::common::{oracle_exec, CommonConfig, Oracle};
+use shade_oracles::core::Query;
+use shade_oracles::interfaces::{oracle_exec, CommonConfig, Oracle};
 use shade_oracles::{
     common::querier::{query_prices, query_token_info},
-    common::{ExecuteMsg, OraclePrice, OracleQuery},
-    core::{pad_query_result, Query},
+    core::pad_query_result,
     interfaces::band::ReferenceData,
+    interfaces::common::{ExecuteMsg, OraclePrice, OracleQuery},
     interfaces::lp::{
-        math::{get_fair_lp_token_price, FairLpPriceInfo},
+        math::{get_lp_token_spot_price, FairLpPriceInfo},
         siennaswap::{resolve_pair, ConfigResponse, InstantiateMsg, PairData, EXCHANGE},
     },
     protocols::siennaswap::{SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse},
@@ -95,7 +96,7 @@ impl Oracle for SiennaswapLpOracle {
         deps: Deps,
         _env: &Env,
         key: String,
-        config: &shade_oracles::common::CommonConfig,
+        config: &CommonConfig,
     ) -> StdResult<OraclePrice> {
         let pair = PairData::load(deps.storage)?;
         let exchange = EXCHANGE.load(deps.storage)?;
@@ -143,7 +144,7 @@ impl Oracle for SiennaswapLpOracle {
             decimals: pair.token1_decimals,
         };
 
-        let price = get_fair_lp_token_price(a, b, total_supply.u128(), lp_token_decimals);
+        let price = get_lp_token_spot_price(a, b, total_supply.u128(), lp_token_decimals);
 
         let data = ReferenceData {
             rate: Uint128::from(u128::from_be_bytes(price.unwrap().to_be_bytes())),
