@@ -2,7 +2,7 @@ use better_secret_math::U256;
 use cosmwasm_std::{Decimal256, Uint128};
 use std::str::FromStr;
 
-use crate::{interfaces::band::ReferenceData, interfaces::OraclePrice};
+use crate::{interfaces::band::ReferenceData, interfaces::common::OraclePrice};
 
 pub fn generate_price_feed(items: Vec<(&str, &str, u64)>) -> Vec<OraclePrice> {
     let mut prices = vec![];

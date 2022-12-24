@@ -2,7 +2,7 @@ use super::registry::{Config, ProtectedKeyInfo, RegistryOperation, UpdateConfig}
 use crate::{
     common::status::ContractStatus,
     impl_msg_callbacks,
-    interfaces::{PriceResponse, PricesResponse},
+    interfaces::common::{PriceResponse, PricesResponse},
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint256;

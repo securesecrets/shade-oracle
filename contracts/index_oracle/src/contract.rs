@@ -2,12 +2,11 @@ use cosmwasm_std::{
     attr, entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint128, Uint64,
 };
 use cosmwasm_std::{to_binary, Deps, Env, Response};
-use shade_oracles::common::querier::verify_admin;
 use shade_oracles::core::{Contract, RawContract};
 use shade_oracles::create_attr_action;
+use shade_oracles::interfaces::common::OraclePrice;
 use shade_oracles::interfaces::index::{error::*, msg::*, *};
-use shade_oracles::interfaces::{OraclePrice, PriceResponse, PricesResponse};
-use shade_oracles::querier::query_band_prices;
+use shade_oracles::querier::{query_band_prices, require_admin};
 use shade_oracles::{
     common::status::GlobalStatus,
     core::{admin::helpers::AdminPermissions, pad_handle_result, pad_query_result},
@@ -150,7 +149,7 @@ pub fn try_admin_msg(
     oracle: IndexOracle,
 ) -> IndexOracleResult<Response> {
     let router = oracle.config.router.clone();
-    verify_admin(
+    require_admin(
         &router,
         AdminPermissions::OraclesAdmin,
         &deps.querier,
@@ -241,7 +240,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
                     last_updated_quote: now,
                 },
             );
-            to_binary(&PriceResponse { price })
+            to_binary(&price)
         }
         QueryMsg::GetPrices { keys } => {
             IndexOracle::require_can_run(deps.storage, true, false, false)?;
@@ -265,7 +264,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
                 },
             );
             let prices = vec![price; keys.capacity()];
-            to_binary(&PricesResponse { prices })
+            to_binary(&prices)
         }
         QueryMsg::GetIndexData {} => {
             IndexOracle::require_can_run(deps.storage, true, true, false)?;

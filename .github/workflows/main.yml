@@ -64,13 +64,20 @@ jobs:
         with:
           shared-key: "oracles"
 
-      - name: Install latest nextest release
+      - name: Install sccache
+        run: if [ -e ~/.cargo/bin/sccache ] ; then echo "Sccache is already installed"; else cargo install sccache; fi
+
+      - name: Install fleet
+        run: if [ -e ~/.cargo/bin/fleet ] ; then echo "Fleet is already installed"; else cargo install fleet-rs; fi
+
+      - name: Install nextest
         uses: taiki-e/install-action@nextest
+
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Collect coverage data
-        run: cargo llvm-cov nextest --lcov --output-path lcov.info
+        run: fleet build --tests && cargo llvm-cov nextest --lcov --output-path lcov.info
 
       - name: Upload coverage data to codecov
         uses: codecov/codecov-action@v3

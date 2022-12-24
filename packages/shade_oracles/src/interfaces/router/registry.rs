@@ -56,8 +56,8 @@ mod state {
 
     use crate::{
         impl_global_status,
+        interfaces::common::OraclePrice,
         interfaces::router::{error::OracleRouterError, msg::KeysResponse},
-        interfaces::OraclePrice,
     };
 
     use super::*;

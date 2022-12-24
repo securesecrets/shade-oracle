@@ -18,7 +18,7 @@ default = []
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret", package = "secret-cosmwasm-std" }
-shade-oracles = { path = "../../packages/shade_oracles", features = ["market-lp"] }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["dex"] }
 
 [dev-dependencies]
 shade-oracles-multi-test = { path = "../../packages/multi_test", features = [  "multi-test", "market", "snip20" ] }

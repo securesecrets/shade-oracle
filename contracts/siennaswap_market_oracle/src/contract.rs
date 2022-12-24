@@ -5,19 +5,19 @@ use cosmwasm_std::{
 use shade_oracles::{
     core::Query,
     core::{snip20::helpers::TokenInfo, Contract},
-    interfaces::common::{
-        normalize_price_uint128, oracle_exec, oracle_query,
-        querier::{query_band_price, query_price, query_token_info},
-        ExecuteMsg, Oracle, OraclePrice, OracleQuery,
-    },
+    interfaces::common::{OraclePrice, OracleQuery},
     interfaces::{
         band::ReferenceData,
-        lp::market::{InstantiateMsg, MarketData, BASE_INFO, PRIMARY_INFO, PRIMARY_TOKEN},
+        CommonConfig,
     },
+    interfaces::dex::lp_market::{
+        msg::*, LiquidityPairMarketOracle,
+    },
+    math::TokenMath,
     protocols::siennaswap::{
-        SiennaDexTokenType, SiennaSwapExchangeQueryMsg, SiennaSwapPairInfoResponse,
-        SimulationResponse, TokenTypeAmount,
+        SiennaSwapQuerier
     },
+    querier::{query_band_price, query_price, query_token_info},
     ssp::ItemStorage,
 };
 
@@ -30,28 +30,8 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let config = SiennaswapMarketOracle.init_config(deps.storage, deps.api, msg.config)?;
     let pair = msg.pair.into_valid(deps.api)?;
-    let pair_info_response: SiennaSwapPairInfoResponse =
-        SiennaSwapExchangeQueryMsg::PairInfo.query(&deps.querier, &pair)?;
-
-    let tokens: [Contract; 2] = vec![
-        pair_info_response.pair_info.pair.token_0,
-        pair_info_response.pair_info.pair.token_1,
-    ]
-    .iter()
-    .filter_map(|t| match t {
-        SiennaDexTokenType::CustomToken {
-            contract_addr,
-            token_code_hash,
-        } => Some(Contract {
-            address: contract_addr.clone(),
-            code_hash: token_code_hash.to_string(),
-        }),
-        _ => None,
-    })
-    .collect::<Vec<Contract>>()
-    .try_into()
-    .ok()
-    .unwrap();
+    let pair_info_response = SiennaSwapQuerier::query_pair_info(&deps.querier, &pair)?;
+    let tokens: [Contract; 2] = 
 
     let token_infos: [TokenInfo; 2] = tokens
         .iter()
@@ -100,6 +80,33 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
+pub fn fetch_target_token_info(
+    &self,
+    querier: &QuerierWrapper,
+    target_token: &Addr,
+    tokens: [Contract; 2],
+) -> StdResult<TokenInfo> {
+    // let pair = pair.into_valid(api)?;
+    // let target_token = api.addr_validate(&target_token)?;
+    // let base_token = base_token.into_asset(&self.config.router, querier, api)?;
+
+    // let tokens = DexQuerier::fetch_shadeswap_pair(
+    //     querier,
+    //     &pair,
+    //     &base_token.contract.address,
+    //     &target_token,
+    // )?;
+
+    // Check which token in the pair is the target asset. One is guaranteed to be the target asset because of the check above.
+    let target_token = if tokens[0].address.eq(target_token) {
+        &tokens[0]
+    } else {
+        &tokens[1]
+    };
+
+    query_token_info(target_token, querier)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
@@ -107,22 +114,21 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
-    oracle_exec(deps, _env, info, msg, SiennaswapMarketOracle)
+    match msg {
+    ExecuteMsg::UpdateConfig { updates } => todo!(),
+}
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: OracleQuery) -> StdResult<QueryResponse> {
-    oracle_query(deps, _env, msg, SiennaswapMarketOracle)
 }
 
-pub struct SiennaswapMarketOracle;
-impl Oracle for SiennaswapMarketOracle {
-    fn try_query_price(
+    pub fn try_query_price(
         &self,
         deps: Deps,
         _env: &Env,
         key: String,
-        config: &shade_oracles::common::CommonConfig,
+        config: &CommonConfig,
     ) -> StdResult<OraclePrice> {
         let primary_token: Contract = PRIMARY_TOKEN.load(deps.storage)?;
         let primary_info = PRIMARY_INFO.load(deps.storage)?;
@@ -142,7 +148,8 @@ impl Oracle for SiennaswapMarketOracle {
 
         // Normalize to 'rate * 10^18'
         let base_info = BASE_INFO.load(deps.storage)?;
-        let exchange_rate = normalize_price_uint128(sim.return_amount, base_info.decimals)?;
+        let exchange_rate: Uint128 =
+            TokenMath::normalize_value(sim.return_amount, base_info.decimals)?.into();
 
         // Query router for base_peg/USD
         let base_usd_price = if config.only_band {
@@ -166,4 +173,3 @@ impl Oracle for SiennaswapMarketOracle {
             },
         ))
     }
-}

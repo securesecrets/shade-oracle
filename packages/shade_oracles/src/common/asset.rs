@@ -1,13 +1,14 @@
 //! Defines how we'll store Assets in our contracts.
 //! We care most about the token decimals, the asset contract itself, and the symbol used
 //! to query the price via our oracle system so we can query prices for them.
+use crate::error::CommonOracleError;
 use crate::interfaces::common::{BtrOraclePrice, OraclePrice};
 use crate::querier::query_price;
 use better_secret_math::core::checked_add;
 use better_secret_math::{BtrRebase, U256};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Uint256};
-use secret_storage_plus::{GenericMapStorage, Map};
+use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256};
+use secret_storage_plus::Map;
 use shade_protocol::{
     contract_interfaces::snip20::helpers::token_info,
     contract_interfaces::snip20::ExecuteMsg as Snip20ExecuteMsg,
@@ -25,11 +26,55 @@ pub struct Asset {
     pub quote_symbol: String,
 }
 
-#[cw_serde]
-pub struct Assets;
+/// Map of assets.
+pub struct Assets<'a, 'b>(pub Map<'a, &'b Addr, Asset>);
 
-impl<'a> GenericMapStorage<'a, &'a Addr, Asset> for Assets {
-    const MAP: Map<'static, &'a Addr, Asset> = Map::new("globalassetsmap");
+impl<'a, 'b> Assets<'a, 'b> {
+    pub const fn new(namespace: &'a str) -> Self {
+        Assets(Map::new(namespace))
+    }
+    pub fn require_existing_asset(
+        &self,
+        storage: &dyn Storage,
+        address: &Addr,
+    ) -> StdResult<Asset> {
+        let asset = self.0.may_load(storage, address)?;
+        if asset.is_none() {
+            Err(CommonOracleError::AssetNotFound(address.clone()).into())
+        } else {
+            Ok(asset.unwrap())
+        }
+    }
+    pub fn may_set(&self, storage: &mut dyn Storage, asset: &Asset) -> StdResult<()> {
+        if self.0.may_load(storage, &asset.contract.address)?.is_none() {
+            self.0.save(storage, &asset.contract.address, asset)?;
+        }
+        Ok(())
+    }
+    /// You can only update an existing asset's quote symbol because we assume their contract address, code hash, and token decimals are immutable.
+    pub fn update_existing_asset(
+        &self,
+        storage: &mut dyn Storage,
+        querier: &QuerierWrapper,
+        oracle: &Contract,
+        asset: &Addr,
+        symbol: &String,
+    ) -> StdResult<()> {
+        self.0
+            .update(storage, &asset, |old_asset| -> StdResult<_> {
+                match old_asset {
+                    Some(mut asset) => {
+                        asset.update_quote_symbol(&oracle, &querier, symbol.clone())?;
+                        Ok(asset)
+                    }
+                    None => Err(StdError::generic_err(format!(
+                        "{} is not an existing asset.",
+                        asset.clone()
+                    ))),
+                }
+            })?;
+        Ok(())
+    }
 }
 
 impl Default for Asset {
@@ -110,10 +155,19 @@ impl RawAsset {
         let resp = query_price(oracle, querier, self.quote_symbol.clone());
         if resp.is_err() {
             return Err(StdError::generic_err(format!(
-                "Failed to query a price for {}. Cannot set quote symbol of asset to faulty symbol.",
+                "Failed to query a price for {}. Cannot set quote symbol of asset to invalid symbol.",
                 self.quote_symbol
             )));
         }
+        let contract = self.contract.clone().into_valid(api)?;
+        let decimals = token_info(querier, &contract)?.decimals;
+        Ok(Asset::new(contract, decimals, self.quote_symbol))
+    }
+    pub fn into_asset_without_symbol_check(
+        self,
+        api: &dyn Api,
+        querier: &QuerierWrapper,
+    ) -> StdResult<Asset> {
         let contract = self.contract.clone().into_valid(api)?;
         let decimals = token_info(querier, &contract)?.decimals;
         Ok(Asset::new(contract, decimals, self.quote_symbol))

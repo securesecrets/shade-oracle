@@ -1,76 +1,96 @@
 use super::*;
 
 #[cw_serde]
-/// Config object passed into the updating of an oracle's common config.
-///
-/// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
-///
-/// router - oracle router
-pub struct ConfigUpdates {
-    pub supported_keys: Option<Vec<String>>,
-    pub router: Option<RawContract>,
-}
-
-#[cw_serde]
-pub struct ConfigResponse {
-    pub config: CommonConfig,
-}
-
-#[cw_serde]
-/// Config object passed into the instantiation of an oracle.
-///
-/// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
-///
-/// router - oracle router
-///
-/// enabled - can we use this oracle?
-///
-/// only_band - will this oracle go directly to band rather than through the router?
-///
-/// will be deprecated
-pub struct InstantiateCommonConfig {
-    pub supported_keys: Option<Vec<String>>,
-    pub router: RawContract,
-}
-
-impl InstantiateCommonConfig {
-    pub fn new(supported_keys: Option<Vec<String>>, router: RawContract) -> Self {
-        InstantiateCommonConfig {
-            supported_keys,
-            router,
-        }
-    }
-    pub fn into_valid(self, api: &dyn Api) -> StdResult<CommonConfig> {
-        Ok(CommonConfig {
-            supported_keys: self.supported_keys.unwrap_or_default(),
-            router: self.router.into_valid(api)?,
-        })
-    }
-}
-
-/// Config object stored in all oracles.
-///
-/// supported_keys - (keys which are allowed by oracle, if none listed, then oracle will support all keys).
-///
-/// router - oracle router
-///
-/// enabled - can we use this oracle?
-///
-/// only_band - will this oracle go directly to band rather than through the router?
-#[cw_serde]
 pub struct CommonConfig {
-    pub supported_keys: Vec<String>,
     pub router: Contract,
+    pub enabled: bool,
+}
+
+#[cw_serde]
+pub struct CommonConfigResponse {
+    pub config: CommonConfig,
 }
 
 #[cfg(feature = "core")]
 pub use state::*;
 #[cfg(feature = "core")]
 mod state {
-    use super::*;
-    use crate::ssp::{Item, ItemStorage};
+    use shade_protocol::admin::helpers::AdminPermissions;
+    use ssp::Item;
 
-    impl ItemStorage for CommonConfig {
-        const ITEM: Item<'static, Self> = Item::new("commonconfig");
+    use crate::{error::CommonOracleError, querier::require_admin};
+
+    use super::*;
+
+    impl<'a> CommonConfig {
+        pub const SUPPORTED_KEYS: Item<'static, Vec<String>> = Item::new("supported_keys");
+    }
+
+    impl CommonConfig {
+        pub fn require_supported_key(storage: &dyn Storage, key: &String) -> StdResult<()> {
+            if !Self::SUPPORTED_KEYS.load(storage)?.contains(key) {
+                return Err(CommonOracleError::NotSupportedKey(key.to_string()).into());
+            }
+            Ok(())
+        }
+
+        pub fn add_supported_key(storage: &mut dyn Storage, key: &String) -> StdResult<()> {
+            Self::SUPPORTED_KEYS.update(storage, |mut current_keys| -> StdResult<_> {
+                if !current_keys.contains(&key) {
+                    current_keys.push(key.to_string());
+                }
+                Ok(current_keys)
+            })?;
+            Ok(())
+        }
+
+        pub fn init(api: &dyn Api, router: RawContract) -> StdResult<Self> {
+            let router = router.into_valid(api)?;
+            Ok(CommonConfig {
+                router,
+                enabled: true,
+            })
+        }
+        pub fn update_config(
+            &mut self,
+            api: &dyn Api,
+            status: Option<bool>,
+            router: Option<RawContract>,
+        ) -> StdResult<()> {
+            if let Some(router) = router {
+                self.router = router.into_valid(api)?;
+            }
+            self.enabled = status.unwrap_or(self.enabled);
+            Ok(())
+        }
+        /// Queries the router to see if user has the oracles admin permission.
+        pub fn require_admin(&self, querier: &QuerierWrapper, info: MessageInfo) -> StdResult<()> {
+            require_admin(
+                &self.router,
+                AdminPermissions::OraclesAdmin,
+                querier,
+                info.sender,
+            )?;
+            Ok(())
+        }
+        /// Queries the router to see if user has the oracles bot permission.
+        pub fn require_bot(&self, querier: &QuerierWrapper, info: MessageInfo) -> StdResult<()> {
+            require_admin(
+                &self.router,
+                AdminPermissions::OraclesPriceBot,
+                querier,
+                info.sender,
+            )?;
+            Ok(())
+        }
+        pub fn require_enabled(&self) -> StdResult<()> {
+            if self.enabled {
+                Ok(())
+            } else {
+                Err(StdError::generic_err(
+                    "This oracle has been disabled. Only operation available is changing status.",
+                ))
+            }
+        }
     }
 }
