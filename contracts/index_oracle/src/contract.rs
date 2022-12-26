@@ -156,20 +156,20 @@ pub fn try_admin_msg(
         &info.sender,
     )?;
     match msg {
-        AdminMsg::UpdateStatus { status } => {
+        AdminMsg::UpdateStatus(status) => {
             IndexOracle::update_status(deps.storage, status)?;
             Ok(Response::new().add_attributes(vec![attr_action!("update_status")]))
         }
         _ => {
             IndexOracle::require_can_run(deps.storage, true, true, false)?;
             match msg {
-                AdminMsg::ModBasket { basket } => try_mod_basket(deps, env, basket, oracle),
+                AdminMsg::ModBasket(basket) => try_mod_basket(deps, env, basket, oracle),
                 AdminMsg::UpdateConfig {
                     symbol,
                     router,
                     when_stale,
                 } => try_update_config(deps, env, oracle, symbol, router, when_stale),
-                AdminMsg::UpdateTarget { new_target } => {
+                AdminMsg::UpdateTarget(new_target) => {
                     try_update_target(deps, env, oracle, new_target)
                 }
                 AdminMsg::Unfreeze {} => try_unfreeze(deps, env, oracle),

@@ -30,21 +30,11 @@ pub mod msg {
         /// - Base symbol: the router symbol corresponding to the USDT price.
         /// - Underlying symbol: the router symbol corresponding to the ETH price.
         /// - Key: the oracle key supported by this pair (ex: "ETH (ShadeSwap ETH/USDT LP)").
-        SetPairs {
-            data: Vec<RawPairData>,
-        },
-        RemovePairs {
-            keys: Vec<String>,
-        },
-        UpdateAssets {
-            assets: Vec<RawAsset>,
-        },
-        UpdateConfig {
-            new_router: RawContract,
-        },
-        SetStatus {
-            status: bool,
-        },
+        SetPairs(Vec<RawPairData>),
+        RemovePairs(Vec<String>),
+        UpdateAssets(Vec<RawAsset>),
+        UpdateConfig(RawContract),
+        SetStatus(bool),
     }
 
     #[cw_serde]
@@ -60,6 +50,8 @@ pub mod msg {
         GetPairs {},
     }
 
+    pub type PairsResponse = Vec<PairData>;
+
     #[cw_serde]
     pub struct RawPairData {
         pub key: String,
@@ -69,12 +61,7 @@ pub mod msg {
     }
 
     #[cw_serde]
-    pub struct PairsResponse {
-        pub pairs: Vec<PairDataResponse>,
-    }
-
-    #[cw_serde]
-    pub struct PairDataResponse {
+    pub struct PairData {
         pub key: String,
         pub token_0: Asset,
         pub token_1: Asset,
@@ -106,7 +93,7 @@ mod state {
     #[cw_serde]
     /// Pair is the LP pair & symbol is the key we'll use to
     /// get the price of 1 side of the LP pair from our oracle router.
-    pub struct PairData {
+    pub struct StoredPairData {
         pub token_0: Addr,
         pub token_1: Addr,
         pub pair: Contract,
@@ -124,7 +111,7 @@ mod state {
     impl<'a> LiquidityPairOracle {
         pub const ASSETS: Assets<'static, 'a> = Assets::new("pair_assets");
         // Keyed by its symbol.
-        pub const PAIRS: Map<'static, &'a str, PairData> = Map::new("markets");
+        pub const PAIRS: Map<'static, &'a str, StoredPairData> = Map::new("markets");
     }
 
     impl LiquidityPairOracle {
@@ -164,10 +151,10 @@ mod state {
             token_0: Asset,
             token_1: Asset,
             pair: Contract,
-        ) -> StdResult<PairData> {
+        ) -> StdResult<StoredPairData> {
             Self::ASSETS.may_set(storage, &token_0)?;
             Self::ASSETS.may_set(storage, &token_1)?;
-            let data = PairData {
+            let data = StoredPairData {
                 token_0: token_0.contract.address,
                 token_1: token_1.contract.address,
                 pair,
@@ -184,21 +171,18 @@ mod state {
             api: &dyn Api,
             querier: &QuerierWrapper,
             data: RawPairData,
-        ) -> StdResult<PairData> {
+        ) -> StdResult<StoredPairData> {
             let pair = data.pair.into_valid(api)?;
             let token_0 = data.token_0.into_asset(&self.config.router, querier, api)?;
             let token_1 = data.token_1.into_asset(&self.config.router, querier, api)?;
             Self::set_pair_data(storage, data.key, token_0, token_1, pair)
         }
 
-        pub fn get_pair_data_resp(
-            key: &String,
-            storage: &dyn Storage,
-        ) -> StdResult<PairDataResponse> {
+        pub fn get_pair_data_resp(key: &String, storage: &dyn Storage) -> StdResult<PairData> {
             let data = Self::PAIRS.load(storage, key)?;
             let token_0 = Self::ASSETS.0.load(storage, &data.token_0)?;
             let token_1 = Self::ASSETS.0.load(storage, &data.token_1)?;
-            Ok(PairDataResponse {
+            Ok(PairData {
                 key: key.clone(),
                 token_0,
                 token_1,
@@ -206,7 +190,7 @@ mod state {
             })
         }
 
-        pub fn get_supported_pairs(storage: &dyn Storage) -> StdResult<Vec<PairDataResponse>> {
+        pub fn get_supported_pairs(storage: &dyn Storage) -> StdResult<PairsResponse> {
             let keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             let mut supported_pairs = vec![];
             for key in keys {
@@ -216,7 +200,7 @@ mod state {
         }
 
         pub fn calculate_lp_token_spot_rate(
-            data: PairDataResponse,
+            data: msg::PairData,
             lp_token_info: TokenInfo,
             reserves_0: Uint128,
             reserves_1: Uint128,
@@ -256,7 +240,7 @@ mod state {
         /// Infers the price of an LP token based on its expected reserves.
         /// Does not work on the stableswap.
         pub fn calculate_lp_token_inferred_rate(
-            data: PairDataResponse,
+            data: msg::PairData,
             lp_token_info: TokenInfo,
             reserves_0: Uint128,
             reserves_1: Uint128,

@@ -1,0 +1,33 @@
+[package]
+name = "multi-test-helpers"
+version = "0.1.0"
+authors = [
+   "hoomp <flammable.shower939@anonaddy.me>"
+]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+[dependencies]
+strum = { version = "0.24", features = ["derive"] }
+anyhow = "1"
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret", package = "secret-cosmwasm-std" }
+cosmwasm-schema = "1.1.5"
+schemars = "0.8.9"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = "1.0"
+
+# Shade
+better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test", "admin" ] }
+multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
+shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["snip20", "query_auth", "admin"]}
+
+[dev-dependencies]
+rstest = "0.15.0"

@@ -20,7 +20,7 @@ impl TokenMath {
         if decimals == 18 {
             Ok(value)
         } else {
-            Ok(muldiv(value, exp10(18), exp10(decimals))?.into())
+            Ok(muldiv(value, exp10(18), exp10(decimals))?)
         }
     }
     /// Normalizes the asset amount from being based off asset decimals -> 18 decimals.
