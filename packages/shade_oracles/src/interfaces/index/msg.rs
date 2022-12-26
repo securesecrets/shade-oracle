@@ -1,6 +1,7 @@
 use crate::{
-    common::{status::ContractStatus, PriceResponse, PricesResponse},
+    common::status::ContractStatus,
     impl_msg_callbacks,
+    interfaces::common::{PriceResponse, PricesResponse},
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal256, Uint128, Uint64};
@@ -29,23 +30,17 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum AdminMsg {
-    UpdateStatus {
-        status: ContractStatus,
-    },
+    UpdateStatus(ContractStatus),
     // Asset with weight 0 will be removed
     // all others are added or changed
     /// (symbol, weight)
-    ModBasket {
-        basket: Vec<InitialBasketItem>,
-    },
+    ModBasket(Vec<InitialBasketItem>),
     UpdateConfig {
         symbol: Option<String>,
         router: Option<RawContract>,
         when_stale: Option<Uint64>,
     },
-    UpdateTarget {
-        new_target: Uint128,
-    },
+    UpdateTarget(Uint128),
     Unfreeze {},
 }
 

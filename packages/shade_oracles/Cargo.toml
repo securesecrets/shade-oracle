@@ -1,6 +1,6 @@
 [package]
 name = "shade-oracles"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
   "sbeem <sbeem@pm.me>",
   "scrtreddev <scrtredev@protonmail.com",
@@ -8,33 +8,21 @@ authors = [
 ]
 edition = "2021"
 
-[[bin]]
-name = "schemas"
-path = "src/schemas.rs"
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-# for quicker tests, cargo test --lib
-scrt = ["core"]
-# for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
-# in order for the build to work )
 core = ["storage"]
 storage = ["shade-protocol/storage_plus"]
-# multi-test = ["secret-multi-test"]
 proxy-band = ["core"]
 index = ["core"]
 router = ["core"]
-shd-staking-derivative = ["core"]
-siennaswap = ["lp"]
-market-lp = ["lp"]
-lp = ["core"]
+derivatives = ["core"]
+dex = ["core"]
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-std", branch = "secret" }
-# Core re-exports (no need to re-export cosmwasm-std because that has to be included in contracts for them to build)
 cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-storage", branch = "secret" }
 cosmwasm-schema = "1.1.5"
 schemars = "0.8.1"
@@ -46,9 +34,10 @@ thiserror = "1.0"
 
 paste = "1.0"
 derive-from-ext = "0.2"
+ts-rs = "6.2"
 
 btr-macros = { git = "https://github.com/securesecrets/better-secret-math" }
-better-secret-math = { git = "https://github.com/securesecrets/better-secret-math", rev = "a3855a3" }
+better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
 
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20", "math", "admin"] }

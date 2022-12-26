@@ -1,4 +1,7 @@
-//pub mod secretswap;
-pub mod shade_earn_v1;
-pub mod shadeswap;
-pub mod siennaswap;
+mod shade;
+mod sienna;
+
+pub use shade::swap as shadeswap;
+pub use sienna::swap as siennaswap;
+
+use super::*;

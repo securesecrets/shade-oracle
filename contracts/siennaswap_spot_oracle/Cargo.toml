@@ -1,0 +1,25 @@
+[package]
+name = "siennaswap_spot_oracle"
+version = "0.1.0"
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
+edition = "2021"
+
+exclude = [
+  "contract.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+
+[dependencies]
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret", package = "secret-cosmwasm-std" }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["dex"] }
+
+[dev-dependencies]
+shade-oracles-multi-test = { path = "../../packages/multi_test", features = [ "multi-test", "lp" ] }
+

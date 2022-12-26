@@ -3,10 +3,6 @@ use cosmwasm_std::{
     Response, StdResult,
 };
 use shade_oracles::{
-    common::{
-        querier::{query_price as query_oracle_price, query_prices as query_oracle_prices},
-        GlobalStatus, OraclePrice, PriceResponse, PricesResponse,
-    },
     core::{
         admin::helpers::{validate_admin, AdminPermissions},
         pad_handle_result, pad_query_result,
@@ -16,8 +12,11 @@ use shade_oracles::{
     create_attr_action,
     interfaces::{
         band::{reference_data, reference_data_bulk, ReferenceData},
+        common::{OraclePrice, PriceResponse, PricesResponse},
         router::{error::*, msg::*, registry::*},
     },
+    querier::{query_price, query_prices},
+    status::GlobalStatus,
     BLOCK_SIZE,
 };
 
@@ -80,7 +79,7 @@ pub fn execute(
     let router = OracleRouter::load(deps.storage)?;
 
     let result = match msg {
-        ExecuteMsg::SetStatus { status } => {
+        ExecuteMsg::SetStatus(status) => {
             require_admin(&router, &deps.querier, &info.sender)?;
             OracleRouter::update_status(deps.storage, status)?;
             Ok(Response::default().add_attributes(vec![attr_action!("set_status")]))
@@ -88,24 +87,31 @@ pub fn execute(
         _ => {
             OracleRouter::require_can_run(deps.storage, true, true, false)?;
             match msg {
-                ExecuteMsg::UpdateConfig { config } => {
+                ExecuteMsg::UpdateConfig(config) => {
                     require_admin(&router, &deps.querier, &info.sender)?;
-                    router.update_config(config).config.save(deps.storage)?;
+                    router
+                        .update_config(deps.api, config)?
+                        .config
+                        .save(deps.storage)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_config")]))
                 }
-                ExecuteMsg::UpdateRegistry { operation } => {
+                ExecuteMsg::UpdateRegistry(operation) => {
                     require_admin(&router, &deps.querier, &info.sender)?;
-                    OracleRouter::resolve_registry_operation(deps.storage, operation)?;
+                    OracleRouter::resolve_registry_operation(deps.api, deps.storage, operation)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_registry")]))
                 }
-                ExecuteMsg::BatchUpdateRegistry { operations } => {
+                ExecuteMsg::BatchUpdateRegistry(operations) => {
                     require_admin(&router, &deps.querier, &info.sender)?;
                     for operation in operations {
-                        OracleRouter::resolve_registry_operation(deps.storage, operation)?;
+                        OracleRouter::resolve_registry_operation(
+                            deps.api,
+                            deps.storage,
+                            operation,
+                        )?;
                     }
                     Ok(Response::new().add_attributes(vec![attr_action!("batch_update_registry")]))
                 }
-                ExecuteMsg::UpdateProtectedKeys { prices } => {
+                ExecuteMsg::UpdateProtectedKeys(prices) => {
                     require_bot(&router, &deps.querier, &info.sender)?;
                     for (key, price) in prices {
                         OracleRouter::update_protected_key(deps.storage, &key, price)?;
@@ -120,19 +126,23 @@ pub fn execute(
 }
 
 /// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.
-pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> StdResult<Binary> {
+pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> StdResult<PriceResponse> {
     let oracle = router.get_oracle(deps.storage, &key)?;
     let price = if oracle.eq(&router.config.this) {
         query_band_price(deps, &router, key)
     } else {
-        query_oracle_price(&oracle, &deps.querier, &key)
+        query_price(&oracle, &deps.querier, &key)
     }?;
     OracleRouter::try_deviation_test(deps.storage, &price)?;
-    to_binary(&PriceResponse { price })
+    Ok(price)
 }
 
 /// Builds bulk queries using the keys given.
-pub fn get_prices(deps: Deps, router: OracleRouter, keys: Vec<String>) -> StdResult<Binary> {
+pub fn get_prices(
+    deps: Deps,
+    router: OracleRouter,
+    keys: Vec<String>,
+) -> StdResult<PricesResponse> {
     let map = router.group_keys_by_oracle(deps.storage, keys.as_slice())?;
     // Preserve symbol order
     let mut prices: Vec<OraclePrice> = keys
@@ -143,10 +153,10 @@ pub fn get_prices(deps: Deps, router: OracleRouter, keys: Vec<String>) -> StdRes
     let mut unordered_prices = vec![];
 
     for (oracle, symbols) in map {
-        let mut queried_prices = if oracle.eq(&router.config.this) {
+        let mut queried_prices: PricesResponse = if oracle.eq(&router.config.this) {
             query_band_prices(deps, &router, symbols)
         } else {
-            query_oracle_prices(&oracle, &deps.querier, &symbols)
+            query_prices(&oracle, &deps.querier, &symbols)
         }?;
         unordered_prices.append(&mut queried_prices);
     }
@@ -161,8 +171,7 @@ pub fn get_prices(deps: Deps, router: OracleRouter, keys: Vec<String>) -> StdRes
             _ = std::mem::replace(&mut prices[index], queried_price);
         }
     }
-
-    to_binary(&PricesResponse { prices })
+    Ok(prices)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -181,7 +190,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     let oracle = router.get_oracle(deps.storage, &key)?;
                     to_binary(&OracleResponse { oracle, key })
                 }
-                QueryMsg::GetPrice { key } => Ok(get_price(deps, router, key)?),
+                QueryMsg::GetPrice { key } => to_binary(&get_price(deps, router, key)?),
                 QueryMsg::GetOracles { keys } => {
                     let mut oracles = vec![];
                     for key in keys {
@@ -190,7 +199,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     }
                     to_binary(&OraclesResponse { oracles })
                 }
-                QueryMsg::GetPrices { keys } => Ok(get_prices(deps, router, keys)?),
+                QueryMsg::GetPrices { keys } => to_binary(&get_prices(deps, router, keys)?),
                 QueryMsg::GetKeys {} => Ok(OracleRouter::get_keys(deps)?),
                 _ => panic!("Code should never go here."),
             }
@@ -199,7 +208,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     pad_query_result(resp, BLOCK_SIZE)
 }
 
-fn query_band_price(deps: Deps, router: &OracleRouter, key: String) -> StdResult<OraclePrice> {
+fn query_band_price(deps: Deps, router: &OracleRouter, key: String) -> StdResult<PriceResponse> {
     let band_response = reference_data(
         &deps.querier,
         key.clone(),
@@ -213,7 +222,7 @@ fn query_band_prices(
     deps: Deps,
     router: &OracleRouter,
     keys: Vec<String>,
-) -> StdResult<Vec<OraclePrice>> {
+) -> StdResult<PricesResponse> {
     let quote_symbol = router.config.quote_symbol.clone();
     let quote_symbols = vec![quote_symbol; keys.len()];
     let band = &router.config.band;

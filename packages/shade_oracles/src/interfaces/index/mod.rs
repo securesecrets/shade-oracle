@@ -7,7 +7,7 @@ pub mod msg;
 pub const SIX_HOURS: u64 = 21600u64;
 
 #[cw_serde]
-pub struct Config {
+pub struct IndexOracleConfig {
     /// The only supported symbol of this oracle.
     /// Represents the index asset (i.e. "SILK").
     pub symbol: String,
@@ -51,9 +51,9 @@ mod state {
 
     use super::{error::*, msg::*, *};
     use crate::{
-        common::OraclePrice,
         impl_global_status,
         interfaces::band::ReferenceData,
+        interfaces::common::OraclePrice,
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{
@@ -62,7 +62,7 @@ mod state {
     };
     use cosmwasm_std::{StdResult, Storage, Timestamp, Uint128};
 
-    impl ItemStorage for Config {
+    impl ItemStorage for IndexOracleConfig {
         const ITEM: Item<'static, Self> = Item::new("indexconfig");
     }
 
@@ -81,7 +81,7 @@ mod state {
     pub type BtrBasket = HashMap<AssetSymbol, BtrAssetWeights>;
 
     pub struct IndexOracle {
-        pub config: Config,
+        pub config: IndexOracleConfig,
         pub asset_symbols: Vec<String>,
         pub basket: BtrBasket,
         pub target: BtrTarget,
@@ -91,7 +91,7 @@ mod state {
 
     impl IndexOracle {
         pub fn load(storage: &dyn Storage) -> StdResult<Self> {
-            let config = Config::load(storage)?;
+            let config = IndexOracleConfig::load(storage)?;
             let asset_symbols = AssetSymbols::load(storage)?;
             let mut basket = HashMap::new();
             for symbol in asset_symbols.as_slice() {
@@ -154,7 +154,7 @@ mod state {
 
             let target = BtrTarget::new(target.into(), false, time.seconds());
             Ok(Self {
-                config: Config {
+                config: IndexOracleConfig {
                     symbol: index_symbol,
                     router,
                     when_stale: when_stale.into(),
@@ -360,7 +360,9 @@ mod state {
     #[cfg(feature = "index")]
     mod test {
         use super::{msg::InitialBasketItem, *};
-        use crate::{common::OraclePrice, unit_test_interface::prices::generate_price_feed};
+        use crate::{
+            interfaces::common::OraclePrice, unit_test_interface::prices::generate_price_feed,
+        };
         use better_secret_math::{core::exp10, ud60x18::assert_with_precision};
 
         fn basic_basket() -> Vec<InitialBasketItem> {

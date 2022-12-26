@@ -2,14 +2,13 @@ use cosmwasm_std::{
     entry_point, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdResult,
 };
 use shade_oracles::{
-    common::{
-        oracle_exec, oracle_query,
-        querier::{query_band_price, query_price, query_token_info},
-        ExecuteMsg, Oracle, OraclePrice, OracleQuery,
-    },
     core::get_precision,
+    interfaces::common::{oracle_exec, oracle_query, ExecuteMsg, Oracle, OraclePrice, OracleQuery},
     interfaces::staking_derivative::shade::{querier::query_derivative_price, InstantiateMsg},
-    interfaces::{band::ReferenceData, staking_derivative::shade::StakingDerivativeConfig},
+    interfaces::{
+        band::ReferenceData, staking_derivative::shade::StakingDerivativeConfig, CommonConfig,
+    },
+    querier::{query_band_price, query_price, query_token_info},
     ssp::ItemStorage,
 };
 
@@ -52,7 +51,7 @@ impl Oracle for ShadeStakingDerivativeOracle {
         deps: Deps,
         _env: &Env,
         key: String,
-        config: &shade_oracles::common::CommonConfig,
+        config: &CommonConfig,
     ) -> StdResult<OraclePrice> {
         let oracle_config = StakingDerivativeConfig::load(deps.storage)?;
 

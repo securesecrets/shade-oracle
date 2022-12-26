@@ -20,12 +20,16 @@ impl InstantiateCallback for InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    UpdateSymbolPrice {
-        base_symbol: String,
-        quote_symbol: String,
-        rate: Uint128,
-        last_updated: Option<u64>,
-    },
+    SetPrice { price: MockPrice },
+    SetPrices { prices: Vec<MockPrice> },
+}
+
+#[cw_serde]
+pub struct MockPrice {
+    pub base_symbol: String,
+    pub quote_symbol: String,
+    pub rate: Uint128,
+    pub last_updated: Option<u64>,
 }
 
 impl ExecuteCallback for ExecuteMsg {
@@ -33,8 +37,9 @@ impl ExecuteCallback for ExecuteMsg {
 }
 
 #[cw_serde]
-pub enum HandleAnswer {
-    UpdateSymbolPrice { status: ResponseStatus },
+pub enum ExecuteAnswer {
+    SetPrice { status: ResponseStatus },
+    SetPrices { status: ResponseStatus },
 }
 
 #[cw_serde]

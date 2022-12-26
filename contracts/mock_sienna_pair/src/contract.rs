@@ -5,9 +5,7 @@ use shade_oracles::storage::{singleton, singleton_read, ReadonlySingleton, Singl
 use shade_oracles::{
     core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::siennaswap::{
-        Pair, SiennaDexTokenType as TokenType, SiennaSwapExchangeQueryMsg as PairQuery,
-        SiennaSwapPairInfo as PairInfo, SiennaSwapPairInfoResponse as PairInfoResponse,
-        SimulationResponse,
+        Pair, PairInfo, PairInfoResponse, QueryMsg, SimulationResponse, TokenType,
     },
 };
 
@@ -107,12 +105,12 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: PairQuery) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        PairQuery::PairInfo => to_binary(&PairInfoResponse {
+        QueryMsg::PairInfo => to_binary(&PairInfoResponse {
             pair_info: pair_info_r(deps.storage).load()?,
         }),
-        PairQuery::SwapSimulation { offer } => {
+        QueryMsg::SwapSimulation { offer } => {
             //TODO: check swap doesnt exceed pool size
 
             let in_token = match offer.token {

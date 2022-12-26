@@ -8,7 +8,7 @@ use shade_protocol::utils::InstantiateCallback;
 
 pub mod shade {
 
-    use crate::{common::InstantiateCommonConfig, BLOCK_SIZE};
+    use crate::{interfaces::common::InstantiateCommonConfig, BLOCK_SIZE};
 
     use super::*;
 
