@@ -1,7 +1,8 @@
 use super::registry::{Config, ProtectedKeyInfo, RegistryOperation, UpdateConfig};
 use crate::{
-    common::{status::ContractStatus, PriceResponse, PricesResponse},
+    common::status::ContractStatus,
     impl_msg_callbacks,
+    interfaces::common::{PriceResponse, PricesResponse},
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint256;
@@ -18,11 +19,11 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    SetStatus { status: ContractStatus },
-    UpdateProtectedKeys { prices: Vec<(String, Uint256)> },
-    UpdateConfig { config: UpdateConfig },
-    UpdateRegistry { operation: RegistryOperation },
-    BatchUpdateRegistry { operations: Vec<RegistryOperation> },
+    SetStatus(ContractStatus),
+    UpdateProtectedKeys(Vec<(String, Uint256)>),
+    UpdateConfig(UpdateConfig),
+    UpdateRegistry(RegistryOperation),
+    BatchUpdateRegistry(Vec<RegistryOperation>),
 }
 
 #[cw_serde]
@@ -59,12 +60,6 @@ pub struct KeysResponse {
 #[cw_serde]
 pub struct ProtectedKeysResponse {
     keys: Vec<ProtectedKeyInfo>,
-}
-
-#[cw_serde]
-pub struct ProtectedKeyResponse {
-    pub key: String,
-    pub info: ProtectedKeyInfo,
 }
 
 #[cw_serde]

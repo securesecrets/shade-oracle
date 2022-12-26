@@ -29,3 +29,5 @@ ui/nohup.out
 
 node_modules/
 artifacts/
+fleet.toml
+.cargo/
