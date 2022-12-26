@@ -79,7 +79,7 @@ pub fn execute(
     let router = OracleRouter::load(deps.storage)?;
 
     let result = match msg {
-        ExecuteMsg::SetStatus { status } => {
+        ExecuteMsg::SetStatus(status) => {
             require_admin(&router, &deps.querier, &info.sender)?;
             OracleRouter::update_status(deps.storage, status)?;
             Ok(Response::default().add_attributes(vec![attr_action!("set_status")]))
@@ -87,7 +87,7 @@ pub fn execute(
         _ => {
             OracleRouter::require_can_run(deps.storage, true, true, false)?;
             match msg {
-                ExecuteMsg::UpdateConfig { config } => {
+                ExecuteMsg::UpdateConfig(config) => {
                     require_admin(&router, &deps.querier, &info.sender)?;
                     router
                         .update_config(deps.api, config)?
@@ -95,12 +95,12 @@ pub fn execute(
                         .save(deps.storage)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_config")]))
                 }
-                ExecuteMsg::UpdateRegistry { operation } => {
+                ExecuteMsg::UpdateRegistry(operation) => {
                     require_admin(&router, &deps.querier, &info.sender)?;
                     OracleRouter::resolve_registry_operation(deps.api, deps.storage, operation)?;
                     Ok(Response::new().add_attributes(vec![attr_action!("update_registry")]))
                 }
-                ExecuteMsg::BatchUpdateRegistry { operations } => {
+                ExecuteMsg::BatchUpdateRegistry(operations) => {
                     require_admin(&router, &deps.querier, &info.sender)?;
                     for operation in operations {
                         OracleRouter::resolve_registry_operation(
@@ -111,7 +111,7 @@ pub fn execute(
                     }
                     Ok(Response::new().add_attributes(vec![attr_action!("batch_update_registry")]))
                 }
-                ExecuteMsg::UpdateProtectedKeys { prices } => {
+                ExecuteMsg::UpdateProtectedKeys(prices) => {
                     require_bot(&router, &deps.querier, &info.sender)?;
                     for (key, price) in prices {
                         OracleRouter::update_protected_key(deps.storage, &key, price)?;

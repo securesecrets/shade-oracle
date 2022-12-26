@@ -30,24 +30,11 @@ pub mod msg {
         /// - Base symbol: the router symbol corresponding to the USDT price.
         /// - Underlying symbol: the router symbol corresponding to the ETH price.
         /// - Key: the oracle key supported by this pair (ex: "ETH (ShadeSwap ETH/USDT LP)").
-        SetKey {
-            key: String,
-            base_tokenn: RawAsset,
-            target_token: RawAsset,
-            pair: RawContract,
-        },
-        RemovePairs {
-            keys: Vec<String>,
-        },
-        UpdateAssets {
-            assets: Vec<RawAsset>,
-        },
-        UpdateConfig {
-            new_router: RawContract,
-        },
-        SetStatus {
-            status: bool,
-        },
+        SetKey(RawPairData),
+        RemovePairs(Vec<String>),
+        UpdateAssets(Vec<RawAsset>),
+        UpdateConfig(RawContract),
+        SetStatus(bool),
     }
 
     #[cw_serde]
@@ -67,19 +54,15 @@ pub mod msg {
         GetPrices { keys: Vec<String> },
         #[returns(ConfigResponse)]
         GetConfig {},
-        #[returns(PairsResponse)]
+        #[returns(Vec<PairData>)]
         GetPairs {},
     }
 
     pub type ConfigResponse = CommonConfig;
+    pub type PairsResponse = Vec<PairData>;
 
     #[cw_serde]
-    pub struct PairsResponse {
-        pub pairs: Vec<PairDataResponse>,
-    }
-
-    #[cw_serde]
-    pub struct PairDataResponse {
+    pub struct PairData {
         pub key: String,
         pub base_token: Asset,
         pub target_token: Asset,
@@ -101,7 +84,7 @@ mod state {
     #[cw_serde]
     /// Pair is the LP pair & symbol is the key we'll use to
     /// get the price of 1 side of the LP pair from our oracle router.
-    pub struct PairData {
+    pub struct StoredPairData {
         pub base_token: Addr,
         pub target_token: Addr,
         pub pair: Contract,
@@ -119,7 +102,7 @@ mod state {
     impl<'a> LiquidityPairMarketOracle {
         pub const ASSETS: Assets<'static, 'a> = Assets::new("pair_assets");
         // Keyed by its symbol.
-        pub const PAIRS: Map<'static, &'a str, PairData> = Map::new("pairs");
+        pub const PAIRS: Map<'static, &'a str, StoredPairData> = Map::new("pairs");
     }
 
     impl LiquidityPairMarketOracle {
@@ -141,10 +124,10 @@ mod state {
             base_token: Asset,
             target_token: Asset,
             pair: Contract,
-        ) -> StdResult<PairData> {
+        ) -> StdResult<StoredPairData> {
             Self::ASSETS.may_set(storage, &base_token)?;
             Self::ASSETS.may_set(storage, &target_token)?;
-            let data = PairData {
+            let data = StoredPairData {
                 base_token: base_token.contract.address,
                 target_token: target_token.contract.address,
                 pair,
@@ -161,10 +144,10 @@ mod state {
             querier: &QuerierWrapper,
             asset: RawAsset,
         ) -> StdResult<()> {
-            let asset = asset.into_asset(&self.config.router, &querier, api)?;
+            let asset = asset.into_asset(&self.config.router, querier, api)?;
             Self::ASSETS.update_existing_asset(
                 storage,
-                &querier,
+                querier,
                 &self.config.router,
                 &asset.contract.address,
                 &asset.quote_symbol,
@@ -178,7 +161,7 @@ mod state {
             api: &dyn Api,
             querier: &QuerierWrapper,
             data: RawPairData,
-        ) -> StdResult<PairData> {
+        ) -> StdResult<StoredPairData> {
             let pair = data.pair.into_valid(api)?;
             let base_token = data
                 .base_token
@@ -189,14 +172,11 @@ mod state {
             Self::set_pair_data(storage, data.key, base_token, target_token, pair)
         }
 
-        pub fn get_pair_data_resp(
-            key: &String,
-            storage: &dyn Storage,
-        ) -> StdResult<PairDataResponse> {
+        pub fn get_pair_data_resp(key: &String, storage: &dyn Storage) -> StdResult<PairData> {
             let data = Self::PAIRS.load(storage, key)?;
             let base_token = Self::ASSETS.0.load(storage, &data.base_token)?;
             let target_token = Self::ASSETS.0.load(storage, &data.target_token)?;
-            Ok(PairDataResponse {
+            Ok(PairData {
                 key: key.clone(),
                 base_token,
                 target_token,
@@ -204,7 +184,7 @@ mod state {
             })
         }
 
-        pub fn get_supported_pairs(storage: &dyn Storage) -> StdResult<Vec<PairDataResponse>> {
+        pub fn get_supported_pairs(storage: &dyn Storage) -> StdResult<Vec<PairData>> {
             let keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             let mut supported_pairs = vec![];
             for key in keys {
@@ -216,7 +196,7 @@ mod state {
         }
 
         // pub fn calculate_lp_token_spot_rate(
-        //     data: PairDataResponse,
+        //     data: PairData,
         //     lp_token_info: TokenInfo,
         //     reserves_0: Uint128,
         //     reserves_1: Uint128,

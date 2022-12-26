@@ -4,7 +4,7 @@
 use crate::error::CommonOracleError;
 use crate::interfaces::common::{BtrOraclePrice, OraclePrice};
 use crate::querier::query_price;
-use better_secret_math::core::checked_add;
+use better_secret_math::core::{bankers_round, checked_add, exp10, muldiv};
 use better_secret_math::{BtrRebase, U256};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256};
@@ -39,10 +39,10 @@ impl<'a, 'b> Assets<'a, 'b> {
         address: &Addr,
     ) -> StdResult<Asset> {
         let asset = self.0.may_load(storage, address)?;
-        if asset.is_none() {
-            Err(CommonOracleError::AssetNotFound(address.clone()).into())
+        if let Some(asset) = asset {
+            Ok(asset)
         } else {
-            Ok(asset.unwrap())
+            Err(CommonOracleError::AssetNotFound(address.clone()).into())
         }
     }
     pub fn may_set(&self, storage: &mut dyn Storage, asset: &Asset) -> StdResult<()> {
@@ -58,21 +58,20 @@ impl<'a, 'b> Assets<'a, 'b> {
         querier: &QuerierWrapper,
         oracle: &Contract,
         asset: &Addr,
-        symbol: &String,
+        symbol: &str,
     ) -> StdResult<()> {
-        self.0
-            .update(storage, &asset, |old_asset| -> StdResult<_> {
-                match old_asset {
-                    Some(mut asset) => {
-                        asset.update_quote_symbol(&oracle, &querier, symbol.clone())?;
-                        Ok(asset)
-                    }
-                    None => Err(StdError::generic_err(format!(
-                        "{} is not an existing asset.",
-                        asset.clone()
-                    ))),
+        self.0.update(storage, asset, |old_asset| -> StdResult<_> {
+            match old_asset {
+                Some(mut asset) => {
+                    asset.update_quote_symbol(oracle, querier, symbol.to_string())?;
+                    Ok(asset)
                 }
-            })?;
+                None => Err(StdError::generic_err(format!(
+                    "{} is not an existing asset.",
+                    asset.clone()
+                ))),
+            }
+        })?;
         Ok(())
     }
 }
@@ -117,6 +116,25 @@ impl Asset {
     }
     pub fn get_price(&self, querier: &QuerierWrapper, router: &Contract) -> StdResult<OraclePrice> {
         query_price(router, querier, self.quote_symbol.clone())
+    }
+    /// Normalizes the asset amount from being based off asset decimals -> 18 decimals.
+    pub fn normalize_amount(&self, amount: impl Into<U256>) -> StdResult<U256> {
+        if self.decimals == 18 {
+            Ok(amount.into())
+        } else {
+            muldiv(amount.into(), exp10(18), exp10(self.decimals))
+        }
+    }
+    /// Gets the amount of asset the amount normalized to 18 decimals represents.
+    pub fn get_amount(&self, normalized_amount: impl Into<U256>) -> StdResult<U256> {
+        if self.decimals == 18 {
+            Ok(normalized_amount.into())
+        } else {
+            let precision_diff = 18 - self.decimals;
+            let amount =
+                bankers_round(normalized_amount.into(), precision_diff) / exp10(precision_diff);
+            Ok(amount)
+        }
     }
     pub fn append_msgs(
         &self,

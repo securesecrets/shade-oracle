@@ -28,7 +28,7 @@ pub fn query_price(
 pub fn query_prices(
     oracle: &Contract,
     querier: &QuerierWrapper,
-    keys: &Vec<String>,
+    keys: &[String],
 ) -> StdResult<PricesResponse> {
     OracleQuery::GetPrices {
         keys: keys.to_vec(),

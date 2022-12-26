@@ -40,7 +40,7 @@ pub fn execute(
     let resp = Response::new();
     oracle.config.require_admin(&deps.querier, info)?;
     let resp = match msg {
-        ExecuteMsg::SetStatus { status } => {
+        ExecuteMsg::SetStatus(status) => {
             oracle.config.update_config(deps.api, Some(status), None)?;
             oracle.save(deps.storage)?;
             resp.add_attributes(vec![attr_action!("set_status")])
@@ -48,7 +48,7 @@ pub fn execute(
         _ => {
             oracle.config.require_enabled()?;
             match msg {
-                ExecuteMsg::SetPairs { data } => {
+                ExecuteMsg::SetPairs(data) => {
                     for item in data {
                         let valid_data = oracle.validate_and_set_pair_data(
                             deps.storage,
@@ -68,17 +68,17 @@ pub fn execute(
                     }
                     resp.add_attributes(vec![attr_action!("set_pairs")])
                 }
-                ExecuteMsg::RemovePairs { keys } => {
+                ExecuteMsg::RemovePairs(keys) => {
                     LiquidityPairOracle::remove_keys(deps.storage, keys)?;
                     resp.add_attributes(vec![attr_action!("remove_pairs")])
                 }
-                ExecuteMsg::UpdateAssets { assets } => {
+                ExecuteMsg::UpdateAssets(assets) => {
                     for asset in assets {
                         oracle.update_asset_symbol(deps.storage, deps.api, &deps.querier, asset)?;
                     }
                     resp.add_attributes(vec![attr_action!("update_assets")])
                 }
-                ExecuteMsg::UpdateConfig { new_router } => {
+                ExecuteMsg::UpdateConfig(new_router) => {
                     oracle
                         .config
                         .update_config(deps.api, None, Some(new_router))?;
@@ -105,8 +105,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             QueryMsg::GetPrices { keys } => {
                 to_binary(&query_prices(&oracle, deps.storage, &deps.querier, keys)?)
             }
-            QueryMsg::GetConfig {} => to_binary(&query_config(oracle)?),
-            QueryMsg::GetPairs {} => todo!(),
+            QueryMsg::GetConfig {} => to_binary(&query_config(deps.storage, oracle)?),
+            QueryMsg::GetPairs {} => to_binary(&query_pairs(deps.storage)?),
         },
         BLOCK_SIZE,
     )
@@ -122,13 +122,13 @@ pub fn query_price(
     let prices = query_router_prices(
         &oracle.config.router,
         querier,
-        &vec![
+        &[
             data.token_0.quote_symbol.clone(),
             data.token_1.quote_symbol.clone(),
         ],
     )?;
     let pair_resp = SiennaSwapQuerier::query_pair_info(querier, &data.pair)?.pair_info;
-    let lp_token_info = query_token_info(&pair_resp.liquidity_token, &querier)?;
+    let lp_token_info = query_token_info(&pair_resp.liquidity_token, querier)?;
 
     let reserves_0 = pair_resp.amount_0;
     let reserves_1 = pair_resp.amount_1;
@@ -141,7 +141,7 @@ pub fn query_price(
         &[&prices[0], &prices[1]],
     )?;
 
-    Ok(OraclePrice::new(key.to_string(), data))
+    Ok(OraclePrice::new(key, data))
 }
 
 pub fn query_prices(
@@ -157,14 +157,17 @@ pub fn query_prices(
     Ok(prices)
 }
 
-pub fn query_config(oracle: LiquidityPairOracle) -> StdResult<CommonConfigResponse> {
+pub fn query_config(
+    storage: &dyn Storage,
+    oracle: LiquidityPairOracle,
+) -> StdResult<CommonConfigResponse> {
+    let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
     Ok(CommonConfigResponse {
         config: oracle.config,
+        supported_keys,
     })
 }
 
 pub fn query_pairs(storage: &dyn Storage) -> StdResult<PairsResponse> {
-    Ok(PairsResponse {
-        pairs: LiquidityPairOracle::get_supported_pairs(storage)?,
-    })
+    LiquidityPairOracle::get_supported_pairs(storage)
 }

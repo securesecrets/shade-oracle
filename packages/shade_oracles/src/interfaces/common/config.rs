@@ -9,6 +9,7 @@ pub struct CommonConfig {
 #[cw_serde]
 pub struct CommonConfigResponse {
     pub config: CommonConfig,
+    pub supported_keys: Vec<String>,
 }
 
 #[cfg(feature = "core")]
@@ -22,7 +23,7 @@ mod state {
 
     use super::*;
 
-    impl<'a> CommonConfig {
+    impl CommonConfig {
         pub const SUPPORTED_KEYS: Item<'static, Vec<String>> = Item::new("supported_keys");
     }
 
@@ -36,7 +37,7 @@ mod state {
 
         pub fn add_supported_key(storage: &mut dyn Storage, key: &String) -> StdResult<()> {
             Self::SUPPORTED_KEYS.update(storage, |mut current_keys| -> StdResult<_> {
-                if !current_keys.contains(&key) {
+                if !current_keys.contains(key) {
                     current_keys.push(key.to_string());
                 }
                 Ok(current_keys)

@@ -15,6 +15,7 @@ impl ToString for CommonOracleError {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<StdError> for CommonOracleError {
     fn into(self) -> StdError {
         StdError::generic_err(self.to_string())

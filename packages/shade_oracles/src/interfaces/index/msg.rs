@@ -30,23 +30,17 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum AdminMsg {
-    UpdateStatus {
-        status: ContractStatus,
-    },
+    UpdateStatus(ContractStatus),
     // Asset with weight 0 will be removed
     // all others are added or changed
     /// (symbol, weight)
-    ModBasket {
-        basket: Vec<InitialBasketItem>,
-    },
+    ModBasket(Vec<InitialBasketItem>),
     UpdateConfig {
         symbol: Option<String>,
         router: Option<RawContract>,
         when_stale: Option<Uint64>,
     },
-    UpdateTarget {
-        new_target: Uint128,
-    },
+    UpdateTarget(Uint128),
     Unfreeze {},
 }
 
