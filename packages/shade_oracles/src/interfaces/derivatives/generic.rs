@@ -26,7 +26,7 @@ pub mod msg {
         RemoveDerivatives(Vec<String>),
         UpdateAssets(Vec<RawAsset>),
         /// Optional. Used by bot if we can't get the rate from the contract itself.
-        UpdateRate(Vec<DerivativeExchangeRate>),
+        UpdateRates(Vec<DerivativeExchangeRate>),
         UpdateConfig(RawContract),
         SetStatus(bool),
     }
