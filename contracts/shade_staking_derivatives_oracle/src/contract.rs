@@ -72,7 +72,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     oracle.save(deps.storage)?;
                     resp.add_attributes(vec![attr_action!("update_config")])
                 }
-                ExecuteMsg::UpdateRate(rates) => {
+                ExecuteMsg::UpdateRates(rates) => {
                     try_update_rates(deps.storage, &deps.querier, env, info, oracle, rates)?;
                     resp.add_attribute_plaintext(
                         "action",
