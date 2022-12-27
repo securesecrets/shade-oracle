@@ -297,5 +297,5 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             to_binary(&BasketResponse { basket })
         }
     }?;
-    Ok(pad_query_result(Ok(binary), BLOCK_SIZE)?)
+    pad_query_result(Ok(binary), BLOCK_SIZE)
 }

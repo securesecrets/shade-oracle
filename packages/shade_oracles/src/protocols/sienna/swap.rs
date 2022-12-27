@@ -12,16 +12,13 @@ impl SiennaSwapQuerier {
         querier: &QuerierWrapper,
         pair: &Contract,
         token: &Contract,
-        offer: Uint128,
+        amount: Uint128,
     ) -> StdResult<SimulationResponse> {
         let token = TokenType::CustomToken {
             contract_addr: token.address.clone(),
             token_code_hash: token.code_hash.clone(),
         };
-        let offer = TokenTypeAmount {
-            amount: offer,
-            token,
-        };
+        let offer = TokenTypeAmount { amount, token };
         QueryMsg::SwapSimulation { offer }.query(querier, pair)
     }
 }

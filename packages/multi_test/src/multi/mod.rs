@@ -7,8 +7,6 @@ pub mod mocks {
         use mock_sienna_pair;
         multi_derive::implement_multi!(MockSiennaPair, mock_sienna_pair);
     }
-    #[cfg(feature = "snip20")]
-    pub use shade_multi_test::multi::snip20::Snip20;
 }
 
 pub use crate::multi::{
@@ -30,36 +28,56 @@ pub mod band {
     }
 }
 
-#[cfg(feature = "index_oracle")]
 pub mod index {
     use index_oracle;
     multi_derive::implement_multi!(IndexOracle, index_oracle);
 }
 
-#[cfg(feature = "market")]
-pub mod market {
-    pub mod siennaswap {
+pub mod dex {
+    pub use a::*;
+    pub use b::*;
+    pub use c::*;
+    pub use d::*;
+    pub use e::*;
+
+    mod a {
+        multi_derive::implement_multi!(SiennaSwapSpotOracle, siennaswap_spot_oracle);
+    }
+
+    mod b {
+        multi_derive::implement_multi!(SiennaSwapReservesOracle, siennaswap_reserves_oracle);
+    }
+
+    mod c {
         multi_derive::implement_multi!(SiennaSwapMarketOracle, siennaswap_market_oracle);
     }
-    pub mod shadeswap {
+
+    mod d {
         multi_derive::implement_multi!(ShadeSwapMarketOracle, shadeswap_market_oracle);
     }
-}
 
-#[cfg(feature = "lp")]
-pub mod lp {
-    pub mod spot {
-        multi_derive::implement_multi!(SiennaSwapLpSpotOracle, siennaswap_lp_spot_oracle);
+    mod e {
+        multi_derive::implement_multi!(ShadeSwapSpotOracle, shadeswap_spot_oracle);
     }
-    multi_derive::implement_multi!(SiennaSwapLpOracle, siennaswap_lp_oracle);
 }
 
-#[cfg(feature = "staking-derivative")]
-pub mod staking_derivative {
-    multi_derive::implement_multi!(
-        ShadeStakingDerivativeOracle,
-        shade_staking_derivative_oracle
-    );
+pub mod derivatives {
+    pub use a::*;
+    pub use b::*;
+
+    mod a {
+        multi_derive::implement_multi!(
+            ShadeStakingDerivativesOracle,
+            shade_staking_derivatives_oracle
+        );
+    }
+
+    mod b {
+        multi_derive::implement_multi!(
+            StrideStakingDerivativesOracle,
+            stride_staking_derivatives_oracle
+        );
+    }
 }
 
 pub mod helpers;

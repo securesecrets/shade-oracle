@@ -30,8 +30,8 @@ pub mod msg {
         /// - Base symbol: the router symbol corresponding to the USDT price.
         /// - Underlying symbol: the router symbol corresponding to the ETH price.
         /// - Key: the oracle key supported by this pair (ex: "ETH (ShadeSwap ETH/USDT LP)").
-        SetKey(RawPairData),
-        RemovePairs(Vec<String>),
+        SetKeys(Vec<RawPairData>),
+        RemoveKeys(Vec<String>),
         UpdateAssets(Vec<RawAsset>),
         UpdateConfig(RawContract),
         SetStatus(bool),
@@ -194,43 +194,5 @@ mod state {
             }
             Ok(supported_pairs)
         }
-
-        // pub fn calculate_lp_token_spot_rate(
-        //     data: PairData,
-        //     lp_token_info: TokenInfo,
-        //     reserves_0: Uint128,
-        //     reserves_1: Uint128,
-        //     pair_prices: &[OraclePrice; 2],
-        // ) -> StdResult<ReferenceData> {
-        //     let total_supply = lp_token_info.total_supply.unwrap();
-        //     let lp_token_decimals = lp_token_info.decimals;
-        //     let price_0 = pair_prices[0].data();
-        //     let price_1 = pair_prices[1].data();
-
-        //     let a = FairLpPriceInfo {
-        //         reserve: reserves_0.u128(),
-        //         price: price_0.rate.u128(),
-        //         decimals: data.token_0.decimals,
-        //     };
-
-        //     let b = FairLpPriceInfo {
-        //         reserve: reserves_1.u128(),
-        //         price: price_1.rate.u128(),
-        //         decimals: data.token_1.decimals,
-        //     };
-
-        //     let rate = LiquidityPoolMath::get_lp_token_spot_price(
-        //         a,
-        //         b,
-        //         total_supply.u128(),
-        //         lp_token_decimals,
-        //     )?;
-
-        //     Ok(ReferenceData {
-        //         rate,
-        //         last_updated_base: min(price_0.last_updated_base, price_1.last_updated_base),
-        //         last_updated_quote: min(price_0.last_updated_quote, price_1.last_updated_quote),
-        //     })
-        // }
     }
 }
