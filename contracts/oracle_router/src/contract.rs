@@ -183,14 +183,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             status: OracleRouter::load_status(deps.storage)?,
         }),
         _ => {
-            // If deprecated or frozen, throw error so dependencies cannot query it.
-            OracleRouter::require_can_run(deps.storage, true, false, false)?;
             match msg {
                 QueryMsg::GetOracle { key } => {
                     let oracle = router.get_oracle(deps.storage, &key)?;
                     to_binary(&OracleResponse { oracle, key })
                 }
-                QueryMsg::GetPrice { key } => to_binary(&get_price(deps, router, key)?),
+                QueryMsg::GetPrice { key } => {
+                    // If deprecated or frozen, throw error so dependencies cannot query it.
+                    OracleRouter::require_can_run(deps.storage, true, false, false)?;
+                    to_binary(&get_price(deps, router, key)?)
+                }
                 QueryMsg::GetOracles { keys } => {
                     let mut oracles = vec![];
                     for key in keys {
@@ -199,7 +201,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     }
                     to_binary(&OraclesResponse { oracles })
                 }
-                QueryMsg::GetPrices { keys } => to_binary(&get_prices(deps, router, keys)?),
+                QueryMsg::GetPrices { keys } => {
+                    // If deprecated or frozen, throw error so dependencies cannot query it.
+                    OracleRouter::require_can_run(deps.storage, true, false, false)?;
+                    to_binary(&get_prices(deps, router, keys)?)
+                }
                 QueryMsg::GetKeys {} => Ok(OracleRouter::get_keys(deps)?),
                 _ => panic!("Code should never go here."),
             }

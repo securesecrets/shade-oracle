@@ -4,16 +4,14 @@
     clippy::too_many_arguments
 )]
 
+use super::*;
+use crate::{multi::helpers::OracleCore, multi::index::IndexOracle};
 use cosmwasm_std::{Addr, Decimal256, Uint128, Uint64};
 use rstest::*;
+use shade_oracles::interfaces::common::PriceResponse;
 use shade_oracles::{
-    common::PriceResponse,
     core::{ExecuteCallback, InstantiateCallback, Query},
     interfaces::index::{msg::*, *},
-    interfaces::router,
-};
-use shade_oracles_multi_test::{
-    multi::helpers::OracleCore, multi::index::IndexOracle, App, MultiTestable,
 };
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -110,7 +108,7 @@ fn basic_index_test(
     let mut app = App::default();
 
     let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
-    let router = oracle_core.router.0;
+    let router = oracle_core.router.0.clone();
 
     let index_oracle = InstantiateMsg {
         router: router.clone().into(),
@@ -129,19 +127,15 @@ fn basic_index_test(
     .unwrap();
 
     // Configure router w/ index oracle
-    router::msg::ExecuteMsg::UpdateRegistry {
-        operation: router::registry::RegistryOperation::Add {
-            oracle: index_oracle.into(),
-            key: symbol.clone(),
-        },
-    }
-    .test_exec(&router, &mut app, user, &[])
-    .unwrap();
+    oracle_core
+        .router
+        .set_keys(&user, &mut app, index_oracle.into(), vec![symbol.clone()])
+        .unwrap();
 
     let price: PriceResponse = QueryMsg::GetPrice { key: symbol }
         .test_query(&router, &app)
         .unwrap();
-    let data = price.price.data();
+    let data = price.data();
 
     {
         let err = if data.rate > expected {
@@ -279,8 +273,7 @@ fn mod_index_test(
     let mut app = App::default();
 
     let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
-    let band = oracle_core.band.0;
-    let router = oracle_core.router.0;
+    let router = oracle_core.router.0.clone();
 
     let index_oracle = InstantiateMsg {
         router: router.clone().into(),
@@ -299,21 +292,22 @@ fn mod_index_test(
     .unwrap();
 
     // Configure router w/ index oracle
-    router::msg::ExecuteMsg::UpdateRegistry {
-        operation: router::registry::RegistryOperation::Add {
-            oracle: index_oracle.clone().into(),
-            key: symbol.clone(),
-        },
-    }
-    .test_exec(&router, &mut app, user.clone(), &[])
-    .unwrap();
+    oracle_core
+        .router
+        .set_keys(
+            &user,
+            &mut app,
+            index_oracle.clone().into(),
+            vec![symbol.clone()],
+        )
+        .unwrap();
 
-    let price: PriceResponse = QueryMsg::GetPrice {
-        key: symbol.clone(),
-    }
-    .test_query(&router, &app)
-    .unwrap();
-    let data = price.price.data();
+    let price = oracle_core
+        .router
+        .query_price(&app, symbol.clone())
+        .unwrap();
+
+    let data = price.data();
     {
         let err = if data.rate > expected_initial {
             data.rate - expected_initial
@@ -331,23 +325,16 @@ fn mod_index_test(
     };
 
     // Update mock band prices
-    for (sym, price) in new_prices {
-        shade_oracles::interfaces::band::ExecuteMsg::UpdateSymbolPrice {
-            base_symbol: sym,
-            quote_symbol: "USD".to_string(),
-            rate: price,
-            last_updated: None,
-        }
-        .test_exec(&band, &mut app, user.clone(), &[])
-        .unwrap();
-    }
+    oracle_core
+        .band
+        .update_prices(&user, &mut app, new_prices, None);
 
-    let price: PriceResponse = QueryMsg::GetPrice {
-        key: symbol.clone(),
-    }
-    .test_query(&router, &app)
-    .unwrap();
-    let data = price.price.data();
+    let price = oracle_core
+        .router
+        .query_price(&app, symbol.clone())
+        .unwrap();
+
+    let data = price.data();
     {
         let err = if data.rate > expected_final {
             data.rate - expected_final
@@ -365,7 +352,7 @@ fn mod_index_test(
     };
 
     // Update basket
-    ExecuteMsg::Admin(AdminMsg::ModBasket { basket: mod_basket })
+    ExecuteMsg::Admin(AdminMsg::ModBasket(mod_basket))
         .test_exec(&index_oracle, &mut app, user, &[])
         .unwrap();
 
@@ -389,7 +376,7 @@ fn mod_index_test(
     let price: PriceResponse = QueryMsg::GetPrice { key: symbol }
         .test_query(&router, &app)
         .unwrap();
-    let data = price.price.data();
+    let data = price.data();
     {
         let err = if data.rate > expected_final {
             data.rate - expected_final

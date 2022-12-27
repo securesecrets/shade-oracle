@@ -10,8 +10,10 @@ use cosmwasm_std::{
     Addr, Api, MessageInfo, QuerierWrapper, StdError, StdResult, Storage, Timestamp, Uint128,
     Uint256,
 };
-use shade_protocol::utils::asset::{Contract, RawContract};
-use shade_protocol::utils::Query;
+use shade_protocol::utils::{
+    asset::{Contract, RawContract},
+    ExecuteCallback, InstantiateCallback, Query,
+};
 
 #[cfg(test)]
 pub mod unit_test_interface;

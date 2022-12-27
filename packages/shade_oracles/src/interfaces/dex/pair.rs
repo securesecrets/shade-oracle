@@ -134,10 +134,10 @@ mod state {
             querier: &QuerierWrapper,
             asset: RawAsset,
         ) -> StdResult<()> {
-            let asset = asset.into_asset(&self.config.router, &querier, api)?;
+            let asset = asset.into_asset(&self.config.router, querier, api)?;
             Self::ASSETS.update_existing_asset(
                 storage,
-                &querier,
+                querier,
                 &self.config.router,
                 &asset.contract.address,
                 &asset.quote_symbol,
