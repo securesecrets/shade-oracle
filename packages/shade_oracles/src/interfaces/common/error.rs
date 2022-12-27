@@ -24,6 +24,7 @@ macro_rules! build_oracle_error {
 
         }
 
+        #[allow(clippy::from_over_into)]
         impl Into<cosmwasm_std::StdError> for [<$contract Error>] {
             fn into(self) -> cosmwasm_std::StdError {
                 cosmwasm_std::StdError::generic_err(self.to_string())

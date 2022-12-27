@@ -3,24 +3,13 @@
     clippy::inconsistent_digit_grouping,
     clippy::too_many_arguments
 )]
-
-use cosmwasm_std::{Addr, Decimal256, StdResult, Uint128, Uint256, Uint64};
+use super::*;
+use crate::multi::helpers::OracleCore;
+use cosmwasm_std::{Addr, Decimal256, Uint128, Uint256};
+use multi_test_helpers::admin_auth::AdminAuthHelper;
 use rstest::*;
-use shade_oracles::{
-    common::{PriceResponse, PricesResponse},
-    core::{
-        admin::{self, helpers::AdminPermissions},
-        ExecuteCallback, InstantiateCallback, Query,
-    },
-    interfaces::router::{msg::*, *},
-};
-use shade_oracles_multi_test::{
-    multi::helpers::{AdminAuthHelper, OracleCore},
-    multi::router::OracleRouter,
-    App, MultiTestable,
-};
+use shade_oracles::{core::admin::helpers::AdminPermissions, interfaces::router::registry::*};
 use std::collections::HashMap;
-use std::str::FromStr;
 
 pub fn basic_prices_1() -> Vec<(&'static str, u128)> {
     vec![
@@ -81,12 +70,14 @@ fn protected_query_tests() {
     let admin_auth = AdminAuthHelper(oracle_core.admin_auth.clone());
     let router = oracle_core.router;
     router
-        .protect_key(
+        .protect_keys(
             &user,
             app,
-            "USD".to_string(),
-            Decimal256::percent(4),
-            Uint256::from_u128(1_00 * 10u128.pow(16)),
+            vec![ProtectedKeyInfo::new(
+                "USD".to_string(),
+                Decimal256::percent(4),
+                Uint256::from_u128(1_00 * 10u128.pow(16)),
+            )],
         )
         .unwrap();
     assert!(router.query_price(app, "USD".to_string()).is_ok());
@@ -99,7 +90,7 @@ fn protected_query_tests() {
             (sym.to_string(), p.into())
         })
         .collect();
-    band.update_prices(&user, app, prices, app.block_info().time.seconds());
+    band.update_prices(&user, app, prices, Some(app.block_info().time.seconds()));
     //let resp = router.query_price(app, "USD".to_string());
     assert!(router.query_price(app, "USD".to_string()).is_err());
     assert!(router.query_prices(app, vec!["USD".to_string()]).is_err());
@@ -148,7 +139,7 @@ fn basic_query_test(#[case] prices: Vec<(&str, u128)>) {
 
     let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
     let resp = oracle_core.router.query_prices(&app, keys).unwrap();
-    for price in resp.prices {
+    for price in resp {
         assert_eq!(&price.data.rate, test_prices.get(price.key()).unwrap());
     }
 }

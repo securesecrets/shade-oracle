@@ -13,8 +13,8 @@ impl ShadeSwapQuerier {
     pub fn query_swap_simulation(
         querier: &QuerierWrapper,
         pair: &Contract,
-        amount: Uint128,
         token: &Contract,
+        amount: Uint128,
     ) -> StdResult<SwapSimulationResponse> {
         let token = TokenType::CustomToken {
             contract_addr: token.address.clone(),
