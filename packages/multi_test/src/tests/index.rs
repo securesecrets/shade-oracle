@@ -108,7 +108,7 @@ fn basic_index_test(
     let mut app = App::default();
 
     let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
-    let router = oracle_core.router.0;
+    let router = oracle_core.router.0.clone();
 
     let index_oracle = InstantiateMsg {
         router: router.clone().into(),
@@ -273,8 +273,7 @@ fn mod_index_test(
     let mut app = App::default();
 
     let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
-    let band = oracle_core.band.0;
-    let router = oracle_core.router.0;
+    let router = oracle_core.router.0.clone();
 
     let index_oracle = InstantiateMsg {
         router: router.clone().into(),
@@ -295,7 +294,13 @@ fn mod_index_test(
     // Configure router w/ index oracle
     oracle_core
         .router
-        .set_keys(&user, &mut app, index_oracle.into(), vec![symbol.clone()]);
+        .set_keys(
+            &user,
+            &mut app,
+            index_oracle.clone().into(),
+            vec![symbol.clone()],
+        )
+        .unwrap();
 
     let price = oracle_core
         .router
