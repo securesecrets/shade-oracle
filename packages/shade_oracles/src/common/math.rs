@@ -90,15 +90,21 @@ impl LiquidityPoolMath {
         let safe_price_a = U256::from(a.price);
         let safe_price_b = U256::from(b.price);
         let p = sqrt(mul(safe_price_a, safe_price_b)?)?;
-        Ok(mul(U256::from(2u128), muldiv(r, p, normalized_supply)?)?.into())
+        let rp2 = muldiv(r, p, normalized_supply)? * U256::from(2u128);
+        Ok(rp2.into())
     }
 }
 
 #[cfg(test)]
 pub mod test {
+    use better_secret_math::core::abs_diff;
+    use cosmwasm_std::Decimal256;
+
     use super::*;
     #[test]
     fn test_get_fair_lp_token_price_1() {
+        // TODO double check this
+
         // Hardcoded data from USDC.e - WAVAX pool on Trader Joe
         // https://analytics.traderjoexyz.com/pairs/0xa389f9430876455c36478deea9769b7ca4e3ddb1
         // https://snowtrace.io/token/0xa389f9430876455c36478deea9769b7ca4e3ddb1#readContract
@@ -122,9 +128,13 @@ pub mod test {
             total_supply,
             18,
         );
-        assert_eq!(
-            Uint128::from(21872892226771994653562412u128),
-            fair_lp_token_price.unwrap()
-        )
+
+        let expected = 21872892226771994653562412u128;
+        let diff = abs_diff(
+            Uint128::from(expected).into(),
+            fair_lp_token_price.unwrap().into(),
+        );
+        let deviation = Decimal256::from_ratio(diff, Uint256::from_u128(expected));
+        assert!(deviation < Decimal256::from_ratio(1u128, 10u128.pow(10)))
     }
 }
