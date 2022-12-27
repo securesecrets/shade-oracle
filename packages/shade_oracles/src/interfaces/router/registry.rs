@@ -46,6 +46,16 @@ pub struct ProtectedKeyInfo {
     pub price: Uint256,
 }
 
+impl ProtectedKeyInfo {
+    pub fn new(key: String, deviation: Decimal256, price: Uint256) -> Self {
+        Self {
+            key,
+            deviation,
+            price,
+        }
+    }
+}
+
 pub struct Oracle;
 
 #[cfg(feature = "router")]

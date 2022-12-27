@@ -91,14 +91,15 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     let oracle = LiquidityPairOracle::load(deps.storage)?;
-    oracle.config.require_enabled()?;
 
     pad_query_result(
         match msg {
             QueryMsg::GetPrice { key } => {
+                oracle.config.require_enabled()?;
                 to_binary(&query_price(&oracle, deps.storage, &deps.querier, key)?)
             }
             QueryMsg::GetPrices { keys } => {
+                oracle.config.require_enabled()?;
                 to_binary(&query_prices(&oracle, deps.storage, &deps.querier, keys)?)
             }
             QueryMsg::GetConfig {} => to_binary(&query_config(deps.storage, oracle)?),

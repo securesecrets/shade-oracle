@@ -1,4 +1,5 @@
 use crate::multi::{MockBand, OracleRouter};
+use cosmwasm_std::{Addr, ContractInfo, StdResult, Uint128, Uint256};
 use shade_multi_test::multi::admin::init_admin_auth;
 use shade_oracles::core::Query;
 use shade_oracles::interfaces::band::MockPrice;
@@ -11,7 +12,6 @@ use shade_oracles::interfaces::{
 };
 use shade_protocol::multi_test::AppResponse;
 use shade_protocol::{
-    c_std::{Addr, ContractInfo, StdResult, Uint128},
     multi_test::App,
     utils::{ExecuteCallback, InstantiateCallback, MultiTestable},
     AnyResult, Contract,
@@ -26,7 +26,7 @@ impl BandHelper {
         sender: &Addr,
         app: &mut App,
         prices: HashMap<String, Uint128>,
-        last_updated_time: u64,
+        last_updated_time: Option<u64>,
     ) {
         for (sym, price) in prices {
             band::ExecuteMsg::SetPrice {
@@ -34,7 +34,7 @@ impl BandHelper {
                     base_symbol: sym,
                     quote_symbol: "USD".into(),
                     rate: price,
-                    last_updated: Some(last_updated_time),
+                    last_updated: last_updated_time,
                 },
             }
             .test_exec(&self.0, app, sender.clone(), &[])
@@ -100,6 +100,19 @@ impl OracleRouterHelper {
         keys: Vec<String>,
     ) -> AnyResult<AppResponse> {
         self.update_registry(sender, app, RegistryOperation::RemoveProtection { keys })
+    }
+    pub fn update_protected_keys(
+        &self,
+        sender: &Addr,
+        app: &mut App,
+        updates: Vec<(String, Uint256)>,
+    ) -> AnyResult<AppResponse> {
+        router::msg::ExecuteMsg::UpdateProtectedKeys(updates).test_exec(
+            &self.0,
+            app,
+            sender.clone(),
+            &[],
+        )
     }
     pub fn query_price(&self, app: &App, key: String) -> StdResult<PriceResponse> {
         QueryMsg::GetPrice { key }.test_query(&self.0, app)
@@ -196,7 +209,7 @@ impl OracleCore {
         last_updated_time: u64,
     ) {
         self.band
-            .update_prices(&self.superadmin, app, prices, last_updated_time);
+            .update_prices(&self.superadmin, app, prices, Some(last_updated_time));
     }
 
     pub fn set_keys(&self, app: &mut App, oracle: Contract, keys: Vec<String>) {

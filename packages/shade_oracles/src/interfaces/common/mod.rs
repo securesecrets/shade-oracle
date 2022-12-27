@@ -70,6 +70,7 @@ impl From<OraclePrice> for BtrOraclePrice {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<OraclePrice> for BtrOraclePrice {
     fn into(self) -> OraclePrice {
         OraclePrice {

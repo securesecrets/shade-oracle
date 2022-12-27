@@ -1,1 +1,2 @@
-//! Oracle logic related to derivative products.
+use super::*;
+pub mod generic;

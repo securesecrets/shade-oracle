@@ -614,10 +614,8 @@ dependencies = [
 name = "index_oracle"
 version = "0.1.0"
 dependencies = [
- "rstest",
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -666,7 +664,6 @@ version = "0.2.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -754,10 +751,8 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 name = "oracle_router"
 version = "0.1.0"
 dependencies = [
- "rstest",
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -1275,15 +1270,20 @@ dependencies = [
  "mock_shade_pair",
  "mock_sienna_pair",
  "multi-derive",
+ "multi-test-helpers",
  "oracle_router",
+ "rstest",
+ "secret-cosmwasm-std",
  "shade-multi-test",
  "shade-oracles",
  "shade-protocol",
- "shade_staking_derivative_oracle",
+ "shade_staking_derivatives_oracle",
  "shadeswap_market_oracle",
+ "shadeswap_spot_oracle",
  "siennaswap_market_oracle",
  "siennaswap_reserves_oracle",
  "siennaswap_spot_oracle",
+ "stride_staking_derivatives_oracle",
  "strum",
 ]
 
@@ -1313,22 +1313,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "shade_staking_derivative_oracle"
+name = "shade_staking_derivatives_oracle"
 version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
 name = "shadeswap_market_oracle"
 version = "0.1.0"
 dependencies = [
- "mock_shade_pair",
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -1337,17 +1334,14 @@ version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
 name = "siennaswap_market_oracle"
 version = "0.1.0"
 dependencies = [
- "mock_sienna_pair",
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -1356,7 +1350,6 @@ version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -1365,7 +1358,6 @@ version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]
@@ -1413,12 +1405,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
-name = "stride_stkd_derivatives_oracle"
+name = "stride_staking_derivatives_oracle"
 version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-oracles-multi-test",
 ]
 
 [[package]]

@@ -12,13 +12,9 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 multi-test = []
-snip20 = []
-staking-derivative = ["dep:shade_staking_derivative_oracle"]
-index_oracle = ["dep:index_oracle"]
-market = ["dep:shadeswap_market_oracle", "dep:siennaswap_market_oracle"]
-lp = ["dep:siennaswap_reserves_oracle", "dep:siennaswap_spot_oracle"]
 
 [dependencies]
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-std", branch = "secret" }
 strum = { version = "0.24", features = ["derive"] }
 shade-oracles = { path = "../shade_oracles" }
 oracle_router = { path = "../../contracts/oracle_router" }
@@ -27,15 +23,21 @@ mock_band = { path = "../../contracts/mock_band" }
 mock_sienna_pair = { path = "../../contracts/mock_sienna_pair" }
 mock_shade_pair = { path = "../../contracts/mock_shade_pair" }
 
-index_oracle = { path = "../../contracts/index_oracle", optional = true }
+index_oracle = { path = "../../contracts/index_oracle" }
 
-shade_staking_derivative_oracle = { path = "../../contracts/shade_staking_derivative_oracle", optional = true }
+shade_staking_derivatives_oracle = { path = "../../contracts/shade_staking_derivatives_oracle" }
+stride_staking_derivatives_oracle = { path = "../../contracts/stride_staking_derivatives_oracle" }
 
-shadeswap_market_oracle = { path = "../../contracts/shadeswap_market_oracle", optional = true }
-siennaswap_market_oracle = { path = "../../contracts/siennaswap_market_oracle", optional = true }
+shadeswap_market_oracle = { path = "../../contracts/shadeswap_market_oracle" }
+siennaswap_market_oracle = { path = "../../contracts/siennaswap_market_oracle" }
 
-siennaswap_reserves_oracle = { path = "../../contracts/siennaswap_reserves_oracle", optional = true }
-siennaswap_spot_oracle = { path = "../../contracts/siennaswap_spot_oracle", optional = true }
+siennaswap_reserves_oracle = { path = "../../contracts/siennaswap_reserves_oracle" }
+siennaswap_spot_oracle = { path = "../../contracts/siennaswap_spot_oracle" }
+shadeswap_spot_oracle = { path = "../../contracts/shadeswap_spot_oracle" }
+
+[dev-dependencies]
+rstest = "0.15.0"
+multi-test-helpers = { path = "../multi_helpers" }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test" ] }
