@@ -29,14 +29,12 @@ impl BandHelper {
         last_updated_time: Option<u64>,
     ) {
         for (sym, price) in prices {
-            band::ExecuteMsg::SetPrice {
-                price: MockPrice {
-                    base_symbol: sym,
-                    quote_symbol: "USD".into(),
-                    rate: price,
-                    last_updated: last_updated_time,
-                },
-            }
+            band::ExecuteMsg::SetPrice(MockPrice {
+                base_symbol: sym,
+                quote_symbol: "USD".into(),
+                rate: price,
+                last_updated: last_updated_time,
+            })
             .test_exec(&self.0, app, sender.clone(), &[])
             .unwrap();
         }
