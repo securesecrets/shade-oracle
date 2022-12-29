@@ -3,13 +3,9 @@ use cosmwasm_std::{Addr, ContractInfo, StdResult, Uint128, Uint256};
 use shade_multi_test::multi::admin::init_admin_auth;
 use shade_oracles::core::Query;
 use shade_oracles::interfaces::band::MockPrice;
+use shade_oracles::interfaces::band::{self};
 use shade_oracles::interfaces::common::{PriceResponse, PricesResponse};
-use shade_oracles::interfaces::router::msg::QueryMsg;
 use shade_oracles::interfaces::router::registry::{RegistryOperation, UpdateConfig};
-use shade_oracles::interfaces::{
-    band::{self},
-    router::{self},
-};
 use shade_protocol::multi_test::AppResponse;
 use shade_protocol::{
     multi_test::App,
@@ -17,6 +13,12 @@ use shade_protocol::{
     AnyResult, Contract,
 };
 use std::collections::HashMap;
+
+use self::router::OracleRouterHelper;
+
+use super::*;
+pub mod dex;
+pub mod router;
 
 pub struct BandHelper(pub ContractInfo);
 
@@ -28,95 +30,18 @@ impl BandHelper {
         prices: HashMap<String, Uint128>,
         last_updated_time: Option<u64>,
     ) {
+        let mut mock_prices = vec![];
         for (sym, price) in prices {
-            band::ExecuteMsg::SetPrice(MockPrice {
+            mock_prices.push(MockPrice {
                 base_symbol: sym,
                 quote_symbol: "USD".into(),
                 rate: price,
                 last_updated: last_updated_time,
-            })
+            });
+        }
+        band::ExecuteMsg::SetPrices(mock_prices)
             .test_exec(&self.0, app, sender.clone(), &[])
             .unwrap();
-        }
-    }
-}
-
-pub struct OracleRouterHelper(pub ContractInfo);
-
-impl OracleRouterHelper {
-    pub fn update_registry(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        operation: RegistryOperation,
-    ) -> AnyResult<AppResponse> {
-        router::msg::ExecuteMsg::UpdateRegistry(operation).test_exec(
-            &self.0,
-            app,
-            sender.clone(),
-            &[],
-        )
-    }
-    pub fn set_keys(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        oracle: Contract,
-        keys: Vec<String>,
-    ) -> AnyResult<AppResponse> {
-        self.update_registry(
-            sender,
-            app,
-            RegistryOperation::SetKeys {
-                oracle: oracle.into(),
-                keys,
-            },
-        )
-    }
-
-    pub fn remove_keys(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        keys: Vec<String>,
-    ) -> AnyResult<AppResponse> {
-        self.update_registry(sender, app, RegistryOperation::RemoveKeys { keys })
-    }
-
-    pub fn protect_keys(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        infos: Vec<router::registry::ProtectedKeyInfo>,
-    ) -> AnyResult<AppResponse> {
-        self.update_registry(sender, app, RegistryOperation::SetProtection { infos })
-    }
-    pub fn remove_key_protections(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        keys: Vec<String>,
-    ) -> AnyResult<AppResponse> {
-        self.update_registry(sender, app, RegistryOperation::RemoveProtection { keys })
-    }
-    pub fn update_protected_keys(
-        &self,
-        sender: &Addr,
-        app: &mut App,
-        updates: Vec<(String, Uint256)>,
-    ) -> AnyResult<AppResponse> {
-        router::msg::ExecuteMsg::UpdateProtectedKeys(updates).test_exec(
-            &self.0,
-            app,
-            sender.clone(),
-            &[],
-        )
-    }
-    pub fn query_price(&self, app: &App, key: String) -> StdResult<PriceResponse> {
-        QueryMsg::GetPrice { key }.test_query(&self.0, app)
-    }
-    pub fn query_prices(&self, app: &App, keys: Vec<String>) -> StdResult<PricesResponse> {
-        QueryMsg::GetPrices { keys }.test_query(&self.0, app)
     }
 }
 
@@ -168,21 +93,7 @@ impl OracleCore {
                 .unwrap()
         });
 
-        let oracle_router = oracle_router.unwrap_or_else(|| {
-            router::msg::InstantiateMsg {
-                admin_auth: admin_auth.clone().into(),
-                band: band.clone().into(),
-                quote_symbol: quote_symbol.clone(),
-            }
-            .test_init(
-                OracleRouter::default(),
-                app,
-                admin.clone(),
-                "oracle_router",
-                &[],
-            )
-            .unwrap()
-        });
+        let oracle_router = oracle_router.unwrap_or_else(|| {});
 
         router::msg::ExecuteMsg::UpdateConfig(UpdateConfig {
             admin_auth: None,
