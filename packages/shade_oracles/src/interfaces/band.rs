@@ -20,8 +20,8 @@ impl InstantiateCallback for InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    SetPrice { price: MockPrice },
-    SetPrices { prices: Vec<MockPrice> },
+    SetPrice(MockPrice),
+    SetPrices(Vec<MockPrice>),
 }
 
 #[cw_serde]
