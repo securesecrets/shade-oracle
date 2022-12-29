@@ -3,7 +3,7 @@ name: Main Workflow
 on:
   push:
     branches:
-      - "develop"
+      - "release"
 
 env:
   CARGO_TERM_COLOR: always
