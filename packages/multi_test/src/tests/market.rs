@@ -11,9 +11,11 @@ mod shadeswap {
     use cosmwasm_std::Uint128;
     use cosmwasm_std::{to_binary, Addr};
     use mock_shade_pair::contract as mock_shade_pair;
+    use multi_test_helpers::snip20::Snip20Helper;
+    use multi_test_helpers::User;
     use shade_multi_test::multi::snip20::Snip20;
-    use shade_oracles::common::PriceResponse;
     use shade_oracles::core::{snip20, Contract};
+    use shade_oracles::interfaces::common::{OracleQuery, PriceResponse};
     use shade_oracles::{
         common::{self},
         core::{ExecuteCallback, InstantiateCallback, Query},
@@ -34,50 +36,43 @@ mod shadeswap {
         base_decimals: u32,
         expected: Uint128,
     ) {
-        let user = Addr::unchecked("superadmin");
+        let user = User::new(Addr::unchecked("superadmin"));
         let mut app = App::default();
 
-        let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
+        let oracle_core =
+            OracleCore::setup(&mut app, &user.addr(), prices, None, None, None).unwrap();
         let router = oracle_core.router.0;
 
         // Setup tokens
-        let primary_token = snip20::InstantiateMsg {
-            name: "Primary".into(),
-            admin: Some("superadmin".into()),
-            symbol: primary_symbol,
-            decimals: primary_decimals as u8,
-            initial_balances: None,
-            prng_seed: to_binary("").ok().unwrap(),
-            config: None,
-            query_auth: None,
-        }
-        .test_init(
-            Snip20::default(),
+        let primary_token = Snip20Helper::init(
+            &user.clone(),
             &mut app,
-            user.clone(),
+            "Primary",
+            primary_symbol.as_str(),
+            primary_decimals as u8,
+            &user.addr(),
+            &None,
+            &to_binary("").ok().unwrap(),
             "primary_token",
-            &[],
-        )
-        .unwrap();
+        );
 
-        let base_token = snip20::InstantiateMsg {
-            name: "Base".into(),
-            admin: Some("superadmin".into()),
-            symbol: base_symbol,
-            decimals: base_decimals as u8,
-            initial_balances: None,
-            prng_seed: to_binary("").ok().unwrap(),
-            config: None,
-            query_auth: None,
-        }
-        .test_init(Snip20::default(), &mut app, user.clone(), "base_token", &[])
-        .unwrap();
+        let base_token = Snip20Helper::init(
+            &user.clone(),
+            &mut app,
+            "Base",
+            base_symbol.as_str(),
+            base_decimals as u8,
+            &user.addr(),
+            &None,
+            &to_binary("").ok().unwrap(),
+            "base_token",
+        );
 
         let shade_pair = mock_shade_pair::InstantiateMsg {}
             .test_init(
                 MockShadePair::default(),
                 &mut app,
-                user.clone(),
+                user.addr(),
                 "shade_pair",
                 &[],
             )
@@ -85,50 +80,35 @@ mod shadeswap {
 
         mock_shade_pair::ExecuteMsg::MockPool {
             token_a: Contract {
-                address: primary_token.address,
-                code_hash: primary_token.code_hash,
+                address: primary_token.0.address,
+                code_hash: primary_token.0.code_hash,
             },
             amount_a: primary_pool,
             token_b: Contract {
-                address: base_token.address,
-                code_hash: base_token.code_hash,
+                address: base_token.0.address,
+                code_hash: base_token.0.code_hash,
             },
             amount_b: base_pool,
         }
-        .test_exec(&shade_pair, &mut app, user.clone(), &[])
-        .unwrap();
-
-        let market_oracle = shadeswap_market_oracle::InstantiateMsg {
-            config: InstantiateCommonConfig {
-                supported_keys: None,
-                router: router.clone().into(),
-                enabled: true,
-                only_band: true,
-            },
-            base_peg,
-            symbol: symbol.clone(),
-            pair: shade_pair.clone().into(),
-        }
-        .test_init(
-            ShadeSwapMarketOracle::default(),
-            &mut app,
-            user.clone(),
-            "shade-swap-market-oracle",
-            &[],
-        )
+        .test_exec(&shade_pair, &mut app, user.addr(), &[])
         .unwrap();
 
         // Configure router w/ market oracle
 
         oracle_core
             .router
-            .set_keys(&user, &mut app, market_oracle.into(), vec![symbol.clone()])
+            .set_keys(
+                &user.addr(),
+                &mut app,
+                market_oracle.into(),
+                vec![symbol.clone()],
+            )
             .unwrap();
 
-        let price: PriceResponse = common::OracleQuery::GetPrice { key: symbol }
+        let price: PriceResponse = OracleQuery::GetPrice { key: symbol }
             .test_query(&market_oracle, &app)
             .unwrap();
-        let data = price.price.data();
+        let data = price.data();
         assert_eq!(
             expected, data.rate,
             "Expected: {} Got: {}",

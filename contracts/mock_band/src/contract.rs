@@ -40,8 +40,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     match msg {
-        ExecuteMsg::SetPrice { price } => set_price(deps, env, price),
-        ExecuteMsg::SetPrices { prices } => set_prices(deps, env, prices),
+        ExecuteMsg::SetPrice(price) => set_price(deps, env, price),
+        ExecuteMsg::SetPrices(prices) => set_prices(deps, env, prices),
     }
 }
 

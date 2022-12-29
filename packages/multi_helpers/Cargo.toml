@@ -15,7 +15,7 @@ default = []
 [dependencies]
 strum = { version = "0.24", features = ["derive"] }
 anyhow = "1"
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret", package = "secret-cosmwasm-std" }
+cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
 cosmwasm-schema = "1.1.5"
 schemars = "0.8.9"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }

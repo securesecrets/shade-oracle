@@ -22,8 +22,8 @@ derivatives = ["core"]
 dex = ["core"]
 
 [dependencies]
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-std", branch = "secret" }
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-storage", branch = "secret" }
+cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
+cosmwasm-storage = { version = "1.0.0", package = "secret-cosmwasm-storage" }
 cosmwasm-schema = "1.1.5"
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = [
