@@ -14,7 +14,7 @@ default = []
 multi-test = []
 
 [dependencies]
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-std", branch = "secret" }
+cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
 strum = { version = "0.24", features = ["derive"] }
 shade-oracles = { path = "../shade_oracles" }
 oracle_router = { path = "../../contracts/oracle_router" }

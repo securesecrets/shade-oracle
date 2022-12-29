@@ -50,6 +50,30 @@ fn protected_query_admin_tests() {
     let mock_user = Addr::unchecked("randomuser");
 }
 
+#[test]
+fn registry_tests() {
+    let mut keys = vec![];
+    let prices = vec![("USD", 1_00 * 10u128.pow(16))];
+    let prices: HashMap<String, Uint128> = prices
+        .into_iter()
+        .map(|(sym, p)| {
+            keys.push(sym.to_string());
+            (sym.to_string(), p.into())
+        })
+        .collect();
+    let test_prices = prices.clone();
+    let user = Addr::unchecked("superadmin");
+    let mut app = &mut App::default();
+
+    let oracle_core = OracleCore::setup(app, &user, prices, None, None, None).unwrap();
+    let band = oracle_core.band;
+    let admin_auth = AdminAuthHelper(oracle_core.admin_auth.clone());
+    let router = oracle_core.router;
+
+    let mock_user = Addr::unchecked("randomuser");
+    let mock_user2 = Addr::unchecked("randomuser2");
+}
+
 #[rstest]
 fn protected_query_tests() {
     let mut keys = vec![];
@@ -70,7 +94,7 @@ fn protected_query_tests() {
     let admin_auth = AdminAuthHelper(oracle_core.admin_auth.clone());
     let router = oracle_core.router;
     router
-        .protect_keys(
+        .set_protection(
             &user,
             app,
             vec![ProtectedKeyInfo::new(
