@@ -60,3 +60,27 @@ macro_rules! create_test_helper {
         }
     };
 }
+
+#[macro_export]
+macro_rules! create_test_helper_with_user {
+    ($name:ident) => {
+        #[derive(Clone)]
+        pub struct $name(pub cosmwasm_std::ContractInfo, pub multi_test::User);
+        impl Into<shade_protocol::utils::asset::Contract> for $name {
+            fn into(self) -> shade_protocol::utils::asset::Contract {
+                shade_protocol::utils::asset::Contract {
+                    address: self.0.address,
+                    code_hash: self.0.code_hash,
+                }
+            }
+        }
+        impl Into<shade_protocol::utils::asset::RawContract> for $name {
+            fn into(self) -> shade_protocol::utils::asset::RawContract {
+                shade_protocol::utils::asset::RawContract {
+                    address: self.0.address.to_string(),
+                    code_hash: self.0.code_hash,
+                }
+            }
+        }
+    };
+}
