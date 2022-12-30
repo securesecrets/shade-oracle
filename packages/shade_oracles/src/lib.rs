@@ -12,7 +12,7 @@ use cosmwasm_std::{
 };
 use shade_protocol::utils::{
     asset::{Contract, RawContract},
-    ExecuteCallback, InstantiateCallback, Query,
+    Query,
 };
 
 #[cfg(test)]

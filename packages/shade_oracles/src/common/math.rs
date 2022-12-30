@@ -20,7 +20,7 @@ impl TokenMath {
         if decimals == 18 {
             Ok(value)
         } else {
-            Ok(muldiv(value, exp10(18), exp10(decimals))?)
+            Ok(muldiv(value, exp10(18), exp10(decimals as u16))?)
         }
     }
     /// Normalizes the asset amount from being based off asset decimals -> 18 decimals.
@@ -28,7 +28,7 @@ impl TokenMath {
         if asset.decimals == 18 {
             Ok(amount.into())
         } else {
-            muldiv(amount.into(), exp10(18), exp10(asset.decimals))
+            muldiv(amount.into(), exp10(18), exp10(asset.decimals as u16))
         }
     }
     /// Gets the amount of asset the amount normalized to 18 decimals represents.
@@ -38,8 +38,8 @@ impl TokenMath {
             Ok(normalized_amount.into())
         } else {
             let precision_diff = 18 - asset.decimals;
-            let amount =
-                bankers_round(normalized_amount.into(), precision_diff) / exp10(precision_diff);
+            let amount = bankers_round(normalized_amount.into(), precision_diff)
+                / exp10(precision_diff as u16);
             Ok(amount)
         }
     }

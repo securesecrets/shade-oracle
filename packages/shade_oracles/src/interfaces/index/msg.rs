@@ -31,9 +31,9 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum AdminMsg {
     UpdateStatus(ContractStatus),
-    // Asset with weight 0 will be removed
-    // all others are added or changed
-    /// (symbol, weight)
+    /// Assets with weight 0 will be removed. All others are added or changed.
+    ///
+    /// Vec<(Symbol, Weight)> where Symbol is string and Weight is Decimal256
     ModBasket(Vec<InitialBasketItem>),
     UpdateConfig {
         symbol: Option<String>,

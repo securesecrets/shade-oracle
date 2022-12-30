@@ -37,9 +37,9 @@ shadeswap_spot_oracle = { path = "../../contracts/shadeswap_spot_oracle" }
 
 [dev-dependencies]
 rstest = "0.15.0"
-multi-test-helpers = { path = "../multi_helpers" }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
+multi-test-helpers = { path = "../multi_helpers" }
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test" ] }
 shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "snip20", "admin" ] }
 multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }

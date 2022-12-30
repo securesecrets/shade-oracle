@@ -1,31 +1,27 @@
-use crate::multi::{MockBand, OracleRouter};
-use cosmwasm_std::{Addr, ContractInfo, StdResult, Uint128, Uint256};
-use shade_multi_test::multi::admin::init_admin_auth;
-use shade_oracles::core::Query;
+use super::router::OracleRouterHelper;
+use super::*;
+use multi_test_helpers::admin_auth::AdminAuthHelper;
 use shade_oracles::interfaces::band::MockPrice;
 use shade_oracles::interfaces::band::{self};
-use shade_oracles::interfaces::common::{PriceResponse, PricesResponse};
-use shade_oracles::interfaces::router::registry::{RegistryOperation, UpdateConfig};
-use shade_protocol::multi_test::AppResponse;
-use shade_protocol::{
-    multi_test::App,
-    utils::{ExecuteCallback, InstantiateCallback, MultiTestable},
-    AnyResult, Contract,
-};
-use std::collections::HashMap;
+use shade_protocol::{multi_test::App, AnyResult, Contract};
 
-use self::router::OracleRouterHelper;
-
-use super::*;
-pub mod dex;
-pub mod router;
-
-pub struct BandHelper(pub ContractInfo);
-
+create_test_helper!(BandHelper);
 impl BandHelper {
+    pub fn init(
+        sender: &User,
+        app: &mut App,
+        initial_prices: Vec<(String, String, Uint128)>,
+    ) -> Self {
+        let msg = band::InstantiateMsg { initial_prices };
+        Self(
+            sender
+                .init(app, &msg, MockBand::default(), "mock_band")
+                .unwrap(),
+        )
+    }
     pub fn update_prices(
         &self,
-        sender: &Addr,
+        sender: &User,
         app: &mut App,
         prices: HashMap<String, Uint128>,
         last_updated_time: Option<u64>,
@@ -39,25 +35,26 @@ impl BandHelper {
                 last_updated: last_updated_time,
             });
         }
-        band::ExecuteMsg::SetPrices(mock_prices)
-            .test_exec(&self.0, app, sender.clone(), &[])
+        sender
+            .exec(app, &band::ExecuteMsg::SetPrices(mock_prices), &self.0)
             .unwrap();
     }
 }
 
+#[derive(Clone)]
 pub struct OracleCore {
     pub band: BandHelper,
     pub router: OracleRouterHelper,
-    pub admin_auth: ContractInfo,
-    pub superadmin: Addr,
+    pub admin_auth: AdminAuthHelper,
+    pub superadmin: User,
 }
 
 impl OracleCore {
     pub fn new(
         band: BandHelper,
         router: OracleRouterHelper,
-        admin_auth: ContractInfo,
-        superadmin: Addr,
+        admin_auth: AdminAuthHelper,
+        superadmin: User,
     ) -> Self {
         OracleCore {
             band,
@@ -71,43 +68,37 @@ impl OracleCore {
     /// based off the prices argument with them being quoted in "USD".
     pub fn setup(
         app: &mut App,
-        admin: &Addr,
+        admin: &User,
         prices: HashMap<String, Uint128>,
-        band: Option<ContractInfo>,
-        oracle_router: Option<ContractInfo>,
-        admin_auth: Option<ContractInfo>,
+        band: Option<BandHelper>,
+        oracle_router: Option<OracleRouterHelper>,
+        admin_auth: Option<AdminAuthHelper>,
     ) -> AnyResult<Self> {
-        let quote_symbol = "USD".to_string();
-        let superadmin = admin.clone();
-
-        let admin_auth = admin_auth.unwrap_or_else(|| init_admin_auth(app, admin));
+        let quote_symbol: String = "USD".into();
+        let admin_auth = admin_auth.unwrap_or_else(|| AdminAuthHelper::init(app, admin, None));
         let mut initial_prices = vec![];
         // Configure mock band prices
         for (sym, price) in prices {
             initial_prices.push((sym, quote_symbol.clone(), price));
         }
 
-        let band = band.unwrap_or_else(|| {
-            band::InstantiateMsg { initial_prices }
-                .test_init(MockBand::default(), app, admin.clone(), "band", &[])
-                .unwrap()
+        let band = band.unwrap_or_else(|| BandHelper::init(admin, app, initial_prices));
+
+        let oracle_router = oracle_router.unwrap_or_else(|| {
+            OracleRouterHelper::init(
+                admin,
+                app,
+                &admin_auth.clone().0.into(),
+                &band.clone().0.into(),
+                "USD",
+            )
         });
 
-        let oracle_router = oracle_router.unwrap_or_else(|| {});
-
-        router::msg::ExecuteMsg::UpdateConfig(UpdateConfig {
-            admin_auth: None,
-            band: None,
-            quote_symbol: None,
-        })
-        .test_exec(&oracle_router, app, admin.clone(), &[])
-        .unwrap();
-
         Ok(OracleCore::new(
-            BandHelper(band),
-            OracleRouterHelper(oracle_router),
+            band,
+            oracle_router,
             admin_auth,
-            superadmin,
+            admin.clone(),
         ))
     }
 
@@ -131,5 +122,20 @@ impl OracleCore {
         self.router
             .remove_keys(&self.superadmin, app, keys)
             .unwrap();
+    }
+
+    /// Turns a vector of (key, price) into a hashmap of key to price, returning a vector of keys and the hashmap.
+    pub fn create_prices_hashmap(
+        prices: Vec<(impl Into<String> + Clone, impl Into<Uint128>)>,
+    ) -> (Vec<String>, HashMap<String, Uint128>) {
+        let mut keys = vec![];
+        let prices: HashMap<String, Uint128> = prices
+            .into_iter()
+            .map(|(sym, p)| {
+                keys.push(sym.clone().into());
+                (sym.into(), p.into())
+            })
+            .collect();
+        (keys, prices)
     }
 }
