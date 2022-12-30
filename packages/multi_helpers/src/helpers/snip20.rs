@@ -2,7 +2,7 @@ use super::*;
 use shade_multi_test::multi::snip20::Snip20;
 use shade_protocol::snip20::*;
 
-pub struct Snip20Helper(pub ContractInfo);
+create_test_helper!(Snip20Helper);
 
 impl Snip20Helper {
     #[allow(clippy::too_many_arguments)]
@@ -37,7 +37,7 @@ impl Snip20Helper {
             query_auth: None,
         };
 
-        let contract = user.init(app, &msg, Snip20::default(), label, &[]).unwrap();
+        let contract = user.init(app, &msg, Snip20::default(), label).unwrap();
 
         Snip20Helper(contract)
     }
