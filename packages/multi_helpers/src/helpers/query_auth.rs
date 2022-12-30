@@ -36,7 +36,7 @@ where
         }
 }
 
-pub struct QueryAuthHelper(pub ContractInfo);
+create_test_helper!(QueryAuthHelper);
 
 impl QueryAuthHelper {
     #[allow(clippy::too_many_arguments)]
@@ -56,7 +56,6 @@ impl QueryAuthHelper {
                 },
                 QueryAuth::default(),
                 label,
-                &[],
             )
             .unwrap(),
         )

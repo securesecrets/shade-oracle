@@ -122,7 +122,7 @@ impl Asset {
         if self.decimals == 18 {
             Ok(amount.into())
         } else {
-            muldiv(amount.into(), exp10(18), exp10(self.decimals))
+            muldiv(amount.into(), exp10(18), exp10(self.decimals as u16))
         }
     }
     /// Gets the amount of asset the amount normalized to 18 decimals represents.
@@ -131,8 +131,8 @@ impl Asset {
             Ok(normalized_amount.into())
         } else {
             let precision_diff = 18 - self.decimals;
-            let amount =
-                bankers_round(normalized_amount.into(), precision_diff) / exp10(precision_diff);
+            let amount = bankers_round(normalized_amount.into(), precision_diff)
+                / exp10(precision_diff as u16);
             Ok(amount)
         }
     }

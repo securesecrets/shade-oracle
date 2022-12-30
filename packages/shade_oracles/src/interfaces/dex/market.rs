@@ -5,22 +5,18 @@ use crate::interfaces::common::{PriceResponse, PricesResponse};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
 use secret_storage_plus::{Item, ItemStorage, Map};
-use shade_protocol::{
-    utils::{asset::RawContract, InstantiateCallback},
-    Contract, BLOCK_SIZE,
-};
+use shade_protocol::{utils::asset::RawContract, Contract};
 
 pub mod msg {
-    use crate::interfaces::common::config::CommonConfig;
+
+    use crate::{impl_msg_callbacks, interfaces::common::config::CommonConfig};
+
+    impl_msg_callbacks!();
 
     use super::*;
     #[cw_serde]
     pub struct InstantiateMsg {
         pub router: RawContract,
-    }
-
-    impl InstantiateCallback for InstantiateMsg {
-        const BLOCK_SIZE: usize = BLOCK_SIZE;
     }
 
     #[cw_serde]

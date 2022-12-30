@@ -116,11 +116,11 @@ pub fn query_price(
     key: String,
 ) -> StdResult<PriceResponse> {
     let pair_data = LiquidityPairMarketOracle::get_pair_data_resp(&key, storage)?;
-    // Simulate trade 1 primary -> 1 base
+    // Simulate trade 1 target -> 1 base
     let sim = ShadeSwapQuerier::query_swap_simulation(
         querier,
+        &pair_data.pair,
         &pair_data.target_token.contract,
-        &pair_data.base_token.contract,
         Uint128::from(10u128.pow(pair_data.target_token.decimals.into())),
     )?;
 
@@ -133,7 +133,7 @@ pub fn query_price(
         .base_token
         .get_price(querier, &oracle.config.router)?;
 
-    // Translate price to primary/USD
+    // Translate price to target/USD
     let price = base_usd_price
         .data()
         .rate

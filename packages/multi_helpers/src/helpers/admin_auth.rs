@@ -1,25 +1,39 @@
-use cosmwasm_std::{Addr, ContractInfo};
+use cosmwasm_std::{Addr};
+use shade_multi_test::multi::admin::Admin;
 use shade_protocol::{
-    admin::ExecuteMsg,
+    admin::{ExecuteMsg, InstantiateMsg},
     multi_test::{App, AppResponse},
-    utils::ExecuteCallback,
+    utils::MultiTestable,
     AnyResult,
 };
+use super::*;
+use crate::{User};
 
-pub struct AdminAuthHelper(pub ContractInfo);
+create_test_helper!(AdminAuthHelper);
 
 impl AdminAuthHelper {
+    pub fn init(app: &mut App, sender: &User, superadmin: Option<Addr>) -> Self {
+        let superadmin = superadmin.unwrap_or_else(|| sender.addr());
+        let msg = InstantiateMsg {
+            super_admin: Some(superadmin.to_string()),
+        };
+        Self(
+            sender
+                .init(app, &msg, Admin::default(), "admin_auth")
+                .unwrap(),
+        )
+    }
     pub fn update_registry(
         &self,
-        sender: &Addr,
+        sender: &User,
         app: &mut App,
         action: shade_protocol::admin::RegistryAction,
     ) -> AnyResult<AppResponse> {
-        ExecuteMsg::UpdateRegistry { action }.test_exec(&self.0, app, sender.clone(), &[])
+        sender.exec(app, &ExecuteMsg::UpdateRegistry { action }, &self.0)
     }
     pub fn grant_access(
         &self,
-        sender: &Addr,
+        sender: &User,
         app: &mut App,
         user: String,
         permissions: Vec<String>,
@@ -27,13 +41,13 @@ impl AdminAuthHelper {
         let action = shade_protocol::admin::RegistryAction::GrantAccess { permissions, user };
         self.update_registry(sender, app, action).unwrap();
     }
-    pub fn register_admin(&self, sender: &Addr, app: &mut App, user: String) {
+    pub fn register_admin(&self, sender: &User, app: &mut App, user: String) {
         let action = shade_protocol::admin::RegistryAction::RegisterAdmin { user };
         self.update_registry(sender, app, action).unwrap();
     }
     pub fn revoke_access(
         &self,
-        sender: &Addr,
+        sender: &User,
         app: &mut App,
         user: String,
         permissions: Vec<String>,
