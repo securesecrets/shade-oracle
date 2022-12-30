@@ -65,7 +65,7 @@ macro_rules! create_test_helper {
 macro_rules! create_test_helper_with_user {
     ($name:ident) => {
         #[derive(Clone)]
-        pub struct $name(pub cosmwasm_std::ContractInfo, pub multi_test::User);
+        pub struct $name(pub cosmwasm_std::ContractInfo, pub multi_test_helpers::User);
         impl Into<shade_protocol::utils::asset::Contract> for $name {
             fn into(self) -> shade_protocol::utils::asset::Contract {
                 shade_protocol::utils::asset::Contract {
