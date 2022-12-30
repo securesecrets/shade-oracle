@@ -36,12 +36,16 @@ mod state {
         }
 
         pub fn add_supported_key(storage: &mut dyn Storage, key: &String) -> StdResult<()> {
-            Self::SUPPORTED_KEYS.update(storage, |mut current_keys| -> StdResult<_> {
+            let keys;
+            if let Some(mut current_keys) = Self::SUPPORTED_KEYS.may_load(storage)? {
                 if !current_keys.contains(key) {
                     current_keys.push(key.to_string());
                 }
-                Ok(current_keys)
-            })?;
+                keys = current_keys;
+            } else {
+                keys = vec![key.to_string()];
+            }
+            Self::SUPPORTED_KEYS.save(storage, &keys)?;
             Ok(())
         }
 

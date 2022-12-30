@@ -1,3 +1,6 @@
+use schemars::JsonSchema;
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+
 use crate::asset::Asset;
 
 use super::*;
@@ -107,8 +110,29 @@ pub struct TokenPairAmount {
     pub amount_1: Uint128,
 }
 
-#[cw_serde]
+
+#[derive(JsonSchema, Clone, Debug, PartialEq)]
 pub struct TokenPair(pub TokenType, pub TokenType, pub bool);
+
+impl Serialize for TokenPair {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        (self.0.clone(), self.1.clone(), self.2.clone()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for TokenPair {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Deserialize::deserialize(deserializer)
+            .map(|(token_0, token_1, is_stable)| TokenPair(token_0, token_1, is_stable))
+    }
+}
+
 
 impl TokenPair {
     pub fn require_has_address(&self, address: &Addr) -> StdResult<()> {
