@@ -33,9 +33,9 @@ market-lp = ["lp"]
 lp = ["core"]
 
 [dependencies]
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-std", branch = "secret" }
+cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
 # Core re-exports (no need to re-export cosmwasm-std because that has to be included in contracts for them to build)
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", package = "secret-cosmwasm-storage", branch = "secret" }
+cosmwasm-storage = { version = "1.0.0", package = "secret-cosmwasm-storage" }
 cosmwasm-schema = "1.1.5"
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = [
@@ -48,7 +48,7 @@ paste = "1.0"
 derive-from-ext = "0.2"
 
 btr-macros = { git = "https://github.com/securesecrets/better-secret-math" }
-better-secret-math = { git = "https://github.com/securesecrets/better-secret-math", rev = "a3855a3" }
+better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
 
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["utils", "interface", "snip20", "math", "admin"] }

@@ -30,7 +30,7 @@ pub fn normalize_price_uint128(amount: Uint128, decimals: u8) -> StdResult<Uint1
         Ok(amount)
     } else {
         let amount: U256 = amount.into();
-        Ok(muldiv(amount, exp10(18), exp10(decimals))?.into())
+        Ok(muldiv(amount, exp10(18), exp10(decimals as u16))?.into())
     }
 }
 
@@ -239,8 +239,8 @@ impl BtrOraclePrice {
         amount_precision: u8,
     ) -> StdResult<U256> {
         let price_precision = exp10(18);
-        let value_precision = exp10(value_precision);
-        let amount_precision = exp10(amount_precision);
+        let value_precision = exp10(value_precision as u16);
+        let amount_precision = exp10(amount_precision as u16);
 
         let normalized_value = muldiv(value, price_precision, value_precision)?;
         muldiv(normalized_value, amount_precision, self.data.rate)
