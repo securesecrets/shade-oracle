@@ -11,7 +11,7 @@ checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 [[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#96403c09f0df43723c3692abc0ae4a10196e24f8"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-protocol",
@@ -26,6 +26,15 @@ dependencies = [
  "getrandom",
  "once_cell",
  "version_check",
+]
+
+[[package]]
+name = "airdrop"
+version = "0.1.0"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+dependencies = [
+ "rs_merkle",
+ "shade-protocol",
 ]
 
 [[package]]
@@ -209,7 +218,7 @@ checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
 [[package]]
 name = "contract-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#96403c09f0df43723c3692abc0ae4a10196e24f8"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
 dependencies = [
  "syn",
 ]
@@ -646,27 +655,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "mock_shade_pair"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "secret-cosmwasm-std",
- "shade-oracles",
-]
-
-[[package]]
-name = "mock_sienna_pair"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "secret-cosmwasm-std",
- "shade-oracles",
-]
-
-[[package]]
 name = "multi-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#96403c09f0df43723c3692abc0ae4a10196e24f8"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
 
 [[package]]
 name = "multi-test-helpers"
@@ -681,6 +672,7 @@ dependencies = [
  "secret-cosmwasm-std",
  "serde",
  "shade-multi-test",
+ "shade-oracles",
  "shade-protocol",
  "strum",
  "thiserror",
@@ -725,6 +717,15 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
+
+[[package]]
+name = "oracle_mocks"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "secret-cosmwasm-std",
+ "shade-oracles",
+]
 
 [[package]]
 name = "oracle_router"
@@ -830,7 +831,7 @@ dependencies = [
 [[package]]
 name = "query_auth"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#96403c09f0df43723c3692abc0ae4a10196e24f8"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
 dependencies = [
  "schemars 0.7.6",
  "secret-cosmwasm-std",
@@ -923,6 +924,14 @@ dependencies = [
  "block-buffer",
  "digest",
  "opaque-debug",
+]
+
+[[package]]
+name = "rs_merkle"
+version = "1.1.0"
+source = "git+https://github.com/FloppyDisck/rs-merkle?branch=node_export#b35c0aa203fdd7ba6c963ba84efb46906792c660"
+dependencies = [
+ "sha2",
 ]
 
 [[package]]
@@ -1214,9 +1223,10 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#96403c09f0df43723c3692abc0ae4a10196e24f8"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
 dependencies = [
  "admin",
+ "airdrop",
  "multi-derive",
  "query_auth",
  "shade-protocol",
@@ -1249,10 +1259,9 @@ version = "0.1.0"
 dependencies = [
  "index_oracle",
  "mock_band",
- "mock_shade_pair",
- "mock_sienna_pair",
  "multi-derive",
  "multi-test-helpers",
+ "oracle_mocks",
  "oracle_router",
  "rstest",
  "secret-cosmwasm-std",
@@ -1272,7 +1281,7 @@ dependencies = [
 [[package]]
 name = "shade-protocol"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#96403c09f0df43723c3692abc0ae4a10196e24f8"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
 dependencies = [
  "anyhow",
  "base64 0.12.3",
@@ -1364,7 +1373,7 @@ dependencies = [
 [[package]]
 name = "snip20"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#96403c09f0df43723c3692abc0ae4a10196e24f8"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-protocol",

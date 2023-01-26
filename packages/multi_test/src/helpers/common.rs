@@ -11,8 +11,14 @@ impl BandHelper {
         sender: &User,
         app: &mut App,
         initial_prices: Vec<(String, String, Uint128)>,
+        admin_auth: RawContract,
+        quote_symbol: Option<String>,
     ) -> Self {
-        let msg = band::InstantiateMsg { initial_prices };
+        let msg = band::InstantiateMsg {
+            initial_prices,
+            admin_auth,
+            quote_symbol,
+        };
         Self(
             sender
                 .init(app, &msg, MockBand::default(), "mock_band")
@@ -82,7 +88,15 @@ impl OracleCore {
             initial_prices.push((sym, quote_symbol.clone(), price));
         }
 
-        let band = band.unwrap_or_else(|| BandHelper::init(admin, app, initial_prices));
+        let band = band.unwrap_or_else(|| {
+            BandHelper::init(
+                admin,
+                app,
+                initial_prices,
+                admin_auth.clone().into(),
+                Some("USD".into()),
+            )
+        });
 
         let oracle_router = oracle_router.unwrap_or_else(|| {
             OracleRouterHelper::init(
@@ -137,5 +151,65 @@ impl OracleCore {
             })
             .collect();
         (keys, prices)
+    }
+}
+
+/// Basic test scenario with prices, keys, core oracle dependencies, and three users.
+/// Also generates a hashmap of snip20s based off the prices.
+pub struct TestScenario {
+    pub app: App,
+    pub admin: User,
+    pub bot: User,
+    pub user: User,
+    pub keys: Vec<String>,
+    pub prices: HashMap<String, Uint128>,
+    pub tokens: HashMap<String, Snip20Helper>,
+    pub band: BandHelper,
+    pub router: OracleRouterHelper,
+    pub admin_auth: AdminAuthHelper,
+}
+
+impl TestScenario {
+    pub fn new(prices: Vec<(impl Into<String> + Clone, impl Into<Uint128>)>) -> Self {
+        let mut app = App::default();
+        let bot = User::new("bot");
+        let admin = User::new("superadmin");
+        let user = User::new("user");
+        let (keys, prices) = OracleCore::create_prices_hashmap(prices);
+        let mut tokens = HashMap::new();
+        for key in &keys {
+            tokens.insert(
+                key.clone(),
+                Snip20Helper::init(
+                    &admin,
+                    &mut app,
+                    key,
+                    key,
+                    6,
+                    &admin.address,
+                    &None,
+                    &to_binary("wdwdadwad").unwrap(),
+                    &format!("{key}-snip20"),
+                ),
+            );
+        }
+        let OracleCore {
+            band,
+            router,
+            admin_auth,
+            superadmin,
+        } = OracleCore::setup(&mut app, &admin, prices.clone(), None, None, None).unwrap();
+        TestScenario {
+            app,
+            bot,
+            tokens,
+            admin: superadmin,
+            user,
+            band,
+            router,
+            admin_auth,
+            keys,
+            prices,
+        }
     }
 }

@@ -1,6 +1,11 @@
 use super::*;
+use cosmwasm_std::{Addr, StdError};
 use serde::de::DeserializeOwned;
-
+use shade_protocol::{
+    multi_test::{App, AppResponse},
+    utils::MultiTestable,
+    AnyResult,
+};
 use std::{
     fmt::{Debug, Display},
     panic::{self, AssertUnwindSafe},

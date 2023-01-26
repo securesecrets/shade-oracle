@@ -16,10 +16,16 @@ pub struct CommonConfigResponse {
 pub use state::*;
 #[cfg(feature = "core")]
 mod state {
-    use shade_protocol::admin::helpers::AdminPermissions;
+    use shade_protocol::admin::{QueryMsg, ValidateAdminPermissionResponse};
     use ssp::Item;
 
-    use crate::{error::CommonOracleError, querier::require_admin};
+    use crate::{
+        error::CommonOracleError,
+        interfaces::router::msg::{
+            ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg,
+        },
+        querier::{require_admin, require_admin_or_bot, require_bot},
+    };
 
     use super::*;
 
@@ -70,24 +76,46 @@ mod state {
         }
         /// Queries the router to see if user has the oracles admin permission.
         pub fn require_admin(&self, querier: &QuerierWrapper, info: MessageInfo) -> StdResult<()> {
-            require_admin(
-                &self.router,
-                AdminPermissions::OraclesAdmin,
-                querier,
-                info.sender,
-            )?;
-            Ok(())
+            require_admin(&self.router, querier, info.sender)
         }
         /// Queries the router to see if user has the oracles bot permission.
         pub fn require_bot(&self, querier: &QuerierWrapper, info: MessageInfo) -> StdResult<()> {
-            require_admin(
-                &self.router,
-                AdminPermissions::OraclesPriceBot,
-                querier,
-                info.sender,
-            )?;
-            Ok(())
+            require_bot(&self.router, querier, info.sender)
         }
+
+        pub fn require_admin_or_bot(
+            &self,
+            querier: &QuerierWrapper,
+            info: MessageInfo,
+        ) -> StdResult<()> {
+            require_admin_or_bot(&self.router, querier, info.sender)
+        }
+
+        pub fn require_permission(
+            &self,
+            querier: &QuerierWrapper,
+            info: MessageInfo,
+            permission: impl ToString,
+        ) -> StdResult<()> {
+            let get_admin_auth_req: RouterConfigResponse =
+                RouterQueryMsg::GetConfig {}.query(querier, &self.router)?;
+            let admin_auth = get_admin_auth_req.config.admin_auth;
+            let admin_resp: ValidateAdminPermissionResponse = QueryMsg::ValidateAdminPermission {
+                permission: permission.to_string(),
+                user: info.sender.clone().into(),
+            }
+            .query(querier, &admin_auth)?;
+            if admin_resp.has_permission {
+                Ok(())
+            } else {
+                Err(StdError::generic_err(format!(
+                    "User {} does not have permission {}",
+                    info.sender,
+                    permission.to_string()
+                )))
+            }
+        }
+
         pub fn require_enabled(&self) -> StdResult<()> {
             if self.enabled {
                 Ok(())

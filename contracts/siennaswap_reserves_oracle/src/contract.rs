@@ -10,7 +10,7 @@ use shade_oracles::protocols::siennaswap::SiennaSwapQuerier;
 use shade_oracles::{
     common::querier::{query_prices as query_router_prices, query_token_info},
     core::pad_query_result,
-    interfaces::dex::pair::*,
+    interfaces::dex::generic::*,
     ssp::ItemStorage,
     BLOCK_SIZE,
 };
@@ -25,7 +25,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let config = CommonConfig::init(deps.api, msg.router)?;
-    LiquidityPairOracle { config }.save(deps.storage)?;
+    GenericLiquidityPairOracle { config }.save(deps.storage)?;
     Ok(Response::new().add_attribute("action", "instantiate"))
 }
 
@@ -36,7 +36,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
-    let mut oracle = LiquidityPairOracle::load(deps.storage)?;
+    let mut oracle = GenericLiquidityPairOracle::load(deps.storage)?;
     let resp = Response::new();
     oracle.config.require_admin(&deps.querier, info)?;
     let resp = match msg {
@@ -55,21 +55,22 @@ pub fn execute(
                             deps.api,
                             &deps.querier,
                             item,
+                            false,
                         )?;
                         let pair_info_response =
                             SiennaSwapQuerier::query_pair_info(&deps.querier, &valid_data.pair)?;
                         let actual_pair = pair_info_response.pair_info.pair;
                         actual_pair
                             .token_0
-                            .require_address_eq(&valid_data.token_0)?;
+                            .require_address_eq(&valid_data.base_token)?;
                         actual_pair
                             .token_1
-                            .require_address_eq(&valid_data.token_1)?;
+                            .require_address_eq(&valid_data.target_token)?;
                     }
                     resp.add_attributes(vec![attr_action!("set_pairs")])
                 }
                 ExecuteMsg::RemovePairs(keys) => {
-                    LiquidityPairOracle::remove_keys(deps.storage, keys)?;
+                    GenericLiquidityPairOracle::remove_keys(deps.storage, keys)?;
                     resp.add_attributes(vec![attr_action!("remove_pairs")])
                 }
                 ExecuteMsg::UpdateAssets(assets) => {
@@ -94,7 +95,7 @@ pub fn execute(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
-    let oracle = LiquidityPairOracle::load(deps.storage)?;
+    let oracle = GenericLiquidityPairOracle::load(deps.storage)?;
 
     pad_query_result(
         match msg {
@@ -114,18 +115,18 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
 }
 
 pub fn query_price(
-    oracle: &LiquidityPairOracle,
+    oracle: &GenericLiquidityPairOracle,
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<PriceResponse> {
-    let data = LiquidityPairOracle::get_pair_data_resp(&key, storage)?;
+    let data = GenericLiquidityPairOracle::get_pair_data_resp(&key, storage)?;
     let prices = query_router_prices(
         &oracle.config.router,
         querier,
         &[
-            data.token_0.quote_symbol.clone(),
-            data.token_1.quote_symbol.clone(),
+            data.base_token.quote_symbol.clone(),
+            data.target_token.quote_symbol.clone(),
         ],
     )?;
     let pair_resp = SiennaSwapQuerier::query_pair_info(querier, &data.pair)?.pair_info;
@@ -134,7 +135,7 @@ pub fn query_price(
     let reserves_0 = pair_resp.amount_0;
     let reserves_1 = pair_resp.amount_1;
 
-    let data = LiquidityPairOracle::calculate_lp_token_inferred_rate(
+    let data = GenericLiquidityPairOracle::calculate_lp_token_inferred_rate(
         data,
         lp_token_info,
         reserves_0,
@@ -146,7 +147,7 @@ pub fn query_price(
 }
 
 pub fn query_prices(
-    oracle: &LiquidityPairOracle,
+    oracle: &GenericLiquidityPairOracle,
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     keys: Vec<String>,
@@ -160,7 +161,7 @@ pub fn query_prices(
 
 pub fn query_config(
     storage: &dyn Storage,
-    oracle: LiquidityPairOracle,
+    oracle: GenericLiquidityPairOracle,
 ) -> StdResult<CommonConfigResponse> {
     let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
     Ok(CommonConfigResponse {
@@ -170,5 +171,5 @@ pub fn query_config(
 }
 
 pub fn query_pairs(storage: &dyn Storage) -> StdResult<PairsResponse> {
-    LiquidityPairOracle::get_supported_pairs(storage)
+    GenericLiquidityPairOracle::get_supported_pairs(storage)
 }

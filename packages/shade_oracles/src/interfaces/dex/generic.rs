@@ -1,5 +1,5 @@
-//! Pair oracles calculate the price of 1 liquidity pair token.
-
+//! Pair oracles use a liquidity pair to determine the price of a token in that pair.
+//!
 use crate::asset::{Asset, RawAsset};
 use crate::interfaces::common::{PriceResponse, PricesResponse};
 use cosmwasm_schema::{cw_serde, QueryResponses};
@@ -8,6 +8,7 @@ use secret_storage_plus::{Item, ItemStorage, Map};
 use shade_protocol::{utils::asset::RawContract, Contract};
 
 pub mod msg {
+
     use crate::{impl_msg_callbacks, interfaces::common::config::CommonConfigResponse};
 
     impl_msg_callbacks!();
@@ -20,16 +21,24 @@ pub mod msg {
 
     #[cw_serde]
     pub enum ExecuteMsg {
-        /// If the pair is ETH/USDT and we want this to be an oracle for ETH:
-        ///  
-        /// - Base symbol: the router symbol corresponding to the USDT price.
-        /// - Underlying symbol: the router symbol corresponding to the ETH price.
-        /// - Key: the oracle key supported by this pair (ex: "ETH (ShadeSwap ETH/USDT LP)").
         SetPairs(Vec<RawPairData>),
         RemovePairs(Vec<String>),
         UpdateAssets(Vec<RawAsset>),
         UpdateConfig(RawContract),
         SetStatus(bool),
+    }
+
+    #[cw_serde]
+    /// If this is a market LP oracle with the pair being ETH/USDT and we want this to be an oracle for ETH:
+    ///  
+    /// - Base token: USDT contract with the router symbol corresponding to the USDT price.
+    /// - Target token: ETH contract with router symbol corresponding to the ETH price.
+    /// - Key: the oracle key supported by this pair (ex: "ETH (ShadeSwap ETH/USDT LP)").
+    pub struct RawPairData {
+        pub key: String,
+        pub base_token: RawAsset,
+        pub target_token: RawAsset,
+        pub pair: RawContract,
     }
 
     #[cw_serde]
@@ -48,18 +57,10 @@ pub mod msg {
     pub type PairsResponse = Vec<PairData>;
 
     #[cw_serde]
-    pub struct RawPairData {
-        pub key: String,
-        pub token_0: RawAsset,
-        pub token_1: RawAsset,
-        pub pair: RawContract,
-    }
-
-    #[cw_serde]
     pub struct PairData {
         pub key: String,
-        pub token_0: Asset,
-        pub token_1: Asset,
+        pub base_token: Asset,
+        pub target_token: Asset,
         pub pair: Contract,
     }
 }
@@ -89,27 +90,27 @@ mod state {
     /// Pair is the LP pair & symbol is the key we'll use to
     /// get the price of 1 side of the LP pair from our oracle router.
     pub struct StoredPairData {
-        pub token_0: Addr,
-        pub token_1: Addr,
+        pub base_token: Addr,
+        pub target_token: Addr,
         pub pair: Contract,
     }
 
     #[cw_serde]
-    pub struct LiquidityPairOracle {
+    pub struct GenericLiquidityPairOracle {
         pub config: CommonConfig,
     }
 
-    impl ItemStorage for LiquidityPairOracle {
+    impl ItemStorage for GenericLiquidityPairOracle {
         const ITEM: Item<'static, Self> = Item::new("liquidity_pair_market_oracle");
     }
 
-    impl<'a> LiquidityPairOracle {
+    impl<'a> GenericLiquidityPairOracle {
         pub const ASSETS: Assets<'static, 'a> = Assets::new("pair_assets");
         // Keyed by its symbol.
-        pub const PAIRS: Map<'static, &'a str, StoredPairData> = Map::new("markets");
+        pub const PAIRS: Map<'static, &'a str, StoredPairData> = Map::new("pairs");
     }
 
-    impl LiquidityPairOracle {
+    impl GenericLiquidityPairOracle {
         pub fn remove_keys(storage: &mut dyn Storage, keys: Vec<String>) -> StdResult<()> {
             let mut supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             for key in keys {
@@ -120,6 +121,25 @@ mod state {
             }
             CommonConfig::SUPPORTED_KEYS.save(storage, &supported_keys)?;
             Ok(())
+        }
+
+        pub fn set_pair_data(
+            storage: &mut dyn Storage,
+            key: String,
+            base_token: Asset,
+            target_token: Asset,
+            pair: Contract,
+        ) -> StdResult<StoredPairData> {
+            Self::ASSETS.may_set(storage, &base_token)?;
+            Self::ASSETS.may_set(storage, &target_token)?;
+            let data = StoredPairData {
+                base_token: base_token.contract.address,
+                target_token: target_token.contract.address,
+                pair,
+            };
+            Self::PAIRS.save(storage, &key, &data)?;
+            CommonConfig::add_supported_key(storage, &key)?;
+            Ok(data)
         }
 
         pub fn update_asset_symbol(
@@ -140,56 +160,47 @@ mod state {
             Ok(())
         }
 
-        pub fn set_pair_data(
-            storage: &mut dyn Storage,
-            key: String,
-            token_0: Asset,
-            token_1: Asset,
-            pair: Contract,
-        ) -> StdResult<StoredPairData> {
-            Self::ASSETS.may_set(storage, &token_0)?;
-            Self::ASSETS.may_set(storage, &token_1)?;
-            let data = StoredPairData {
-                token_0: token_0.contract.address,
-                token_1: token_1.contract.address,
-                pair,
-            };
-            Self::PAIRS.save(storage, &key, &data)?;
-            CommonConfig::add_supported_key(storage, &key)?;
-            Ok(data)
-        }
-
-        /// Performs validation and saves the data to storage.
         pub fn validate_and_set_pair_data(
             &self,
             storage: &mut dyn Storage,
             api: &dyn Api,
             querier: &QuerierWrapper,
             data: RawPairData,
+            is_market: bool,
         ) -> StdResult<StoredPairData> {
             let pair = data.pair.into_valid(api)?;
-            let token_0 = data.token_0.into_asset(&self.config.router, querier, api)?;
-            let token_1 = data.token_1.into_asset(&self.config.router, querier, api)?;
-            Self::set_pair_data(storage, data.key, token_0, token_1, pair)
+            let base_token = data
+                .base_token
+                .into_asset(&self.config.router, querier, api)?;
+            let target_token = if is_market {
+                data.target_token
+                    .into_asset_without_symbol_check(api, querier)
+            } else {
+                data.target_token
+                    .into_asset(&self.config.router, querier, api)
+            }?;
+            Self::set_pair_data(storage, data.key, base_token, target_token, pair)
         }
 
         pub fn get_pair_data_resp(key: &String, storage: &dyn Storage) -> StdResult<PairData> {
             let data = Self::PAIRS.load(storage, key)?;
-            let token_0 = Self::ASSETS.0.load(storage, &data.token_0)?;
-            let token_1 = Self::ASSETS.0.load(storage, &data.token_1)?;
+            let base_token = Self::ASSETS.0.load(storage, &data.base_token)?;
+            let target_token = Self::ASSETS.0.load(storage, &data.target_token)?;
             Ok(PairData {
                 key: key.clone(),
-                token_0,
-                token_1,
+                base_token,
+                target_token,
                 pair: data.pair,
             })
         }
 
-        pub fn get_supported_pairs(storage: &dyn Storage) -> StdResult<PairsResponse> {
+        pub fn get_supported_pairs(storage: &dyn Storage) -> StdResult<Vec<PairData>> {
             let keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             let mut supported_pairs = vec![];
             for key in keys {
-                supported_pairs.push(LiquidityPairOracle::get_pair_data_resp(&key, storage)?);
+                supported_pairs.push(GenericLiquidityPairOracle::get_pair_data_resp(
+                    &key, storage,
+                )?);
             }
             Ok(supported_pairs)
         }
@@ -209,13 +220,13 @@ mod state {
             let a = FairLpPriceInfo {
                 reserve: reserves_0.u128(),
                 price: price_0.rate.u128(),
-                decimals: data.token_0.decimals,
+                decimals: data.base_token.decimals,
             };
 
             let b = FairLpPriceInfo {
                 reserve: reserves_1.u128(),
                 price: price_1.rate.u128(),
-                decimals: data.token_1.decimals,
+                decimals: data.target_token.decimals,
             };
 
             let rate = LiquidityPoolMath::get_lp_token_spot_price(
@@ -249,13 +260,13 @@ mod state {
             let a = FairLpPriceInfo {
                 reserve: reserves_0.u128(),
                 price: price_0.rate.u128(),
-                decimals: data.token_0.decimals,
+                decimals: data.base_token.decimals,
             };
 
             let b = FairLpPriceInfo {
                 reserve: reserves_1.u128(),
                 price: price_1.rate.u128(),
-                decimals: data.token_1.decimals,
+                decimals: data.target_token.decimals,
             };
 
             let rate = LiquidityPoolMath::get_lp_token_spot_price(

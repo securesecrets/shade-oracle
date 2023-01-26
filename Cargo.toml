@@ -4,10 +4,6 @@ members = [
   "packages/*",
   "contracts/*",
 ]
-exclude = [ 
-  "contracts/mock_sienna_pair",
-  "contracts/mock_shade_pair",
-]
 
 [profile.release]
 opt-level = 3

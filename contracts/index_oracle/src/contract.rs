@@ -9,7 +9,7 @@ use shade_oracles::interfaces::index::{error::*, msg::*, *};
 use shade_oracles::querier::{query_band_prices, require_admin};
 use shade_oracles::{
     common::status::GlobalStatus,
-    core::{admin::helpers::AdminPermissions, pad_handle_result, pad_query_result},
+    core::{pad_handle_result, pad_query_result},
     interfaces::band::ReferenceData,
     ssp::ItemStorage,
     BLOCK_SIZE,
@@ -149,12 +149,7 @@ pub fn try_admin_msg(
     oracle: IndexOracle,
 ) -> IndexOracleResult<Response> {
     let router = oracle.config.router.clone();
-    require_admin(
-        &router,
-        AdminPermissions::OraclesAdmin,
-        &deps.querier,
-        &info.sender,
-    )?;
+    require_admin(&router, &deps.querier, &info.sender)?;
     match msg {
         AdminMsg::UpdateStatus(status) => {
             IndexOracle::update_status(deps.storage, status)?;

@@ -10,8 +10,11 @@ use shade_oracles::{
 use shade_protocol::multi_test::{App, AppResponse};
 use shade_protocol::utils::{ExecuteCallback, InstantiateCallback};
 use shade_protocol::{
-    utils::{MultiTestable, Query},
-    AnyResult, Contract,
+    utils::{
+        asset::{Contract, RawContract},
+        MultiTestable, Query,
+    },
+    AnyResult,
 };
 use std::collections::HashMap;
 
@@ -19,6 +22,7 @@ use std::collections::HashMap;
 pub(crate) use rstest::*;
 
 pub mod common;
+pub mod derivatives;
 pub mod dex;
 pub mod index;
 pub mod router;

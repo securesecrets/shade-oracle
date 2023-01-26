@@ -2,17 +2,20 @@ use std::cmp::min;
 
 use cosmwasm_std::{
     entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdError, StdResult, Storage,
+    Uint256,
 };
 use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse};
-use shade_oracles::better_secret_math::core::{exp10, muldiv};
 use shade_oracles::core::{pad_handle_result, pad_query_result};
-use shade_oracles::interfaces::common::config::{CommonConfig, CommonConfigResponse};
-use shade_oracles::interfaces::common::{
-    BtrOraclePrice, OraclePrice, PriceResponse, PricesResponse,
-};
 use shade_oracles::ssp::ItemStorage;
+use shade_oracles::{
+    common::querier::query_price as query_router_price,
+    interfaces::common::{
+        config::{CommonConfig, CommonConfigResponse},
+        OraclePrice, PriceResponse, PricesResponse,
+    },
+};
 use shade_oracles::{create_attr_action, BLOCK_SIZE};
-use shade_oracles::{interfaces::band::ReferenceData, interfaces::derivatives::generic::*};
+use shade_oracles::{interfaces::band::ReferenceData, interfaces::derivatives::stride::*};
 
 create_attr_action!("stride-staking-derivatives-oracle_");
 
@@ -24,13 +27,13 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let config = CommonConfig::init(deps.api, msg.router)?;
-    StakingDerivativesOracle { config }.save(deps.storage)?;
+    StrideStakingDerivativesOracle { config }.save(deps.storage)?;
     Ok(Response::new().add_attribute("action", "instantiate"))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
-    let mut oracle = StakingDerivativesOracle::load(deps.storage)?;
+    let mut oracle = StrideStakingDerivativesOracle::load(deps.storage)?;
     let resp = Response::new();
     let resp = match msg {
         ExecuteMsg::SetStatus(status) => {
@@ -41,31 +44,84 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
         }
         _ => {
             oracle.config.require_enabled()?;
+            let now = env.block.time.seconds();
             match msg {
                 ExecuteMsg::SetDerivatives(data) => {
                     oracle.config.require_admin(&deps.querier, info)?;
                     for item in data {
-                        oracle.validate_and_set_derivative_data(
-                            deps.storage,
-                            deps.api,
+                        let resp = query_router_price(
+                            &oracle.config.router,
                             &deps.querier,
+                            item.underlying_key.clone(),
+                        );
+                        if resp.is_err() {
+                            return Err(StdError::generic_err(format!(
+                                "Failed to query price for {}",
+                                item.underlying_key
+                            )));
+                        }
+                        StrideStakingDerivativesOracle::set_derivative_data(
+                            deps.storage,
                             item,
+                            now,
                         )?;
                     }
                     resp.add_attributes(vec![attr_action!("set_derivatives")])
                 }
                 ExecuteMsg::RemoveDerivatives(keys) => {
                     oracle.config.require_admin(&deps.querier, info)?;
-                    StakingDerivativesOracle::remove_keys(deps.storage, keys)?;
+                    StrideStakingDerivativesOracle::remove_keys(deps.storage, keys)?;
                     resp.add_attributes(vec![attr_action!("remove_derivatives")])
                 }
-                ExecuteMsg::UpdateAssets(assets) => {
-                    oracle.config.require_admin(&deps.querier, info)?;
-                    for asset in assets {
-                        oracle.update_asset_symbol(deps.storage, deps.api, &deps.querier, asset)?;
+                ExecuteMsg::UpdateDerivatives(update) => match update {
+                    DerivativeUpdates::Rates(rates) => {
+                        oracle.config.require_permission(
+                            &deps.querier,
+                            info,
+                            BotPermission::UpdateRates,
+                        )?;
+                        StrideStakingDerivativesOracle::update_rates(
+                            deps.storage,
+                            env.block.time.seconds(),
+                            rates,
+                        )?;
+                        resp.add_attribute_plaintext(
+                            "action",
+                            "shade_staking_derivatives_oracle_exchange_rate_update",
+                        )
                     }
-                    resp.add_attributes(vec![attr_action!("update_assets")])
-                }
+                    DerivativeUpdates::APY(apys) => {
+                        oracle.config.require_permission(
+                            &deps.querier,
+                            info,
+                            BotPermission::UpdateAPY,
+                        )?;
+                        StrideStakingDerivativesOracle::update_apys(deps.storage, apys)?;
+                        resp.add_attribute_plaintext(
+                            "action",
+                            "shade_staking_derivatives_oracle_apy_update",
+                        )
+                    }
+                    DerivativeUpdates::Timeouts(timeouts) => {
+                        oracle.config.require_admin(&deps.querier, info)?;
+                        StrideStakingDerivativesOracle::update_timeouts(deps.storage, timeouts)?;
+                        resp.add_attribute_plaintext(
+                            "action",
+                            "shade_staking_derivatives_oracle_timeout_update",
+                        )
+                    }
+                    DerivativeUpdates::Frequencies(frequencies) => {
+                        oracle.config.require_admin(&deps.querier, info)?;
+                        StrideStakingDerivativesOracle::update_frequencies(
+                            deps.storage,
+                            frequencies,
+                        )?;
+                        resp.add_attribute_plaintext(
+                            "action",
+                            "shade_staking_derivatives_oracle_frequency_update",
+                        )
+                    }
+                },
                 ExecuteMsg::UpdateConfig(new_router) => {
                     oracle.config.require_admin(&deps.querier, info)?;
                     oracle
@@ -74,13 +130,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     oracle.save(deps.storage)?;
                     resp.add_attributes(vec![attr_action!("update_config")])
                 }
-                ExecuteMsg::UpdateRates(rates) => {
-                    try_update_rates(deps.storage, &deps.querier, env, info, oracle, rates)?;
-                    resp.add_attribute_plaintext(
-                        "action",
-                        "shade_staking_derivatives_oracle_exchange_rate_update",
-                    )
-                }
                 _ => panic!("Code should never go here."),
             }
         }
@@ -88,22 +137,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
     pad_handle_result(Ok(resp), BLOCK_SIZE)
 }
 
-pub fn try_update_rates(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
-    env: Env,
-    info: MessageInfo,
-    oracle: StakingDerivativesOracle,
-    rates: Vec<DerivativeExchangeRate>,
-) -> StdResult<()> {
-    oracle.config.require_bot(querier, info)?;
-    StakingDerivativesOracle::update_rates(storage, env.block.time.seconds(), rates)?;
-    Ok(())
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
-    let oracle = StakingDerivativesOracle::load(deps.storage)?;
+    let oracle = StrideStakingDerivativesOracle::load(deps.storage)?;
 
     pad_query_result(
         match msg {
@@ -135,54 +171,38 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
 }
 
 pub fn query_price(
-    oracle: &StakingDerivativesOracle,
+    oracle: &StrideStakingDerivativesOracle,
     env: &Env,
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<PriceResponse> {
-    let stored_data = StakingDerivativesOracle::DERIVATIVES.load(storage, &key)?;
+    let stored_data = StrideStakingDerivativesOracle::DERIVATIVES.load(storage, &key)?;
 
-    let btr_exchange_rate: BtrOraclePrice = stored_data.rate.into();
+    let now = env.block.time.seconds();
+    stored_data.require_fresh(now)?;
 
-    if btr_exchange_rate.is_stale_price(stored_data.timeout, &env.block.time)? {
-        return Err(StdError::generic_err(format!(
-            "Stale exchange rate for {}.",
-            key
-        )));
-    }
+    let rate = stored_data.rate;
+    let underlying_price =
+        query_router_price(&oracle.config.router, querier, &stored_data.underlying_key)?;
 
-    let staking_derivative = StakingDerivativesOracle::ASSETS
-        .0
-        .load(storage, &stored_data.derivative)?;
-    let underlying_price: BtrOraclePrice = staking_derivative
-        .get_price(querier, &oracle.config.router)?
-        .into();
-
-    let price = muldiv(
-        btr_exchange_rate.data.rate,
-        underlying_price.data.rate,
-        exp10(18),
-    )?;
+    let price = rate * Uint256::from_uint128(underlying_price.data().rate);
 
     Ok(OraclePrice::new(
         key,
         ReferenceData {
-            rate: price.into(),
+            rate: price.try_into()?,
             last_updated_base: min(
                 underlying_price.data().last_updated_base,
-                btr_exchange_rate.data().last_updated_base,
+                stored_data.last_updated,
             ),
-            last_updated_quote: min(
-                underlying_price.data().last_updated_quote,
-                btr_exchange_rate.data.last_updated_quote,
-            ),
+            last_updated_quote: underlying_price.data().last_updated_quote,
         },
     ))
 }
 
 pub fn query_prices(
-    oracle: &StakingDerivativesOracle,
+    oracle: &StrideStakingDerivativesOracle,
     env: &Env,
     storage: &dyn Storage,
     querier: &QuerierWrapper,
@@ -197,7 +217,7 @@ pub fn query_prices(
 
 pub fn query_config(
     storage: &dyn Storage,
-    oracle: StakingDerivativesOracle,
+    oracle: StrideStakingDerivativesOracle,
 ) -> StdResult<CommonConfigResponse> {
     let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
     Ok(CommonConfigResponse {
@@ -207,5 +227,5 @@ pub fn query_config(
 }
 
 pub fn query_derivatives(storage: &dyn Storage) -> StdResult<DerivativesResponse> {
-    StakingDerivativesOracle::get_supported_derivatives(storage)
+    StrideStakingDerivativesOracle::get_supported_derivatives(storage)
 }

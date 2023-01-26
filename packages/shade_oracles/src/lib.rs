@@ -15,7 +15,6 @@ use shade_protocol::utils::{
     Query,
 };
 
-#[cfg(test)]
 pub mod unit_test_interface;
 
 #[cfg(feature = "storage")]
