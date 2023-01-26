@@ -131,7 +131,7 @@ impl BtrOraclePrice {
 }
 
 pub fn throw_unsupported_symbol_error(key: String) -> StdError {
-    StdError::generic_err(format!("{} is not supported as a key.", key))
+    StdError::generic_err(format!("{key} is not supported as a key."))
 }
 
 pub fn is_disabled(enabled: bool) -> StdResult<()> {

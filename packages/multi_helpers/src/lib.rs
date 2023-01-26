@@ -12,10 +12,10 @@ mod helpers;
 pub use helpers::*;
 
 /// Macro to generate the base for a test helper struct.
-/// 
+///
 /// Example:
 /// impl_test_helper!(MyTestHelper);
-/// 
+///
 /// This will generate a struct with the following:
 /// ```
 /// #[derive(Clone)]

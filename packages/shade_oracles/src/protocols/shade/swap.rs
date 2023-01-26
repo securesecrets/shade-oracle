@@ -1,5 +1,6 @@
+use cosmwasm_std::Decimal256;
 use schemars::JsonSchema;
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::asset::Asset;
 
@@ -75,12 +76,29 @@ pub struct PairInfoResponse {
     pub total_liquidity: Uint128,
     pub contract_version: u32,
     pub fee_info: FeeInfo,
+    pub stable_info: Option<StablePairInfoResponse>,
 }
 
 impl PairInfoResponse {
     pub fn is_stableswap(&self) -> bool {
         self.pair.2
     }
+}
+
+#[cw_serde]
+pub struct StablePairInfoResponse {
+    pub stable_params: StableParams,
+    pub p: Option<Decimal256>,
+}
+
+#[cw_serde]
+pub struct StableParams {
+    pub a: Decimal256,
+    pub gamma1: Uint256,
+    pub gamma2: Uint256,
+    pub oracle: Contract,
+    pub min_trade_size: Decimal256,
+    pub max_price_impact_allowed: Decimal256,
 }
 
 #[cw_serde]
@@ -110,7 +128,6 @@ pub struct TokenPairAmount {
     pub amount_1: Uint128,
 }
 
-
 #[derive(JsonSchema, Clone, Debug, PartialEq)]
 pub struct TokenPair(pub TokenType, pub TokenType, pub bool);
 
@@ -132,7 +149,6 @@ impl<'de> Deserialize<'de> for TokenPair {
             .map(|(token_0, token_1, is_stable)| TokenPair(token_0, token_1, is_stable))
     }
 }
-
 
 impl TokenPair {
     pub fn require_has_address(&self, address: &Addr) -> StdResult<()> {

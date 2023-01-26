@@ -1,14 +1,16 @@
-use cosmwasm_std::{entry_point, Storage};
+use cosmwasm_std::{entry_point, StdError, Storage};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use shade_oracles::core::{pad_query_result, ResponseStatus};
 use shade_oracles::interfaces::band::{
-    ExecuteAnswer, ExecuteMsg, InstantiateMsg, MockPrice, QueryMsg, ReferenceData,
+    Config, ExecuteAnswer, ExecuteMsg, InstantiateMsg, MockPrice, QueryMsg, ReferenceData,
 };
-use shade_oracles::ssp::Map;
+use shade_oracles::interfaces::common::OraclePrice;
+use shade_oracles::ssp::{Item, Map};
 use shade_oracles::BLOCK_SIZE;
 
 const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
+const CONFIG: Item<Config> = Item::new("config");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -18,6 +20,16 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let now = env.block.time.seconds();
+    let admin_auth = msg.admin_auth.into_valid(deps.api)?;
+    let quote_symbol = msg.quote_symbol.unwrap_or("USD".to_string());
+
+    let config = Config {
+        admin_auth,
+        quote_symbol,
+        enabled: true,
+    };
+    CONFIG.save(deps.storage, &config)?;
+
     for (base, quote, rate) in msg.initial_prices {
         MOCK_DATA.save(
             deps.storage,
@@ -32,16 +44,64 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
+fn require_enabled(config: &Config) -> StdResult<()> {
+    if !config.enabled {
+        return Err(StdError::generic_err("Contract is disabled"));
+    }
+    Ok(())
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    _info: MessageInfo,
-    msg: ExecuteMsg,
-) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+    let mut config = CONFIG.load(deps.storage)?;
     match msg {
-        ExecuteMsg::SetPrice(price) => set_price(deps, env, price),
-        ExecuteMsg::SetPrices(prices) => set_prices(deps, env, prices),
+        ExecuteMsg::SetStatus(status) => {
+            config.require_admin(&deps.querier, info.sender)?;
+            config.enabled = status;
+            CONFIG.save(deps.storage, &config)?;
+            Ok(Response::default().add_attribute("action", "set_status"))
+        }
+        ExecuteMsg::SetPrice(price) => {
+            require_enabled(&config)?;
+            config.require_admin_or_bot(&deps.querier, info.sender)?;
+            set_mock_price(deps.storage, env.block.time.seconds(), price)?;
+            let data = to_binary(&ExecuteAnswer::SetPrice {
+                status: ResponseStatus::Success,
+            })?;
+
+            Ok(Response::default()
+                .set_data(data)
+                .add_attribute("action", "set_price"))
+        }
+        ExecuteMsg::SetPrices(prices) => {
+            require_enabled(&config)?;
+            config.require_admin_or_bot(&deps.querier, info.sender)?;
+            for price in prices {
+                set_mock_price(deps.storage, env.block.time.seconds(), price)?;
+            }
+            let data = to_binary(&ExecuteAnswer::SetPrices {
+                status: ResponseStatus::Success,
+            })?;
+
+            Ok(Response::default()
+                .set_data(data)
+                .add_attribute("action", "set_prices"))
+        }
+        ExecuteMsg::UpdateConfig {
+            admin_auth,
+            quote_symbol,
+        } => {
+            require_enabled(&config)?;
+            config.require_admin(&deps.querier, info.sender)?;
+            if let Some(admin_auth) = admin_auth {
+                config.admin_auth = admin_auth.into_valid(deps.api)?;
+            }
+            if let Some(quote_symbol) = quote_symbol {
+                config.quote_symbol = quote_symbol;
+            }
+            CONFIG.save(deps.storage, &config)?;
+            Ok(Response::default().add_attribute("action", "update_config"))
+        }
     }
 }
 
@@ -51,52 +111,47 @@ pub fn set_mock_price(storage: &mut dyn Storage, now: u64, price: MockPrice) -> 
         (price.base_symbol, price.quote_symbol),
         &ReferenceData {
             rate: price.rate,
-            last_updated_base: price.last_updated.unwrap_or_else(|| now),
-            last_updated_quote: price.last_updated.unwrap_or_else(|| now),
+            last_updated_base: price.last_updated.unwrap_or(now),
+            last_updated_quote: price.last_updated.unwrap_or(now),
         },
     )
 }
 
-pub fn set_price(deps: DepsMut, env: Env, price: MockPrice) -> StdResult<Response> {
-    set_mock_price(deps.storage, env.block.time.seconds(), price)?;
-    let data = to_binary(&ExecuteAnswer::SetPrice {
-        status: ResponseStatus::Success,
-    })?;
-
-    Ok(Response::new().set_data(data))
-}
-
-pub fn set_prices(deps: DepsMut, env: Env, prices: Vec<MockPrice>) -> StdResult<Response> {
-    for price in prices {
-        set_mock_price(deps.storage, env.block.time.seconds(), price)?;
-    }
-    let data = to_binary(&ExecuteAnswer::SetPrices {
-        status: ResponseStatus::Success,
-    })?;
-
-    Ok(Response::new().set_data(data))
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    let config = CONFIG.load(deps.storage)?;
     pad_query_result(
         match msg {
             QueryMsg::GetReferenceData {
                 base_symbol,
                 quote_symbol,
-            } => query_saved_band_data(deps, base_symbol, quote_symbol),
+            } => {
+                require_enabled(&config)?;
+                query_saved_band_data(deps, base_symbol, quote_symbol)
+            }
             QueryMsg::GetReferenceDataBulk {
                 base_symbols,
                 quote_symbols,
             } => {
+                require_enabled(&config)?;
+                bulk_query_saved_band_data(deps, base_symbols, quote_symbols)
+            }
+            QueryMsg::GetPrice { key } => {
+                require_enabled(&config)?;
+                let data = MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol))?;
+                to_binary(&OraclePrice::new(key, data))
+            }
+            QueryMsg::GetPrices { keys } => {
+                require_enabled(&config)?;
                 let mut results = vec![];
-
-                for (base, quote) in base_symbols.iter().zip(quote_symbols) {
-                    results
-                        .push(MOCK_DATA.load(deps.storage, (base.to_string(), quote.to_string()))?);
+                for key in keys {
+                    let data =
+                        MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol.clone()))?;
+                    results.push(OraclePrice::new(key, data));
                 }
                 to_binary(&results)
             }
+            QueryMsg::GetConfig {} => to_binary(&config),
         },
         BLOCK_SIZE,
     )
@@ -108,4 +163,17 @@ fn query_saved_band_data(
     quote_symbol: String,
 ) -> StdResult<Binary> {
     to_binary(&MOCK_DATA.load(deps.storage, (base_symbol, quote_symbol))?)
+}
+
+fn bulk_query_saved_band_data(
+    deps: Deps,
+    base_symbols: Vec<String>,
+    quote_symbols: Vec<String>,
+) -> StdResult<Binary> {
+    let mut results = vec![];
+
+    for (base, quote) in base_symbols.iter().zip(quote_symbols) {
+        results.push(MOCK_DATA.load(deps.storage, (base.to_string(), quote.to_string()))?);
+    }
+    to_binary(&results)
 }

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::*;
 use crate::harness::index::IndexOracle;
 use shade_oracles::{core::Query, interfaces::index::msg::*};
@@ -45,6 +47,20 @@ impl IndexOracleHelper {
 
     pub fn query_basket(&self, app: &App) -> StdResult<BasketResponse> {
         QueryMsg::GetBasket {}.test_query(&self.0, app)
+    }
+
+    pub fn create_basket(
+        prices: Vec<(impl Into<String> + Clone, impl Into<String> + Clone)>,
+    ) -> Vec<InitialBasketItem> {
+        prices
+            .into_iter()
+            .map(|(sym, w)| {
+                (
+                    sym.into().to_string(),
+                    Decimal256::from_str(&w.into()).unwrap(),
+                )
+            })
+            .collect()
     }
 }
 
@@ -133,22 +149,19 @@ mod test {
         #[case] expected: Uint128,
         #[case] error: Uint128,
     ) {
-        let basket: Vec<(String, Decimal256)> = basket
-            .into_iter()
-            .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
-            .collect();
-        let prices: HashMap<String, Uint128> = OracleCore::create_prices_hashmap(prices).1;
-
-        let user = User::new("superadmin");
-        let mut app = App::default();
-
-        let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
-        let router = oracle_core.router.0.clone();
+        let basket = IndexOracleHelper::create_basket(basket);
+        let TestScenario {
+            mut app,
+            router,
+            admin,
+            ..
+        } = TestScenario::new(prices);
+        let user = admin;
 
         let index_oracle = IndexOracleHelper::init(
             &user,
             &mut app,
-            &router.into(),
+            &router.clone().into(),
             &basket,
             target,
             &symbol,
@@ -156,12 +169,11 @@ mod test {
         );
 
         // Configure router w/ index oracle
-        oracle_core
-            .router
+        router
             .set_keys(&user, &mut app, index_oracle.0.into(), vec![symbol.clone()])
             .unwrap();
 
-        let price = oracle_core.router.query_price(&app, symbol).unwrap();
+        let price = router.query_price(&app, symbol).unwrap();
         let data = price.data();
 
         {
@@ -271,14 +283,8 @@ mod test {
         #[case] expected_final: u128,
         #[case] error: u128,
     ) {
-        let basket: Vec<(String, Decimal256)> = basket
-            .into_iter()
-            .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
-            .collect();
-        let mod_basket: Vec<(String, Decimal256)> = mod_basket
-            .into_iter()
-            .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
-            .collect();
+        let basket = IndexOracleHelper::create_basket(basket);
+        let mod_basket: Vec<(String, Decimal256)> = IndexOracleHelper::create_basket(mod_basket);
         let expected_weights: Vec<(String, Decimal256)> = expected_weights
             .into_iter()
             .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
@@ -288,18 +294,21 @@ mod test {
         let expected_final: Uint128 = expected_final.into();
         let error: Uint128 = error.into();
 
-        let prices: HashMap<String, Uint128> = OracleCore::create_prices_hashmap(prices).1;
         let new_prices: HashMap<String, Uint128> = OracleCore::create_prices_hashmap(new_prices).1;
-        let user = User::new("superadmin");
-        let mut app = App::default();
 
-        let oracle_core = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
-        let router = oracle_core.router.0.clone();
+        let TestScenario {
+            mut app,
+            router,
+            admin,
+            band,
+            ..
+        } = TestScenario::new(prices);
+        let user = admin;
 
         let index_oracle = IndexOracleHelper::init(
             &user,
             &mut app,
-            &router.into(),
+            &router.clone().into(),
             &basket,
             target,
             &symbol,
@@ -307,8 +316,7 @@ mod test {
         );
 
         // Configure router w/ index oracle
-        oracle_core
-            .router
+        router
             .set_keys(
                 &user,
                 &mut app,
@@ -317,10 +325,7 @@ mod test {
             )
             .unwrap();
 
-        let price = oracle_core
-            .router
-            .query_price(&app, symbol.clone())
-            .unwrap();
+        let price = router.query_price(&app, symbol.clone()).unwrap();
 
         let data = price.data();
         {
@@ -340,14 +345,9 @@ mod test {
         };
 
         // Update mock band prices
-        oracle_core
-            .band
-            .update_prices(&user, &mut app, new_prices, None);
+        band.update_prices(&user, &mut app, new_prices, None);
 
-        let price = oracle_core
-            .router
-            .query_price(&app, symbol.clone())
-            .unwrap();
+        let price = router.query_price(&app, symbol.clone()).unwrap();
 
         let data = price.data();
         {
@@ -386,10 +386,7 @@ mod test {
         };
 
         // check price doesn't change on mod_price
-        let price = oracle_core
-            .router
-            .query_price(&app, symbol.clone())
-            .unwrap();
+        let price = router.query_price(&app, symbol.clone()).unwrap();
         let data = price.data();
         {
             let err = if data.rate > expected_final {

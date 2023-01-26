@@ -1,13 +1,6 @@
-use cosmwasm_std::{Addr};
-use shade_multi_test::multi::admin::Admin;
-use shade_protocol::{
-    admin::{ExecuteMsg, InstantiateMsg},
-    multi_test::{App, AppResponse},
-    utils::MultiTestable,
-    AnyResult,
-};
 use super::*;
-use crate::{User};
+use shade_multi_test::multi::admin::Admin;
+use shade_protocol::admin::{ExecuteMsg, InstantiateMsg};
 
 create_test_helper!(AdminAuthHelper);
 

@@ -98,6 +98,7 @@ pub fn execute(
                         stable_lp_fee: Fee::default(),
                         stable_shade_dao_fee: Fee::default(),
                     },
+                    stable_info: None,
                 },
             )?;
 

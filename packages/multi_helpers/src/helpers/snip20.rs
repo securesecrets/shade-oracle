@@ -1,6 +1,7 @@
 use super::*;
 use shade_multi_test::multi::snip20::Snip20;
-use shade_protocol::snip20::*;
+use shade_oracles::asset::{Asset, RawAsset};
+use shade_protocol::snip20::{helpers::TokenInfo, *};
 
 create_test_helper!(Snip20Helper);
 
@@ -186,6 +187,25 @@ impl Snip20Helper {
         assert_eq!(expected, actual);
     }
 
+    pub fn query_token_info(&self, app: &App) -> StdResult<TokenInfo> {
+        let answer: QueryAnswer = QueryMsg::TokenInfo {}.test_query(&self.0, app)?;
+
+        match answer {
+            QueryAnswer::TokenInfo {
+                name,
+                symbol,
+                decimals,
+                total_supply,
+            } => Ok(TokenInfo {
+                name,
+                symbol,
+                decimals,
+                total_supply,
+            }),
+            _ => Err(StdError::generic_err("Wrong answer")),
+        }
+    }
+
     pub fn assert_contract_balance(
         &self,
         contract: &ContractInfo,
@@ -196,5 +216,37 @@ impl Snip20Helper {
         let expected: Uint128 = expected.into();
         let actual = self.get_balance(app, contract.address.as_str(), viewing_key);
         assert_eq!(expected, actual);
+    }
+
+    pub fn to_raw_asset(&self, key: &str) -> RawAsset {
+        RawAsset::new(self.0.clone(), key.to_string())
+    }
+
+    pub fn to_asset(&self, app: &App, key: &str) -> Asset {
+        let info = self.query_token_info(app).unwrap();
+        Asset::new(self.0.clone().into(), info.decimals, key.to_string())
+    }
+
+    pub fn generate_tokens(
+        app: &mut App,
+        user: &User,
+        token_infos: Vec<(&str, &str, u8)>,
+    ) -> Vec<Self> {
+        let mut tokens = vec![];
+        for info in token_infos {
+            let token = Self::init(
+                user,
+                app,
+                info.0,
+                info.1,
+                info.2,
+                &user.address,
+                &None,
+                &to_binary(&"seed").unwrap(),
+                info.1,
+            );
+            tokens.push(token);
+        }
+        tokens
     }
 }
