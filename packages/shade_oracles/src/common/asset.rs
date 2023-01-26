@@ -60,18 +60,9 @@ impl<'a, 'b> Assets<'a, 'b> {
         asset: &Addr,
         symbol: &str,
     ) -> StdResult<()> {
-        self.0.update(storage, asset, |old_asset| -> StdResult<_> {
-            match old_asset {
-                Some(mut asset) => {
-                    asset.update_quote_symbol(oracle, querier, symbol.to_string())?;
-                    Ok(asset)
-                }
-                None => Err(StdError::generic_err(format!(
-                    "{} is not an existing asset.",
-                    asset.clone()
-                ))),
-            }
-        })?;
+        let mut existing_asset = self.require_existing_asset(storage, asset)?;
+        existing_asset.update_quote_symbol(oracle, querier, symbol.to_string())?;
+        self.0.save(storage, asset, &existing_asset)?;
         Ok(())
     }
 }
@@ -106,8 +97,7 @@ impl Asset {
         let resp = query_price(oracle, querier, symbol.clone());
         if resp.is_err() {
             return Err(StdError::generic_err(format!(
-                "Failed to query a price for {}. Cannot set quote symbol of asset to faulty symbol.",
-                symbol
+                "Failed to query a price for {symbol}. Cannot set quote symbol of asset to faulty symbol.",
             )));
         } else {
             self.quote_symbol = symbol;
@@ -255,6 +245,6 @@ impl BtrValuedRebaseAmount {
     }
     pub fn from_safe(amount: U256, price: &BtrOraclePrice) -> StdResult<Self> {
         let value = price.calc_value(amount)?;
-        Ok(Self::init(amount, value, amount, value))
+        Ok(Self::init(amount, amount, value, value))
     }
 }

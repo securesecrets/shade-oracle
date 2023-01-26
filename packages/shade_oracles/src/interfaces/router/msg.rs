@@ -47,20 +47,9 @@ pub enum QueryMsg {
     GetProtectedKeys {},
 }
 
-#[cw_serde]
-pub struct OraclesResponse {
-    pub oracles: Vec<OracleResponse>,
-}
-
-#[cw_serde]
-pub struct KeysResponse {
-    pub keys: Vec<String>,
-}
-
-#[cw_serde]
-pub struct ProtectedKeysResponse {
-    keys: Vec<ProtectedKeyInfo>,
-}
+pub type OraclesResponse = Vec<OracleResponse>;
+pub type KeysResponse = Vec<String>;
+pub type ProtectedKeysResponse = Vec<ProtectedKeyInfo>;
 
 #[cw_serde]
 pub struct ConfigResponse {

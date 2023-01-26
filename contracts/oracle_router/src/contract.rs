@@ -36,7 +36,7 @@ pub fn instantiate(
         quote_symbol: msg.quote_symbol,
     };
     OracleRouter::init_status(deps.storage)?;
-    KEYS.save(deps.storage, &vec![])?;
+    OracleRouter::init_storage(deps.storage)?;
     config.save(deps.storage)?;
     Ok(Response::default().add_attributes(vec![attr_action!("instantiate")]))
 }
@@ -199,7 +199,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                         let oracle = router.get_oracle(deps.storage, &key)?;
                         oracles.push(OracleResponse { key, oracle })
                     }
-                    to_binary(&OraclesResponse { oracles })
+                    to_binary(&oracles)
                 }
                 QueryMsg::GetPrices { keys } => {
                     // If deprecated or frozen, throw error so dependencies cannot query it.
@@ -207,6 +207,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     to_binary(&get_prices(deps, router, keys)?)
                 }
                 QueryMsg::GetKeys {} => Ok(OracleRouter::get_keys(deps)?),
+                QueryMsg::GetProtectedKeys {} => Ok(OracleRouter::get_protected_keys(deps)?),
                 _ => panic!("Code should never go here."),
             }
         }

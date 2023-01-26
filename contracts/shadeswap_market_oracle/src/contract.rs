@@ -9,7 +9,7 @@ use shade_oracles::math::TokenMath;
 use shade_oracles::ssp::ItemStorage;
 use shade_oracles::{create_attr_action, BLOCK_SIZE};
 use shade_oracles::{
-    interfaces::band::ReferenceData, interfaces::dex::market::*,
+    interfaces::band::ReferenceData, interfaces::dex::generic::*,
     protocols::shadeswap::ShadeSwapQuerier,
 };
 
@@ -23,7 +23,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let config = CommonConfig::init(deps.api, msg.router)?;
-    LiquidityPairMarketOracle { config }.save(deps.storage)?;
+    GenericLiquidityPairOracle { config }.save(deps.storage)?;
     Ok(Response::new().add_attribute("action", "instantiate"))
 }
 
@@ -34,7 +34,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
-    let mut oracle = LiquidityPairMarketOracle::load(deps.storage)?;
+    let mut oracle = GenericLiquidityPairOracle::load(deps.storage)?;
     let resp = Response::new();
     oracle.config.require_admin(&deps.querier, info)?;
     let resp = match msg {
@@ -46,13 +46,14 @@ pub fn execute(
         _ => {
             oracle.config.require_enabled()?;
             match msg {
-                ExecuteMsg::SetKeys(data) => {
+                ExecuteMsg::SetPairs(data) => {
                     for item in data {
                         let valid_data = oracle.validate_and_set_pair_data(
                             deps.storage,
                             deps.api,
                             &deps.querier,
                             item,
+                            true,
                         )?;
                         let pair_info_response =
                             ShadeSwapQuerier::query_pair_info(&deps.querier, &valid_data.pair)?;
@@ -64,8 +65,8 @@ pub fn execute(
                     }
                     resp.add_attributes(vec![attr_action!("set_keys")])
                 }
-                ExecuteMsg::RemoveKeys(keys) => {
-                    LiquidityPairMarketOracle::remove_keys(deps.storage, keys)?;
+                ExecuteMsg::RemovePairs(keys) => {
+                    GenericLiquidityPairOracle::remove_keys(deps.storage, keys)?;
                     resp.add_attributes(vec![attr_action!("remove_keys")])
                 }
                 ExecuteMsg::UpdateAssets(assets) => {
@@ -90,7 +91,7 @@ pub fn execute(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
-    let oracle = LiquidityPairMarketOracle::load(deps.storage)?;
+    let oracle = GenericLiquidityPairOracle::load(deps.storage)?;
 
     pad_query_result(
         match msg {
@@ -110,12 +111,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
 }
 
 pub fn query_price(
-    oracle: &LiquidityPairMarketOracle,
+    oracle: &GenericLiquidityPairOracle,
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<PriceResponse> {
-    let pair_data = LiquidityPairMarketOracle::get_pair_data_resp(&key, storage)?;
+    let pair_data = GenericLiquidityPairOracle::get_pair_data_resp(&key, storage)?;
     // Simulate trade 1 target -> 1 base
     let sim = ShadeSwapQuerier::query_swap_simulation(
         querier,
@@ -150,7 +151,7 @@ pub fn query_price(
 }
 
 pub fn query_prices(
-    oracle: &LiquidityPairMarketOracle,
+    oracle: &GenericLiquidityPairOracle,
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     keys: Vec<String>,
@@ -164,7 +165,7 @@ pub fn query_prices(
 
 pub fn query_config(
     storage: &dyn Storage,
-    oracle: LiquidityPairMarketOracle,
+    oracle: GenericLiquidityPairOracle,
 ) -> StdResult<CommonConfigResponse> {
     let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
     Ok(CommonConfigResponse {
@@ -174,5 +175,5 @@ pub fn query_config(
 }
 
 pub fn query_pairs(storage: &dyn Storage) -> StdResult<PairsResponse> {
-    LiquidityPairMarketOracle::get_supported_pairs(storage)
+    GenericLiquidityPairOracle::get_supported_pairs(storage)
 }

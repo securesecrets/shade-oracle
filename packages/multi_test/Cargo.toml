@@ -20,8 +20,6 @@ shade-oracles = { path = "../shade_oracles" }
 oracle_router = { path = "../../contracts/oracle_router" }
 
 mock_band = { path = "../../contracts/mock_band" }
-mock_sienna_pair = { path = "../../contracts/mock_sienna_pair" }
-mock_shade_pair = { path = "../../contracts/mock_shade_pair" }
 
 index_oracle = { path = "../../contracts/index_oracle" }
 
@@ -34,6 +32,8 @@ siennaswap_market_oracle = { path = "../../contracts/siennaswap_market_oracle" }
 siennaswap_reserves_oracle = { path = "../../contracts/siennaswap_reserves_oracle" }
 siennaswap_spot_oracle = { path = "../../contracts/siennaswap_spot_oracle" }
 shadeswap_spot_oracle = { path = "../../contracts/shadeswap_spot_oracle" }
+
+oracle_mocks = { path = "../mocks" }
 
 [dev-dependencies]
 rstest = "0.15.0"

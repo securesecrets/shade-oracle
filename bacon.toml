@@ -1,10 +1,7 @@
 # This is a configuration file for the bacon tool
 # More info at https://github.com/Canop/bacon
 
-default_job = "fleet"
-
-[jobs.fleet]
-command = ["fleet", "build", "--tests", "--color", "always"]
+default_job = "cranky"
 
 [jobs.cranky]
 command = ["cargo", "make", "cranky"]
@@ -68,4 +65,3 @@ d = "job:doc-open"
 t = "job:test"
 n = "job:nextest"
 r = "job:run"
-f = "job:fleet"

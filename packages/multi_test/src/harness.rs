@@ -1,11 +1,11 @@
 pub mod mocks {
     pub mod shade_pair {
-        use mock_shade_pair;
-        multi_derive::implement_multi!(MockShadePair, mock_shade_pair);
+        use oracle_mocks::shade_pair;
+        multi_derive::implement_multi!(MockShadePair, shade_pair);
     }
     pub mod sienna_pair {
-        use mock_sienna_pair;
-        multi_derive::implement_multi!(MockSiennaPair, mock_sienna_pair);
+        use oracle_mocks::sienna_pair;
+        multi_derive::implement_multi!(MockSiennaPair, sienna_pair);
     }
 }
 

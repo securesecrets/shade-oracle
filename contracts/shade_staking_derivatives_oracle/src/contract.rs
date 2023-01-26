@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdError, StdResult, Storage,
+    entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdResult, Storage,
 };
 use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse, Uint128};
 use shade_oracles::core::{pad_handle_result, pad_query_result};
@@ -27,7 +27,12 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     let mut oracle = StakingDerivativesOracle::load(deps.storage)?;
     let resp = Response::new();
     let resp = match msg {
@@ -72,32 +77,11 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     oracle.save(deps.storage)?;
                     resp.add_attributes(vec![attr_action!("update_config")])
                 }
-                ExecuteMsg::UpdateRates(rates) => {
-                    try_update_rates(deps.storage, &deps.querier, env, info, oracle, rates)?;
-                    resp.add_attribute_plaintext(
-                        "action",
-                        "shade_staking_derivatives_oracle_exchange_rate_update",
-                    )
-                }
                 _ => panic!("Code should never go here."),
             }
         }
     };
     pad_handle_result(Ok(resp), BLOCK_SIZE)
-}
-
-pub fn try_update_rates(
-    _storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
-    _env: Env,
-    info: MessageInfo,
-    oracle: StakingDerivativesOracle,
-    _rates: Vec<DerivativeExchangeRate>,
-) -> StdResult<()> {
-    oracle.config.require_bot(querier, info)?;
-    Err(StdError::generic_err(
-        "Updating rates with a bot is disabled on Shade Staking derivative oracles.",
-    ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

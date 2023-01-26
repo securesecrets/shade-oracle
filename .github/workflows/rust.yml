@@ -27,14 +27,8 @@ jobs:
         with:
           shared-key: "oracles"
 
-      - name: Install sccache
-        run: if [ -e ~/.cargo/bin/sccache ] ; then echo "Sccache is already installed"; else cargo install sccache; fi
-
-      - name: Install fleet
-        run: if [ -e ~/.cargo/bin/fleet ] ; then echo "Fleet is already installed"; else cargo install fleet-rs; fi
-
       - name: Install nextest
         uses: taiki-e/install-action@nextest
 
-      - name: Build using fleet and run tests
-        run: fleet build --tests && cargo nextest run
+      - name: Run tests
+        run: cargo nextest run

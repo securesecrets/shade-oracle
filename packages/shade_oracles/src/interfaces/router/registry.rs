@@ -62,12 +62,12 @@ pub struct Oracle;
 pub use state::*;
 #[cfg(feature = "router")]
 mod state {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, vec};
 
     use crate::{
         impl_global_status,
-        interfaces::common::OraclePrice,
         interfaces::router::{error::OracleRouterError, msg::KeysResponse},
+        interfaces::{common::OraclePrice, router::msg::ProtectedKeysResponse},
     };
 
     use super::*;
@@ -84,14 +84,23 @@ mod state {
         const MAP: Map<'static, &'a str, Contract> = Map::new("oraclerouteroracleregistry");
     }
 
+    /// List of explicity supported keys (keys registered to an oracle).
     pub const KEYS: Item<Vec<String>> = Item::new("oraclerouterkeys");
 
     impl<'a> OracleRouter {
+        pub const PROTECTED_KEYS_LIST: Item<'static, Vec<String>> =
+            Item::new("oraclerouterprotectedkeyslist");
         pub const PROTECTED_KEYS: Map<'static, &'a str, ProtectedKeyInfo> =
             Map::new("oraclerouterprotectedkeys");
     }
 
     impl OracleRouter {
+        pub fn init_storage(storage: &mut dyn Storage) -> StdResult<()> {
+            OracleRouter::PROTECTED_KEYS_LIST.save(storage, &vec![])?;
+            KEYS.save(storage, &vec![])?;
+            Ok(())
+        }
+
         pub fn update_protected_key(
             storage: &mut dyn Storage,
             key: &str,
@@ -149,7 +158,18 @@ mod state {
 
         pub fn get_keys(deps: Deps) -> StdResult<Binary> {
             let keys = KEYS.load(deps.storage)?;
-            to_binary(&KeysResponse { keys })
+            to_binary(&keys)
+        }
+
+        pub fn get_protected_keys(deps: Deps) -> StdResult<Binary> {
+            let keys = Self::PROTECTED_KEYS_LIST.load(deps.storage)?;
+            let mut protected_keys = vec![];
+            for key in keys {
+                if let Some(info) = Self::PROTECTED_KEYS.may_load(deps.storage, &key)? {
+                    protected_keys.push(info);
+                }
+            }
+            to_binary(&protected_keys)
         }
 
         pub fn resolve_registry_operation(
@@ -178,14 +198,24 @@ mod state {
                     KEYS.save(storage, &current_keys)?;
                 }
                 RegistryOperation::SetProtection { infos } => {
+                    let mut protected_keys = Self::PROTECTED_KEYS_LIST.load(storage)?;
                     for info in infos {
                         Self::PROTECTED_KEYS.save(storage, &info.key, &info)?;
+                        if !protected_keys.contains(&info.key) {
+                            protected_keys.push(info.key);
+                        }
                     }
+                    Self::PROTECTED_KEYS_LIST.save(storage, &protected_keys)?;
                 }
                 RegistryOperation::RemoveProtection { keys } => {
+                    let mut protected_keys = Self::PROTECTED_KEYS_LIST.load(storage)?;
+                    let mut keys_to_remove = vec![];
                     for key in keys {
                         Self::PROTECTED_KEYS.remove(storage, &key);
+                        keys_to_remove.push(key);
                     }
+                    protected_keys.retain(|k| !keys_to_remove.contains(k));
+                    Self::PROTECTED_KEYS_LIST.save(storage, &protected_keys)?;
                 }
             }
             Ok(())
