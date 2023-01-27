@@ -82,7 +82,7 @@ mod test {
     };
 
     #[test]
-    fn test_stride_registry() {
+    fn test_stride_basic_query() {
         let prices = PricesFixture::basic_prices_2();
         let TestScenario {
             mut app,
@@ -92,19 +92,110 @@ mod test {
             ..
         } = TestScenario::new(prices);
         let app = &mut app;
-        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.into());
+        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.clone().into());
         assert!(oracle.set_status(&user, app, false).is_err());
         assert!(oracle.set_status(&admin, app, false).is_ok());
 
-        let derivatives = vec![RawDerivativeData {
-            key: "stkd-ETH".to_string(),
-            underlying_key: "ETH".to_string(),
-            initial_rate: Decimal256::from_str("1.1").unwrap(),
-            apy: Decimal256::from_str("0.1").unwrap(),
-            update_frequency: 100,
-            timeout: 50,
-        }];
+        let derivatives = vec![
+            RawDerivativeData {
+                key: "stkd-ETH".to_string(),
+                underlying_key: "ETH".to_string(),
+                initial_rate: Decimal256::from_str("1.1").unwrap(),
+                rate_update_frequency: 1,
+                rate_timeout: 2,
+                apy: Decimal256::from_str("0.1").unwrap(),
+                apy_update_frequency: 1,
+                apy_max_change: Decimal256::from_str("0.1").unwrap(),
+            },
+            RawDerivativeData {
+                key: "stkd-OSMO".to_string(),
+                underlying_key: "OSMO".to_string(),
+                initial_rate: Decimal256::from_str("1.2").unwrap(),
+                rate_update_frequency: 1,
+                rate_timeout: 2,
+                apy: Decimal256::from_str("0.1").unwrap(),
+                apy_update_frequency: 1,
+                apy_max_change: Decimal256::from_str("0.1").unwrap(),
+            },
+            RawDerivativeData {
+                key: "stkd-FRAX".to_string(),
+                underlying_key: "FRAX".to_string(),
+                initial_rate: Decimal256::from_str("1.5").unwrap(),
+                rate_update_frequency: 1,
+                rate_timeout: 2,
+                apy: Decimal256::from_str("0.1").unwrap(),
+                apy_update_frequency: 1,
+                apy_max_change: Decimal256::from_str("0.1").unwrap(),
+            },
+        ];
         assert!(oracle.set_derivatives(&admin, app, &derivatives).is_err());
+        oracle.set_status(&admin, app, true).unwrap();
+        assert!(oracle.set_derivatives(&admin, app, &derivatives).is_ok());
+
+        let update_rates_too_much_upside = DerivativeUpdates::Rates(vec![(
+            "stkd-ETH".to_string(),
+            Decimal256::from_str("1.2").unwrap(),
+        )]);
+
+        let update_rates_too_much_downside = DerivativeUpdates::Rates(vec![(
+            "stkd-ETH".to_string(),
+            Decimal256::from_str("0.58").unwrap(),
+        )]);
+
+        let update_rates_downside = DerivativeUpdates::Rates(vec![
+            ("stkd-ETH".to_string(), Decimal256::from_str("1.1").unwrap()),
+            (
+                "stkd-OSMO".to_string(),
+                Decimal256::from_str("1.2").unwrap(),
+            ),
+            (
+                "stkd-FRAX".to_string(),
+                Decimal256::from_str("1.48").unwrap(),
+            ),
+        ]);
+
+        assert!(oracle
+            .update_derivatives(&user, app, update_rates_downside.clone())
+            .is_err());
+        // Update is too frequent
+        assert!(oracle
+            .update_derivatives(&admin, app, update_rates_downside.clone())
+            .is_err());
+
+        // Update > max upside
+        app.update_block(|b| b.time = b.time.plus_seconds(1));
+        assert!(oracle
+            .update_derivatives(&admin, app, update_rates_too_much_upside)
+            .is_err());
+        assert!(oracle
+            .update_derivatives(&admin, app, update_rates_too_much_downside)
+            .is_err());
+        assert!(oracle
+            .update_derivatives(&admin, app, update_rates_downside)
+            .is_ok());
+
+        router
+            .set_keys(
+                &admin,
+                app,
+                oracle.0.clone().into(),
+                vec![
+                    "stkd-ETH".to_string(),
+                    "stkd-OSMO".to_string(),
+                    "stkd-FRAX".to_string(),
+                ],
+            )
+            .unwrap();
+
+        let eth_price = router.query_price(app, PricesFixture::ETH.into()).unwrap();
+        let expected_price =
+            Uint256::from_uint128(eth_price.data.rate) * Decimal256::from_ratio(11u128, 10u128);
+        let actual_price = router
+            .query_price(app, "stkd-ETH".into())
+            .unwrap()
+            .data
+            .rate;
+        assert_eq!(expected_price, actual_price.into());
     }
 }
 

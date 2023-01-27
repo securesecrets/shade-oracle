@@ -24,7 +24,7 @@ mod state {
         interfaces::router::msg::{
             ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg,
         },
-        querier::{require_admin, require_admin_or_bot, require_bot},
+        querier::{query_price, require_admin, require_admin_or_bot, require_bot},
     };
 
     use super::*;
@@ -34,6 +34,21 @@ mod state {
     }
 
     impl CommonConfig {
+        pub fn require_valid_router_symbol(
+            &self,
+            querier: &QuerierWrapper,
+            symbol: &str,
+        ) -> StdResult<()> {
+            let resp = query_price(&self.router, querier, symbol.to_string());
+            if resp.is_err() {
+                Err(StdError::generic_err(format!(
+                    "Failed to query price for {symbol}"
+                )))
+            } else {
+                Ok(())
+            }
+        }
+
         pub fn require_supported_key(storage: &dyn Storage, key: &String) -> StdResult<()> {
             if !Self::SUPPORTED_KEYS.load(storage)?.contains(key) {
                 return Err(CommonOracleError::NotSupportedKey(key.to_string()).into());
