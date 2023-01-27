@@ -55,13 +55,19 @@ mod state {
             Ok(())
         }
 
-        pub fn init(api: &dyn Api, router: RawContract) -> StdResult<Self> {
+        pub fn init(
+            api: &dyn Api,
+            storage: &mut dyn Storage,
+            router: RawContract,
+        ) -> StdResult<Self> {
             let router = router.into_valid(api)?;
+            Self::SUPPORTED_KEYS.save(storage, &vec![])?;
             Ok(CommonConfig {
                 router,
                 enabled: true,
             })
         }
+
         pub fn update_config(
             &mut self,
             api: &dyn Api,

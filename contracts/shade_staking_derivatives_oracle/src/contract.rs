@@ -21,7 +21,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let config = CommonConfig::init(deps.api, msg.router)?;
+    let config = CommonConfig::init(deps.api, deps.storage, msg.router)?;
     StakingDerivativesOracle { config }.save(deps.storage)?;
     Ok(Response::new().add_attribute("action", "instantiate"))
 }
