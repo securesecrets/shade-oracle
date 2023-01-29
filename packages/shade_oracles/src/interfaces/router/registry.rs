@@ -62,7 +62,10 @@ pub struct Oracle;
 pub use state::*;
 #[cfg(feature = "router")]
 mod state {
-    use std::{collections::HashMap, vec};
+    use std::{
+        collections::{HashMap, HashSet},
+        vec,
+    };
 
     use crate::{
         impl_global_status,
@@ -72,6 +75,7 @@ mod state {
 
     use super::*;
     use cosmwasm_std::{to_binary, Api, Binary, Deps, StdError, StdResult, Storage};
+    use secret_borsh_storage::BorshItem;
     use secret_storage_plus::{GenericMapStorage, Item, ItemStorage, Map};
 
     impl_global_status!(OracleRouter, OracleRouterError);
@@ -85,7 +89,7 @@ mod state {
     }
 
     /// List of explicity supported keys (keys registered to an oracle).
-    pub const KEYS: Item<Vec<String>> = Item::new("oraclerouterkeys");
+    pub const KEYS: BorshItem<HashSet<String>> = BorshItem::new("oraclerouterkeys");
 
     impl<'a> OracleRouter {
         pub const PROTECTED_KEYS_LIST: Item<'static, Vec<String>> =
@@ -97,7 +101,7 @@ mod state {
     impl OracleRouter {
         pub fn init_storage(storage: &mut dyn Storage) -> StdResult<()> {
             OracleRouter::PROTECTED_KEYS_LIST.save(storage, &vec![])?;
-            KEYS.save(storage, &vec![])?;
+            KEYS.save(storage, &HashSet::new())?;
             Ok(())
         }
 
@@ -158,7 +162,7 @@ mod state {
 
         pub fn get_keys(deps: Deps) -> StdResult<Binary> {
             let keys = KEYS.load(deps.storage)?;
-            to_binary(&keys)
+            to_binary(&keys.into_iter().collect::<Vec<String>>())
         }
 
         pub fn get_protected_keys(deps: Deps) -> StdResult<Binary> {
@@ -191,9 +195,7 @@ mod state {
                     let mut current_keys = KEYS.load(storage)?;
                     for key in keys {
                         Oracle::MAP.save(storage, &key, &oracle)?;
-                        if !current_keys.contains(&key) {
-                            current_keys.push(key);
-                        }
+                        current_keys.insert(key);
                     }
                     KEYS.save(storage, &current_keys)?;
                 }

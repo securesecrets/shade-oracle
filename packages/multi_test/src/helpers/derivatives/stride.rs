@@ -81,8 +81,38 @@ mod test {
         unit_test_interface::prices::PricesFixture,
     };
 
+    fn derivative_data() -> Vec<RawDerivativeData> {
+        vec![
+            create_derivative_data("stkd-ETH", "ETH", "1.1", 1, 2, "0.1", 1, "0.1"),
+            create_derivative_data("stkd-OSMO", "OSMO", "1.2", 1, 2, "0.1", 1, "0.1"),
+            create_derivative_data("stkd-FRAX", "FRAX", "1.5", 1, 2, "0.1", 1, "0.1"),
+        ]
+    }
+
+    fn create_derivative_data(
+        key: &'static str,
+        underlying_key: &'static str,
+        rate: &'static str,
+        rate_update_frequency: u64,
+        rate_timeout: u64,
+        apy: &'static str,
+        apy_update_frequency: u64,
+        apy_max_change: &'static str,
+    ) -> RawDerivativeData {
+        RawDerivativeData {
+            key: key.to_string(),
+            underlying_key: underlying_key.to_string(),
+            initial_rate: Decimal256::from_str(rate).unwrap(),
+            rate_update_frequency,
+            rate_timeout,
+            apy: Decimal256::from_str(apy).unwrap(),
+            apy_update_frequency,
+            apy_max_change: Decimal256::from_str(apy_max_change).unwrap(),
+        }
+    }
+
     #[test]
-    fn test_stride_basic_query() {
+    fn test_stride_registry() {
         let prices = PricesFixture::basic_prices_2();
         let TestScenario {
             mut app,
@@ -95,39 +125,8 @@ mod test {
         let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.clone().into());
         assert!(oracle.set_status(&user, app, false).is_err());
         assert!(oracle.set_status(&admin, app, false).is_ok());
+        let derivatives = derivative_data();
 
-        let derivatives = vec![
-            RawDerivativeData {
-                key: "stkd-ETH".to_string(),
-                underlying_key: "ETH".to_string(),
-                initial_rate: Decimal256::from_str("1.1").unwrap(),
-                rate_update_frequency: 1,
-                rate_timeout: 2,
-                apy: Decimal256::from_str("0.1").unwrap(),
-                apy_update_frequency: 1,
-                apy_max_change: Decimal256::from_str("0.1").unwrap(),
-            },
-            RawDerivativeData {
-                key: "stkd-OSMO".to_string(),
-                underlying_key: "OSMO".to_string(),
-                initial_rate: Decimal256::from_str("1.2").unwrap(),
-                rate_update_frequency: 1,
-                rate_timeout: 2,
-                apy: Decimal256::from_str("0.1").unwrap(),
-                apy_update_frequency: 1,
-                apy_max_change: Decimal256::from_str("0.1").unwrap(),
-            },
-            RawDerivativeData {
-                key: "stkd-FRAX".to_string(),
-                underlying_key: "FRAX".to_string(),
-                initial_rate: Decimal256::from_str("1.5").unwrap(),
-                rate_update_frequency: 1,
-                rate_timeout: 2,
-                apy: Decimal256::from_str("0.1").unwrap(),
-                apy_update_frequency: 1,
-                apy_max_change: Decimal256::from_str("0.1").unwrap(),
-            },
-        ];
         assert!(oracle.set_derivatives(&admin, app, &derivatives).is_err());
         oracle.set_status(&admin, app, true).unwrap();
         assert!(oracle.set_derivatives(&admin, app, &derivatives).is_ok());
@@ -173,29 +172,52 @@ mod test {
         assert!(oracle
             .update_derivatives(&admin, app, update_rates_downside)
             .is_ok());
+    }
 
+    #[test]
+    fn test_stride_basic_query() {
+        let prices = PricesFixture::basic_prices_2();
+        let TestScenario {
+            mut app,
+            admin,
+            user,
+            router,
+            ..
+        } = TestScenario::new(prices);
+        let app = &mut app;
+        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.clone().into());
+        let derivatives = derivative_data();
+        assert!(oracle.set_derivatives(&admin, app, &derivatives).is_ok());
         router
             .set_keys(
                 &admin,
                 app,
                 oracle.0.clone().into(),
-                vec![
-                    "stkd-ETH".to_string(),
-                    "stkd-OSMO".to_string(),
-                    "stkd-FRAX".to_string(),
-                ],
+                vec!["stkd-ETH".to_string(), "stkd-OSMO".to_string()],
             )
             .unwrap();
-
         let eth_price = router.query_price(app, PricesFixture::ETH.into()).unwrap();
+        let osmo_price = router.query_price(app, PricesFixture::OSMO.into()).unwrap();
         let expected_price =
-            Uint256::from_uint128(eth_price.data.rate) * Decimal256::from_ratio(11u128, 10u128);
+            Uint256::from_uint128(eth_price.data.rate) * derivatives[0].initial_rate;
+        let expected_osmo_price =
+            Uint256::from_uint128(osmo_price.data.rate) * derivatives[1].initial_rate;
         let actual_price = router
             .query_price(app, "stkd-ETH".into())
             .unwrap()
             .data
             .rate;
         assert_eq!(expected_price, actual_price.into());
+        let actual_price = router
+            .query_prices(app, vec!["stkd-ETH".into(), "stkd-OSMO".into()])
+            .unwrap();
+        assert_eq!(
+            vec![expected_price, expected_osmo_price],
+            vec![
+                actual_price[0].data.rate.into(),
+                actual_price[1].data.rate.into()
+            ]
+        );
     }
 }
 

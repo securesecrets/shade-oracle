@@ -155,6 +155,7 @@ impl OracleRouterHelper {
 #[cfg(test)]
 mod test {
     use super::*;
+    use multi_test_helpers::Asserter;
     use shade_oracles::{
         core::admin::helpers::AdminPermissions, unit_test_interface::prices::PricesFixture,
     };
@@ -334,7 +335,7 @@ mod test {
         for oracle in oracles_resp {
             assert_eq!(oracle.oracle, band.clone().into());
         }
-        assert_eq!(keys, keys_resp);
+        Asserter::equal_vecs(&keys, &keys_resp);
 
         router
             .remove_keys(

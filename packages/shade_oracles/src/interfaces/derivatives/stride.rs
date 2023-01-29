@@ -244,19 +244,21 @@ mod state {
             if self.value.eq(&new_rate) {
                 Ok(())
             } else if self.value > new_rate {
-                let change = self.value - new_rate;
-                if change > MAX_DOWNSIDE {
+                let percent_change =
+                    Decimal256::from_ratio((self.value - new_rate).atomics(), self.value.atomics());
+                if percent_change > MAX_DOWNSIDE {
                     Err(StdError::generic_err(format!(
-                        "Derivative rate is changing too much. Maximum downside is {MAX_DOWNSIDE}. Attempted change is {change}."
+                        "Derivative rate is changing too much. Maximum downside is {MAX_DOWNSIDE}. Attempted change is {percent_change}."
                     )))
                 } else {
                     Ok(())
                 }
             } else {
-                let change = new_rate - self.value;
-                if change > max_upside {
+                let percent_change =
+                    Decimal256::from_ratio((new_rate - self.value).atomics(), self.value.atomics());
+                if percent_change > max_upside {
                     Err(StdError::generic_err(format!(
-                        "Derivative rate is changing too much. Maximum upside is {max_upside}. Attempted change is {change}."
+                        "Derivative rate is changing too much. Maximum upside is {max_upside}. Attempted change is {percent_change}."
                     )))
                 } else {
                     Ok(())

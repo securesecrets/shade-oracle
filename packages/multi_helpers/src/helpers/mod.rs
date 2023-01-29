@@ -45,6 +45,17 @@ impl Asserter {
         let source: &E = err.downcast_ref().unwrap();
         assert_eq!(source, error);
     }
+
+    pub fn equal_vecs<T>(a: &[T], b: &[T])
+    where
+        T: Ord + Debug + Clone,
+    {
+        let mut a = a.to_vec();
+        let mut b = b.to_vec();
+        a.sort();
+        b.sort();
+        assert_eq!(a, b);
+    }
 }
 
 #[derive(Clone)]
