@@ -22,7 +22,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let config = CommonConfig::init(deps.api, msg.router)?;
+    let config = CommonConfig::init(deps.api, deps.storage, msg.router)?;
     GenericLiquidityPairOracle { config }.save(deps.storage)?;
     Ok(Response::new().add_attribute("action", "instantiate"))
 }
@@ -167,11 +167,8 @@ pub fn query_config(
     storage: &dyn Storage,
     oracle: GenericLiquidityPairOracle,
 ) -> StdResult<CommonConfigResponse> {
-    let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
-    Ok(CommonConfigResponse {
-        config: oracle.config,
-        supported_keys,
-    })
+    let resp = oracle.config.get_resp(storage)?;
+    Ok(resp)
 }
 
 pub fn query_pairs(storage: &dyn Storage) -> StdResult<PairsResponse> {

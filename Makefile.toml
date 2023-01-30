@@ -33,17 +33,11 @@ cargo run --bin schemas --package mulberry --features="lend-impl"
 
 [tasks.build]
 workspace = false
-dependencies = ["schemas", "optimizoor", "compress", "bundle"]
+dependencies = ["schemas", "optimizoor", "compress"]
 
 [tasks.build-fast]
 workspace = false
 dependencies = ["optimizoor", "compress"]
-
-[tasks.bundle]
-workspace = false
-script = '''
-./bundle.sh ./artifacts
-'''
 
 [tasks.optimizoor]
 workspace = false

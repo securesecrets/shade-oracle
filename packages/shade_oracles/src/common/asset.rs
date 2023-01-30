@@ -26,6 +26,26 @@ pub struct Asset {
     pub quote_symbol: String,
 }
 
+#[cw_serde]
+pub enum AssetError {
+    InvalidSymbol(String),
+}
+
+impl ToString for AssetError {
+    fn to_string(&self) -> String {
+        match self {
+            AssetError::InvalidSymbol(s) => format!("Failed to query a price for {s}. Cannot set quote symbol of asset to invalid symbol."),
+        }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<StdError> for AssetError {
+    fn into(self) -> StdError {
+        StdError::generic_err(self.to_string())
+    }
+}
+
 /// Map of assets.
 pub struct Assets<'a, 'b>(pub Map<'a, &'b Addr, Asset>);
 
@@ -96,9 +116,7 @@ impl Asset {
     ) -> StdResult<()> {
         let resp = query_price(oracle, querier, symbol.clone());
         if resp.is_err() {
-            return Err(StdError::generic_err(format!(
-                "Failed to query a price for {symbol}. Cannot set quote symbol of asset to faulty symbol.",
-            )));
+            return Err(AssetError::InvalidSymbol(symbol).into());
         } else {
             self.quote_symbol = symbol;
         }
@@ -162,10 +180,7 @@ impl RawAsset {
     ) -> StdResult<Asset> {
         let resp = query_price(oracle, querier, self.quote_symbol.clone());
         if resp.is_err() {
-            return Err(StdError::generic_err(format!(
-                "Failed to query a price for {}. Cannot set quote symbol of asset to invalid symbol.",
-                self.quote_symbol
-            )));
+            return Err(AssetError::InvalidSymbol(self.quote_symbol).into());
         }
         let contract = self.contract.clone().into_valid(api)?;
         let decimals = token_info(querier, &contract)?.decimals;

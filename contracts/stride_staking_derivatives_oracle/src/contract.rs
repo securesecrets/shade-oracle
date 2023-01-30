@@ -1,8 +1,7 @@
 use std::cmp::min;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdError, StdResult, Storage,
-    Uint256,
+    entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdResult, Storage, Uint256,
 };
 use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse};
 use shade_oracles::core::{pad_handle_result, pad_query_result};
@@ -26,7 +25,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let config = CommonConfig::init(deps.api, msg.router)?;
+    let config = CommonConfig::init(deps.api, deps.storage, msg.router)?;
     StrideStakingDerivativesOracle { config }.save(deps.storage)?;
     Ok(Response::new().add_attribute("action", "instantiate"))
 }
@@ -48,24 +47,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             match msg {
                 ExecuteMsg::SetDerivatives(data) => {
                     oracle.config.require_admin(&deps.querier, info)?;
-                    for item in data {
-                        let resp = query_router_price(
-                            &oracle.config.router,
-                            &deps.querier,
-                            item.underlying_key.clone(),
-                        );
-                        if resp.is_err() {
-                            return Err(StdError::generic_err(format!(
-                                "Failed to query price for {}",
-                                item.underlying_key
-                            )));
-                        }
-                        StrideStakingDerivativesOracle::set_derivative_data(
-                            deps.storage,
-                            item,
-                            now,
-                        )?;
-                    }
+                    oracle.set_derivatives(deps.storage, &deps.querier, now, data)?;
                     resp.add_attributes(vec![attr_action!("set_derivatives")])
                 }
                 ExecuteMsg::RemoveDerivatives(keys) => {
@@ -80,11 +62,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                             info,
                             BotPermission::UpdateRates,
                         )?;
-                        StrideStakingDerivativesOracle::update_rates(
-                            deps.storage,
-                            env.block.time.seconds(),
-                            rates,
-                        )?;
+                        StrideStakingDerivativesOracle::update_rates(deps.storage, now, rates)?;
                         resp.add_attribute_plaintext(
                             "action",
                             "shade_staking_derivatives_oracle_exchange_rate_update",
@@ -96,29 +74,18 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                             info,
                             BotPermission::UpdateAPY,
                         )?;
-                        StrideStakingDerivativesOracle::update_apys(deps.storage, apys)?;
+                        StrideStakingDerivativesOracle::update_apys(deps.storage, now, apys)?;
                         resp.add_attribute_plaintext(
                             "action",
                             "shade_staking_derivatives_oracle_apy_update",
                         )
                     }
-                    DerivativeUpdates::Timeouts(timeouts) => {
+                    DerivativeUpdates::Config(configs) => {
                         oracle.config.require_admin(&deps.querier, info)?;
-                        StrideStakingDerivativesOracle::update_timeouts(deps.storage, timeouts)?;
+                        oracle.update_derivatives(&deps.querier, deps.storage, configs)?;
                         resp.add_attribute_plaintext(
                             "action",
-                            "shade_staking_derivatives_oracle_timeout_update",
-                        )
-                    }
-                    DerivativeUpdates::Frequencies(frequencies) => {
-                        oracle.config.require_admin(&deps.querier, info)?;
-                        StrideStakingDerivativesOracle::update_frequencies(
-                            deps.storage,
-                            frequencies,
-                        )?;
-                        resp.add_attribute_plaintext(
-                            "action",
-                            "shade_staking_derivatives_oracle_frequency_update",
+                            "shade_staking_derivatives_oracle_config_update",
                         )
                     }
                 },
@@ -177,28 +144,33 @@ pub fn query_price(
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<PriceResponse> {
+    let original_key = key.clone();
+    let (is_rate, key) = StrideStakingDerivativesOracle::process_key(&key);
     let stored_data = StrideStakingDerivativesOracle::DERIVATIVES.load(storage, &key)?;
 
     let now = env.block.time.seconds();
-    stored_data.require_fresh(now)?;
+    stored_data.rate.require_fresh(now)?;
 
     let rate = stored_data.rate;
-    let underlying_price =
-        query_router_price(&oracle.config.router, querier, &stored_data.underlying_key)?;
 
-    let price = rate * Uint256::from_uint128(underlying_price.data().rate);
+    let data = if is_rate {
+        ReferenceData::new(
+            rate.value.atomics().try_into()?,
+            rate.last_updated,
+            rate.last_updated,
+        )
+    } else {
+        let underlying_price =
+            query_router_price(&oracle.config.router, querier, &stored_data.underlying_key)?;
+        let price = rate.value * Uint256::from_uint128(underlying_price.data().rate);
+        ReferenceData::new(
+            price.try_into()?,
+            min(underlying_price.data().last_updated_base, rate.last_updated),
+            underlying_price.data().last_updated_quote,
+        )
+    };
 
-    Ok(OraclePrice::new(
-        key,
-        ReferenceData {
-            rate: price.try_into()?,
-            last_updated_base: min(
-                underlying_price.data().last_updated_base,
-                stored_data.last_updated,
-            ),
-            last_updated_quote: underlying_price.data().last_updated_quote,
-        },
-    ))
+    Ok(OraclePrice::new(original_key, data))
 }
 
 pub fn query_prices(
@@ -219,11 +191,14 @@ pub fn query_config(
     storage: &dyn Storage,
     oracle: StrideStakingDerivativesOracle,
 ) -> StdResult<CommonConfigResponse> {
-    let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
-    Ok(CommonConfigResponse {
-        config: oracle.config,
-        supported_keys,
-    })
+    let mut resp = oracle.config.get_resp(storage)?;
+    let mut supported_keys = vec![];
+    for key in &resp.supported_keys.clone() {
+        supported_keys.push(key.to_string());
+        supported_keys.push(StrideStakingDerivativesOracle::create_rate_key(key));
+    }
+    resp.supported_keys = supported_keys;
+    Ok(resp)
 }
 
 pub fn query_derivatives(storage: &dyn Storage) -> StdResult<DerivativesResponse> {

@@ -76,13 +76,299 @@ mod test {
     use std::str::FromStr;
 
     use super::*;
+    use cosmwasm_std::{Addr, StdError};
+    use multi_test_helpers::Asserter;
     use shade_oracles::{
+        error::CommonOracleError,
         interfaces::{band::ReferenceData, common::OraclePrice},
         unit_test_interface::prices::PricesFixture,
     };
 
+    fn derivative_data() -> Vec<RawDerivativeData> {
+        vec![
+            create_derivative_data("stkd-ETH", "ETH", "1.1", 1, 2, "0.2", 1, "0.1"),
+            create_derivative_data("stkd-OSMO", "OSMO", "1.2", 1, 2, "0.2", 1, "0.1"),
+            create_derivative_data("stkd-FRAX", "FRAX", "1.5", 1, 2, "0.2", 1, "0.1"),
+        ]
+    }
+
+    fn create_derivative_data(
+        key: &'static str,
+        underlying_key: &'static str,
+        rate: &'static str,
+        rate_update_frequency: u64,
+        rate_timeout: u64,
+        apy: &'static str,
+        apy_update_frequency: u64,
+        apy_max_change: &'static str,
+    ) -> RawDerivativeData {
+        RawDerivativeData {
+            key: key.to_string(),
+            underlying_key: underlying_key.to_string(),
+            initial_rate: Decimal256::from_str(rate).unwrap(),
+            rate_update_frequency,
+            rate_timeout,
+            apy: Decimal256::from_str(apy).unwrap(),
+            apy_update_frequency,
+            apy_max_change: Decimal256::from_str(apy_max_change).unwrap(),
+        }
+    }
+
     #[test]
-    fn test_stride_registry() {
+    fn test_bot_apy_update() {
+        let prices = PricesFixture::basic_prices_2();
+        let TestScenario {
+            mut app,
+            admin,
+            user,
+            router,
+            admin_auth,
+            ..
+        } = TestScenario::new(prices);
+        let app = &mut app;
+        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.into());
+        let derivatives = derivative_data();
+
+        let apy_bot = User::new("bot");
+        admin_auth.register_admin(&admin, app, apy_bot.str());
+
+        assert!(oracle.set_derivatives(&admin, app, &derivatives).is_ok());
+
+        let bad_apy = vec![
+            ("stkd-ETH".to_string(), Decimal256::from_str("0.5").unwrap()),
+            ("stkd-OSMO".to_string(), Decimal256::from_str("0").unwrap()),
+            (
+                "stkd-FRAX".to_string(),
+                Decimal256::from_str("0.5").unwrap(),
+            ),
+        ];
+
+        let okay_apy = vec![
+            ("stkd-ETH".to_string(), Decimal256::from_str("0.3").unwrap()),
+            (
+                "stkd-OSMO".to_string(),
+                Decimal256::from_str("0.3").unwrap(),
+            ),
+            (
+                "stkd-FRAX".to_string(),
+                Decimal256::from_str("0.1").unwrap(),
+            ),
+        ];
+
+        assert!(oracle
+            .update_derivatives(&user, app, DerivativeUpdates::APY(bad_apy.clone()))
+            .is_err());
+        admin_auth.grant_access(
+            &admin,
+            app,
+            apy_bot.str(),
+            vec![BotPermission::UpdateAPY.to_string()],
+        );
+        // Update is too frequent
+        assert!(oracle
+            .update_derivatives(&apy_bot, app, DerivativeUpdates::APY(okay_apy.clone()))
+            .is_err());
+        // Update > max upside
+        app.update_block(|b| b.time = b.time.plus_seconds(1));
+        assert!(oracle
+            .update_derivatives(&apy_bot, app, DerivativeUpdates::APY(bad_apy))
+            .is_err());
+        assert!(oracle
+            .update_derivatives(&apy_bot, app, DerivativeUpdates::APY(okay_apy.clone()))
+            .is_ok());
+
+        let derivatives = oracle.query_derivatives(app).unwrap();
+        let actual_apys = derivatives.iter().map(|d| d.apy.value).collect::<Vec<_>>();
+        let expected_apys = okay_apy.iter().map(|(_, r)| *r).collect::<Vec<_>>();
+        Asserter::equal_vecs(&actual_apys, &expected_apys);
+    }
+
+    #[test]
+    fn test_bot_rates_update() {
+        let prices = PricesFixture::basic_prices_2();
+        let TestScenario {
+            mut app,
+            admin,
+            user,
+            router,
+            admin_auth,
+            ..
+        } = TestScenario::new(prices);
+        let app = &mut app;
+        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.into());
+        let derivatives = derivative_data();
+
+        let rate_bot = User::new("bot");
+        admin_auth.register_admin(&admin, app, rate_bot.str());
+
+        assert!(oracle.set_derivatives(&admin, app, &derivatives).is_ok());
+
+        let update_rates_too_much_upside = DerivativeUpdates::Rates(vec![(
+            "stkd-ETH".to_string(),
+            Decimal256::from_str("1.2").unwrap(),
+        )]);
+
+        let update_rates_too_much_downside = DerivativeUpdates::Rates(vec![(
+            "stkd-ETH".to_string(),
+            Decimal256::from_str("1.043").unwrap(),
+        )]);
+
+        let okay_rates = vec![
+            (
+                "stkd-ETH".to_string(),
+                Decimal256::from_str("1.045").unwrap(),
+            ),
+            (
+                "stkd-OSMO".to_string(),
+                Decimal256::from_str("1.2").unwrap(),
+            ),
+            (
+                "stkd-FRAX".to_string(),
+                Decimal256::from_str("1.48").unwrap(),
+            ),
+        ];
+        let okay_rate_update = DerivativeUpdates::Rates(okay_rates.clone());
+
+        assert!(oracle
+            .update_derivatives(&rate_bot, app, okay_rate_update.clone())
+            .is_err());
+        admin_auth.grant_access(
+            &admin,
+            app,
+            rate_bot.str(),
+            vec![BotPermission::UpdateRates.to_string()],
+        );
+        // Update is too frequent
+        assert!(oracle
+            .update_derivatives(&rate_bot, app, okay_rate_update.clone())
+            .is_err());
+        // Update > max upside
+        app.update_block(|b| b.time = b.time.plus_seconds(1));
+        assert!(oracle
+            .update_derivatives(&rate_bot, app, update_rates_too_much_upside)
+            .is_err());
+        assert!(oracle
+            .update_derivatives(&rate_bot, app, update_rates_too_much_downside)
+            .is_err());
+        assert!(oracle
+            .update_derivatives(&rate_bot, app, okay_rate_update)
+            .is_ok());
+
+        let derivatives = oracle.query_derivatives(app).unwrap();
+        let actual_rates = derivatives.iter().map(|d| d.rate.value).collect::<Vec<_>>();
+        let expected_rates = okay_rates.iter().map(|(_, r)| *r).collect::<Vec<_>>();
+        Asserter::equal_vecs(&actual_rates, &expected_rates);
+    }
+
+    #[test]
+    fn test_registry() {
+        let prices = PricesFixture::basic_prices_2();
+        let TestScenario {
+            mut app,
+            admin,
+            user,
+            router,
+            ..
+        } = TestScenario::new(prices);
+        let app = &mut app;
+        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.into());
+        let raw_derivatives = derivative_data();
+
+        assert!(oracle
+            .set_derivatives(&user, app, &raw_derivatives)
+            .is_err());
+        assert!(oracle
+            .set_derivatives(&admin, app, &raw_derivatives)
+            .is_ok());
+
+        let derivatives = oracle.query_derivatives(app).unwrap();
+        let config = oracle.query_config(app).unwrap();
+        assert_eq!(derivatives.len(), raw_derivatives.len());
+        let mut expected_keys = vec![];
+        for d in raw_derivatives.clone() {
+            expected_keys.push(d.key.clone());
+            expected_keys.push(format!("{}{}", d.key, " Rate"));
+        }
+        Asserter::equal_vecs(&config.supported_keys, &expected_keys);
+
+        assert!(oracle
+            .remove_derivatives(&user, app, &[raw_derivatives[1].key.clone()])
+            .is_err());
+        assert!(oracle
+            .remove_derivatives(&admin, app, &[raw_derivatives[1].key.clone()])
+            .is_ok());
+        let derivatives = oracle.query_derivatives(app).unwrap();
+        assert_eq!(derivatives.len(), raw_derivatives.len() - 1);
+        assert!(!derivatives.iter().any(|d| d.key == raw_derivatives[1].key));
+
+        let config = oracle.query_config(app).unwrap();
+        let mut expected_keys = vec![];
+        for d in raw_derivatives.clone() {
+            if d.key == raw_derivatives[1].key {
+                continue;
+            }
+            expected_keys.push(d.key.clone());
+            expected_keys.push(format!("{}{}", d.key, " Rate"));
+        }
+        Asserter::equal_vecs(&config.supported_keys, &expected_keys);
+
+        let bad_symbol_update = DerivativeUpdates::Config(vec![(
+            raw_derivatives[0].key.clone(),
+            DerivativeDataConfigUpdate::new(Some("bad_symbol".to_string()), None, None, None, None),
+        )]);
+        let nonexistant_symbol_update = DerivativeUpdates::Config(vec![(
+            "bad_symbol".to_string(),
+            DerivativeDataConfigUpdate::new(Some("ETH".to_string()), None, None, None, None),
+        )]);
+
+        let err = oracle
+            .update_derivatives(&admin, app, bad_symbol_update)
+            .unwrap_err();
+        let msg = Asserter::get_std_err_msg(err);
+        assert!(msg.contains(
+            &CommonOracleError::InvalidRouterSymbol("bad_symbol".to_string()).to_string()
+        ));
+
+        assert!(oracle
+            .update_derivatives(&admin, app, nonexistant_symbol_update)
+            .is_err());
+
+        let now = app.block_info().time.seconds();
+        let new_derivative = DerivativeData::new(
+            raw_derivatives[0].key.clone(),
+            PricesFixture::XAU.to_string(),
+            raw_derivatives[0].initial_rate,
+            2000u64,
+            2000u64,
+            raw_derivatives[0].apy,
+            2000u64,
+            Decimal256::from_str("0.2").unwrap(),
+            now,
+        )
+        .unwrap();
+        let valid_update = DerivativeUpdates::Config(vec![(
+            raw_derivatives[0].key.clone(),
+            DerivativeDataConfigUpdate::new(
+                Some(PricesFixture::XAU.to_string()),
+                Some(new_derivative.rate.update_frequency),
+                Some(new_derivative.rate.timeout),
+                Some(new_derivative.apy.update_frequency),
+                Some(new_derivative.apy.max_change),
+            ),
+        )]);
+        oracle
+            .update_derivatives(&admin, app, valid_update)
+            .unwrap();
+        let derivatives = oracle.query_derivatives(app).unwrap();
+        let derivative = derivatives
+            .iter()
+            .find(|d| d.key == raw_derivatives[0].key)
+            .unwrap();
+        assert_eq!(derivative, &new_derivative);
+    }
+
+    #[test]
+    fn test_common_config() {
         let prices = PricesFixture::basic_prices_2();
         let TestScenario {
             mut app,
@@ -95,230 +381,85 @@ mod test {
         let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.into());
         assert!(oracle.set_status(&user, app, false).is_err());
         assert!(oracle.set_status(&admin, app, false).is_ok());
+        let new_router = RawContract {
+            address: "new_router".to_string(),
+            code_hash: "new_router".to_string(),
+        };
+        assert!(oracle.update_config(&admin, app, &new_router).is_err());
+        oracle.set_status(&admin, app, true).unwrap();
+        assert!(oracle.update_config(&admin, app, &new_router).is_ok());
 
-        let derivatives = vec![RawDerivativeData {
-            key: "stkd-ETH".to_string(),
-            underlying_key: "ETH".to_string(),
-            initial_rate: Decimal256::from_str("1.1").unwrap(),
-            apy: Decimal256::from_str("0.1").unwrap(),
-            update_frequency: 100,
-            timeout: 50,
-        }];
-        assert!(oracle.set_derivatives(&admin, app, &derivatives).is_err());
+        let config = oracle.query_config(app).unwrap();
+        assert_eq!(
+            config.config.router,
+            Contract {
+                address: Addr::unchecked("new_router"),
+                code_hash: "new_router".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn test_price_calculation() {
+        let prices = PricesFixture::basic_prices_2();
+        let TestScenario {
+            mut app,
+            admin,
+            user,
+            router,
+            ..
+        } = TestScenario::new(prices);
+        let app = &mut app;
+        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.clone().into());
+        let derivatives = derivative_data();
+        assert!(oracle.set_derivatives(&admin, app, &derivatives).is_ok());
+        router
+            .set_keys(
+                &admin,
+                app,
+                oracle.0.clone().into(),
+                vec![
+                    "stkd-ETH".to_string(),
+                    "stkd-OSMO".to_string(),
+                    "stkd-OSMO Rate".to_string(),
+                ],
+            )
+            .unwrap();
+        let eth_price = router.query_price(app, PricesFixture::ETH.into()).unwrap();
+        let osmo_price = router.query_price(app, PricesFixture::OSMO.into()).unwrap();
+        let expected_price =
+            Uint256::from_uint128(eth_price.data.rate) * derivatives[0].initial_rate;
+        let expected_osmo_price =
+            Uint256::from_uint128(osmo_price.data.rate) * derivatives[1].initial_rate;
+        let actual_price = router
+            .query_price(app, "stkd-ETH".into())
+            .unwrap()
+            .data
+            .rate;
+        assert_eq!(expected_price, actual_price.into());
+        let actual_price = router
+            .query_prices(
+                app,
+                vec![
+                    "stkd-ETH".into(),
+                    "stkd-OSMO".into(),
+                    "stkd-OSMO Rate".into(),
+                ],
+            )
+            .unwrap();
+        assert_eq!(
+            vec![
+                expected_price,
+                expected_osmo_price,
+                derivatives[1].initial_rate.atomics()
+            ],
+            vec![
+                actual_price[0].data.rate.into(),
+                actual_price[1].data.rate.into(),
+                actual_price[2].data.rate.into()
+            ]
+        );
+        app.update_block(|b| b.time = b.time.plus_seconds(3u64));
+        assert!(router.query_price(app, "stkd-ETH".into()).is_err());
     }
 }
-
-//#[cfg(test)]
-// mod test {
-//     use shade_oracles::unit_test_interface::prices::PricesFixture;
-
-//     use super::*;
-
-//         #[test]
-//         fn test_stride_registry() {
-//             let mut keys = vec![];
-//             let prices: HashMap<String, Uint128> = PricesFixture::basic_prices_2()
-//                 .into_iter()
-//                 .map(|(sym, p)| {
-//                     keys.push(sym.to_string());
-//                     (sym.to_string(), p.into())
-//                 })
-//                 .collect();
-//             let test_prices = PricesFixture::basic_prices_2().clone();
-//             let user = User::new("superadmin");
-
-//             let random = User::new("random");
-
-//             let mut app = &mut App::default();
-
-//             let deps = OracleCore::setup(&mut app, &user, prices, None, None, None).unwrap();
-
-//             let one = "stkd-BTC";
-//             let stkd_btc = Snip20Helper::init(&user, app, one, one, 10, admin, &None, &to_binary("jwnad").unwrap(), "stkd-BTC");
-//             let mut deps = mock_dependencies();
-//             let mut_deps = deps.as_mut();
-//             let asset = Asset {
-//                 contract: Contract {
-//                     address: Addr::unchecked("addr"),
-//                     code_hash: "code_hash".to_string(),
-//                 },
-//                 quote_symbol: "quote_symbol".to_string(),
-//                 decimals: 10u8,
-//             };
-//             let key = "key".to_string();
-//             let _data = StakingDerivativesOracle::set_derivative_data(
-//                 mut_deps.storage,
-//                 key.clone(),
-//                 asset.clone(),
-//                 None,
-//                 None,
-//             )
-//             .unwrap();
-//             let resp =
-//                 StakingDerivativesOracle::get_derivative_data_resp(&key, mut_deps.storage).unwrap();
-//             assert_eq!(resp.key, key);
-//             assert_eq!(resp.staking_derivative, asset);
-//             assert_eq!(resp.timeout, None);
-//             assert_eq!(resp.rate, None);
-//         }
-
-//         #[test]
-//         fn test_set_derivative_data() {
-//             let mut deps = mock_dependencies();
-//             let mut_deps = deps.as_mut();
-//             let asset = Asset {
-//                 contract: Contract {
-//                     address: Addr::unchecked("addr"),
-//                     code_hash: "code_hash".to_string(),
-//                 },
-//                 quote_symbol: "quote_symbol".to_string(),
-//                 decimals: 10u8,
-//             };
-//             let key = "key".to_string();
-//             let data = StakingDerivativesOracle::set_derivative_data(
-//                 mut_deps.storage,
-//                 key.clone(),
-//                 asset.clone(),
-//                 Some(OraclePrice::default()),
-//                 Some(0),
-//             )
-//             .unwrap();
-//             assert_eq!(data.derivative, asset.contract.address);
-//             assert_eq!(data.rate, OraclePrice::default());
-//             assert_eq!(data.timeout, 0);
-//             let stored_asset = StakingDerivativesOracle::ASSETS
-//                 .0
-//                 .load(mut_deps.storage, &data.derivative)
-//                 .unwrap();
-//             assert_eq!(stored_asset, asset);
-//             let stored_data = StakingDerivativesOracle::DERIVATIVES
-//                 .load(mut_deps.storage, &key)
-//                 .unwrap();
-//             assert_eq!(stored_data, data);
-//             let supported_keys = CommonConfig::SUPPORTED_KEYS.load(mut_deps.storage).unwrap();
-//             assert_eq!(supported_keys, vec![key]);
-//         }
-
-//         #[test]
-//         fn test_remove_keys() {
-//             let mut deps = mock_dependencies();
-//             let mut_deps = deps.as_mut();
-//             let mut supported_keys = vec![];
-//             for i in 0..10 {
-//                 let key = format!("key_{}", i);
-//                 supported_keys.push(key.clone());
-//                 let data = StoredDerivativeData {
-//                     derivative: Addr::unchecked(format!("addr_{}", i)),
-//                     rate: OraclePrice::default(),
-//                     timeout: 0,
-//                 };
-//                 StakingDerivativesOracle::DERIVATIVES
-//                     .save(mut_deps.storage, &key, &data)
-//                     .unwrap();
-//             }
-//             CommonConfig::SUPPORTED_KEYS
-//                 .save(mut_deps.storage, &supported_keys)
-//                 .unwrap();
-//             let keys = vec!["key_1".to_string(), "key_3".to_string()];
-//             StakingDerivativesOracle::remove_keys(mut_deps.storage, keys).unwrap();
-//             let supported_keys = CommonConfig::SUPPORTED_KEYS.load(mut_deps.storage).unwrap();
-//             // key_1 and key_3 should be removed, not preserving order
-//             assert_eq!(supported_keys.len(), 8);
-//             assert!(supported_keys.contains(&"key_0".to_string()));
-//             assert!(supported_keys.contains(&"key_2".to_string()));
-//             assert!(supported_keys.contains(&"key_4".to_string()));
-//             assert!(supported_keys.contains(&"key_5".to_string()));
-//             assert!(supported_keys.contains(&"key_6".to_string()));
-//             assert!(supported_keys.contains(&"key_7".to_string()));
-//             assert!(supported_keys.contains(&"key_8".to_string()));
-//             assert!(supported_keys.contains(&"key_9".to_string()));
-//             assert!(!supported_keys.contains(&"key_1".to_string()));
-//             assert!(!supported_keys.contains(&"key_3".to_string()));
-//         }
-
-//         #[test]
-//         fn test_update_rates() {
-//             let mut deps = mock_dependencies();
-//             let mut_deps = deps.as_mut();
-//             let mut supported_keys = vec![];
-//             for i in 0..10 {
-//                 let key = format!("key_{}", i);
-//                 supported_keys.push(key.clone());
-//                 let data = StoredDerivativeData {
-//                     derivative: Addr::unchecked(format!("addr_{}", i)),
-//                     rate: OraclePrice::default(),
-//                     timeout: 0,
-//                 };
-//                 StakingDerivativesOracle::DERIVATIVES
-//                     .save(mut_deps.storage, &key, &data)
-//                     .unwrap();
-//             }
-//             CommonConfig::SUPPORTED_KEYS
-//                 .save(mut_deps.storage, &supported_keys)
-//                 .unwrap();
-//             let rates = vec![
-//                 DerivativeExchangeRate {
-//                     symbol: "key_1".to_string(),
-//                     price: Uint128::from(1u128),
-//                 },
-//                 DerivativeExchangeRate {
-//                     symbol: "key_2".to_string(),
-//                     price: Uint128::from(2u128),
-//                 },
-//                 DerivativeExchangeRate {
-//                     symbol: "key_3".to_string(),
-//                     price: Uint128::from(3u128),
-//                 },
-//             ];
-//             let now = 100;
-//             StakingDerivativesOracle::update_rates(mut_deps.storage, now, rates).unwrap();
-//             for i in 0..10 {
-//                 let key = format!("key_{}", i);
-//                 let data = StakingDerivativesOracle::DERIVATIVES
-//                     .load(mut_deps.storage, &key)
-//                     .unwrap();
-//                 if i == 1 {
-//                     assert_eq!(data.rate.data.rate, Uint128::from(1u128));
-//                     assert_eq!(data.rate.data.last_updated_base, now);
-//                     assert_eq!(data.rate.data.last_updated_quote, now);
-//                 } else if i == 2 {
-//                     assert_eq!(data.rate.data.rate, Uint128::from(2u128));
-//                     assert_eq!(data.rate.data.last_updated_base, now);
-//                     assert_eq!(data.rate.data.last_updated_quote, now);
-//                 } else if i == 3 {
-//                     assert_eq!(data.rate.data.rate, Uint128::from(3u128));
-//                     assert_eq!(data.rate.data.last_updated_base, now);
-//                     assert_eq!(data.rate.data.last_updated_quote, now);
-//                 } else {
-//                     assert_eq!(data.rate, OraclePrice::default());
-//                 }
-//             }
-//         }
-
-//         #[test]
-//         fn test_get_supported_derivatives() {
-//             let mut deps = mock_dependencies();
-//             let mut_deps = deps.as_mut();
-//             // Populate storage with 10 derivatives using the set_derivative_data function
-//             // and check that the get_supported_derivatives function returns the same
-//             for i in 0..10 {
-//                 let key = format!("key_{}", i);
-//                 let asset = Asset::new(
-//                     Contract::new(&Addr::unchecked(key.clone()), &"symbol".to_string()),
-//                     10,
-//                     key.clone(),
-//                 );
-//                 StakingDerivativesOracle::set_derivative_data(
-//                     mut_deps.storage,
-//                     key.clone(),
-//                     asset,
-//                     Some(OraclePrice::default()),
-//                     None,
-//                 )
-//                 .unwrap();
-//             }
-//             let resp =
-//                 StakingDerivativesOracle::get_supported_derivatives(mut_deps.storage).unwrap();
-//             assert_eq!(resp.len(), 10);
-//         }
-// }

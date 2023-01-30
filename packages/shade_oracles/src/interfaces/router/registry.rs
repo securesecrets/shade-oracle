@@ -62,16 +62,19 @@ pub struct Oracle;
 pub use state::*;
 #[cfg(feature = "router")]
 mod state {
-    use std::{collections::HashMap, vec};
+    use std::{
+        collections::{HashMap, HashSet},
+        vec,
+    };
 
     use crate::{
-        impl_global_status,
-        interfaces::router::{error::OracleRouterError, msg::KeysResponse},
-        interfaces::{common::OraclePrice, router::msg::ProtectedKeysResponse},
+        impl_global_status, interfaces::common::OraclePrice,
+        interfaces::router::error::OracleRouterError,
     };
 
     use super::*;
     use cosmwasm_std::{to_binary, Api, Binary, Deps, StdError, StdResult, Storage};
+    use secret_borsh_storage::BorshItem;
     use secret_storage_plus::{GenericMapStorage, Item, ItemStorage, Map};
 
     impl_global_status!(OracleRouter, OracleRouterError);
@@ -84,20 +87,19 @@ mod state {
         const MAP: Map<'static, &'a str, Contract> = Map::new("oraclerouteroracleregistry");
     }
 
-    /// List of explicity supported keys (keys registered to an oracle).
-    pub const KEYS: Item<Vec<String>> = Item::new("oraclerouterkeys");
-
     impl<'a> OracleRouter {
-        pub const PROTECTED_KEYS_LIST: Item<'static, Vec<String>> =
-            Item::new("oraclerouterprotectedkeyslist");
+        /// List of explicity supported keys (keys registered to an oracle).
+        pub const KEYS: BorshItem<'static, HashSet<String>> = BorshItem::new("oraclerouterkeys");
+        pub const PROTECTED_KEYS_LIST: BorshItem<'static, HashSet<String>> =
+            BorshItem::new("oraclerouterprotectedkeyslist");
         pub const PROTECTED_KEYS: Map<'static, &'a str, ProtectedKeyInfo> =
             Map::new("oraclerouterprotectedkeys");
     }
 
     impl OracleRouter {
         pub fn init_storage(storage: &mut dyn Storage) -> StdResult<()> {
-            OracleRouter::PROTECTED_KEYS_LIST.save(storage, &vec![])?;
-            KEYS.save(storage, &vec![])?;
+            Self::PROTECTED_KEYS_LIST.save(storage, &HashSet::new())?;
+            Self::KEYS.save(storage, &HashSet::new())?;
             Ok(())
         }
 
@@ -108,8 +110,7 @@ mod state {
         ) -> StdResult<()> {
             Self::PROTECTED_KEYS.update(storage, key, |info| match info {
                 None => Err(StdError::generic_err(format!(
-                    "Can't update price for unprotected key {}.",
-                    key
+                    "Can't update price for unprotected key {key}.",
                 ))),
                 Some(mut info) => {
                     info.price = price;
@@ -157,8 +158,8 @@ mod state {
         }
 
         pub fn get_keys(deps: Deps) -> StdResult<Binary> {
-            let keys = KEYS.load(deps.storage)?;
-            to_binary(&keys)
+            let keys = Self::KEYS.load(deps.storage)?;
+            to_binary(&keys.into_iter().collect::<Vec<String>>())
         }
 
         pub fn get_protected_keys(deps: Deps) -> StdResult<Binary> {
@@ -179,31 +180,27 @@ mod state {
         ) -> StdResult<()> {
             match operation {
                 RegistryOperation::RemoveKeys { keys } => {
-                    let mut current_keys = KEYS.load(storage)?;
+                    let mut current_keys = Self::KEYS.load(storage)?;
                     for key in &keys {
                         Oracle::MAP.remove(storage, key);
                     }
                     current_keys.retain(|k| !keys.contains(k));
-                    KEYS.save(storage, &current_keys)?;
+                    Self::KEYS.save(storage, &current_keys)?;
                 }
                 RegistryOperation::SetKeys { oracle, keys } => {
                     let oracle = oracle.into_valid(api)?;
-                    let mut current_keys = KEYS.load(storage)?;
+                    let mut current_keys = Self::KEYS.load(storage)?;
                     for key in keys {
                         Oracle::MAP.save(storage, &key, &oracle)?;
-                        if !current_keys.contains(&key) {
-                            current_keys.push(key);
-                        }
+                        current_keys.insert(key);
                     }
-                    KEYS.save(storage, &current_keys)?;
+                    Self::KEYS.save(storage, &current_keys)?;
                 }
                 RegistryOperation::SetProtection { infos } => {
                     let mut protected_keys = Self::PROTECTED_KEYS_LIST.load(storage)?;
                     for info in infos {
                         Self::PROTECTED_KEYS.save(storage, &info.key, &info)?;
-                        if !protected_keys.contains(&info.key) {
-                            protected_keys.push(info.key);
-                        }
+                        protected_keys.insert(info.key);
                     }
                     Self::PROTECTED_KEYS_LIST.save(storage, &protected_keys)?;
                 }
