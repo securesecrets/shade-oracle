@@ -114,9 +114,8 @@ mod state {
         pub fn remove_keys(storage: &mut dyn Storage, keys: Vec<String>) -> StdResult<()> {
             let mut supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             for key in keys {
-                if let Some(pos) = supported_keys.iter().position(|k| key.eq(k)) {
+                if supported_keys.remove(&key) {
                     Self::PAIRS.remove(storage, &key);
-                    supported_keys.swap_remove(pos);
                 }
             }
             CommonConfig::SUPPORTED_KEYS.save(storage, &supported_keys)?;

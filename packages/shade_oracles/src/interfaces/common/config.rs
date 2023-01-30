@@ -16,8 +16,10 @@ pub struct CommonConfigResponse {
 pub use state::*;
 #[cfg(feature = "core")]
 mod state {
+    use std::collections::HashSet;
+
+    use secret_borsh_storage::BorshItem;
     use shade_protocol::admin::{QueryMsg, ValidateAdminPermissionResponse};
-    use ssp::Item;
 
     use crate::{
         error::CommonOracleError,
@@ -30,7 +32,8 @@ mod state {
     use super::*;
 
     impl CommonConfig {
-        pub const SUPPORTED_KEYS: Item<'static, Vec<String>> = Item::new("supported_keys");
+        pub const SUPPORTED_KEYS: BorshItem<'static, HashSet<String>> =
+            BorshItem::new("supported_keys");
     }
 
     impl CommonConfig {
@@ -41,9 +44,7 @@ mod state {
         ) -> StdResult<()> {
             let resp = query_price(&self.router, querier, symbol.to_string());
             if resp.is_err() {
-                Err(StdError::generic_err(format!(
-                    "Failed to query price for {symbol}"
-                )))
+                Err(CommonOracleError::InvalidRouterSymbol(symbol.to_string()).into())
             } else {
                 Ok(())
             }
@@ -57,16 +58,10 @@ mod state {
         }
 
         pub fn add_supported_key(storage: &mut dyn Storage, key: &String) -> StdResult<()> {
-            let keys;
-            if let Some(mut current_keys) = Self::SUPPORTED_KEYS.may_load(storage)? {
-                if !current_keys.contains(key) {
-                    current_keys.push(key.to_string());
-                }
-                keys = current_keys;
-            } else {
-                keys = vec![key.to_string()];
-            }
-            Self::SUPPORTED_KEYS.save(storage, &keys)?;
+            Self::SUPPORTED_KEYS.update(storage, |mut keys| -> StdResult<_> {
+                keys.insert(key.to_string());
+                Ok(keys)
+            })?;
             Ok(())
         }
 
@@ -76,7 +71,7 @@ mod state {
             router: RawContract,
         ) -> StdResult<Self> {
             let router = router.into_valid(api)?;
-            Self::SUPPORTED_KEYS.save(storage, &vec![])?;
+            Self::SUPPORTED_KEYS.save(storage, &HashSet::new())?;
             Ok(CommonConfig {
                 router,
                 enabled: true,
@@ -129,11 +124,10 @@ mod state {
             if admin_resp.has_permission {
                 Ok(())
             } else {
-                Err(StdError::generic_err(format!(
-                    "User {} does not have permission {}",
-                    info.sender,
-                    permission.to_string()
-                )))
+                Err(
+                    CommonOracleError::UnauthorizedPermission(info.sender, permission.to_string())
+                        .into(),
+                )
             }
         }
 
@@ -141,10 +135,16 @@ mod state {
             if self.enabled {
                 Ok(())
             } else {
-                Err(StdError::generic_err(
-                    "This oracle has been disabled. Only operation available is changing status.",
-                ))
+                Err(CommonOracleError::DisabledOracle.into())
             }
+        }
+
+        pub fn get_resp(&self, storage: &dyn Storage) -> StdResult<CommonConfigResponse> {
+            let supported_keys = Self::SUPPORTED_KEYS.load(storage)?;
+            Ok(CommonConfigResponse {
+                config: self.clone(),
+                supported_keys: supported_keys.into_iter().collect(),
+            })
         }
     }
 }

@@ -35,6 +35,14 @@ impl Asserter {
         assert!(hook().is_err())
     }
 
+    pub fn get_std_err_msg(error: anyhow::Error) -> String {
+        let source: &StdError = error.downcast_ref().unwrap();
+        match source {
+            StdError::GenericErr { msg, .. } => msg.to_string(),
+            _ => panic!("Expected StdError::GenericErr"),
+        }
+    }
+
     /// Assert that the AppResult hook returns an error. Can only handle errors bubbled up from 1 depth.
     pub fn err<E>(hook: impl FnOnce() -> AppResult, error: &E)
     where

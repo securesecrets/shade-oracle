@@ -101,6 +101,24 @@ pub mod msg {
         UpdateAPY,
     }
 
+    impl DerivativeDataConfigUpdate {
+        pub fn new(
+            underlying_key: Option<String>,
+            rate_update_frequency: Option<u64>,
+            rate_timeout: Option<u64>,
+            apy_update_frequency: Option<u64>,
+            apy_max_change: Option<Decimal256>,
+        ) -> Self {
+            Self {
+                underlying_key,
+                rate_update_frequency,
+                rate_timeout,
+                apy_update_frequency,
+                apy_max_change,
+            }
+        }
+    }
+
     impl ToString for BotPermission {
         fn to_string(&self) -> String {
             match self {
@@ -240,7 +258,7 @@ mod state {
                 Uint256::from_u128(24 * 365 * 10u128.pow(18)),
             );
             // Multiplying by 2 for buffer.
-            let max_upside = Decimal256::new(Uint256::from_u128(2u128)) * apy * y;
+            let max_upside = Decimal256::new(Uint256::from_u128(2 * 10u128.pow(18))) * apy * y;
             if self.value.eq(&new_rate) {
                 Ok(())
             } else if self.value > new_rate {
@@ -248,7 +266,7 @@ mod state {
                     Decimal256::from_ratio((self.value - new_rate).atomics(), self.value.atomics());
                 if percent_change > MAX_DOWNSIDE {
                     Err(StdError::generic_err(format!(
-                        "Derivative rate is changing too much. Maximum downside is {MAX_DOWNSIDE}. Attempted change is {percent_change}."
+                        "Derivative rate is changing too much. Maximum downside is {MAX_DOWNSIDE}. Attempted change is {percent_change}.",
                     )))
                 } else {
                     Ok(())
@@ -310,6 +328,23 @@ mod state {
     }
 
     impl StrideStakingDerivativesOracle {
+        /// To be appended to key to signal that consumer wants the rate.
+        pub const RATE_STRING: &'static str = " Rate";
+
+        pub fn create_rate_key(key: &str) -> String {
+            format!("{}{}", key, Self::RATE_STRING)
+        }
+
+        pub fn process_key(key: &str) -> (bool, String) {
+            let mut is_rate = false;
+            let mut processed_key = key;
+            if key.ends_with(Self::RATE_STRING) {
+                processed_key = key.trim_end_matches(Self::RATE_STRING);
+                is_rate = true;
+            }
+            (is_rate, processed_key.to_string())
+        }
+
         pub fn set_derivatives(
             &self,
             storage: &mut dyn Storage,
@@ -340,9 +375,8 @@ mod state {
         pub fn remove_keys(storage: &mut dyn Storage, keys: Vec<String>) -> StdResult<()> {
             let mut supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             for key in keys {
-                if let Some(pos) = supported_keys.iter().position(|k| key.eq(k)) {
+                if supported_keys.remove(&key) {
                     Self::DERIVATIVES.remove(storage, &key);
-                    supported_keys.swap_remove(pos);
                 }
             }
             CommonConfig::SUPPORTED_KEYS.save(storage, &supported_keys)?;
@@ -426,6 +460,33 @@ mod state {
                 )?);
             }
             Ok(supported_pairs)
+        }
+    }
+
+    #[cfg(feature = "derivatives")]
+    #[cfg(test)]
+    mod test {
+        use std::str::FromStr;
+
+        use super::*;
+
+        //#[cfg(feature = "derivatives")]
+        #[test]
+        fn test_derivative_rate() {
+            let rate = DerivativeRate::new(
+                Decimal256::from_str("1.075206355563117638").unwrap(),
+                100,
+                100,
+                0,
+            )
+            .unwrap();
+            let apy = Decimal256::from_str("0.219").unwrap();
+
+            let new_rate = Decimal256::from_str("1.076034033763143768").unwrap();
+            let now = 24 * 3600u64;
+            assert!(rate.require_valid_change(now, apy, new_rate).is_ok());
+            let now = 3600u64;
+            assert!(rate.require_valid_change(now, apy, new_rate).is_err());
         }
     }
 }

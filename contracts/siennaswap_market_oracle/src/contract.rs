@@ -167,11 +167,8 @@ pub fn query_config(
     storage: &dyn Storage,
     oracle: GenericLiquidityPairOracle,
 ) -> StdResult<CommonConfigResponse> {
-    let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
-    Ok(CommonConfigResponse {
-        config: oracle.config,
-        supported_keys,
-    })
+    let resp = oracle.config.get_resp(storage)?;
+    Ok(resp)
 }
 
 pub fn query_pairs(storage: &dyn Storage) -> StdResult<PairsResponse> {

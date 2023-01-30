@@ -93,6 +93,23 @@ mod state {
     }
 
     impl StakingDerivativesOracle {
+        /// To be appended to key to signal that consumer wants the rate.
+        pub const RATE_STRING: &'static str = " Rate";
+
+        pub fn create_rate_key(key: &str) -> String {
+            format!("{}{}", key, Self::RATE_STRING)
+        }
+
+        pub fn process_key(key: &str) -> (bool, String) {
+            let mut is_rate = false;
+            let mut processed_key = key;
+            if key.ends_with(Self::RATE_STRING) {
+                processed_key = key.trim_end_matches(Self::RATE_STRING);
+                is_rate = true;
+            }
+            (is_rate, processed_key.to_string())
+        }
+
         /// Performs validation and saves the data to storage.
         pub fn validate_and_set_derivative_data(
             &self,
@@ -128,9 +145,8 @@ mod state {
         pub fn remove_keys(storage: &mut dyn Storage, keys: Vec<String>) -> StdResult<()> {
             let mut supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             for key in keys {
-                if let Some(pos) = supported_keys.iter().position(|k| key.eq(k)) {
+                if supported_keys.remove(&key) {
                     Self::DERIVATIVES.remove(storage, &key);
-                    supported_keys.swap_remove(pos);
                 }
             }
             CommonConfig::SUPPORTED_KEYS.save(storage, &supported_keys)?;

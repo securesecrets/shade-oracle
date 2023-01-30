@@ -144,25 +144,33 @@ pub fn query_price(
     querier: &QuerierWrapper,
     key: String,
 ) -> StdResult<PriceResponse> {
+    let original_key = key.clone();
+    let (is_rate, key) = StrideStakingDerivativesOracle::process_key(&key);
     let stored_data = StrideStakingDerivativesOracle::DERIVATIVES.load(storage, &key)?;
 
     let now = env.block.time.seconds();
     stored_data.rate.require_fresh(now)?;
 
     let rate = stored_data.rate;
-    let underlying_price =
-        query_router_price(&oracle.config.router, querier, &stored_data.underlying_key)?;
 
-    let price = rate.value * Uint256::from_uint128(underlying_price.data().rate);
+    let data = if is_rate {
+        ReferenceData::new(
+            rate.value.atomics().try_into()?,
+            rate.last_updated,
+            rate.last_updated,
+        )
+    } else {
+        let underlying_price =
+            query_router_price(&oracle.config.router, querier, &stored_data.underlying_key)?;
+        let price = rate.value * Uint256::from_uint128(underlying_price.data().rate);
+        ReferenceData::new(
+            price.try_into()?,
+            min(underlying_price.data().last_updated_base, rate.last_updated),
+            underlying_price.data().last_updated_quote,
+        )
+    };
 
-    Ok(OraclePrice::new(
-        key,
-        ReferenceData {
-            rate: price.try_into()?,
-            last_updated_base: min(underlying_price.data().last_updated_base, rate.last_updated),
-            last_updated_quote: underlying_price.data().last_updated_quote,
-        },
-    ))
+    Ok(OraclePrice::new(original_key, data))
 }
 
 pub fn query_prices(
@@ -183,11 +191,14 @@ pub fn query_config(
     storage: &dyn Storage,
     oracle: StrideStakingDerivativesOracle,
 ) -> StdResult<CommonConfigResponse> {
-    let supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
-    Ok(CommonConfigResponse {
-        config: oracle.config,
-        supported_keys,
-    })
+    let mut resp = oracle.config.get_resp(storage)?;
+    let mut supported_keys = vec![];
+    for key in &resp.supported_keys.clone() {
+        supported_keys.push(key.to_string());
+        supported_keys.push(StrideStakingDerivativesOracle::create_rate_key(key));
+    }
+    resp.supported_keys = supported_keys;
+    Ok(resp)
 }
 
 pub fn query_derivatives(storage: &dyn Storage) -> StdResult<DerivativesResponse> {

@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, Addr, StdError, Uint128};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use secret_storage_plus::{Item, Map};
+use shade_protocol::snip20::QueryAnswer;
 use shade_protocol::utils::{ExecuteCallback, Query};
 use shade_protocol::{
     contract_interfaces::snip20::{
@@ -34,6 +35,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum QueryMsg {
     GetConfig {},
+    GetMintStatus(String),
 }
 
 #[cw_serde]
@@ -43,11 +45,6 @@ pub struct Config {
     pub tokens: Vec<TokenData>,
     pub mint_frequency: u64,
     pub mint_amount: Uint128,
-}
-
-#[cw_serde]
-pub struct MintersResponse {
-    pub minters: Vec<Addr>,
 }
 
 impl Config {
@@ -93,8 +90,12 @@ impl TokenData {
     pub fn into_valid(faucet: &Addr, deps: Deps, raw: RawContract) -> StdResult<Self> {
         let contract = raw.into_valid(deps.api)?;
         let token_info = token_info(&deps.querier, &contract)?;
-        let resp: MintersResponse = Snip20QueryMsg::Minters {}.query(&deps.querier, &contract)?;
-        if !resp.minters.contains(faucet) {
+        let resp: QueryAnswer = Snip20QueryMsg::Minters {}.query(&deps.querier, &contract)?;
+        let minters = match resp {
+            QueryAnswer::Minters { minters } => minters,
+            _ => return Err(StdError::generic_err("Invalid response from token.")),
+        };
+        if !minters.contains(faucet) {
             return Err(StdError::generic_err(format!(
                 "Faucet {} is not a minter for {}.",
                 faucet, contract.address,
@@ -226,11 +227,25 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     pad_query_result(
         match msg {
             QueryMsg::GetConfig {} => to_binary(&config),
+            QueryMsg::GetMintStatus(user) => {
+                let user = deps.api.addr_validate(&user)?;
+                let user_data = USER_DATA.may_load(deps.storage, &user)?.unwrap_or_default();
+                let now = env.block.time.seconds();
+                let time_since_last_mint = now - user_data.last_minted;
+                if time_since_last_mint >= config.mint_frequency {
+                    to_binary(&format!("{user} can mint tokens."))
+                } else {
+                    let cooldown = config.mint_frequency - time_since_last_mint;
+                    to_binary(&format!(
+                        "{user} must wait {cooldown} seconds before minting again."
+                    ))
+                }
+            }
         },
         BLOCK_SIZE,
     )
