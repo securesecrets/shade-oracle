@@ -193,7 +193,7 @@ pub fn query_config(
 ) -> StdResult<CommonConfigResponse> {
     let mut resp = oracle.config.get_resp(storage)?;
     let mut supported_keys = vec![];
-    for key in &resp.supported_keys.clone() {
+    for key in &resp.supported_keys {
         supported_keys.push(key.to_string());
         supported_keys.push(StrideStakingDerivativesOracle::create_rate_key(key));
     }

@@ -80,6 +80,39 @@ mod test {
     };
 
     #[test]
+    fn test_common_config() {
+        let prices = PricesFixture::basic_prices_2();
+        let TestScenario {
+            mut app,
+            admin,
+            user,
+            router,
+            ..
+        } = TestScenario::new(prices);
+        let app = &mut app;
+        let oracle =
+            GenericStakingDerivativesOracleHelper::init_shade_v1(&user, app, &router.into());
+        assert!(oracle.set_status(&user, app, false).is_err());
+        assert!(oracle.set_status(&admin, app, false).is_ok());
+        let new_router = RawContract {
+            address: "new_router".to_string(),
+            code_hash: "new_router".to_string(),
+        };
+        assert!(oracle.update_config(&admin, app, &new_router).is_err());
+        oracle.set_status(&admin, app, true).unwrap();
+        assert!(oracle.update_config(&admin, app, &new_router).is_ok());
+
+        let config = oracle.query_config(app).unwrap();
+        assert_eq!(
+            config.config.router,
+            Contract {
+                address: Addr::unchecked("new_router"),
+                code_hash: "new_router".to_string()
+            }
+        );
+    }
+
+    #[test]
     fn test_stride_registry() {
         let prices = PricesFixture::basic_prices_2();
         let TestScenario {

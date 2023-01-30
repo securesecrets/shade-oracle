@@ -105,8 +105,6 @@ pub fn execute(
             Ok(Response::default())
         }
     }
-
-    // TODO: actual swap execute
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

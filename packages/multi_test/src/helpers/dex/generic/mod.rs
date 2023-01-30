@@ -1,7 +1,7 @@
 use super::*;
 use crate::harness::dex::{
-    ShadeSwapMarketOracle, ShadeSwapSpotOracle, SiennaSwapMarketOracle, SiennaSwapReservesOracle,
-    SiennaSwapSpotOracle,
+    shadeswap::{ShadeSwapMarketOracle, ShadeSwapSpotOracle},
+    siennaswap::{SiennaSwapMarketOracle, SiennaSwapReservesOracle, SiennaSwapSpotOracle},
 };
 use shade_oracles::interfaces::{common::config::CommonConfigResponse, dex::generic::*};
 
@@ -137,8 +137,8 @@ mod test {
         )]
 
         use super::*;
-        use crate::harness::MockShadePair;
-        use oracle_mocks::shade_pair::contract as mock_shade_pair;
+        use crate::mocks::MockShadeswapPair;
+        use oracle_mocks::shadeswap_pair::contract as mock_shade_pair;
         use shade_oracles::unit_test_interface::prices::PricesFixture;
 
         #[test]
@@ -167,7 +167,7 @@ mod test {
 
             let shade_pair = mock_shade_pair::InstantiateMsg {}
                 .test_init(
-                    MockShadePair::default(),
+                    MockShadeswapPair::default(),
                     &mut app,
                     user.addr(),
                     "shade_pair",
@@ -177,7 +177,7 @@ mod test {
 
             let shade_pair_2 = mock_shade_pair::InstantiateMsg {}
                 .test_init(
-                    MockShadePair::default(),
+                    MockShadeswapPair::default(),
                     &mut app,
                     user.addr(),
                     "shade_pair_two",
@@ -263,7 +263,7 @@ mod test {
 
             let shade_pair = mock_shade_pair::InstantiateMsg {}
                 .test_init(
-                    MockShadePair::default(),
+                    MockShadeswapPair::default(),
                     &mut app,
                     user.addr(),
                     "shade_pair",
@@ -408,7 +408,7 @@ mod test {
             clippy::too_many_arguments
         )]
         use super::*;
-        use crate::harness::MockSiennaPair;
+        use crate::mocks::MockSiennaPair;
         use oracle_mocks::sienna_pair::contract as mock_sienna_pair;
 
         #[allow(clippy::too_many_arguments)]
