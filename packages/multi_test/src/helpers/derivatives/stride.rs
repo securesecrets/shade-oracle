@@ -171,7 +171,7 @@ mod test {
         // Update > max upside
         app.update_block(|b| b.time = b.time.plus_seconds(1));
         assert!(oracle
-            .update_derivatives(&apy_bot, app, DerivativeUpdates::APY(bad_apy.clone()))
+            .update_derivatives(&apy_bot, app, DerivativeUpdates::APY(bad_apy))
             .is_err());
         assert!(oracle
             .update_derivatives(&apy_bot, app, DerivativeUpdates::APY(okay_apy.clone()))
@@ -271,7 +271,7 @@ mod test {
             ..
         } = TestScenario::new(prices);
         let app = &mut app;
-        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.clone().into());
+        let oracle = StrideStakingDerivativesOracleHelper::init(&user, app, &router.into());
         let raw_derivatives = derivative_data();
 
         assert!(oracle
