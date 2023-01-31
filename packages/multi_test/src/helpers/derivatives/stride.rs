@@ -80,7 +80,7 @@ mod test {
     use multi_test_helpers::Asserter;
     use shade_oracles::{
         error::CommonOracleError,
-        interfaces::{band::ReferenceData, common::OraclePrice},
+        interfaces::{common::OraclePrice, providers::ReferenceData},
         unit_test_interface::prices::PricesFixture,
     };
 
@@ -427,10 +427,8 @@ mod test {
             .unwrap();
         let eth_price = router.query_price(app, PricesFixture::ETH.into()).unwrap();
         let osmo_price = router.query_price(app, PricesFixture::OSMO.into()).unwrap();
-        let expected_price =
-            Uint256::from_uint128(eth_price.data.rate) * derivatives[0].initial_rate;
-        let expected_osmo_price =
-            Uint256::from_uint128(osmo_price.data.rate) * derivatives[1].initial_rate;
+        let expected_price = eth_price.data.rate * derivatives[0].initial_rate;
+        let expected_osmo_price = osmo_price.data.rate * derivatives[1].initial_rate;
         let actual_price = router
             .query_price(app, "stkd-ETH".into())
             .unwrap()

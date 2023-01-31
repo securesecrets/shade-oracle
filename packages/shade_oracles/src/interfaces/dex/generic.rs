@@ -76,8 +76,8 @@ mod state {
     use crate::{
         asset::Assets,
         interfaces::{
-            band::ReferenceData,
             common::{config::CommonConfig, OraclePrice},
+            providers::ReferenceData,
         },
         math::{FairLpPriceInfo, LiquidityPoolMath},
     };
@@ -217,14 +217,14 @@ mod state {
             let price_1 = pair_prices[1].data();
 
             let a = FairLpPriceInfo {
-                reserve: reserves_0.u128(),
-                price: price_0.rate.u128(),
+                reserve: reserves_0.into(),
+                price: price_0.rate.into(),
                 decimals: data.base_token.decimals,
             };
 
             let b = FairLpPriceInfo {
-                reserve: reserves_1.u128(),
-                price: price_1.rate.u128(),
+                reserve: reserves_1.into(),
+                price: price_1.rate.into(),
                 decimals: data.target_token.decimals,
             };
 
@@ -257,14 +257,14 @@ mod state {
             let price_1 = pair_prices[1].data();
 
             let a = FairLpPriceInfo {
-                reserve: reserves_0.u128(),
-                price: price_0.rate.u128(),
+                reserve: reserves_0.into(),
+                price: price_0.rate.into(),
                 decimals: data.base_token.decimals,
             };
 
             let b = FairLpPriceInfo {
-                reserve: reserves_1.u128(),
-                price: price_1.rate.u128(),
+                reserve: reserves_1.into(),
+                price: price_1.rate.into(),
                 decimals: data.target_token.decimals,
             };
 

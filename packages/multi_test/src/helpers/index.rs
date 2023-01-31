@@ -146,7 +146,7 @@ mod test {
         #[case] basket: Vec<(&str, &str)>,
         #[case] prices: Vec<(&str, u128)>,
         #[case] target: Uint128,
-        #[case] expected: Uint128,
+        #[case] expected: Uint256,
         #[case] error: Uint128,
     ) {
         let basket = IndexOracleHelper::create_basket(basket);
@@ -328,6 +328,7 @@ mod test {
         let price = router.query_price(&app, symbol.clone()).unwrap();
 
         let data = price.data();
+        let expected_initial = Uint256::from_uint128(expected_initial);
         {
             let err = if data.rate > expected_initial {
                 data.rate - expected_initial
@@ -350,6 +351,8 @@ mod test {
         let price = router.query_price(&app, symbol.clone()).unwrap();
 
         let data = price.data();
+        let expected_final = Uint256::from_uint128(expected_final);
+
         {
             let err = if data.rate > expected_final {
                 data.rate - expected_final

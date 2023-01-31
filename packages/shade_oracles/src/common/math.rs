@@ -46,8 +46,8 @@ impl TokenMath {
 }
 
 pub struct FairLpPriceInfo {
-    pub reserve: u128,
-    pub price: u128,
+    pub reserve: U256,
+    pub price: U256,
     pub decimals: u8,
 }
 pub struct LiquidityPoolMath;
@@ -59,19 +59,17 @@ impl LiquidityPoolMath {
         b: FairLpPriceInfo,
         total_supply: u128,
         lp_token_decimals: u8,
-    ) -> StdResult<Uint128> {
+    ) -> StdResult<Uint256> {
         let normalized_reserve1: Uint256 =
             TokenMath::normalize_value(a.reserve, a.decimals)?.into();
         let normalized_reserve2: Uint256 =
             TokenMath::normalize_value(b.reserve, b.decimals)?.into();
         let normalized_supply =
             Uint256::from(total_supply * 10u128.pow((18 - lp_token_decimals).into()));
-        let safe_price_a = Uint256::from(a.price);
-        let safe_price_b = Uint256::from(b.price);
-        let total_value_a = normalized_reserve1.checked_mul(safe_price_a)?;
-        let total_value_b = normalized_reserve2.checked_mul(safe_price_b)?;
+        let total_value_a = normalized_reserve1.checked_mul(a.price.into())?;
+        let total_value_b = normalized_reserve2.checked_mul(b.price.into())?;
         let lp_total_value = total_value_a.checked_add(total_value_b)?;
-        Ok(lp_total_value.checked_div(normalized_supply)?.try_into()?)
+        Ok(lp_total_value.checked_div(normalized_supply)?)
     }
 
     /// Calculates the price of an LP token based on https://blog.alphafinance.io/fair-lp-token-pricing/.
@@ -82,14 +80,12 @@ impl LiquidityPoolMath {
         b: FairLpPriceInfo,
         total_supply: u128,
         lp_token_decimals: u8,
-    ) -> StdResult<Uint128> {
+    ) -> StdResult<Uint256> {
         let normalized_reserve1 = TokenMath::normalize_value(a.reserve, a.decimals)?;
         let normalized_reserve2 = TokenMath::normalize_value(b.reserve, b.decimals)?;
         let normalized_supply = TokenMath::normalize_value(total_supply, lp_token_decimals)?;
         let r = sqrt(mul(normalized_reserve1, normalized_reserve2)?)?;
-        let safe_price_a = U256::from(a.price);
-        let safe_price_b = U256::from(b.price);
-        let p = sqrt(mul(safe_price_a, safe_price_b)?)?;
+        let p = sqrt(mul(a.price, b.price)?)?;
         let rp2 = muldiv(r, p, normalized_supply)? * U256::from(2u128);
         Ok(rp2.into())
     }
@@ -107,14 +103,14 @@ pub mod test {
         // https://analytics.traderjoexyz.com/pairs/0xa389f9430876455c36478deea9769b7ca4e3ddb1
         // https://snowtrace.io/token/0xa389f9430876455c36478deea9769b7ca4e3ddb1#readContract
         let price_info_1 = FairLpPriceInfo {
-            reserve: 108206619407191,
-            price: 10u128.pow(18),
+            reserve: 108206619407191u128.into(),
+            price: 10u128.pow(18).into(),
             decimals: 6,
         };
 
         let price_info_2 = FairLpPriceInfo {
-            reserve: 1234341142020098415888219,
-            price: 87 * 10u128.pow(18),
+            reserve: 1234341142020098415888219u128.into(),
+            price: U256::new(87u128 * 10u128.pow(18)),
             decimals: 18,
         };
 

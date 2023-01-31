@@ -96,7 +96,7 @@ mod test {
         base_symbol: String,
         base_pool: Uint128,
         base_decimals: u32,
-        expected: Uint128,
+        expected: Uint256,
     ) {
         let TestScenario {
             mut app,
@@ -213,7 +213,7 @@ mod test {
                         base_symbol.to_string(),
                         Uint128::from(base_pool),
                         base_decimals,
-                        Uint128::from(expected)
+                        Uint256::from_u128(expected)
                     );
                 }
             )*

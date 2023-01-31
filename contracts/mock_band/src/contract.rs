@@ -1,15 +1,24 @@
-use cosmwasm_std::{entry_point, StdError, Storage};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{entry_point, StdError, Storage, Uint128};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use shade_oracles::core::{pad_query_result, ResponseStatus};
-use shade_oracles::interfaces::band::{
-    Config, ExecuteAnswer, ExecuteMsg, InstantiateMsg, MockPrice, QueryMsg, ReferenceData,
-};
 use shade_oracles::interfaces::common::OraclePrice;
+use shade_oracles::interfaces::providers::{
+    mock::{
+        Config,
+        ExecuteAnswer,
+        ExecuteMsg,
+        InstantiateMsg,
+        MockPrice,
+        //ReferenceData,
+    },
+    BandQueryMsg, ReferenceData,
+};
 use shade_oracles::ssp::{Item, Map};
 use shade_oracles::BLOCK_SIZE;
 
-const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
+const MOCK_DATA: Map<(String, String), BandReferenceData> = Map::new("price-data");
 const CONFIG: Item<Config> = Item::new("config");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -34,7 +43,7 @@ pub fn instantiate(
         MOCK_DATA.save(
             deps.storage,
             (base, quote),
-            &ReferenceData {
+            &BandReferenceData {
                 rate,
                 last_updated_base: now,
                 last_updated_quote: now,
@@ -42,6 +51,13 @@ pub fn instantiate(
         )?;
     }
     Ok(Response::default())
+}
+
+#[cw_serde]
+pub struct BandReferenceData {
+    pub rate: Uint128,
+    pub last_updated_base: u64,
+    pub last_updated_quote: u64,
 }
 
 fn require_enabled(config: &Config) -> StdResult<()> {
@@ -109,7 +125,7 @@ pub fn set_mock_price(storage: &mut dyn Storage, now: u64, price: MockPrice) -> 
     MOCK_DATA.save(
         storage,
         (price.base_symbol, price.quote_symbol),
-        &ReferenceData {
+        &BandReferenceData {
             rate: price.rate,
             last_updated_base: price.last_updated.unwrap_or(now),
             last_updated_quote: price.last_updated.unwrap_or(now),
@@ -118,40 +134,54 @@ pub fn set_mock_price(storage: &mut dyn Storage, now: u64, price: MockPrice) -> 
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     pad_query_result(
         match msg {
-            QueryMsg::GetReferenceData {
+            BandQueryMsg::GetReferenceData {
                 base_symbol,
                 quote_symbol,
             } => {
                 require_enabled(&config)?;
                 query_saved_band_data(deps, base_symbol, quote_symbol)
             }
-            QueryMsg::GetReferenceDataBulk {
+            BandQueryMsg::GetReferenceDataBulk {
                 base_symbols,
                 quote_symbols,
             } => {
                 require_enabled(&config)?;
                 bulk_query_saved_band_data(deps, base_symbols, quote_symbols)
             }
-            QueryMsg::GetPrice { key } => {
+            BandQueryMsg::GetPrice { key } => {
                 require_enabled(&config)?;
                 let data = MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol))?;
-                to_binary(&OraclePrice::new(key, data))
+                to_binary(&OraclePrice::new(
+                    key,
+                    ReferenceData {
+                        rate: data.rate.into(),
+                        last_updated_base: data.last_updated_base,
+                        last_updated_quote: data.last_updated_quote,
+                    },
+                ))
             }
-            QueryMsg::GetPrices { keys } => {
+            BandQueryMsg::GetPrices { keys } => {
                 require_enabled(&config)?;
                 let mut results = vec![];
                 for key in keys {
                     let data =
                         MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol.clone()))?;
-                    results.push(OraclePrice::new(key, data));
+                    results.push(OraclePrice::new(
+                        key,
+                        ReferenceData {
+                            rate: data.rate.into(),
+                            last_updated_base: data.last_updated_base,
+                            last_updated_quote: data.last_updated_quote,
+                        },
+                    ));
                 }
                 to_binary(&results)
             }
-            QueryMsg::GetConfig {} => to_binary(&config),
+            BandQueryMsg::GetConfig {} => to_binary(&config),
         },
         BLOCK_SIZE,
     )

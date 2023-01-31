@@ -9,7 +9,7 @@ use shade_oracles::math::TokenMath;
 use shade_oracles::ssp::ItemStorage;
 use shade_oracles::{create_attr_action, BLOCK_SIZE};
 use shade_oracles::{
-    interfaces::band::ReferenceData, interfaces::dex::generic::*,
+    interfaces::dex::generic::*, interfaces::providers::ReferenceData,
     protocols::siennaswap::SiennaSwapQuerier,
 };
 

@@ -1,8 +1,8 @@
 use super::router::OracleRouterHelper;
 use super::*;
 use multi_test_helpers::admin_auth::AdminAuthHelper;
-use shade_oracles::interfaces::band::MockPrice;
-use shade_oracles::interfaces::band::{self};
+use shade_oracles::interfaces::providers::mock::MockPrice;
+use shade_oracles::interfaces::providers::{self, Provider, RawProvider};
 use shade_protocol::{multi_test::App, AnyResult, Contract};
 
 create_test_helper!(BandHelper);
@@ -14,7 +14,7 @@ impl BandHelper {
         admin_auth: RawContract,
         quote_symbol: Option<String>,
     ) -> Self {
-        let msg = band::InstantiateMsg {
+        let msg = providers::mock::InstantiateMsg {
             initial_prices,
             admin_auth,
             quote_symbol,
@@ -42,7 +42,11 @@ impl BandHelper {
             });
         }
         sender
-            .exec(app, &band::ExecuteMsg::SetPrices(mock_prices), &self.0)
+            .exec(
+                app,
+                &providers::mock::ExecuteMsg::SetPrices(mock_prices),
+                &self.0,
+            )
             .unwrap();
     }
 }
@@ -103,7 +107,7 @@ impl OracleCore {
                 admin,
                 app,
                 &admin_auth.clone().0.into(),
-                &band.clone().0.into(),
+                RawProvider::Band(band.clone().into()),
                 "USD",
             )
         });

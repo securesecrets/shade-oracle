@@ -9,7 +9,7 @@ use shade_oracles::interfaces::common::{OraclePrice, PriceResponse, PricesRespon
 use shade_oracles::ssp::ItemStorage;
 use shade_oracles::{create_attr_action, BLOCK_SIZE};
 use shade_oracles::{
-    interfaces::band::ReferenceData, interfaces::derivatives::generic::*,
+    interfaces::derivatives::generic::*, interfaces::providers::ReferenceData,
     protocols::shade_staking_derivatives::ShadeStakingDerivative,
 };
 
@@ -132,7 +132,7 @@ pub fn query_price(
 
     let now = env.block.time.seconds();
     let data = if is_rate {
-        ReferenceData::new(normalized_rate, now, now)
+        ReferenceData::new(normalized_rate.into(), now, now)
     } else {
         let underlying_price = data
             .staking_derivative

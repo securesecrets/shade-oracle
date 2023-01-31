@@ -52,8 +52,8 @@ mod state {
     use super::{error::*, msg::*, *};
     use crate::{
         impl_global_status,
-        interfaces::band::ReferenceData,
         interfaces::common::OraclePrice,
+        interfaces::providers::ReferenceData,
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{

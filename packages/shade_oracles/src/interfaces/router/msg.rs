@@ -1,19 +1,23 @@
-use super::registry::{Config, ProtectedKeyInfo, RegistryOperation, UpdateConfig};
 use crate::{
     common::status::ContractStatus,
     impl_msg_callbacks,
-    interfaces::common::{PriceResponse, PricesResponse},
+    interfaces::{
+        common::{PriceResponse, PricesResponse},
+        providers::{Provider, RawProvider},
+    },
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint256;
 use shade_protocol::{utils::asset::RawContract, Contract};
+
+use super::registry::ProtectedKeyInfo;
 
 impl_msg_callbacks!();
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admin_auth: RawContract,
-    pub band: RawContract,
+    pub provider: RawProvider,
     pub quote_symbol: String,
 }
 
@@ -24,6 +28,38 @@ pub enum ExecuteMsg {
     UpdateConfig(UpdateConfig),
     UpdateRegistry(RegistryOperation),
     BatchUpdateRegistry(Vec<RegistryOperation>),
+}
+
+#[cw_serde]
+pub struct Config {
+    pub this: Contract,
+    pub admin_auth: Contract,
+    pub provider: Provider,
+    pub quote_symbol: String,
+}
+
+#[cw_serde]
+pub enum RegistryOperation {
+    RemoveKeys {
+        keys: Vec<String>,
+    },
+    SetKeys {
+        oracle: RawContract,
+        keys: Vec<String>,
+    },
+    SetProtection {
+        infos: Vec<ProtectedKeyInfo>,
+    },
+    RemoveProtection {
+        keys: Vec<String>,
+    },
+}
+
+#[cw_serde]
+pub struct UpdateConfig {
+    pub admin_auth: Option<RawContract>,
+    pub provider: Option<RawProvider>,
+    pub quote_symbol: Option<String>,
 }
 
 #[cw_serde]

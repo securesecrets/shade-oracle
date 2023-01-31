@@ -69,7 +69,7 @@ mod test {
     use super::*;
     use multi_test_helpers::Asserter;
     use shade_oracles::{
-        interfaces::{band::ReferenceData, common::OraclePrice},
+        interfaces::{common::OraclePrice, providers::ReferenceData},
         unit_test_interface::prices::PricesFixture,
     };
 

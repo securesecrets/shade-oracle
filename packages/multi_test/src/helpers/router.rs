@@ -1,8 +1,8 @@
 use super::*;
 use shade_oracles::{
-    interfaces::router::{
-        msg::*,
-        registry::{ProtectedKeyInfo, RegistryOperation, UpdateConfig},
+    interfaces::{
+        providers::RawProvider,
+        router::{msg::*, registry::ProtectedKeyInfo},
     },
     status::ContractStatus,
 };
@@ -14,7 +14,7 @@ impl OracleRouterHelper {
         user: &User,
         app: &mut App,
         admin_auth: &Contract,
-        band: &Contract,
+        provider: RawProvider,
         quote_symbol: &str,
     ) -> Self {
         let contract = user
@@ -22,7 +22,7 @@ impl OracleRouterHelper {
                 app,
                 &InstantiateMsg {
                     admin_auth: admin_auth.clone().into(),
-                    band: band.clone().into(),
+                    provider,
                     quote_symbol: quote_symbol.to_string(),
                 },
                 OracleRouter::default(),
@@ -252,7 +252,8 @@ mod test {
         } = TestScenario::new(prices);
         let resp = router.query_prices(&app, keys).unwrap();
         for price in resp {
-            assert_eq!(&price.data.rate, prices.get(price.key()).unwrap());
+            let p: Uint256 = (*prices.get(price.key()).unwrap()).into();
+            assert_eq!(price.data.rate, p);
         }
     }
 
@@ -288,7 +289,7 @@ mod test {
                 &mut app,
                 UpdateConfig {
                     admin_auth: None,
-                    band: None,
+                    provider: None,
                     quote_symbol: Some("JPY".to_string()),
                 },
             )
@@ -304,7 +305,7 @@ mod test {
                 &mut app,
                 UpdateConfig {
                     admin_auth: None,
-                    band: None,
+                    provider: None,
                     quote_symbol: Some("USD".to_string())
                 }
             )
@@ -319,7 +320,7 @@ mod test {
                 &mut app,
                 UpdateConfig {
                     admin_auth: None,
-                    band: None,
+                    provider: None,
                     quote_symbol: Some("USD".to_string())
                 }
             )

@@ -1,7 +1,7 @@
 use std::cmp::min;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdResult, Storage, Uint256,
+    entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdResult, Storage,
 };
 use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse};
 use shade_oracles::core::{pad_handle_result, pad_query_result};
@@ -14,7 +14,7 @@ use shade_oracles::{
     },
 };
 use shade_oracles::{create_attr_action, BLOCK_SIZE};
-use shade_oracles::{interfaces::band::ReferenceData, interfaces::derivatives::stride::*};
+use shade_oracles::{interfaces::derivatives::stride::*, interfaces::providers::ReferenceData};
 
 create_attr_action!("stride-staking-derivatives-oracle_");
 
@@ -154,17 +154,13 @@ pub fn query_price(
     let rate = stored_data.rate;
 
     let data = if is_rate {
-        ReferenceData::new(
-            rate.value.atomics().try_into()?,
-            rate.last_updated,
-            rate.last_updated,
-        )
+        ReferenceData::new(rate.value.atomics(), rate.last_updated, rate.last_updated)
     } else {
         let underlying_price =
             query_router_price(&oracle.config.router, querier, &stored_data.underlying_key)?;
-        let price = rate.value * Uint256::from_uint128(underlying_price.data().rate);
+        let price = rate.value * underlying_price.data().rate;
         ReferenceData::new(
-            price.try_into()?,
+            price,
             min(underlying_price.data().last_updated_base, rate.last_updated),
             underlying_price.data().last_updated_quote,
         )

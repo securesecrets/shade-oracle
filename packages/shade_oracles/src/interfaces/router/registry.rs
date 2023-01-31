@@ -1,38 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal256, Uint256};
-use shade_protocol::{utils::asset::RawContract, Contract};
-
-#[cw_serde]
-pub struct Config {
-    pub this: Contract,
-    pub admin_auth: Contract,
-    pub band: Contract,
-    pub quote_symbol: String,
-}
-
-#[cw_serde]
-pub enum RegistryOperation {
-    RemoveKeys {
-        keys: Vec<String>,
-    },
-    SetKeys {
-        oracle: RawContract,
-        keys: Vec<String>,
-    },
-    SetProtection {
-        infos: Vec<ProtectedKeyInfo>,
-    },
-    RemoveProtection {
-        keys: Vec<String>,
-    },
-}
-
-#[cw_serde]
-pub struct UpdateConfig {
-    pub admin_auth: Option<RawContract>,
-    pub band: Option<RawContract>,
-    pub quote_symbol: Option<String>,
-}
+use shade_protocol::Contract;
 
 #[cw_serde]
 pub struct OracleRouter {
@@ -60,6 +28,8 @@ pub struct Oracle;
 
 #[cfg(feature = "router")]
 pub use state::*;
+
+use super::msg::Config;
 #[cfg(feature = "router")]
 mod state {
     use std::{
@@ -68,12 +38,18 @@ mod state {
     };
 
     use crate::{
-        impl_global_status, interfaces::common::OraclePrice,
-        interfaces::router::error::OracleRouterError,
+        impl_global_status,
+        interfaces::{common::OraclePrice, router::msg::RegistryOperation},
+        interfaces::{
+            common::{PriceResponse, PricesResponse},
+            router::{error::OracleRouterError, msg::UpdateConfig},
+        },
     };
 
     use super::*;
-    use cosmwasm_std::{to_binary, Api, Binary, Deps, StdError, StdResult, Storage};
+    use cosmwasm_std::{
+        to_binary, Api, Binary, Deps, QuerierWrapper, StdError, StdResult, Storage,
+    };
     use secret_borsh_storage::BorshItem;
     use secret_storage_plus::{GenericMapStorage, Item, ItemStorage, Map};
 
@@ -124,7 +100,7 @@ mod state {
             match info {
                 None => Ok(()),
                 Some(info) => {
-                    let price = Uint256::from_uint128(price.data.rate);
+                    let price = price.data.rate;
                     let abs_diff = if info.price > price {
                         info.price - price
                     } else {
@@ -250,12 +226,51 @@ mod state {
             if let Some(admin_auth) = config.admin_auth {
                 new_config.admin_auth = admin_auth.into_valid(api)?;
             }
-            if let Some(band) = config.band {
-                new_config.band = band.into_valid(api)?;
+            if let Some(provider) = config.provider {
+                new_config.provider = provider.into_valid(api)?;
             }
             new_config.quote_symbol = config.quote_symbol.unwrap_or(new_config.quote_symbol);
             self.config = new_config;
             Ok(self)
+        }
+
+        pub fn query_provider_price(
+            &self,
+            querier: &QuerierWrapper,
+            key: String,
+        ) -> StdResult<PriceResponse> {
+            let Config {
+                quote_symbol,
+                provider,
+                ..
+            } = &self.config;
+            let symbol_pair = (key.as_str(), quote_symbol.as_str());
+            let resp = provider.reference_data(querier, symbol_pair)?;
+            Ok(OraclePrice::new(key, resp))
+        }
+
+        pub fn query_provider_prices(
+            &self,
+            querier: &QuerierWrapper,
+            keys: Vec<String>,
+        ) -> StdResult<PricesResponse> {
+            let Config {
+                quote_symbol,
+                provider,
+                ..
+            } = &self.config;
+            let mut prices: Vec<OraclePrice> = vec![];
+            let symbol_pairs: Vec<(String, String)> = keys
+                .iter()
+                .map(|key| (key.to_string(), quote_symbol.to_string()))
+                .collect();
+
+            let data = provider.reference_data_bulk(querier, symbol_pairs)?;
+
+            for (index, key) in keys.iter().enumerate() {
+                prices.push(OraclePrice::new(key.to_string(), data[index].clone()));
+            }
+            Ok(prices)
         }
     }
 }

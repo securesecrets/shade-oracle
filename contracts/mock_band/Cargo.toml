@@ -20,5 +20,6 @@ default = []
 # for quicker tests, cargo test --lib
 
 [dependencies]
+cosmwasm-schema = "1.1.5"
 cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
 shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }

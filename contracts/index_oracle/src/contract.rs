@@ -6,11 +6,11 @@ use shade_oracles::core::{Contract, RawContract};
 use shade_oracles::create_attr_action;
 use shade_oracles::interfaces::common::OraclePrice;
 use shade_oracles::interfaces::index::{error::*, msg::*, *};
-use shade_oracles::querier::{query_band_prices, require_admin};
+use shade_oracles::querier::{query_prices, require_admin};
 use shade_oracles::{
     common::status::GlobalStatus,
     core::{pad_handle_result, pad_query_result},
-    interfaces::band::ReferenceData,
+    interfaces::providers::ReferenceData,
     ssp::ItemStorage,
     BLOCK_SIZE,
 };
@@ -35,7 +35,7 @@ pub fn instantiate(
         msg.target,
         &env.block.time,
     )?;
-    let prices = query_band_prices(
+    let prices = query_prices(
         &router,
         &deps.querier,
         index_oracle.asset_symbols.as_slice(),
@@ -85,7 +85,7 @@ pub fn try_unfreeze(
     env: Env,
     mut oracle: IndexOracle,
 ) -> IndexOracleResult<Response> {
-    let prices = query_band_prices(
+    let prices = query_prices(
         &oracle.config.router,
         &deps.querier,
         oracle.asset_symbols.as_slice(),
@@ -126,7 +126,7 @@ pub fn try_update_target(
     mut oracle: IndexOracle,
     new_target: Uint128,
 ) -> IndexOracleResult<Response> {
-    let prices = query_band_prices(
+    let prices = query_prices(
         &oracle.config.router,
         &deps.querier,
         oracle.asset_symbols.as_slice(),
@@ -185,7 +185,7 @@ pub fn fetch_prices<'a>(
         .map(|f| f.to_string())
         .collect::<Vec<String>>();
     let symbols_slice = symbols.as_slice();
-    match query_band_prices(router, &deps.querier, symbols_slice) {
+    match query_prices(router, &deps.querier, symbols_slice) {
         Ok(prices) => Ok(Some(prices)),
         Err(_) => Ok(None),
     }
@@ -199,12 +199,12 @@ pub fn try_mod_basket(
 ) -> IndexOracleResult<Response> {
     // Compute target with old weights
     let router = oracle.config.router.clone();
-    let prices = query_band_prices(&router, &deps.querier, oracle.asset_symbols.as_slice())?;
+    let prices = query_prices(&router, &deps.querier, oracle.asset_symbols.as_slice())?;
     oracle.compute_target(Some(&prices), &env.block.time)?;
     // Update weights
     oracle.update_basket(mod_basket)?;
 
-    let new_prices = query_band_prices(&router, &deps.querier, &oracle.asset_symbols)?;
+    let new_prices = query_prices(&router, &deps.querier, &oracle.asset_symbols)?;
 
     let new_prices = new_prices.as_slice();
     oracle.compute_fixed_weights(new_prices)?;

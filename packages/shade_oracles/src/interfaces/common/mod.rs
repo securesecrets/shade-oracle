@@ -9,7 +9,7 @@ use shade_protocol::utils::Query;
 pub mod config;
 
 mod error;
-use super::band::{BtrReferenceData, ReferenceData};
+use super::providers::{BtrReferenceData, ReferenceData};
 
 /// Default Query API for all oracles.
 ///
