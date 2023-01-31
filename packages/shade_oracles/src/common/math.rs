@@ -103,8 +103,6 @@ pub mod test {
     use super::*;
     #[test]
     fn test_get_fair_lp_token_price_1() {
-        // TODO double check this
-
         // Hardcoded data from USDC.e - WAVAX pool on Trader Joe
         // https://analytics.traderjoexyz.com/pairs/0xa389f9430876455c36478deea9769b7ca4e3ddb1
         // https://snowtrace.io/token/0xa389f9430876455c36478deea9769b7ca4e3ddb1#readContract

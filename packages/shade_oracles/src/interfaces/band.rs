@@ -59,9 +59,9 @@ impl Config {
         );
         let is_bot = validate_admin(querier, AdminPermissions::OraclesPriceBot, user, admin_auth);
         if is_admin.is_err() && is_bot.is_err() {
-            return Err(StdError::generic_err("User is not an admin or bot."));
+            Err(StdError::generic_err("User is not an admin or bot."))
         } else {
-            return Ok(());
+            Ok(())
         }
     }
 }

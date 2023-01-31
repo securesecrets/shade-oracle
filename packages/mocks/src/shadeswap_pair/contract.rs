@@ -115,8 +115,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             offer,
             exclude_fee: _,
         } => {
-            //TODO: check swap doesnt exceed pool size
-
             let in_token = match offer.token {
                 TokenType::CustomToken {
                     contract_addr,

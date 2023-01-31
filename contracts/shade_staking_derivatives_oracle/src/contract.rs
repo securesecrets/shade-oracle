@@ -63,13 +63,6 @@ pub fn execute(
                     StakingDerivativesOracle::remove_keys(deps.storage, keys)?;
                     resp.add_attributes(vec![attr_action!("remove_derivatives")])
                 }
-                ExecuteMsg::UpdateAssets(assets) => {
-                    oracle.config.require_admin(&deps.querier, info)?;
-                    for asset in assets {
-                        oracle.update_asset_symbol(deps.storage, deps.api, &deps.querier, asset)?;
-                    }
-                    resp.add_attributes(vec![attr_action!("update_assets")])
-                }
                 ExecuteMsg::UpdateConfig(new_router) => {
                     oracle.config.require_admin(&deps.querier, info)?;
                     oracle

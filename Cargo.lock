@@ -770,6 +770,7 @@ dependencies = [
  "cosmwasm-schema",
  "secret-cosmwasm-std",
  "shade-oracles",
+ "shade-protocol",
 ]
 
 [[package]]

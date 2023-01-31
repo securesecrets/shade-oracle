@@ -337,12 +337,9 @@ mod test {
         }
         Asserter::equal_vecs(&keys, &keys_resp);
 
+        let keys_to_remove = vec![test_prices[0].0.to_string(), test_prices[1].0.to_string()];
         router
-            .remove_keys(
-                &user,
-                &mut app,
-                vec![test_prices[0].0.to_string(), test_prices[1].0.to_string()],
-            )
+            .remove_keys(&user, &mut app, keys_to_remove.clone())
             .unwrap();
         let oracles_resp = router.query_oracles(&app, keys.clone()).unwrap();
         let keys_resp = router.query_keys(&app).unwrap();
@@ -358,5 +355,22 @@ mod test {
             !keys_resp.contains(&test_prices[0].0.to_string())
                 && !keys_resp.contains(&test_prices[1].0.to_string())
         );
+        let oracle = router.query_oracle(&app, &keys[0].clone()).unwrap();
+        assert_eq!(oracle.oracle, router.clone().into());
+
+        let operations = vec![
+            RegistryOperation::SetKeys {
+                oracle: band.clone().into(),
+                keys: keys_to_remove.clone(),
+            },
+            RegistryOperation::RemoveKeys {
+                keys: keys_to_remove.clone(),
+            },
+        ];
+        router
+            .batch_update_registry(&user, &mut app, &operations)
+            .unwrap();
+        let oracle = router.query_oracle(&app, &keys[0].clone()).unwrap();
+        assert_eq!(oracle.oracle, router.clone().into());
     }
 }

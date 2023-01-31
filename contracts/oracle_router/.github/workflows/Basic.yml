@@ -5,7 +5,6 @@ on: [push, pull_request]
 name: Basic
 
 jobs:
-
   test:
     name: Test Suite
     runs-on: ubuntu-latest
@@ -43,7 +42,6 @@ jobs:
           command: integration-test
           args: --locked
 
-
   lints:
     name: Lints
     runs-on: ubuntu-latest
@@ -71,9 +69,6 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-      # TODO: we should check
-      # CHANGES_IN_REPO=$(git status --porcelain)
-      # after this, but I don't know how
       - name: Generate Schema
         uses: actions-rs/cargo@v1
         with:

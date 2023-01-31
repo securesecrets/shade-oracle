@@ -8,6 +8,7 @@ pub struct PricesFixture;
 
 impl PricesFixture {
     pub const USD: &'static str = "USD";
+    pub const SCRT: &'static str = "SCRT";
     pub const SILK: &'static str = "SILK";
     pub const BTC: &'static str = "BTC";
     pub const ETH: &'static str = "ETH";
@@ -24,7 +25,7 @@ impl PricesFixture {
         ]
     }
 
-    /// Eight prices - USD, BTC, ETH, XAU, FRAX, OSMO, USDC, and STRIDE
+    /// Nine prices - USD, BTC, ETH, XAU, FRAX, OSMO, USDC, SHD, SCRT
     pub fn basic_prices_2() -> Vec<(&'static str, u128)> {
         vec![
             (Self::USD, 1_00 * 10u128.pow(16)),      // $1
@@ -35,6 +36,7 @@ impl PricesFixture {
             (Self::OSMO, 0_944 * 10u128.pow(16)),    // $0.944
             (Self::USDC, 1_00 * 10u128.pow(16)),     // $1
             (Self::SHD, 8_00 * 10u128.pow(16)),      // $8
+            (Self::SCRT, 11_00 * 10u128.pow(16)),
         ]
     }
 }
