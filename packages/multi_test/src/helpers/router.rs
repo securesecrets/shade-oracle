@@ -1,8 +1,8 @@
 use super::*;
 use shade_oracles::{
-    interfaces::router::{
-        msg::*,
-        registry::{ProtectedKeyInfo, RegistryOperation, UpdateConfig},
+    interfaces::{
+        providers::RawProvider,
+        router::{msg::*, registry::ProtectedKeyInfo},
     },
     status::ContractStatus,
 };
@@ -14,7 +14,7 @@ impl OracleRouterHelper {
         user: &User,
         app: &mut App,
         admin_auth: &Contract,
-        band: &Contract,
+        provider: RawProvider,
         quote_symbol: &str,
     ) -> Self {
         let contract = user
@@ -22,7 +22,7 @@ impl OracleRouterHelper {
                 app,
                 &InstantiateMsg {
                     admin_auth: admin_auth.clone().into(),
-                    band: band.clone().into(),
+                    provider,
                     quote_symbol: quote_symbol.to_string(),
                 },
                 OracleRouter::default(),
@@ -169,7 +169,7 @@ mod test {
             mut app,
             router,
             admin,
-            band,
+            provider,
             admin_auth,
             ..
         } = TestScenario::new(prices);
@@ -197,7 +197,7 @@ mod test {
         // Set price to 1.05 which is greater than protection deviation of 4% from 1.00 so should fail.
         let prices = vec![("USD", 1_05 * 10u128.pow(16))];
         let prices = OracleCore::create_prices_hashmap(prices).1;
-        band.update_prices(&user, app, prices, Some(app.block_info().time.seconds()));
+        provider.update_band_prices(&user, app, prices, Some(app.block_info().time.seconds()));
         assert!(router.query_price(app, "USD".to_string()).is_err());
         assert!(router.query_prices(app, vec!["USD".to_string()]).is_err());
 
@@ -252,7 +252,8 @@ mod test {
         } = TestScenario::new(prices);
         let resp = router.query_prices(&app, keys).unwrap();
         for price in resp {
-            assert_eq!(&price.data.rate, prices.get(price.key()).unwrap());
+            let p: Uint256 = (*prices.get(price.key()).unwrap()).into();
+            assert_eq!(price.data.rate, p);
         }
     }
 
@@ -266,7 +267,7 @@ mod test {
             router,
             admin,
             keys,
-            band,
+            provider,
             ..
         } = TestScenario::new(prices);
         let user = admin;
@@ -288,7 +289,7 @@ mod test {
                 &mut app,
                 UpdateConfig {
                     admin_auth: None,
-                    band: None,
+                    provider: None,
                     quote_symbol: Some("JPY".to_string()),
                 },
             )
@@ -304,7 +305,7 @@ mod test {
                 &mut app,
                 UpdateConfig {
                     admin_auth: None,
-                    band: None,
+                    provider: None,
                     quote_symbol: Some("USD".to_string())
                 }
             )
@@ -319,30 +320,27 @@ mod test {
                 &mut app,
                 UpdateConfig {
                     admin_auth: None,
-                    band: None,
+                    provider: None,
                     quote_symbol: Some("USD".to_string())
                 }
             )
             .is_ok());
 
         router
-            .set_keys(&user, &mut app, band.clone().into(), keys.clone())
+            .set_keys(&user, &mut app, provider.clone().into(), keys.clone())
             .unwrap();
         let oracles_resp = router.query_oracles(&app, keys.clone()).unwrap();
         let keys_resp = router.query_keys(&app).unwrap();
         assert_eq!(keys.len(), keys_resp.len());
         assert_eq!(keys.len(), oracles_resp.len());
         for oracle in oracles_resp {
-            assert_eq!(oracle.oracle, band.clone().into());
+            assert_eq!(oracle.oracle, provider.clone().into());
         }
         Asserter::equal_vecs(&keys, &keys_resp);
 
+        let keys_to_remove = vec![test_prices[0].0.to_string(), test_prices[1].0.to_string()];
         router
-            .remove_keys(
-                &user,
-                &mut app,
-                vec![test_prices[0].0.to_string(), test_prices[1].0.to_string()],
-            )
+            .remove_keys(&user, &mut app, keys_to_remove.clone())
             .unwrap();
         let oracles_resp = router.query_oracles(&app, keys.clone()).unwrap();
         let keys_resp = router.query_keys(&app).unwrap();
@@ -351,12 +349,29 @@ mod test {
             if oracle.key == test_prices[0].0 || oracle.key == test_prices[1].0 {
                 assert_eq!(oracle.oracle, router.clone().into());
             } else {
-                assert_eq!(oracle.oracle, band.clone().into());
+                assert_eq!(oracle.oracle, provider.clone().into());
             }
         }
         assert!(
             !keys_resp.contains(&test_prices[0].0.to_string())
                 && !keys_resp.contains(&test_prices[1].0.to_string())
         );
+        let oracle = router.query_oracle(&app, &keys[0].clone()).unwrap();
+        assert_eq!(oracle.oracle, router.clone().into());
+
+        let operations = vec![
+            RegistryOperation::SetKeys {
+                oracle: provider.clone().into(),
+                keys: keys_to_remove.clone(),
+            },
+            RegistryOperation::RemoveKeys {
+                keys: keys_to_remove.clone(),
+            },
+        ];
+        router
+            .batch_update_registry(&user, &mut app, &operations)
+            .unwrap();
+        let oracle = router.query_oracle(&app, &keys[0].clone()).unwrap();
+        assert_eq!(oracle.oracle, router.clone().into());
     }
 }

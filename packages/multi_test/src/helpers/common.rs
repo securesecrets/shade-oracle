@@ -1,20 +1,20 @@
 use super::router::OracleRouterHelper;
 use super::*;
 use multi_test_helpers::admin_auth::AdminAuthHelper;
-use shade_oracles::interfaces::band::MockPrice;
-use shade_oracles::interfaces::band::{self};
+use shade_oracles::interfaces::providers::mock::{BandExecuteMsg, BandMockPrice, MockPrice};
+use shade_oracles::interfaces::providers::{self, Provider, RawProvider};
 use shade_protocol::{multi_test::App, AnyResult, Contract};
 
-create_test_helper!(BandHelper);
-impl BandHelper {
-    pub fn init(
+create_test_helper!(MockProviderHelper);
+impl MockProviderHelper {
+    pub fn init_band(
         sender: &User,
         app: &mut App,
         initial_prices: Vec<(String, String, Uint128)>,
         admin_auth: RawContract,
         quote_symbol: Option<String>,
     ) -> Self {
-        let msg = band::InstantiateMsg {
+        let msg = providers::mock::BandInstantiateMsg {
             initial_prices,
             admin_auth,
             quote_symbol,
@@ -25,11 +25,53 @@ impl BandHelper {
                 .unwrap(),
         )
     }
-    pub fn update_prices(
+    pub fn init_ojo(
+        sender: &User,
+        app: &mut App,
+        initial_prices: Vec<(String, String, Uint256)>,
+        admin_auth: RawContract,
+        quote_symbol: Option<String>,
+    ) -> Self {
+        let msg = providers::mock::OjoInstantiateMsg {
+            initial_prices,
+            admin_auth,
+            quote_symbol,
+        };
+        Self(
+            sender
+                .init(app, &msg, MockOjo::default(), "mock_ojo")
+                .unwrap(),
+        )
+    }
+    pub fn update_band_prices(
         &self,
         sender: &User,
         app: &mut App,
         prices: HashMap<String, Uint128>,
+        last_updated_time: Option<u64>,
+    ) {
+        let mut mock_prices = vec![];
+        for (sym, price) in prices {
+            mock_prices.push(BandMockPrice {
+                base_symbol: sym,
+                quote_symbol: "USD".into(),
+                rate: price,
+                last_updated: last_updated_time,
+            });
+        }
+        sender
+            .exec(
+                app,
+                &providers::mock::BandExecuteMsg::SetPrices(mock_prices),
+                &self.0,
+            )
+            .unwrap();
+    }
+    pub fn update_ojo_prices(
+        &self,
+        sender: &User,
+        app: &mut App,
+        prices: HashMap<String, Uint256>,
         last_updated_time: Option<u64>,
     ) {
         let mut mock_prices = vec![];
@@ -42,14 +84,18 @@ impl BandHelper {
             });
         }
         sender
-            .exec(app, &band::ExecuteMsg::SetPrices(mock_prices), &self.0)
+            .exec(
+                app,
+                &providers::mock::OjoExecuteMsg::SetPrices(mock_prices),
+                &self.0,
+            )
             .unwrap();
     }
 }
 
 #[derive(Clone)]
 pub struct OracleCore {
-    pub band: BandHelper,
+    pub provider: MockProviderHelper,
     pub router: OracleRouterHelper,
     pub admin_auth: AdminAuthHelper,
     pub superadmin: User,
@@ -57,39 +103,39 @@ pub struct OracleCore {
 
 impl OracleCore {
     pub fn new(
-        band: BandHelper,
+        provider: MockProviderHelper,
         router: OracleRouterHelper,
         admin_auth: AdminAuthHelper,
         superadmin: User,
     ) -> Self {
         OracleCore {
-            band,
+            provider,
             router,
             admin_auth,
             superadmin,
         }
     }
     /// Initializes the core dependencies for testing all oracles which are
-    /// band, proxy band, router, and the admin auth contract. Then, it updates the prices in band
+    /// provider, proxy provider, router, and the admin auth contract. Then, it updates the prices in provider
     /// based off the prices argument with them being quoted in "USD".
     pub fn setup(
         app: &mut App,
         admin: &User,
         prices: HashMap<String, Uint128>,
-        band: Option<BandHelper>,
+        provider: Option<MockProviderHelper>,
         oracle_router: Option<OracleRouterHelper>,
         admin_auth: Option<AdminAuthHelper>,
     ) -> AnyResult<Self> {
         let quote_symbol: String = "USD".into();
         let admin_auth = admin_auth.unwrap_or_else(|| AdminAuthHelper::init(app, admin, None));
         let mut initial_prices = vec![];
-        // Configure mock band prices
+        // Configure mock provider prices
         for (sym, price) in prices {
             initial_prices.push((sym, quote_symbol.clone(), price));
         }
 
-        let band = band.unwrap_or_else(|| {
-            BandHelper::init(
+        let provider = provider.unwrap_or_else(|| {
+            MockProviderHelper::init_band(
                 admin,
                 app,
                 initial_prices,
@@ -103,13 +149,13 @@ impl OracleCore {
                 admin,
                 app,
                 &admin_auth.clone().0.into(),
-                &band.clone().0.into(),
+                RawProvider::Band(provider.clone().into()),
                 "USD",
             )
         });
 
         Ok(OracleCore::new(
-            band,
+            provider,
             oracle_router,
             admin_auth,
             admin.clone(),
@@ -122,8 +168,8 @@ impl OracleCore {
         prices: HashMap<String, Uint128>,
         last_updated_time: u64,
     ) {
-        self.band
-            .update_prices(&self.superadmin, app, prices, Some(last_updated_time));
+        self.provider
+            .update_band_prices(&self.superadmin, app, prices, Some(last_updated_time));
     }
 
     pub fn set_keys(&self, app: &mut App, oracle: Contract, keys: Vec<String>) {
@@ -164,7 +210,7 @@ pub struct TestScenario {
     pub keys: Vec<String>,
     pub prices: HashMap<String, Uint128>,
     pub tokens: HashMap<String, Snip20Helper>,
-    pub band: BandHelper,
+    pub provider: MockProviderHelper,
     pub router: OracleRouterHelper,
     pub admin_auth: AdminAuthHelper,
 }
@@ -194,7 +240,7 @@ impl TestScenario {
             );
         }
         let OracleCore {
-            band,
+            provider,
             router,
             admin_auth,
             superadmin,
@@ -205,7 +251,7 @@ impl TestScenario {
             tokens,
             admin: superadmin,
             user,
-            band,
+            provider,
             router,
             admin_auth,
             keys,

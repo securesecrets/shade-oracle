@@ -9,7 +9,7 @@ use shade_oracles::interfaces::common::{OraclePrice, PriceResponse, PricesRespon
 use shade_oracles::ssp::ItemStorage;
 use shade_oracles::{create_attr_action, BLOCK_SIZE};
 use shade_oracles::{
-    interfaces::band::ReferenceData, interfaces::derivatives::generic::*,
+    interfaces::derivatives::generic::*, interfaces::providers::ReferenceData,
     protocols::shade_staking_derivatives::ShadeStakingDerivative,
 };
 
@@ -62,13 +62,6 @@ pub fn execute(
                     oracle.config.require_admin(&deps.querier, info)?;
                     StakingDerivativesOracle::remove_keys(deps.storage, keys)?;
                     resp.add_attributes(vec![attr_action!("remove_derivatives")])
-                }
-                ExecuteMsg::UpdateAssets(assets) => {
-                    oracle.config.require_admin(&deps.querier, info)?;
-                    for asset in assets {
-                        oracle.update_asset_symbol(deps.storage, deps.api, &deps.querier, asset)?;
-                    }
-                    resp.add_attributes(vec![attr_action!("update_assets")])
                 }
                 ExecuteMsg::UpdateConfig(new_router) => {
                     oracle.config.require_admin(&deps.querier, info)?;
@@ -139,7 +132,7 @@ pub fn query_price(
 
     let now = env.block.time.seconds();
     let data = if is_rate {
-        ReferenceData::new(normalized_rate, now, now)
+        ReferenceData::new(normalized_rate.into(), now, now)
     } else {
         let underlying_price = data
             .staking_derivative
@@ -179,7 +172,7 @@ pub fn query_config(
 ) -> StdResult<CommonConfigResponse> {
     let mut resp = oracle.config.get_resp(storage)?;
     let mut supported_keys = vec![];
-    for key in &resp.supported_keys.clone() {
+    for key in &resp.supported_keys {
         supported_keys.push(key.to_string());
         supported_keys.push(StakingDerivativesOracle::create_rate_key(key));
     }

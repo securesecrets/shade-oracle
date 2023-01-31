@@ -1,13 +1,14 @@
 use better_secret_math::U256;
-use cosmwasm_std::{Decimal256, Uint128};
+use cosmwasm_std::Decimal256;
 use std::str::FromStr;
 
-use crate::{interfaces::band::ReferenceData, interfaces::common::OraclePrice};
+use crate::interfaces::{common::OraclePrice, providers::ReferenceData};
 
 pub struct PricesFixture;
 
 impl PricesFixture {
     pub const USD: &'static str = "USD";
+    pub const SCRT: &'static str = "SCRT";
     pub const SILK: &'static str = "SILK";
     pub const BTC: &'static str = "BTC";
     pub const ETH: &'static str = "ETH";
@@ -24,7 +25,7 @@ impl PricesFixture {
         ]
     }
 
-    /// Eight prices - USD, BTC, ETH, XAU, FRAX, OSMO, USDC, and STRIDE
+    /// Nine prices - USD, BTC, ETH, XAU, FRAX, OSMO, USDC, SHD, SCRT
     pub fn basic_prices_2() -> Vec<(&'static str, u128)> {
         vec![
             (Self::USD, 1_00 * 10u128.pow(16)),      // $1
@@ -32,9 +33,10 @@ impl PricesFixture {
             (Self::ETH, 1_831_26 * 10u128.pow(14)),  // $1831.26
             (Self::XAU, 1_852_65 * 10u128.pow(14)),  // $1852.65
             (Self::FRAX, 1_00 * 10u128.pow(16)),     // $1
-            (Self::OSMO, 0_944 * 10u128.pow(16)),    // $0.944
+            (Self::OSMO, 0_944 * 10u128.pow(16)),    // .944
             (Self::USDC, 1_00 * 10u128.pow(16)),     // $1
             (Self::SHD, 8_00 * 10u128.pow(16)),      // $8
+            (Self::SCRT, 11_00 * 10u128.pow(16)),
         ]
     }
 }
@@ -50,7 +52,7 @@ pub fn generate_price_feed(items: Vec<(&str, &str, u64)>) -> Vec<OraclePrice> {
 pub fn price_data(price: &str, last_updated: u64) -> ReferenceData {
     let price: U256 = Decimal256::from_str(price).unwrap().into();
     ReferenceData {
-        rate: Uint128::new(price.as_u128()),
+        rate: price.into(),
         last_updated_base: last_updated,
         last_updated_quote: last_updated,
     }

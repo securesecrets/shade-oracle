@@ -1,10 +1,6 @@
-use crate::{
-    interfaces::band::{reference_data, reference_data_bulk},
-    interfaces::{
-        band::ReferenceData,
-        common::{OraclePrice, OracleQuery, PriceResponse, PricesResponse},
-        router::msg::{ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg},
-    },
+use crate::interfaces::{
+    common::{OracleQuery, PriceResponse, PricesResponse},
+    router::msg::{ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg},
 };
 use cosmwasm_std::{QuerierWrapper, StdError, StdResult, Uint128};
 use shade_protocol::{
@@ -34,50 +30,6 @@ pub fn query_prices(
         keys: keys.to_vec(),
     }
     .query(querier, oracle)
-}
-
-pub fn query_band_price(
-    router: &Contract,
-    querier: &QuerierWrapper,
-    key: impl Into<String>,
-) -> StdResult<OraclePrice> {
-    let resp: RouterConfigResponse = RouterQueryMsg::GetConfig {}.query(querier, router)?;
-    let config = resp.config;
-    let key: String = key.into();
-    let band_response = reference_data(
-        querier,
-        key.clone(),
-        config.quote_symbol.clone(),
-        &config.band,
-    )?;
-    Ok(OraclePrice::new(key, band_response))
-}
-
-pub fn query_band_prices<'a>(
-    router: &Contract,
-    querier: &QuerierWrapper,
-    keys: impl IntoIterator<Item = &'a String>,
-) -> StdResult<Vec<OraclePrice>> {
-    let resp: RouterConfigResponse = RouterQueryMsg::GetConfig {}.query(querier, router)?;
-    let config = resp.config;
-    let mut prices: Vec<OraclePrice> = vec![];
-    let base_symbols = keys
-        .into_iter()
-        .map(|key| {
-            prices.push(OraclePrice::new(key.to_string(), ReferenceData::default()));
-            key.to_string()
-        })
-        .collect::<Vec<String>>();
-    let prices_count = base_symbols.len();
-    let quote_symbols = vec![config.quote_symbol; prices_count];
-
-    let band_data = reference_data_bulk(querier, base_symbols, quote_symbols, &config.band)?;
-
-    for i in 0..prices_count {
-        prices[i].data = band_data[i].clone();
-    }
-
-    Ok(prices)
 }
 
 /// Gets the admin auth contract from the router and uses it to check if the user is an oracle admiin.

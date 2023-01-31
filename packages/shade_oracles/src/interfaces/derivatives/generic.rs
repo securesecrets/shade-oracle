@@ -22,7 +22,6 @@ pub mod msg {
     pub enum ExecuteMsg {
         SetDerivatives(Vec<RawDerivativeData>),
         RemoveDerivatives(Vec<String>),
-        UpdateAssets(Vec<RawAsset>),
         UpdateConfig(RawContract),
         SetStatus(bool),
     }
@@ -65,7 +64,7 @@ pub use state::*;
 mod state {
     use super::*;
     use crate::{
-        asset::{Asset, Assets, RawAsset},
+        asset::{Asset, RawAsset},
         interfaces::common::config::CommonConfig,
     };
     use cosmwasm_std::{Api, QuerierWrapper, StdResult, Storage};
@@ -73,7 +72,7 @@ mod state {
 
     #[cw_serde]
     pub struct StoredDerivativeData {
-        pub derivative: Addr,
+        pub derivative: Asset,
     }
 
     #[cw_serde]
@@ -86,7 +85,6 @@ mod state {
     }
 
     impl<'a> StakingDerivativesOracle {
-        pub const ASSETS: Assets<'static, 'a> = Assets::new("pair_assets");
         // Keyed by its symbol.
         pub const DERIVATIVES: Map<'static, &'a str, StoredDerivativeData> =
             Map::new("derivatives");
@@ -124,24 +122,6 @@ mod state {
             Self::set_derivative_data(storage, data.key, contract)
         }
 
-        pub fn update_asset_symbol(
-            &self,
-            storage: &mut dyn Storage,
-            api: &dyn Api,
-            querier: &QuerierWrapper,
-            asset: RawAsset,
-        ) -> StdResult<()> {
-            let asset = asset.into_asset(&self.config.router, querier, api)?;
-            Self::ASSETS.update_existing_asset(
-                storage,
-                querier,
-                &self.config.router,
-                &asset.contract.address,
-                &asset.quote_symbol,
-            )?;
-            Ok(())
-        }
-
         pub fn remove_keys(storage: &mut dyn Storage, keys: Vec<String>) -> StdResult<()> {
             let mut supported_keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             for key in keys {
@@ -158,10 +138,7 @@ mod state {
             key: String,
             derivative: Asset,
         ) -> StdResult<StoredDerivativeData> {
-            Self::ASSETS.may_set(storage, &derivative)?;
-            let data = StoredDerivativeData {
-                derivative: derivative.contract.address,
-            };
+            let data = StoredDerivativeData { derivative };
             Self::DERIVATIVES.save(storage, &key, &data)?;
             CommonConfig::add_supported_key(storage, &key)?;
             Ok(data)
@@ -172,10 +149,9 @@ mod state {
             storage: &dyn Storage,
         ) -> StdResult<DerivativeData> {
             let data = Self::DERIVATIVES.load(storage, key)?;
-            let staking_derivative = Self::ASSETS.0.load(storage, &data.derivative)?;
             Ok(DerivativeData {
                 key: key.to_string(),
-                staking_derivative,
+                staking_derivative: data.derivative,
             })
         }
 

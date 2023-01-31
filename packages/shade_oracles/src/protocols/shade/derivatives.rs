@@ -22,6 +22,7 @@ pub enum StakingDerivativeQueryMsg {
         /// time in seconds since 01/01/1970.
         time: u64,
     },
+    TokenInfo {},
 }
 
 impl Query for StakingDerivativeQueryMsg {

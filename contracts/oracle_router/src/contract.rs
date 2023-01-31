@@ -11,8 +11,8 @@ use shade_oracles::{
     },
     create_attr_action,
     interfaces::{
-        band::{reference_data, reference_data_bulk, ReferenceData},
         common::{OraclePrice, PriceResponse, PricesResponse},
+        providers::ReferenceData,
         router::{error::*, msg::*, registry::*},
     },
     querier::{query_price, query_prices},
@@ -32,7 +32,7 @@ pub fn instantiate(
     let config = Config {
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
         this: Contract::new(&env.contract.address, &env.contract.code_hash),
-        band: msg.band.into_valid(deps.api)?,
+        provider: msg.provider.into_valid(deps.api)?,
         quote_symbol: msg.quote_symbol,
     };
     OracleRouter::init_status(deps.storage)?;
@@ -129,7 +129,7 @@ pub fn execute(
 pub fn get_price(deps: Deps, router: OracleRouter, key: String) -> StdResult<PriceResponse> {
     let oracle = router.get_oracle(deps.storage, &key)?;
     let price = if oracle.eq(&router.config.this) {
-        query_band_price(deps, &router, key)
+        router.query_provider_price(&deps.querier, key)
     } else {
         query_price(&oracle, &deps.querier, &key)
     }?;
@@ -154,7 +154,7 @@ pub fn get_prices(
 
     for (oracle, symbols) in map {
         let mut queried_prices: PricesResponse = if oracle.eq(&router.config.this) {
-            query_band_prices(deps, &router, symbols)
+            router.query_provider_prices(&deps.querier, symbols)
         } else {
             query_prices(&oracle, &deps.querier, &symbols)
         }?;
@@ -213,35 +213,4 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
     };
     pad_query_result(resp, BLOCK_SIZE)
-}
-
-fn query_band_price(deps: Deps, router: &OracleRouter, key: String) -> StdResult<PriceResponse> {
-    let band_response = reference_data(
-        &deps.querier,
-        key.clone(),
-        router.config.quote_symbol.clone(),
-        &router.config.band,
-    )?;
-    Ok(OraclePrice::new(key, band_response))
-}
-
-fn query_band_prices(
-    deps: Deps,
-    router: &OracleRouter,
-    keys: Vec<String>,
-) -> StdResult<PricesResponse> {
-    let quote_symbol = router.config.quote_symbol.clone();
-    let quote_symbols = vec![quote_symbol; keys.len()];
-    let band = &router.config.band;
-
-    let band_response = reference_data_bulk(&deps.querier, keys.clone(), quote_symbols, band)?;
-
-    let mut prices: Vec<OraclePrice> = vec![];
-    for (index, key) in keys.iter().enumerate() {
-        prices.push(OraclePrice::new(
-            key.to_string(),
-            band_response[index].clone(),
-        ));
-    }
-    Ok(prices)
 }
