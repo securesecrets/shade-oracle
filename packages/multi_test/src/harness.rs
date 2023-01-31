@@ -8,6 +8,7 @@ macro_rules! create_harness {
 }
 
 create_harness!(band, MockBand, mock_band);
+create_harness!(ojo, MockOjo, mock_ojo);
 create_harness!(router, OracleRouter, oracle_router);
 create_harness!(index, IndexOracle, index_oracle);
 

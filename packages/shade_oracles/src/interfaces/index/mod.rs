@@ -307,7 +307,7 @@ mod state {
             );
 
             if self.target.frozen || prices.is_none() {
-                // If peg is frozen or we aren't getting price feeds from band, we use the last calculated value of the target as the peg price.
+                // If peg is frozen or we aren't getting price feeds from provider, we use the last calculated value of the target as the peg price.
                 if !self.target.frozen && now - self.target.last_updated > self.config.when_stale {
                     self.target.frozen = true;
                 }

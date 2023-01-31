@@ -300,7 +300,7 @@ mod test {
             mut app,
             router,
             admin,
-            band,
+            provider,
             ..
         } = TestScenario::new(prices);
         let user = admin;
@@ -345,8 +345,8 @@ mod test {
             );
         };
 
-        // Update mock band prices
-        band.update_prices(&user, &mut app, new_prices, None);
+        // Update mock provider prices
+        provider.update_band_prices(&user, &mut app, new_prices, None);
 
         let price = router.query_price(&app, symbol.clone()).unwrap();
 

@@ -1,13 +1,24 @@
 use super::*;
 
 #[cw_serde]
-pub struct InstantiateMsg {
+pub struct BandInstantiateMsg {
     pub initial_prices: Vec<(String, String, Uint128)>,
     pub admin_auth: RawContract,
     pub quote_symbol: Option<String>,
 }
 
-impl InstantiateCallback for InstantiateMsg {
+#[cw_serde]
+pub struct OjoInstantiateMsg {
+    pub initial_prices: Vec<(String, String, Uint256)>,
+    pub admin_auth: RawContract,
+    pub quote_symbol: Option<String>,
+}
+
+impl InstantiateCallback for BandInstantiateMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
+}
+
+impl InstantiateCallback for OjoInstantiateMsg {
     const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
@@ -56,7 +67,38 @@ impl Config {
 }
 
 #[cw_serde]
-pub enum ExecuteMsg {
+pub enum BandExecuteMsg {
+    SetStatus(bool),
+    UpdateConfig {
+        admin_auth: Option<RawContract>,
+        quote_symbol: Option<String>,
+    },
+    SetPrice(BandMockPrice),
+    SetPrices(Vec<BandMockPrice>),
+}
+
+#[cw_serde]
+pub struct BandMockPrice {
+    pub base_symbol: String,
+    pub quote_symbol: String,
+    pub rate: Uint128,
+    pub last_updated: Option<u64>,
+}
+
+impl ExecuteCallback for BandExecuteMsg {
+    const BLOCK_SIZE: usize = BLOCK_SIZE;
+}
+
+#[cw_serde]
+pub struct MockPrice {
+    pub base_symbol: String,
+    pub quote_symbol: String,
+    pub rate: Uint256,
+    pub last_updated: Option<u64>,
+}
+
+#[cw_serde]
+pub enum OjoExecuteMsg {
     SetStatus(bool),
     UpdateConfig {
         admin_auth: Option<RawContract>,
@@ -66,15 +108,7 @@ pub enum ExecuteMsg {
     SetPrices(Vec<MockPrice>),
 }
 
-#[cw_serde]
-pub struct MockPrice {
-    pub base_symbol: String,
-    pub quote_symbol: String,
-    pub rate: Uint128,
-    pub last_updated: Option<u64>,
-}
-
-impl ExecuteCallback for ExecuteMsg {
+impl ExecuteCallback for OjoExecuteMsg {
     const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 

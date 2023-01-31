@@ -721,6 +721,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock_ojo"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "secret-cosmwasm-std",
+ "shade-oracles",
+]
+
+[[package]]
 name = "multi-derive"
 version = "0.1.0"
 source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
@@ -1128,7 +1137,7 @@ dependencies = [
 [[package]]
 name = "secret-borsh-storage"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#551347126bddf5c03c081cf6e5a16b8b738e098c"
+source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
 dependencies = [
  "borsh 0.10.0",
  "schemars 0.8.11",
@@ -1178,7 +1187,7 @@ dependencies = [
 [[package]]
 name = "secret-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#551347126bddf5c03c081cf6e5a16b8b738e098c"
+source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
 dependencies = [
  "anyhow",
  "derivative",
@@ -1196,7 +1205,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#551347126bddf5c03c081cf6e5a16b8b738e098c"
+source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
 dependencies = [
  "bincode2",
  "schemars 0.8.11",
@@ -1207,7 +1216,7 @@ dependencies = [
 [[package]]
 name = "secret-utils"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#551347126bddf5c03c081cf6e5a16b8b738e098c"
+source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
 dependencies = [
  "schemars 0.8.11",
  "secret-cosmwasm-std",
@@ -1337,6 +1346,7 @@ version = "0.1.0"
 dependencies = [
  "index_oracle",
  "mock_band",
+ "mock_ojo",
  "multi-derive",
  "multi-test-helpers",
  "oracle_mocks",

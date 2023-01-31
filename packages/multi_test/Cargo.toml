@@ -20,6 +20,7 @@ shade-oracles = { path = "../shade_oracles" }
 oracle_router = { path = "../../contracts/oracle_router" }
 
 mock_band = { path = "../../contracts/mock_band" }
+mock_ojo = { path = "../../contracts/mock_ojo" }
 
 index_oracle = { path = "../../contracts/index_oracle" }
 

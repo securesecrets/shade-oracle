@@ -169,7 +169,7 @@ mod test {
             mut app,
             router,
             admin,
-            band,
+            provider,
             admin_auth,
             ..
         } = TestScenario::new(prices);
@@ -197,7 +197,7 @@ mod test {
         // Set price to 1.05 which is greater than protection deviation of 4% from 1.00 so should fail.
         let prices = vec![("USD", 1_05 * 10u128.pow(16))];
         let prices = OracleCore::create_prices_hashmap(prices).1;
-        band.update_prices(&user, app, prices, Some(app.block_info().time.seconds()));
+        provider.update_band_prices(&user, app, prices, Some(app.block_info().time.seconds()));
         assert!(router.query_price(app, "USD".to_string()).is_err());
         assert!(router.query_prices(app, vec!["USD".to_string()]).is_err());
 
@@ -267,7 +267,7 @@ mod test {
             router,
             admin,
             keys,
-            band,
+            provider,
             ..
         } = TestScenario::new(prices);
         let user = admin;
@@ -327,14 +327,14 @@ mod test {
             .is_ok());
 
         router
-            .set_keys(&user, &mut app, band.clone().into(), keys.clone())
+            .set_keys(&user, &mut app, provider.clone().into(), keys.clone())
             .unwrap();
         let oracles_resp = router.query_oracles(&app, keys.clone()).unwrap();
         let keys_resp = router.query_keys(&app).unwrap();
         assert_eq!(keys.len(), keys_resp.len());
         assert_eq!(keys.len(), oracles_resp.len());
         for oracle in oracles_resp {
-            assert_eq!(oracle.oracle, band.clone().into());
+            assert_eq!(oracle.oracle, provider.clone().into());
         }
         Asserter::equal_vecs(&keys, &keys_resp);
 
@@ -349,7 +349,7 @@ mod test {
             if oracle.key == test_prices[0].0 || oracle.key == test_prices[1].0 {
                 assert_eq!(oracle.oracle, router.clone().into());
             } else {
-                assert_eq!(oracle.oracle, band.clone().into());
+                assert_eq!(oracle.oracle, provider.clone().into());
             }
         }
         assert!(
@@ -361,7 +361,7 @@ mod test {
 
         let operations = vec![
             RegistryOperation::SetKeys {
-                oracle: band.clone().into(),
+                oracle: provider.clone().into(),
                 keys: keys_to_remove.clone(),
             },
             RegistryOperation::RemoveKeys {
