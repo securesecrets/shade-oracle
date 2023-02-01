@@ -86,9 +86,9 @@ mod test {
 
     fn derivative_data() -> Vec<RawDerivativeData> {
         vec![
-            create_derivative_data("stkd-ETH", "ETH", "1.1", 1, 2, "0.2", 1, "0.1"),
-            create_derivative_data("stkd-OSMO", "OSMO", "1.2", 1, 2, "0.2", 1, "0.1"),
-            create_derivative_data("stkd-FRAX", "FRAX", "1.5", 1, 2, "0.2", 1, "0.1"),
+            create_derivative_data("stkd-ETH", "ETH", "1.1", 1, 2, "0.1", "0.2", 1, "0.1"),
+            create_derivative_data("stkd-OSMO", "OSMO", "1.2", 1, 2, "0.1", "0.2", 1, "0.1"),
+            create_derivative_data("stkd-FRAX", "FRAX", "1.5", 1, 2, "0.1", "0.2", 1, "0.1"),
         ]
     }
 
@@ -98,6 +98,7 @@ mod test {
         rate: &'static str,
         rate_update_frequency: u64,
         rate_timeout: u64,
+        rate_max_change: &'static str,
         apy: &'static str,
         apy_update_frequency: u64,
         apy_max_change: &'static str,
@@ -111,6 +112,7 @@ mod test {
             apy: Decimal256::from_str(apy).unwrap(),
             apy_update_frequency,
             apy_max_change: Decimal256::from_str(apy_max_change).unwrap(),
+            rate_max_change: Decimal256::from_str(rate_max_change).unwrap(),
         }
     }
 
@@ -205,18 +207,18 @@ mod test {
 
         let update_rates_too_much_upside = DerivativeUpdates::Rates(vec![(
             "stkd-ETH".to_string(),
-            Decimal256::from_str("1.2").unwrap(),
+            Decimal256::from_str("1.21").unwrap(),
         )]);
 
         let update_rates_too_much_downside = DerivativeUpdates::Rates(vec![(
             "stkd-ETH".to_string(),
-            Decimal256::from_str("1.043").unwrap(),
+            Decimal256::from_str("0.99").unwrap(),
         )]);
 
         let okay_rates = vec![
             (
                 "stkd-ETH".to_string(),
-                Decimal256::from_str("1.045").unwrap(),
+                Decimal256::from_str("1.15").unwrap(),
             ),
             (
                 "stkd-OSMO".to_string(),
@@ -314,11 +316,18 @@ mod test {
 
         let bad_symbol_update = DerivativeUpdates::Config(vec![(
             raw_derivatives[0].key.clone(),
-            DerivativeDataConfigUpdate::new(Some("bad_symbol".to_string()), None, None, None, None),
+            DerivativeDataConfigUpdate::new(
+                Some("bad_symbol".to_string()),
+                None,
+                None,
+                None,
+                None,
+                None,
+            ),
         )]);
         let nonexistant_symbol_update = DerivativeUpdates::Config(vec![(
             "bad_symbol".to_string(),
-            DerivativeDataConfigUpdate::new(Some("ETH".to_string()), None, None, None, None),
+            DerivativeDataConfigUpdate::new(Some("ETH".to_string()), None, None, None, None, None),
         )]);
 
         let err = oracle
@@ -339,6 +348,7 @@ mod test {
             PricesFixture::XAU.to_string(),
             raw_derivatives[0].initial_rate,
             2000u64,
+            Decimal256::from_str("0.1").unwrap(),
             2000u64,
             raw_derivatives[0].apy,
             2000u64,
@@ -352,6 +362,7 @@ mod test {
                 Some(PricesFixture::XAU.to_string()),
                 Some(new_derivative.rate.update_frequency),
                 Some(new_derivative.rate.timeout),
+                Some(new_derivative.rate.max_change),
                 Some(new_derivative.apy.update_frequency),
                 Some(new_derivative.apy.max_change),
             ),
@@ -434,7 +445,7 @@ mod test {
             .unwrap()
             .data
             .rate;
-        assert_eq!(expected_price, actual_price.into());
+        assert_eq!(expected_price, actual_price);
         let actual_price = router
             .query_prices(
                 app,

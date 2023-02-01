@@ -57,6 +57,7 @@ pub mod msg {
         pub initial_rate: Decimal256,
         pub rate_update_frequency: u64,
         pub rate_timeout: u64,
+        pub rate_max_change: Decimal256,
         pub apy: Decimal256,
         pub apy_update_frequency: u64,
         pub apy_max_change: Decimal256,
@@ -67,6 +68,7 @@ pub mod msg {
         pub underlying_key: Option<String>,
         pub rate_update_frequency: Option<u64>,
         pub rate_timeout: Option<u64>,
+        pub rate_max_change: Option<Decimal256>,
         pub apy_update_frequency: Option<u64>,
         pub apy_max_change: Option<Decimal256>,
     }
@@ -85,6 +87,7 @@ pub mod msg {
         pub update_frequency: u64,
         pub timeout: u64,
         pub last_updated: u64,
+        pub max_change: Decimal256,
     }
 
     #[cw_serde]
@@ -106,12 +109,14 @@ pub mod msg {
             underlying_key: Option<String>,
             rate_update_frequency: Option<u64>,
             rate_timeout: Option<u64>,
+            rate_max_change: Option<Decimal256>,
             apy_update_frequency: Option<u64>,
             apy_max_change: Option<Decimal256>,
         ) -> Self {
             Self {
                 underlying_key,
                 rate_update_frequency,
+                rate_max_change,
                 rate_timeout,
                 apy_update_frequency,
                 apy_max_change,
@@ -139,9 +144,6 @@ mod state {
     use crate::interfaces::common::config::CommonConfig;
     use cosmwasm_std::{Decimal256, StdResult, Storage};
     use ssp::{Item, ItemStorage, Map};
-
-    /// 5.01% is the maximum downside price change allowed for a derivative.
-    pub const MAX_DOWNSIDE: Decimal256 = Decimal256::new(Uint256::from_u128(51 * 10u128.pow(15)));
 
     impl DerivativeApy {
         pub fn new(
@@ -212,12 +214,14 @@ mod state {
             update_frequency: u64,
             timeout: u64,
             last_updated: u64,
+            max_change: Decimal256,
         ) -> StdResult<Self> {
             let mut rate = Self {
                 value,
                 update_frequency,
                 timeout,
                 last_updated,
+                max_change,
             };
             rate.set_value(value)?;
             Ok(rate)
@@ -252,35 +256,23 @@ mod state {
                     self.update_frequency - time_since_updated
                 )));
             }
-            let hours_since_updated = Decimal256::from_ratio(time_since_updated, 3600u128);
-            let y = Decimal256::from_ratio(
-                hours_since_updated.atomics(),
-                Uint256::from_u128(24 * 365 * 10u128.pow(18)),
-            );
-            // Multiplying by 2 for buffer.
-            let max_upside = Decimal256::new(Uint256::from_u128(2 * 10u128.pow(18))) * apy * y;
+
             if self.value.eq(&new_rate) {
-                Ok(())
-            } else if self.value > new_rate {
-                let percent_change =
-                    Decimal256::from_ratio((self.value - new_rate).atomics(), self.value.atomics());
-                if percent_change > MAX_DOWNSIDE {
-                    Err(StdError::generic_err(format!(
-                        "Derivative rate is changing too much. Maximum downside is {MAX_DOWNSIDE}. Attempted change is {percent_change}.",
-                    )))
-                } else {
-                    Ok(())
-                }
+                return Ok(());
+            }
+
+            let change = if self.value > new_rate {
+                self.value - new_rate
             } else {
-                let percent_change =
-                    Decimal256::from_ratio((new_rate - self.value).atomics(), self.value.atomics());
-                if percent_change > max_upside {
-                    Err(StdError::generic_err(format!(
-                        "Derivative rate is changing too much. Maximum upside is {max_upside}. Attempted change is {percent_change}."
-                    )))
-                } else {
-                    Ok(())
-                }
+                new_rate - self.value
+            };
+
+            if change > self.max_change {
+                Err(StdError::generic_err(format!(
+                    "Derivative rate is changing too much. Maximum change is {}. Attempted change is {change}.", self.max_change
+                )))
+            } else {
+                Ok(())
             }
         }
     }
@@ -291,6 +283,7 @@ mod state {
             underlying_key: String,
             initial_rate: Decimal256,
             rate_update_frequency: u64,
+            rate_max_change: Decimal256,
             rate_timeout: u64,
             apy: Decimal256,
             apy_update_frequency: u64,
@@ -302,6 +295,7 @@ mod state {
                 rate_update_frequency,
                 rate_timeout,
                 last_updated,
+                rate_max_change,
             )?;
             let apy = DerivativeApy::new(apy, apy_update_frequency, apy_max_change, last_updated)?;
             Ok(Self {
@@ -360,6 +354,7 @@ mod state {
                     data.underlying_key,
                     data.initial_rate,
                     data.rate_update_frequency,
+                    data.rate_max_change,
                     data.rate_timeout,
                     data.apy,
                     data.apy_update_frequency,
@@ -470,22 +465,23 @@ mod state {
 
         use super::*;
 
-        //#[cfg(feature = "derivatives")]
+        #[cfg(feature = "derivatives")]
         #[test]
         fn test_derivative_rate() {
             let rate = DerivativeRate::new(
-                Decimal256::from_str("1.075206355563117638").unwrap(),
+                Decimal256::from_str("1.158648705485855149").unwrap(),
                 100,
                 100,
                 0,
+                Decimal256::from_str("0.01").unwrap(),
             )
             .unwrap();
-            let apy = Decimal256::from_str("0.219").unwrap();
+            let apy = Decimal256::from_str("0.3108").unwrap();
 
-            let new_rate = Decimal256::from_str("1.076034033763143768").unwrap();
-            let now = 24 * 3600u64;
+            let new_rate = Decimal256::from_str("1.158859249527666430").unwrap();
+            let now = 2 * 3600u64;
             assert!(rate.require_valid_change(now, apy, new_rate).is_ok());
-            let now = 3600u64;
+            let now = 50u64;
             assert!(rate.require_valid_change(now, apy, new_rate).is_err());
         }
     }
