@@ -643,9 +643,9 @@ dependencies = [
 
 [[package]]
 name = "heck"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
+checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
 name = "hex"
@@ -1137,7 +1137,7 @@ dependencies = [
 [[package]]
 name = "secret-borsh-storage"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
+source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
 dependencies = [
  "borsh 0.10.0",
  "schemars 0.8.11",
@@ -1187,7 +1187,7 @@ dependencies = [
 [[package]]
 name = "secret-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
+source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
 dependencies = [
  "anyhow",
  "derivative",
@@ -1205,7 +1205,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
+source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
 dependencies = [
  "bincode2",
  "schemars 0.8.11",
@@ -1216,7 +1216,7 @@ dependencies = [
 [[package]]
 name = "secret-utils"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#6a5144ff19cbff49af1ce9ca4a02aec543e25a68"
+source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
 dependencies = [
  "schemars 0.8.11",
  "secret-cosmwasm-std",
