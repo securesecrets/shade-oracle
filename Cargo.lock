@@ -11,7 +11,7 @@ checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 [[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-protocol",
@@ -42,7 +42,7 @@ dependencies = [
 [[package]]
 name = "airdrop"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 dependencies = [
  "rs_merkle",
  "shade-protocol",
@@ -274,7 +274,7 @@ checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
 [[package]]
 name = "contract-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 dependencies = [
  "syn",
 ]
@@ -732,7 +732,7 @@ dependencies = [
 [[package]]
 name = "multi-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 
 [[package]]
 name = "multi-test-helpers"
@@ -907,7 +907,7 @@ dependencies = [
 [[package]]
 name = "query_auth"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 dependencies = [
  "schemars 0.7.6",
  "secret-cosmwasm-std",
@@ -1308,7 +1308,7 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 dependencies = [
  "admin",
  "airdrop",
@@ -1369,7 +1369,7 @@ dependencies = [
 [[package]]
 name = "shade-protocol"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 dependencies = [
  "anyhow",
  "base64 0.12.3",
@@ -1461,7 +1461,7 @@ dependencies = [
 [[package]]
 name = "snip20"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#cdc12b8eac53f1ce4455639c2fd2f6233eca4b92"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#80d8c7c12ce4a0ff46374dc3ffd7de9edf44ff5a"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-protocol",
