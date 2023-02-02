@@ -72,6 +72,40 @@ impl Snip20Helper {
         sender.exec(app, &msg, &self.0).unwrap();
     }
 
+    pub fn increase_allowance(
+        &self,
+        sender: &User,
+        app: &mut App,
+        spender: &str,
+        amount: impl Into<Uint128> + Copy,
+        expiration: Option<u64>,
+    ) {
+        let msg = ExecuteMsg::IncreaseAllowance {
+            spender: spender.to_owned(),
+            amount: amount.into(),
+            expiration,
+            padding: None,
+        };
+        sender.exec(app, &msg, &self.0).unwrap();
+    }
+
+    pub fn decrease_allowance(
+        &self,
+        sender: &User,
+        app: &mut App,
+        spender: &str,
+        amount: impl Into<Uint128> + Copy,
+        expiration: Option<u64>,
+    ) {
+        let msg = ExecuteMsg::DecreaseAllowance {
+            spender: spender.to_owned(),
+            amount: amount.into(),
+            expiration,
+            padding: None,
+        };
+        sender.exec(app, &msg, &self.0).unwrap();
+    }
+
     pub fn set_viewing_key(&self, user: &User, app: &mut App, viewing_key: impl Into<String>) {
         let msg = ExecuteMsg::SetViewingKey {
             key: viewing_key.into(),
