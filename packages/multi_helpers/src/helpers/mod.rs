@@ -76,6 +76,7 @@ impl User {
         let address = Addr::unchecked(address);
         User { address }
     }
+
     pub fn addr(&self) -> Addr {
         self.address.clone()
     }
