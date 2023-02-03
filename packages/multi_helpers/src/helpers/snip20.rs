@@ -1,4 +1,5 @@
 use super::*;
+use better_secret_math::U256;
 use shade_multi_test::multi::snip20::Snip20;
 use shade_oracles::asset::{Asset, RawAsset};
 use shade_protocol::snip20::{helpers::TokenInfo, *};
@@ -282,5 +283,16 @@ impl Snip20Helper {
             tokens.push(token);
         }
         tokens
+    }
+
+    pub fn to_amount(&self, router: &mut App, amount: impl Into<U256> + Copy) -> Uint128 {
+        let amount: Uint128 = amount.into().into();
+        let decimals = self.get_decimals(router);
+        (amount / Uint128::new(10u128.pow(18))) * Uint128::new(10u128.pow(decimals as u32))
+    }
+
+    pub fn get_decimals(&self, router: &mut App) -> u8 {
+        let info = self.query_token_info(router).unwrap();
+        info.decimals
     }
 }

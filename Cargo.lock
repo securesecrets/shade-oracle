@@ -93,7 +93,7 @@ checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 [[package]]
 name = "better-secret-math"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math#30d4399c9f20a839ac54cb8b1ca65da3b2306139"
+source = "git+https://github.com/securesecrets/better-secret-math#3c6728031b90a9fc1a033091d59d7bea3ec63b4e"
 dependencies = [
  "borsh 0.9.3",
  "btr-macros",
@@ -220,7 +220,7 @@ dependencies = [
 [[package]]
 name = "btr-macros"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math#30d4399c9f20a839ac54cb8b1ca65da3b2306139"
+source = "git+https://github.com/securesecrets/better-secret-math#3c6728031b90a9fc1a033091d59d7bea3ec63b4e"
 dependencies = [
  "paste",
  "proc-macro2",
