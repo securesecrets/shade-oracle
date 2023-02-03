@@ -288,7 +288,12 @@ impl Snip20Helper {
     pub fn to_amount(&self, router: &mut App, amount: impl Into<U256> + Copy) -> Uint128 {
         let amount: Uint128 = amount.into().into();
         let decimals = self.get_decimals(router);
-        (amount / Uint128::new(10u128.pow(18))) * Uint128::new(10u128.pow(decimals as u32))
+        match decimals {
+            18 => amount,
+            _ => amount
+                .checked_multiply_ratio(10u128.pow(decimals.into()), 10u128.pow(18))
+                .unwrap(),
+        }
     }
 
     pub fn get_decimals(&self, router: &mut App) -> u8 {
