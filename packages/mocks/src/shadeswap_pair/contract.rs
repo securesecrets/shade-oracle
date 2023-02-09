@@ -1,10 +1,11 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult};
+use shade_oracles::protocols::shadeswap::{ShadeSwapQueryMsgResponse, PairInfo};
 use shade_oracles::{
     core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::shadeswap::{
-        Fee, FeeInfo, PairInfoResponse, QueryMsg, SwapResult, SwapSimulationResponse, TokenPair,
+        Fee, FeeInfo, QueryMsg, SwapResult, SwapSimulationResponse, TokenPair,
         TokenType,
     },
     ssp::Item,
@@ -27,7 +28,7 @@ impl ExecuteCallback for ExecuteMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-const PAIR_INFO: Item<PairInfoResponse> = Item::new("pair_info");
+const PAIR_INFO: Item<PairInfo> = Item::new("pair_info");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -65,7 +66,7 @@ pub fn execute(
         } => {
             PAIR_INFO.save(
                 deps.storage,
-                &PairInfoResponse {
+                &PairInfo {
                     liquidity_token: Contract {
                         address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
@@ -110,7 +111,10 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetPairInfo {} => to_binary(&PAIR_INFO.load(deps.storage)?),
+        QueryMsg::GetPairInfo {} => {
+            let PairInfo { liquidity_token, factory, pair, amount_0, amount_1, total_liquidity, contract_version, fee_info, stable_info } = PAIR_INFO.load(deps.storage)?;
+            to_binary(&ShadeSwapQueryMsgResponse::GetPairInfo { liquidity_token, factory, pair, amount_0, amount_1, total_liquidity, contract_version, fee_info, stable_info })
+        },
         QueryMsg::SwapSimulation {
             offer,
             exclude_fee: _,
@@ -138,7 +142,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     oracle_key: None,
                 } => {
                     if in_token.address == contract_addr {
-                        return to_binary(&SwapSimulationResponse {
+                        return to_binary(&ShadeSwapQueryMsgResponse::SwapSimulation {
                             price: String::default(),
                             total_fee_amount: Uint128::default(),
                             lp_fee_amount: Uint128::default(),
