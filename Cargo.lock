@@ -50,9 +50,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
+checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
 name = "autocfg"
@@ -93,7 +93,7 @@ checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 [[package]]
 name = "better-secret-math"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math#3c6728031b90a9fc1a033091d59d7bea3ec63b4e"
+source = "git+https://github.com/securesecrets/better-secret-math#ead716f5bc24b610685d2e205b919d9c48fe6a93"
 dependencies = [
  "borsh 0.9.3",
  "btr-macros",
@@ -139,11 +139,11 @@ dependencies = [
 
 [[package]]
 name = "borsh"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "822462c1e7b17b31961798a6874b36daea6818e99e0cb7d3b7b0fa3c477751c3"
+checksum = "a3ef05d137e34b7ac51dbec170ee523a9b728cff71385796771d259771d592f8"
 dependencies = [
- "borsh-derive 0.10.0",
+ "borsh-derive 0.10.1",
  "hashbrown 0.13.2",
 ]
 
@@ -162,12 +162,12 @@ dependencies = [
 
 [[package]]
 name = "borsh-derive"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37626c9e941a687ee9abef6065b44c379478ae563b7483c613dd705ef1dff59e"
+checksum = "190b1188f062217531748807129459c8c14641b648e887e39681a433db7fc939"
 dependencies = [
- "borsh-derive-internal 0.10.0",
- "borsh-schema-derive-internal 0.10.0",
+ "borsh-derive-internal 0.10.1",
+ "borsh-schema-derive-internal 0.10.1",
  "proc-macro-crate",
  "proc-macro2",
  "syn",
@@ -186,9 +186,9 @@ dependencies = [
 
 [[package]]
 name = "borsh-derive-internal"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61820b4c5693eafb998b1e67485423c923db4a75f72585c247bdee32bad81e7b"
+checksum = "b0fcf747a3e4eb47869441664df09d0eb88dcc9a85d499860efb82c2cfe6affc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -208,9 +208,9 @@ dependencies = [
 
 [[package]]
 name = "borsh-schema-derive-internal"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c76cdbfa13def20d1f8af3ae7b3c6771f06352a74221d8851262ac384c122b8e"
+checksum = "f671d085f791c5fd3331c843ded45454b034b6188bf0f78ed28e7fd66a8b3f69"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -220,7 +220,7 @@ dependencies = [
 [[package]]
 name = "btr-macros"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math#3c6728031b90a9fc1a033091d59d7bea3ec63b4e"
+source = "git+https://github.com/securesecrets/better-secret-math#ead716f5bc24b610685d2e205b919d9c48fe6a93"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -857,9 +857,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.50"
+version = "1.0.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ef7d57beacfaf2d8aee5937dab7b7f28de3cb8b1828479bb5de2a7106f2bae2"
+checksum = "5d727cae5b39d21da60fa540906919ad737832fe0b1c165da3a34d6548c849d6"
 dependencies = [
  "unicode-ident",
 ]
@@ -1137,9 +1137,9 @@ dependencies = [
 [[package]]
 name = "secret-borsh-storage"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
+source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
 dependencies = [
- "borsh 0.10.0",
+ "borsh 0.10.1",
  "schemars 0.8.11",
  "secret-cosmwasm-std",
 ]
@@ -1187,7 +1187,7 @@ dependencies = [
 [[package]]
 name = "secret-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
+source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
 dependencies = [
  "anyhow",
  "derivative",
@@ -1205,7 +1205,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
+source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
 dependencies = [
  "bincode2",
  "schemars 0.8.11",
@@ -1216,7 +1216,7 @@ dependencies = [
 [[package]]
 name = "secret-utils"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#0543619ba3026724a48bf8d06d73ed32c68aba00"
+source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
 dependencies = [
  "schemars 0.8.11",
  "secret-cosmwasm-std",
@@ -1283,9 +1283,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.91"
+version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877c235533714907a8c2464236f5c4b2a17262ef1bd71f38f35ea592c8da6883"
+checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
 dependencies = [
  "itoa",
  "ryu",
@@ -1323,7 +1323,7 @@ name = "shade-oracles"
 version = "1.0.0"
 dependencies = [
  "better-secret-math",
- "borsh 0.10.0",
+ "borsh 0.10.1",
  "btr-macros",
  "cosmwasm-schema",
  "derive-from-ext",

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use super::*;
 use crate::harness::index::IndexOracle;
-use shade_oracles::{core::Query, interfaces::index::msg::*};
+use shade_oracles::{core::Query, interfaces::index::msg::*, status::ContractStatus};
 
 create_test_helper!(IndexOracleHelper);
 impl IndexOracleHelper {
@@ -32,6 +32,19 @@ impl IndexOracleHelper {
         Self(contract)
     }
 
+    pub fn update_status(
+        &self,
+        sender: &User,
+        app: &mut App,
+        status: ContractStatus,
+    ) -> AnyResult<AppResponse> {
+        sender.exec(
+            app,
+            &ExecuteMsg::Admin(AdminMsg::UpdateStatus(status)),
+            &self.0,
+        )
+    }
+
     pub fn mod_basket(
         &self,
         sender: &User,
@@ -45,9 +58,55 @@ impl IndexOracleHelper {
         )
     }
 
+    pub fn update_config(
+        &self,
+        sender: &User,
+        app: &mut App,
+        symbol: Option<String>,
+        router: Option<Contract>,
+        when_stale: Option<u64>,
+    ) -> AnyResult<AppResponse> {
+        sender.exec(
+            app,
+            &ExecuteMsg::Admin(AdminMsg::UpdateConfig {
+                symbol,
+                router: router.map(|r| r.into()),
+                when_stale: when_stale.map(Uint64::new),
+            }),
+            &self.0,
+        )
+    }
+
+    pub fn update_target(
+        &self,
+        sender: &User,
+        app: &mut App,
+        target: Uint128,
+    ) -> AnyResult<AppResponse> {
+        sender.exec(
+            app,
+            &ExecuteMsg::Admin(AdminMsg::UpdateTarget(target)),
+            &self.0,
+        )
+    }
+
+    pub fn unfreeze(&self, sender: &User, app: &mut App) -> AnyResult<AppResponse> {
+        sender.exec(app, &ExecuteMsg::Admin(AdminMsg::Unfreeze {}), &self.0)
+    }
+
+    pub fn compute_index(&self, sender: &User, app: &mut App) -> AnyResult<AppResponse> {
+        sender.exec(app, &ExecuteMsg::ComputeIndex {}, &self.0)
+    }
+
     pub fn query_basket(&self, app: &App) -> StdResult<BasketResponse> {
         QueryMsg::GetBasket {}.test_query(&self.0, app)
     }
+
+    pub fn query_index_data(&self, app: &App) -> StdResult<IndexDataResponse> {
+        QueryMsg::GetIndexData {}.test_query(&self.0, app)
+    }
+
+    // HELPER FUNCTIONS
 
     pub fn create_basket(
         prices: Vec<(impl Into<String> + Clone, impl Into<String> + Clone)>,
@@ -67,8 +126,197 @@ impl IndexOracleHelper {
 #[cfg(test)]
 mod test {
     use super::*;
-    use shade_oracles::interfaces::index::SIX_HOURS;
-    use std::str::FromStr;
+    use shade_oracles::{
+        better_secret_math::asserter::MathAsserter,
+        interfaces::{common::OraclePrice, index::SIX_HOURS},
+        unit_test_interface::prices::generate_price_feed,
+    };
+    use std::{convert::TryInto, str::FromStr};
+
+    fn basic_basket() -> Vec<InitialBasketItem> {
+        vec![
+            ("USD".into(), Decimal256::percent(25)),
+            ("EURO".into(), Decimal256::percent(25)),
+            ("GDP".into(), Decimal256::percent(25)),
+            ("JPY".into(), Decimal256::percent(25)),
+        ]
+    }
+
+    fn feed_0() -> Vec<OraclePrice> {
+        generate_price_feed(vec![
+            ("USD", "1.00", 0),
+            ("EURO", "1.0196", 0),
+            ("GDP", "1.208", 0),
+            ("JPY", "0.0074", 0),
+        ])
+    }
+
+    fn feed_2() -> Vec<OraclePrice> {
+        generate_price_feed(vec![
+            ("USD", "1.00", 0),
+            ("EURO", "0.0196", 0),
+            ("GDP", "1.208", 0),
+            ("JPY", "0.0074", 0),
+        ])
+    }
+
+    fn feed_3() -> Vec<OraclePrice> {
+        generate_price_feed(vec![
+            ("USD", "1.00", 0),
+            ("EURO", "1.0526", 0),
+            ("GDP", "1.075", 0),
+            ("JPY", "0.0094", 0),
+        ])
+    }
+
+    #[test]
+    fn test_freeze_and_rollback() {
+        let prices: Vec<(String, Uint128)> = feed_2()
+            .iter()
+            .map(|p| (p.key.clone(), p.data.rate.try_into().unwrap()))
+            .collect();
+        let new_prices: Vec<(String, Uint128)> = feed_3()
+            .iter()
+            .map(|p| (p.key.clone(), p.data.rate.try_into().unwrap()))
+            .collect();
+        let TestScenario {
+            mut app,
+            router,
+            admin,
+            provider,
+            user,
+            ..
+        } = TestScenario::new(prices);
+        let target = Uint128::from(105 * 10u128.pow(16));
+        let symbol = "SILK".to_string();
+        let basket = basic_basket();
+        let t2 = SIX_HOURS + 10;
+        let index_oracle = IndexOracleHelper::init(
+            &admin,
+            &mut app,
+            &router.clone().into(),
+            &basket,
+            target,
+            &symbol,
+            SIX_HOURS,
+        );
+
+        // Configure router w/ index oracle
+        router
+            .set_keys(
+                &admin,
+                &mut app,
+                index_oracle.0.clone().into(),
+                vec![symbol.clone()],
+            )
+            .unwrap();
+
+        let price = router.query_price(&app, symbol.clone()).unwrap();
+        MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
+
+        app.update_block(|b| b.time = b.time.plus_seconds(t2));
+
+        // Prices have become stale, peg is frozen
+        index_oracle.compute_index(&admin, &mut app).unwrap();
+        let price = router.query_price(&app, symbol.clone()).unwrap();
+        MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
+        let info = index_oracle.query_index_data(&app).unwrap();
+        assert!(info.target.frozen);
+        assert_eq!(info.target.last_updated, Uint64::zero());
+
+        // Push new prices
+        let (_, new_prices) = OracleCore::create_prices_hashmap(new_prices);
+        provider.update_band_prices(&admin, &mut app, new_prices, Some(t2));
+
+        // Trigger unfreeze, which will perform a rollback
+        assert!(index_oracle.unfreeze(&user, &mut app).is_err());
+        assert!(index_oracle.unfreeze(&admin, &mut app).is_ok());
+
+        let price = router.query_price(&app, symbol.clone()).unwrap();
+        MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
+        let info = index_oracle.query_index_data(&app).unwrap();
+        assert!(!info.target.frozen);
+        assert_eq!(info.target.last_updated, Uint64::new(t2));
+    }
+
+    #[test]
+    fn test_status_and_permissions() {
+        let prices: Vec<(String, Uint128)> = feed_0()
+            .iter()
+            .map(|p| (p.key.clone(), p.data.rate.try_into().unwrap()))
+            .collect();
+        let TestScenario {
+            mut app,
+            router,
+            admin,
+            user,
+            ..
+        } = TestScenario::new(prices);
+        let target = Uint128::from(105 * 10u128.pow(16));
+        let symbol = "SILK".to_string();
+        let basket = basic_basket();
+
+        let index_oracle = IndexOracleHelper::init(
+            &admin,
+            &mut app,
+            &router.clone().into(),
+            &basket,
+            target,
+            &symbol,
+            SIX_HOURS,
+        );
+
+        router
+            .set_keys(
+                &admin,
+                &mut app,
+                index_oracle.0.clone().into(),
+                vec![symbol.clone()],
+            )
+            .unwrap();
+
+        let original_config = index_oracle.query_index_data(&app).unwrap();
+
+        // Can only update status when frozen
+
+        assert!(index_oracle
+            .update_status(&user, &mut app, ContractStatus::Frozen)
+            .is_err());
+        assert!(index_oracle
+            .update_status(&admin, &mut app, ContractStatus::Frozen)
+            .is_ok());
+
+        assert!(index_oracle.compute_index(&user, &mut app).is_err());
+        assert!(index_oracle.compute_index(&admin, &mut app).is_err());
+        assert!(index_oracle.unfreeze(&admin, &mut app).is_err());
+
+        assert!(router.query_price(&app, symbol.clone()).is_err());
+        assert!(router.query_prices(&app, vec![symbol.clone()]).is_err());
+
+        // Can't query prices when deprecated
+
+        assert!(index_oracle
+            .update_status(&admin, &mut app, ContractStatus::Deprecated)
+            .is_ok());
+        assert!(router.query_price(&app, symbol.clone()).is_err());
+        assert!(router.query_prices(&app, vec![symbol.clone()]).is_err());
+
+        // Config update works and is admin only
+        let new_when_stale = SIX_HOURS + 1u64;
+        assert!(index_oracle
+            .update_status(&admin, &mut app, ContractStatus::Normal)
+            .is_ok());
+        assert!(index_oracle
+            .update_config(&user, &mut app, None, None, Some(new_when_stale))
+            .is_err());
+        assert!(index_oracle
+            .update_config(&admin, &mut app, None, None, Some(new_when_stale))
+            .is_ok());
+
+        let new_config = index_oracle.query_index_data(&app).unwrap();
+        assert_ne!(original_config.when_stale, new_config.when_stale);
+        assert_eq!(new_config.when_stale.u64(), new_when_stale);
+    }
 
     #[rstest]
     #[case(
@@ -81,7 +329,8 @@ mod test {
             ],
             10u128.pow(18).into(), // $1
             10u128.pow(18).into(), // $1
-            10u128.pow(10).into(), // .000001% error
+            (1_05 * 10u128.pow(16)).into(),
+            (1_05 * 10u128.pow(16)).into(),
     )]
     #[case(
         "INDEX",
@@ -99,7 +348,8 @@ mod test {
         ],
         (10u128.pow(18)).into(),
         (10u128.pow(18)).into(),
-        (10u128.pow(10)).into(), // .000001% error
+        (1_15 * 10u128.pow(16)).into(),
+        (1_15 * 10u128.pow(16)).into(),
     )]
     #[case(
             "SILK",
@@ -139,27 +389,29 @@ mod test {
             ],
             (1_05 * 10u128.pow(16)).into(),
             (1_05 * 10u128.pow(16)).into(),
-            10u128.pow(10).into() // .000001% error
+            (10u128.pow(18)).into(),
+            (10u128.pow(18)).into(),
         )]
-    fn basic_index_test(
+    fn test_index_math(
         #[case] symbol: String,
         #[case] basket: Vec<(&str, &str)>,
         #[case] prices: Vec<(&str, u128)>,
         #[case] target: Uint128,
         #[case] expected: Uint256,
-        #[case] error: Uint128,
+        #[case] new_target: Uint128,
+        #[case] expected_new: Uint256,
     ) {
         let basket = IndexOracleHelper::create_basket(basket);
         let TestScenario {
             mut app,
             router,
             admin,
+            user,
             ..
         } = TestScenario::new(prices);
-        let user = admin;
 
         let index_oracle = IndexOracleHelper::init(
-            &user,
+            &admin,
             &mut app,
             &router.clone().into(),
             &basket,
@@ -170,27 +422,25 @@ mod test {
 
         // Configure router w/ index oracle
         router
-            .set_keys(&user, &mut app, index_oracle.0.into(), vec![symbol.clone()])
+            .set_keys(&admin, &mut app, index_oracle.0.clone().into(), vec![symbol.clone()])
             .unwrap();
 
-        let price = router.query_price(&app, symbol).unwrap();
+        let price = router.query_price(&app, symbol.clone()).unwrap();
+        let prices = router.query_prices(&app, vec![symbol.clone()]).unwrap();
+        assert_eq!(price, prices[0]);
         let data = price.data();
 
-        {
-            let err = if data.rate > expected {
-                data.rate - expected
-            } else {
-                expected - data.rate
-            };
-            let acceptable = expected.multiply_ratio(error, 10u128.pow(18));
+        MathAsserter::within_deviation(expected, data.rate, TestScenario::ERROR);
 
-            assert!(
-                err <= acceptable,
-                "price: {}, expected: {}, exceeds acceptable error",
-                data.rate,
-                expected
-            );
-        };
+        assert!(index_oracle.update_target(&user, &mut app, new_target).is_err());
+        assert!(index_oracle.update_target(&admin, &mut app, new_target).is_ok());
+
+        let price = router.query_price(&app, symbol.clone()).unwrap();
+        let prices = router.query_prices(&app, vec![symbol]).unwrap();
+        assert_eq!(price, prices[0]);
+        let data = price.data();
+        MathAsserter::within_deviation(expected_new, data.rate, TestScenario::ERROR);
+
     }
 
     /* - Setup oracle with symbol, basket, prices, & target -- check against expected_initial
@@ -227,7 +477,6 @@ mod test {
             10u128.pow(18), // $1
             // expected final
             98 * 10u128.pow(16), // $0.98
-            10u128.pow(10), // .000001% error
         )]
     #[case(
             "AnIndex",
@@ -268,10 +517,9 @@ mod test {
             10 * 10u128.pow(18), // $10
             // expected final
             11_325 * 10u128.pow(15), // $11.325
-            10u128.pow(10), // .000001% error
         )
     ]
-    fn mod_index_test(
+    fn test_mod_basket(
         #[case] symbol: String,
         #[case] basket: Vec<(&str, &str)>,
         #[case] prices: Vec<(&str, u128)>,
@@ -281,7 +529,6 @@ mod test {
         #[case] target: u128,
         #[case] expected_initial: u128,
         #[case] expected_final: u128,
-        #[case] error: u128,
     ) {
         let basket = IndexOracleHelper::create_basket(basket);
         let mod_basket: Vec<(String, Decimal256)> = IndexOracleHelper::create_basket(mod_basket);
@@ -292,7 +539,6 @@ mod test {
         let target: Uint128 = target.into();
         let expected_initial: Uint128 = expected_initial.into();
         let expected_final: Uint128 = expected_final.into();
-        let error: Uint128 = error.into();
 
         let new_prices: HashMap<String, Uint128> = OracleCore::create_prices_hashmap(new_prices).1;
 
@@ -300,13 +546,13 @@ mod test {
             mut app,
             router,
             admin,
+            user,
             provider,
             ..
         } = TestScenario::new(prices);
-        let user = admin;
 
         let index_oracle = IndexOracleHelper::init(
-            &user,
+            &admin,
             &mut app,
             &router.clone().into(),
             &basket,
@@ -318,7 +564,7 @@ mod test {
         // Configure router w/ index oracle
         router
             .set_keys(
-                &user,
+                &admin,
                 &mut app,
                 index_oracle.0.clone().into(),
                 vec![symbol.clone()],
@@ -329,50 +575,26 @@ mod test {
 
         let data = price.data();
         let expected_initial = Uint256::from_uint128(expected_initial);
-        {
-            let err = if data.rate > expected_initial {
-                data.rate - expected_initial
-            } else {
-                expected_initial - data.rate
-            };
-            let acceptable = expected_initial.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(
-                err <= acceptable,
-                "price: {}, expected: {}, exceeds acceptable error",
-                data.rate,
-                expected_initial
-            );
-        };
+        MathAsserter::within_deviation(expected_initial, data.rate, TestScenario::ERROR);
 
         // Update mock provider prices
-        provider.update_band_prices(&user, &mut app, new_prices, None);
+        provider.update_band_prices(&admin, &mut app, new_prices, None);
 
         let price = router.query_price(&app, symbol.clone()).unwrap();
 
         let data = price.data();
         let expected_final = Uint256::from_uint128(expected_final);
 
-        {
-            let err = if data.rate > expected_final {
-                data.rate - expected_final
-            } else {
-                expected_final - data.rate
-            };
-            let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
-
-            assert!(
-                err <= acceptable,
-                "Price change check failed price: {}, expected: {}, exceeds acceptable error",
-                data.rate,
-                expected_final
-            );
-        };
+        MathAsserter::within_deviation(expected_final, data.rate, TestScenario::ERROR);
 
         // Update basket
-        index_oracle
+        assert!(index_oracle
             .mod_basket(&user, &mut app, &mod_basket)
-            .unwrap();
+            .is_err());
+        assert!(index_oracle
+            .mod_basket(&admin, &mut app, &mod_basket)
+            .is_ok());
 
         // check basket changed
         let BasketResponse { mut basket } = index_oracle.query_basket(&app).unwrap();
@@ -390,21 +612,7 @@ mod test {
 
         // check price doesn't change on mod_price
         let price = router.query_price(&app, symbol.clone()).unwrap();
-        let data = price.data();
-        {
-            let err = if data.rate > expected_final {
-                data.rate - expected_final
-            } else {
-                expected_final - data.rate
-            };
-            let acceptable = expected_final.multiply_ratio(error, 10u128.pow(18));
 
-            assert!(
-                err <= acceptable,
-                "Post-Mod price: {}, expected: {}, exceeds acceptable error",
-                data.rate,
-                expected_final
-            );
-        };
+        MathAsserter::within_deviation(expected_final, price.data().rate, TestScenario::ERROR);
     }
 }

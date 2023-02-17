@@ -1,12 +1,11 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult};
-use shade_oracles::protocols::shadeswap::{ShadeSwapQueryMsgResponse, PairInfo};
+use shade_oracles::protocols::shadeswap::{PairInfo, ShadeSwapQueryMsgResponse};
 use shade_oracles::{
     core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::shadeswap::{
-        Fee, FeeInfo, QueryMsg, SwapResult, SwapSimulationResponse, TokenPair,
-        TokenType,
+        Fee, FeeInfo, QueryMsg, SwapResult, SwapSimulationResponse, TokenPair, TokenType,
     },
     ssp::Item,
 };
@@ -112,9 +111,29 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetPairInfo {} => {
-            let PairInfo { liquidity_token, factory, pair, amount_0, amount_1, total_liquidity, contract_version, fee_info, stable_info } = PAIR_INFO.load(deps.storage)?;
-            to_binary(&ShadeSwapQueryMsgResponse::GetPairInfo { liquidity_token, factory, pair, amount_0, amount_1, total_liquidity, contract_version, fee_info, stable_info })
-        },
+            let PairInfo {
+                liquidity_token,
+                factory,
+                pair,
+                amount_0,
+                amount_1,
+                total_liquidity,
+                contract_version,
+                fee_info,
+                stable_info,
+            } = PAIR_INFO.load(deps.storage)?;
+            to_binary(&ShadeSwapQueryMsgResponse::GetPairInfo {
+                liquidity_token,
+                factory,
+                pair,
+                amount_0,
+                amount_1,
+                total_liquidity,
+                contract_version,
+                fee_info,
+                stable_info,
+            })
+        }
         QueryMsg::SwapSimulation {
             offer,
             exclude_fee: _,
