@@ -127,26 +127,19 @@ pub fn query_price(
     )?;
     let pair_resp = ShadeSwapQuerier::query_pair_info(querier, &data.pair)?;
 
-    if pair_resp.is_stableswap() {
-        Err(StdError::generic_err(format!(
-            "Pair {} is a stableswap pair which is not supported by this oracle.",
-            data.pair.address
-        )))
-    } else {
-        let lp_token_info = query_token_info(&pair_resp.liquidity_token, querier)?;
+    let lp_token_info = query_token_info(&pair_resp.liquidity_token, querier)?;
 
-        let reserves_0 = pair_resp.amount_0;
-        let reserves_1 = pair_resp.amount_1;
+    let reserves_0 = pair_resp.amount_0;
+    let reserves_1 = pair_resp.amount_1;
 
-        let data = GenericLiquidityPairOracle::calculate_lp_token_spot_rate(
-            data,
-            lp_token_info,
-            reserves_0,
-            reserves_1,
-            &[&prices[0], &prices[1]],
-        )?;
-        Ok(OraclePrice::new(key, data))
-    }
+    let data = GenericLiquidityPairOracle::calculate_lp_token_spot_rate(
+        data,
+        lp_token_info,
+        reserves_0,
+        reserves_1,
+        &[&prices[0], &prices[1]],
+    )?;
+    Ok(OraclePrice::new(key, data))
 }
 
 pub fn query_prices(

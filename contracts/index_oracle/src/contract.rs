@@ -61,6 +61,7 @@ pub fn execute(
     Ok(pad_handle_result(Ok(resp), BLOCK_SIZE)?)
 }
 
+/// Callable by anyone. Computes the index and updates the target, freezing it if the oracle prices are stale.
 pub fn try_compute_index(
     deps: DepsMut,
     env: Env,

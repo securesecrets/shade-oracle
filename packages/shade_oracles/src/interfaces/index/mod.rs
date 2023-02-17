@@ -57,7 +57,8 @@ mod state {
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{
-        core::{bankers_round, muldiv_fp},
+        core::{bankers_round, muldiv, muldiv_fp},
+        ud60x18::div,
         U256,
     };
     use cosmwasm_std::{StdResult, Storage, Timestamp, Uint128};
@@ -253,7 +254,7 @@ mod state {
                 // Can't overflow because initial weight cannot be greater than 10^19 and target will
                 // always be reasonably small (we can arbitrarily say 10^30 is worst case), but
                 // it will initially be at 10^18 if it is 1.05.
-                let fixed_weight = (weight.initial * self.target.value) / price;
+                let fixed_weight = muldiv(weight.initial, self.target.value, price)?;
                 self.basket
                     .entry(asset_symbol.to_string())
                     .and_modify(|weight| {
@@ -277,7 +278,7 @@ mod state {
                 // Can't overflow because initial weight cannot be greater than 10^19 and target will
                 // always be reasonably small (we can arbitrarily say 10^30 is worst case), but
                 // it will initially be at 10^18 if it is 1.05.
-                let new_weight = bankers_round((weight.fixed * price) / new_target, 1);
+                let new_weight = bankers_round(muldiv(weight.fixed, price, new_target)?, 1);
                 self.basket
                     .entry(asset_symbol.to_string())
                     .and_modify(|weight| {
@@ -352,7 +353,8 @@ mod state {
                 new_target += muldiv_fp(weight.fixed, price)?;
             }
             let last_updated_feeds = min(last_updated_base, last_updated_quote);
-            Ok((new_target, last_updated_feeds))
+            // Smooth out peg calculation to 10e-9 precision
+            Ok((bankers_round(new_target, 9), last_updated_feeds))
         }
     }
 

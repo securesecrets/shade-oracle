@@ -76,7 +76,7 @@ mod shadeswap {
     use super::*;
     use multi_test_helpers::AppResult;
     use oracle_mocks::shadeswap_pair::contract::*;
-    use shade_oracles::protocols::shadeswap::{PairInfoResponse, QueryMsg};
+    use shade_oracles::protocols::shadeswap::{PairInfo, QueryMsg, ShadeSwapQueryMsgResponse};
 
     create_test_helper!(MockShadeswapPairHelper);
 
@@ -107,8 +107,33 @@ mod shadeswap {
                 &self.0,
             )
         }
-        pub fn query_pair_info(&self, app: &App) -> PairInfoResponse {
-            QueryMsg::GetPairInfo {}.test_query(&self.0, app).unwrap()
+        pub fn query_pair_info(&self, app: &App) -> PairInfo {
+            let msg: ShadeSwapQueryMsgResponse =
+                QueryMsg::GetPairInfo {}.test_query(&self.0, app).unwrap();
+            match msg {
+                ShadeSwapQueryMsgResponse::GetPairInfo {
+                    liquidity_token,
+                    factory,
+                    pair,
+                    amount_0,
+                    amount_1,
+                    total_liquidity,
+                    contract_version,
+                    fee_info,
+                    stable_info,
+                } => PairInfo {
+                    liquidity_token,
+                    factory,
+                    pair,
+                    amount_0,
+                    amount_1,
+                    total_liquidity,
+                    contract_version,
+                    fee_info,
+                    stable_info,
+                },
+                _ => panic!("unexpected response"),
+            }
         }
     }
 

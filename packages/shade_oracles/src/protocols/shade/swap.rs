@@ -8,11 +8,32 @@ use super::*;
 pub struct ShadeSwapQuerier;
 
 impl ShadeSwapQuerier {
-    pub fn query_pair_info(
-        querier: &QuerierWrapper,
-        pair: &Contract,
-    ) -> StdResult<PairInfoResponse> {
-        QueryMsg::GetPairInfo {}.query(querier, pair)
+    pub fn query_pair_info(querier: &QuerierWrapper, pair: &Contract) -> StdResult<PairInfo> {
+        let resp: ShadeSwapQueryMsgResponse = QueryMsg::GetPairInfo {}.query(querier, pair)?;
+        match resp {
+            ShadeSwapQueryMsgResponse::GetPairInfo {
+                liquidity_token,
+                factory,
+                pair,
+                amount_0,
+                amount_1,
+                total_liquidity,
+                contract_version,
+                fee_info,
+                stable_info,
+            } => Ok(PairInfo {
+                liquidity_token,
+                factory,
+                pair,
+                amount_0,
+                amount_1,
+                total_liquidity,
+                contract_version,
+                fee_info,
+                stable_info,
+            }),
+            _ => Err(StdError::generic_err("Unexpected response")),
+        }
     }
     pub fn query_swap_simulation(
         querier: &QuerierWrapper,
@@ -26,11 +47,27 @@ impl ShadeSwapQuerier {
             oracle_key: None,
         };
         let offer = TokenAmount { token, amount };
-        QueryMsg::SwapSimulation {
+        let resp: ShadeSwapQueryMsgResponse = QueryMsg::SwapSimulation {
             offer,
             exclude_fee: Some(true),
         }
-        .query(querier, pair)
+        .query(querier, pair)?;
+        match resp {
+            ShadeSwapQueryMsgResponse::SwapSimulation {
+                total_fee_amount,
+                lp_fee_amount,
+                shade_dao_fee_amount,
+                result,
+                price,
+            } => Ok(SwapSimulationResponse {
+                total_fee_amount,
+                lp_fee_amount,
+                shade_dao_fee_amount,
+                result,
+                price,
+            }),
+            _ => Err(StdError::generic_err("Unexpected response")),
+        }
     }
     pub fn query_stableswap_simulation(
         querier: &QuerierWrapper,
@@ -67,7 +104,7 @@ impl Query for QueryMsg {
 }
 
 #[cw_serde]
-pub struct PairInfoResponse {
+pub struct PairInfo {
     pub liquidity_token: Contract,
     pub factory: Option<Contract>,
     pub pair: TokenPair,
@@ -79,7 +116,7 @@ pub struct PairInfoResponse {
     pub stable_info: Option<StablePairInfoResponse>,
 }
 
-impl PairInfoResponse {
+impl PairInfo {
     pub fn is_stableswap(&self) -> bool {
         self.pair.2
     }
@@ -88,17 +125,35 @@ impl PairInfoResponse {
 #[cw_serde]
 pub struct StablePairInfoResponse {
     pub stable_params: StableParams,
+    pub stable_token0_data: StableTokenData,
+    pub stable_token1_data: StableTokenData,
+    //p is optional so that the PairInfo query can still return even when the calculation of p fails
     pub p: Option<Decimal256>,
 }
 
-#[cw_serde]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct StableTokenData {
+    pub oracle_key: String,
+    pub decimals: u8,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct CustomIterationControls {
+    pub epsilon: Uint256, // assumed to have same decimals as SignedDecimal
+    pub max_iter_newton: u16,
+    pub max_iter_bisect: u16,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct StableParams {
     pub a: Decimal256,
     pub gamma1: Uint256,
     pub gamma2: Uint256,
     pub oracle: Contract,
-    pub min_trade_size: Decimal256,
+    pub min_trade_size_x_for_y: Decimal256,
+    pub min_trade_size_y_for_x: Decimal256,
     pub max_price_impact_allowed: Decimal256,
+    pub custom_iteration_controls: Option<CustomIterationControls>,
 }
 
 #[cw_serde]
@@ -245,4 +300,26 @@ pub struct FeeInfo {
     pub shade_dao_fee: Fee,
     pub stable_lp_fee: Fee,
     pub stable_shade_dao_fee: Fee,
+}
+
+#[cw_serde]
+pub enum ShadeSwapQueryMsgResponse {
+    GetPairInfo {
+        liquidity_token: Contract,
+        factory: Option<Contract>,
+        pair: TokenPair,
+        amount_0: Uint128,
+        amount_1: Uint128,
+        total_liquidity: Uint128,
+        contract_version: u32,
+        fee_info: FeeInfo,
+        stable_info: Option<StablePairInfoResponse>,
+    },
+    SwapSimulation {
+        total_fee_amount: Uint128,
+        lp_fee_amount: Uint128,
+        shade_dao_fee_amount: Uint128,
+        result: SwapResult,
+        price: String,
+    },
 }

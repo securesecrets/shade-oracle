@@ -1,5 +1,6 @@
 use super::router::OracleRouterHelper;
 use super::*;
+use cosmwasm_std::Timestamp;
 use multi_test_helpers::admin_auth::AdminAuthHelper;
 use shade_oracles::interfaces::providers::mock::{BandExecuteMsg, BandMockPrice, MockPrice};
 use shade_oracles::interfaces::providers::{self, Provider, RawProvider};
@@ -216,8 +217,12 @@ pub struct TestScenario {
 }
 
 impl TestScenario {
+    // 1e-15
+    pub const ERROR: Decimal256 = Decimal256::new(Uint256::from_u128(100u128));
+
     pub fn new(prices: Vec<(impl Into<String> + Clone, impl Into<Uint128>)>) -> Self {
         let mut app = App::default();
+        app.update_block(|b| b.time = Timestamp::from_seconds(0));
         let bot = User::new("bot");
         let admin = User::new("superadmin");
         let user = User::new("user");
