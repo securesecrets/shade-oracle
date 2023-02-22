@@ -22,9 +22,6 @@ serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = "1.0"
 shade-oracles = { path = "../shade_oracles" }
 
-# Shade
-better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
-
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test", "admin", "airdrop" ] }
 multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }

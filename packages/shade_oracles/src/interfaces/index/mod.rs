@@ -57,8 +57,7 @@ mod state {
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{
-        core::{bankers_round, muldiv, muldiv_fp},
-        ud60x18::div,
+        common::{bankers_round, muldiv, muldiv18},
         U256,
     };
     use cosmwasm_std::{StdResult, Storage, Timestamp, Uint128};
@@ -350,7 +349,7 @@ mod state {
                 let asset_symbol = price.key();
                 let weight = &self.basket[asset_symbol];
                 let price: U256 = price.data.rate.into();
-                new_target += muldiv_fp(weight.fixed, price)?;
+                new_target += muldiv18(weight.fixed, price)?;
             }
             let last_updated_feeds = min(last_updated_base, last_updated_quote);
             // Smooth out peg calculation to 10e-9 precision
@@ -365,7 +364,7 @@ mod state {
         use crate::{
             interfaces::common::OraclePrice, unit_test_interface::prices::generate_price_feed,
         };
-        use better_secret_math::{core::exp10, ud60x18::assert_with_precision};
+        use better_secret_math::{common::exp10, asserter::MathAsserter};
 
         fn basic_basket() -> Vec<InitialBasketItem> {
             vec![
@@ -435,14 +434,14 @@ mod state {
                 .compute_target(Some(&feed_0()), &timestamp)
                 .unwrap();
 
-            assert_with_precision(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
 
             index_oracle
                 .compute_target(Some(&feed_1()), &timestamp)
                 .unwrap();
 
             let target = U256::new(112u128) * exp10(16);
-            assert_with_precision(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
         }
 
         #[test]
@@ -456,7 +455,7 @@ mod state {
                 .compute_target(Some(&feed_0()), &timestamp)
                 .unwrap();
 
-            assert_with_precision(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
 
             let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
 
@@ -466,7 +465,7 @@ mod state {
 
             assert!(index_oracle.target.frozen);
             assert_eq!(index_oracle.target.last_updated, 0u64);
-            assert_with_precision(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
         }
 
         #[test]
@@ -481,7 +480,7 @@ mod state {
                 .compute_target(Some(&feed_2()), &timestamp)
                 .unwrap();
 
-            assert_with_precision(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
 
             let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
 
@@ -491,7 +490,7 @@ mod state {
 
             assert!(index_oracle.target.frozen);
             assert_eq!(index_oracle.target.last_updated, 0u64);
-            assert_with_precision(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
 
             index_oracle.rollback(&feed_3(), &timestamp).unwrap();
             index_oracle
@@ -500,7 +499,7 @@ mod state {
 
             assert!(!index_oracle.target.frozen);
             assert_eq!(index_oracle.target.last_updated, 0u64);
-            assert_with_precision(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
         }
     }
 }
