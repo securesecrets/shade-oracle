@@ -30,3 +30,4 @@ ui/nohup.out
 node_modules/
 artifacts/
 .cargo/
+coverage/

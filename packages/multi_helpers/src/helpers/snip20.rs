@@ -1,7 +1,9 @@
 use super::*;
-use better_secret_math::U256;
 use shade_multi_test::multi::snip20::Snip20;
-use shade_oracles::asset::{Asset, RawAsset};
+use shade_oracles::{
+    asset::{Asset, RawAsset},
+    better_secret_math::U256,
+};
 use shade_protocol::snip20::{helpers::TokenInfo, *};
 
 create_test_helper!(Snip20Helper);

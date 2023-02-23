@@ -32,7 +32,7 @@ serde = { version = "1.0.103", default-features = false, features = [
 ] }
 thiserror = "1.0"
 
-borsh = "0.10.0"
+borsh = "0.10.2"
 paste = "1.0"
 derive-from-ext = "0.2"
 ts-rs = "6.2"

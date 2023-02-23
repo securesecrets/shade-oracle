@@ -2,7 +2,7 @@
 use super::asset::Asset;
 use super::*;
 use better_secret_math::{
-    core::{bankers_round, exp10, muldiv},
+    common::{bankers_round, exp10, muldiv},
     ud60x18::{mul, sqrt},
     U256,
 };
@@ -93,7 +93,7 @@ impl LiquidityPoolMath {
 
 #[cfg(test)]
 pub mod test {
-    use better_secret_math::core::abs_diff;
+    use better_secret_math::common::abs_diff;
     use cosmwasm_std::Decimal256;
 
     use super::*;

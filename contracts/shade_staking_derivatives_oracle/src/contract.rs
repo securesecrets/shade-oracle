@@ -2,7 +2,7 @@ use cosmwasm_std::{
     entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdResult, Storage,
 };
 use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse, Uint128};
-use shade_oracles::better_secret_math::core::exp10;
+use shade_oracles::better_secret_math::common::exp10;
 use shade_oracles::core::{pad_handle_result, pad_query_result};
 use shade_oracles::interfaces::common::config::{CommonConfig, CommonConfigResponse};
 use shade_oracles::interfaces::common::{OraclePrice, PriceResponse, PricesResponse};

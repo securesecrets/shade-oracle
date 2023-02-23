@@ -2,7 +2,7 @@ use std::cmp::max;
 
 use super::*;
 use crate::BLOCK_SIZE;
-use better_secret_math::core::{exp10, muldiv};
+use better_secret_math::common::{exp10, muldiv};
 use better_secret_math::U256;
 use shade_protocol::utils::Query;
 
