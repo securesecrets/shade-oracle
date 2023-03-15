@@ -267,8 +267,14 @@ mod state {
             prices: &[OraclePrice],
             time: &Timestamp,
         ) -> IndexOracleResult<()> {
+            if self.target.frozen != true {
+                return Err(IndexOracleError::RollbackNotFrozen {});
+            }
             let now = time.seconds();
-            let (new_target, _) = self._compute_target(prices, now)?;
+            let (new_target, last_updated_feeds) = self._compute_target(prices, now)?;
+            if now - last_updated_feeds > self.config.when_stale {
+                return Err(IndexOracleError::RollbackStale { oldest_price: last_updated_feeds });
+            }
             let mut initial_weight = U256::ZERO;
             for price in prices {
                 let asset_symbol = price.key();

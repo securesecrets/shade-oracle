@@ -223,6 +223,7 @@ mod test {
         let info = index_oracle.query_index_data(&app).unwrap();
         assert!(info.target.frozen);
         assert_eq!(info.target.last_updated, Uint64::zero());
+        assert!(index_oracle.unfreeze(&admin, &mut app).is_err());
 
         // Push new prices
         let (_, new_prices) = OracleCore::create_prices_hashmap(new_prices);
