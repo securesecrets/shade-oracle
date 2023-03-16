@@ -127,6 +127,9 @@ pub fn try_update_target(
     mut oracle: IndexOracle,
     new_target: Uint128,
 ) -> IndexOracleResult<Response> {
+    if oracle.target.frozen {
+        return Err(IndexOracleError::FrozenPeg);
+    }
     let prices = query_prices(
         &oracle.config.router,
         &deps.querier,
@@ -137,7 +140,7 @@ pub fn try_update_target(
     oracle.compute_fixed_weights(prices.as_slice())?;
     oracle.save(deps.storage)?;
     Ok(Response::new().add_attributes(vec![
-        attr_action!("unfreeze"),
+        attr_action!("update_target"),
         attr("new_target", new_target),
     ]))
 }
@@ -198,6 +201,9 @@ pub fn try_mod_basket(
     mod_basket: impl IntoIterator<Item = (String, Decimal256)>,
     mut oracle: IndexOracle,
 ) -> IndexOracleResult<Response> {
+    if oracle.target.frozen {
+        return Err(IndexOracleError::FrozenPeg);
+    }
     // Compute target with old weights
     let router = oracle.config.router.clone();
     let prices = query_prices(&router, &deps.querier, oracle.asset_symbols.as_slice())?;

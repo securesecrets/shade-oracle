@@ -13,6 +13,8 @@ build_oracle_error! {IndexOracle {
     EmptyBasket,
     #[error("Cannot remove symbol that does not exist: {asset}.")]
     BasketAssetNotFound { asset: String },
+    #[error("Cannot modify basket or target when peg is frozen")]
+    FrozenPeg,
     #[error("Cannot rollback oracle if it isn't frozen.")]
     RollbackNotFrozen,
     #[error("Prices are still stale so oracle cannot be rolled back. (Oldest price is {oldest_price}.)")]

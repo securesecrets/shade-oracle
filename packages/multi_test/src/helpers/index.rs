@@ -133,6 +133,14 @@ mod test {
     };
     use std::{convert::TryInto, str::FromStr};
 
+    fn usd_basket() -> Vec<InitialBasketItem> {
+        vec![("USD".into(), Decimal256::percent(100)),
+        ("EURO".into(), Decimal256::percent(0)),
+        ("GDP".into(), Decimal256::percent(0)),
+        ("JPY".into(), Decimal256::percent(0)),
+        ]
+    }
+
     fn basic_basket() -> Vec<InitialBasketItem> {
         vec![
             ("USD".into(), Decimal256::percent(25)),
@@ -616,4 +624,52 @@ mod test {
 
         MathAsserter::within_deviation(expected_final, price.data().rate, TestScenario::ERROR);
     }
+
+    #[test]
+    fn test_multiple_basket_updates() {
+        let prices: Vec<(String, Uint128)> = feed_2()
+            .iter()
+            .map(|p| (p.key.clone(), p.data.rate.try_into().unwrap()))
+            .collect();
+        let TestScenario {
+            mut app,
+            router,
+            admin,
+            ..
+        } = TestScenario::new(prices);
+        let target = Uint128::from(1 * 10u128.pow(18));
+        let symbol = "SILK".to_string();
+        let usd_basket = usd_basket();
+        let world_basket = basic_basket();
+        let index_oracle = IndexOracleHelper::init(
+            &admin,
+            &mut app,
+            &router.clone().into(),
+            &usd_basket,
+            target,
+            &symbol,
+            SIX_HOURS,
+        );
+
+        // Configure router w/ index oracle
+        router
+            .set_keys(
+                &admin,
+                &mut app,
+                index_oracle.0.clone().into(),
+                vec![symbol.clone()],
+            )
+            .unwrap();
+
+        let price = router.query_price(&app, symbol.clone()).unwrap();
+        MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
+
+        let basket_states = vec![&world_basket, &usd_basket, &world_basket];
+        for basket in basket_states {
+            assert!(index_oracle.mod_basket(&admin, &mut app, &basket).is_ok());
+            let price = router.query_price(&app, symbol.clone()).unwrap();
+            MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);    
+        }
+    }
+
 }

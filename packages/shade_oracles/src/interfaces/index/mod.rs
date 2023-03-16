@@ -57,7 +57,7 @@ mod state {
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{
-        common::{bankers_round, muldiv, muldiv18},
+        common::{bankers_round, muldiv, muldiv18, exp10},
         U256,
     };
     use cosmwasm_std::{StdResult, Storage, Timestamp, Uint128};
@@ -191,15 +191,17 @@ mod state {
                     });
                 }
 
+                let is_mod_sym_in_basket = self.asset_symbols.contains(&mod_sym);
+
                 // gather new symbols for fetching
                 // if all of the symbols don't match mod_sym then mod_sym is new
-                if !self.asset_symbols.contains(&mod_sym) && !mod_weight.is_zero() {
+                if !is_mod_sym_in_basket && !mod_weight.is_zero() {
                     new_symbols.push(mod_sym.clone());
                     self.asset_symbols.push(mod_sym.clone());
                 }
 
                 // Symbol is to be removed and it existed before
-                if self.asset_symbols.contains(&mod_sym) && mod_weight.is_zero() {
+                if is_mod_sym_in_basket && mod_weight.is_zero() {
                     // Guaranteed to find it since it's existed before
                     weights
                         .swap_remove(weights.iter().position(|(sym, _)| mod_sym.eq(sym)).unwrap());
@@ -219,32 +221,26 @@ mod state {
 
                 // add new/updated weights
                 if !mod_weight.is_zero() {
-                    if let Some(prev_pos) = weights.iter().position(|(sym, _)| mod_sym.eq(sym)) {
-                        weights.swap_remove(prev_pos);
-                    }
-                    weights.push((mod_sym.clone(), mod_weight));
                     self.basket
                         .entry(mod_sym.clone())
-                        .or_insert_with(|| BtrAssetWeights::new(mod_weight.into(), U256::ZERO))
-                        .initial = mod_weight.into();
+                        .and_modify(|asset_weight| asset_weight.initial = mod_weight.into())
+                        .or_insert_with(|| BtrAssetWeights::new(mod_weight.into(), U256::ZERO));
                 }
             }
 
-            // Verify new weights
-            if weights.is_empty() {
-                return Err(IndexOracleError::EmptyBasket {});
-            }
-            let weight_sum = weights
-                .clone()
-                .into_iter()
-                .map(|(_, w)| w)
-                .sum::<Decimal256>();
+            // Verify new weights sum to 100%
+            let weight_sum = self
+                .basket
+                .iter()
+                .map(|(_, w)| w.initial)
+                .sum::<U256>();
 
-            if weight_sum != Decimal256::percent(100) {
-                return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum });
+            if weight_sum != exp10(18) {
+                return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum.into() });
             }
             Ok(new_symbols)
         }
+
         pub fn compute_fixed_weights(&mut self, prices: &[OraclePrice]) -> StdResult<()> {
             for price in prices {
                 let asset_symbol = price.key();
@@ -275,27 +271,32 @@ mod state {
             if now - last_updated_feeds > self.config.when_stale {
                 return Err(IndexOracleError::RollbackStale { oldest_price: last_updated_feeds });
             }
-            let mut initial_weight = U256::ZERO;
+            let mut initial_weight_sum = U256::ZERO;
+            let mut initial_weights = vec![];
             for price in prices {
                 let asset_symbol = price.key();
                 let weight = &self.basket[asset_symbol];
                 let price: U256 = price.data.rate.into();
-                // Can't overflow because initial weight cannot be greater than 10^19 and target will
-                // always be reasonably small (we can arbitrarily say 10^30 is worst case), but
-                // it will initially be at 10^18 if it is 1.05.
-                let new_weight = bankers_round(muldiv(weight.fixed, price, new_target)?, 1);
+                let new_weight = muldiv(weight.fixed, price, new_target)?;
+                initial_weight_sum += new_weight;
+                initial_weights.push((asset_symbol, new_weight));
+            }
+            let target_weight_sum = exp10(18);
+            for (asset_symbol, initial_weight) in initial_weights {
+                let normalized_weight = muldiv(initial_weight, target_weight_sum, initial_weight_sum)?;
                 self.basket
                     .entry(asset_symbol.to_string())
                     .and_modify(|weight| {
-                        initial_weight += new_weight;
-                        weight.initial = new_weight;
+                        weight.initial = normalized_weight;
                     });
             }
+
             self.compute_fixed_weights(prices)?;
             self.target.frozen = false;
             self.target.last_updated = now;
             Ok(())
         }
+
         pub fn compute_target(
             &mut self,
             prices: Option<&Vec<OraclePrice>>,
