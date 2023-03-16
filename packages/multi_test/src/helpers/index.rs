@@ -11,9 +11,10 @@ impl IndexOracleHelper {
         app: &mut App,
         router: &Contract,
         basket: &[(String, Decimal256)],
-        target: Uint128,
+        target: Uint256,
         symbol: &str,
         when_stale: u64,
+        deviation_threshold: Decimal256,
     ) -> Self {
         let contract = user
             .init(
@@ -24,6 +25,7 @@ impl IndexOracleHelper {
                     target,
                     symbol: symbol.to_string(),
                     when_stale: Uint64::new(when_stale),
+                    deviation_threshold,
                 },
                 IndexOracle::default(),
                 "index_oracle",
@@ -65,6 +67,7 @@ impl IndexOracleHelper {
         symbol: Option<String>,
         router: Option<Contract>,
         when_stale: Option<u64>,
+        deviation_threshold: Option<Decimal256>,
     ) -> AnyResult<AppResponse> {
         sender.exec(
             app,
@@ -72,6 +75,7 @@ impl IndexOracleHelper {
                 symbol,
                 router: router.map(|r| r.into()),
                 when_stale: when_stale.map(Uint64::new),
+                deviation_threshold,
             }),
             &self.0,
         )
@@ -81,7 +85,7 @@ impl IndexOracleHelper {
         &self,
         sender: &User,
         app: &mut App,
-        target: Uint128,
+        target: Uint256,
     ) -> AnyResult<AppResponse> {
         sender.exec(
             app,
@@ -91,7 +95,7 @@ impl IndexOracleHelper {
     }
 
     pub fn unfreeze(&self, sender: &User, app: &mut App) -> AnyResult<AppResponse> {
-        sender.exec(app, &ExecuteMsg::Admin(AdminMsg::Unfreeze {}), &self.0)
+        sender.exec(app, &ExecuteMsg::Admin(AdminMsg::UnfreezePeg {}), &self.0)
     }
 
     pub fn compute_index(&self, sender: &User, app: &mut App) -> AnyResult<AppResponse> {
@@ -195,7 +199,7 @@ mod test {
             user,
             ..
         } = TestScenario::new(prices);
-        let target = Uint128::from(105 * 10u128.pow(16));
+        let target = Uint256::from_u128(105 * 10u128.pow(16));
         let symbol = "SILK".to_string();
         let basket = basic_basket();
         let t2 = SIX_HOURS + 10;
@@ -207,6 +211,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
+            Decimal256::percent(10)
         );
 
         // Configure router w/ index oracle
@@ -229,8 +234,8 @@ mod test {
         let price = router.query_price(&app, symbol.clone()).unwrap();
         MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
         let info = index_oracle.query_index_data(&app).unwrap();
-        assert!(info.target.frozen);
-        assert_eq!(info.target.last_updated, Uint64::zero());
+        assert!(info.peg.frozen);
+        assert_eq!(info.peg.last_updated, Uint64::zero());
         assert!(index_oracle.unfreeze(&admin, &mut app).is_err());
 
         // Push new prices
@@ -244,8 +249,8 @@ mod test {
         let price = router.query_price(&app, symbol.clone()).unwrap();
         MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
         let info = index_oracle.query_index_data(&app).unwrap();
-        assert!(!info.target.frozen);
-        assert_eq!(info.target.last_updated, Uint64::new(t2));
+        assert!(!info.peg.frozen);
+        assert_eq!(info.peg.last_updated, Uint64::new(t2));
     }
 
     #[test]
@@ -261,7 +266,7 @@ mod test {
             user,
             ..
         } = TestScenario::new(prices);
-        let target = Uint128::from(105 * 10u128.pow(16));
+        let target = Uint256::from_u128(105 * 10u128.pow(16));
         let symbol = "SILK".to_string();
         let basket = basic_basket();
 
@@ -273,6 +278,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
+            Decimal256::percent(10)
         );
 
         router
@@ -316,10 +322,10 @@ mod test {
             .update_status(&admin, &mut app, ContractStatus::Normal)
             .is_ok());
         assert!(index_oracle
-            .update_config(&user, &mut app, None, None, Some(new_when_stale))
+            .update_config(&user, &mut app, None, None, Some(new_when_stale), None)
             .is_err());
         assert!(index_oracle
-            .update_config(&admin, &mut app, None, None, Some(new_when_stale))
+            .update_config(&admin, &mut app, None, None, Some(new_when_stale), None)
             .is_ok());
 
         let new_config = index_oracle.query_index_data(&app).unwrap();
@@ -405,9 +411,9 @@ mod test {
         #[case] symbol: String,
         #[case] basket: Vec<(&str, &str)>,
         #[case] prices: Vec<(&str, u128)>,
-        #[case] target: Uint128,
+        #[case] target: Uint256,
         #[case] expected: Uint256,
-        #[case] new_target: Uint128,
+        #[case] new_target: Uint256,
         #[case] expected_new: Uint256,
     ) {
         let basket = IndexOracleHelper::create_basket(basket);
@@ -427,6 +433,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
+            Decimal256::percent(10)
         );
 
         // Configure router w/ index oracle
@@ -545,9 +552,9 @@ mod test {
             .into_iter()
             .map(|(sym, w)| (sym.to_string(), Decimal256::from_str(w).unwrap()))
             .collect();
-        let target: Uint128 = target.into();
-        let expected_initial: Uint128 = expected_initial.into();
-        let expected_final: Uint128 = expected_final.into();
+        let target: Uint256 = target.into();
+        let expected_initial: Uint256 = expected_initial.into();
+        let expected_final: Uint256 = expected_final.into();
 
         let new_prices: HashMap<String, Uint128> = OracleCore::create_prices_hashmap(new_prices).1;
 
@@ -568,6 +575,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
+            Decimal256::percent(20)
         );
 
         // Configure router w/ index oracle
@@ -583,7 +591,6 @@ mod test {
         let price = router.query_price(&app, symbol.clone()).unwrap();
 
         let data = price.data();
-        let expected_initial = Uint256::from_uint128(expected_initial);
 
         MathAsserter::within_deviation(expected_initial, data.rate, TestScenario::ERROR);
 
@@ -593,7 +600,6 @@ mod test {
         let price = router.query_price(&app, symbol.clone()).unwrap();
 
         let data = price.data();
-        let expected_final = Uint256::from_uint128(expected_final);
 
         MathAsserter::within_deviation(expected_final, data.rate, TestScenario::ERROR);
 
@@ -637,7 +643,7 @@ mod test {
             admin,
             ..
         } = TestScenario::new(prices);
-        let target = Uint128::from(1 * 10u128.pow(18));
+        let target = Uint256::from_u128(1 * 10u128.pow(18));
         let symbol = "SILK".to_string();
         let usd_basket = usd_basket();
         let world_basket = basic_basket();
@@ -649,6 +655,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
+            Decimal256::percent(10)
         );
 
         // Configure router w/ index oracle

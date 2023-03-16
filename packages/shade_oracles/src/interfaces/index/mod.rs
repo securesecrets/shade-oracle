@@ -14,6 +14,7 @@ pub struct IndexOracleConfig {
     pub router: Contract,
     /// The time difference between now and when the price feeds were last updated where we consider the price feeds to have gone stale.
     pub when_stale: u64,
+    pub deviation_threshold: Decimal256,
 }
 
 /// Symbol of an index asset
@@ -30,9 +31,10 @@ make_btr! {
 }
 
 make_btr! {
-    /// The target peg of the basket token
-    Target {
-        value: Uint128, U256, "Target price of the index asset";
+    /// The peg of the basket token
+    Peg {
+        target: Uint256, U256, "Target value of the peg";
+        value: Uint256, U256, "Peg price of the index asset";
         frozen: bool, bool, "Whether or not this value is frozen";
         last_updated: Uint64, u64, "When this value was last updated (in seconds)"
     }
@@ -40,7 +42,7 @@ make_btr! {
 
 use better_secret_math::U256;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Decimal256, Uint128, Uint64};
+use cosmwasm_std::{Decimal256, Uint64, Uint256};
 
 use shade_protocol::Contract;
 #[cfg(feature = "index")]
@@ -57,16 +59,16 @@ mod state {
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{
-        common::{bankers_round, muldiv, muldiv18, exp10},
+        common::{bankers_round, muldiv, muldiv18, exp10, abs_diff},
         U256,
     };
-    use cosmwasm_std::{StdResult, Storage, Timestamp, Uint128};
+    use cosmwasm_std::{StdResult, Storage, Timestamp};
 
     impl ItemStorage for IndexOracleConfig {
         const ITEM: Item<'static, Self> = Item::new("indexconfig");
     }
 
-    impl ItemStorage<Bincode2> for BtrTarget {
+    impl ItemStorage<Bincode2> for BtrPeg {
         const ITEM: Item<'static, Self, Bincode2> = Item::new("indextarget");
     }
 
@@ -84,12 +86,27 @@ mod state {
         pub config: IndexOracleConfig,
         pub asset_symbols: Vec<String>,
         pub basket: BtrBasket,
-        pub target: BtrTarget,
+        pub peg: BtrPeg,
     }
 
     impl_global_status!(IndexOracle, IndexOracleError);
 
     impl IndexOracle {
+        pub fn require_peg_within_deviation(&self) -> StdResult<()> {
+            let diff = abs_diff(self.peg.target, self.peg.value);
+            let expected: U256 = self.peg.target.into();
+            let deviation = Decimal256::from_ratio(diff, expected);
+            if deviation > self.config.deviation_threshold {
+                return Err(IndexOracleError::PegDeviation {
+                    peg: self.peg.value.into(),
+                    target: self.peg.target.into(),
+                    deviation: deviation.into(),
+                    threshold: self.config.deviation_threshold.into(),
+                }
+                .into());
+            }
+            Ok(())
+        }
         pub fn load(storage: &dyn Storage) -> StdResult<Self> {
             let config = IndexOracleConfig::load(storage)?;
             let asset_symbols = AssetSymbols::load(storage)?;
@@ -98,12 +115,12 @@ mod state {
                 let item = BtrAssetWeights::load(storage, symbol.as_str())?;
                 basket.insert(symbol.to_string(), item);
             }
-            let target = BtrTarget::load(storage)?;
+            let peg = BtrPeg::load(storage)?;
             Ok(Self {
                 config,
                 asset_symbols,
                 basket,
-                target,
+                peg,
             })
         }
         pub fn init(
@@ -111,7 +128,8 @@ mod state {
             router: Contract,
             when_stale: Uint64,
             weights: Vec<InitialBasketItem>,
-            target: Uint128,
+            target: Uint256,
+            deviation_threshold: Decimal256,
             time: &Timestamp,
         ) -> StdResult<Self> {
             if weights.is_empty() {
@@ -152,15 +170,16 @@ mod state {
                 return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum }.into());
             }
 
-            let target = BtrTarget::new(target.into(), false, time.seconds());
+            let peg = BtrPeg::new(target.into(), target.into(), false, time.seconds());
             Ok(Self {
                 config: IndexOracleConfig {
                     symbol: index_symbol,
                     router,
                     when_stale: when_stale.into(),
+                    deviation_threshold,
                 },
                 asset_symbols,
-                target,
+                peg,
                 basket,
             })
         }
@@ -249,7 +268,7 @@ mod state {
                 // Can't overflow because initial weight cannot be greater than 10^19 and target will
                 // always be reasonably small (we can arbitrarily say 10^30 is worst case), but
                 // it will initially be at 10^18 if it is 1.05.
-                let fixed_weight = muldiv(weight.initial, self.target.value, price)?;
+                let fixed_weight = muldiv(weight.initial, self.peg.value, price)?;
                 self.basket
                     .entry(asset_symbol.to_string())
                     .and_modify(|weight| {
@@ -263,7 +282,7 @@ mod state {
             prices: &[OraclePrice],
             time: &Timestamp,
         ) -> IndexOracleResult<()> {
-            if self.target.frozen != true {
+            if self.peg.frozen != true {
                 return Err(IndexOracleError::RollbackNotFrozen {});
             }
             let now = time.seconds();
@@ -292,12 +311,12 @@ mod state {
             }
 
             self.compute_fixed_weights(prices)?;
-            self.target.frozen = false;
-            self.target.last_updated = now;
+            self.peg.frozen = false;
+            self.peg.last_updated = now;
             Ok(())
         }
 
-        pub fn compute_target(
+        pub fn compute_peg(
             &mut self,
             prices: Option<&Vec<OraclePrice>>,
             time: &Timestamp,
@@ -307,16 +326,16 @@ mod state {
             let mut resp = OraclePrice::new(
                 symbol.clone(),
                 ReferenceData {
-                    rate: self.target.value.into(),
+                    rate: self.peg.value.into(),
                     last_updated_base: now,
                     last_updated_quote: now,
                 },
             );
 
-            if self.target.frozen || prices.is_none() {
-                // If peg is frozen or we aren't getting price feeds from provider, we use the last calculated value of the target as the peg price.
-                if !self.target.frozen && now - self.target.last_updated > self.config.when_stale {
-                    self.target.frozen = true;
+            if self.peg.frozen || prices.is_none() {
+                // If peg is frozen or we aren't getting price feeds from provider, we use the last calculated value of the peg as the peg price.
+                if !self.peg.frozen && now - self.peg.last_updated > self.config.when_stale {
+                    self.peg.frozen = true;
                 }
                 return Ok(resp);
             }
@@ -326,11 +345,11 @@ mod state {
             let (new_target, last_updated_feeds) = self._compute_target(prices, now)?;
             // If the price feeds have gone stale, freeze the target peg and use its last calculated value.
             if now - last_updated_feeds > self.config.when_stale {
-                self.target.frozen = true;
+                self.peg.frozen = true;
                 Ok(resp)
             } else {
-                self.target.last_updated = now;
-                self.target.value = new_target;
+                self.peg.last_updated = now;
+                self.peg.value = new_target;
                 resp.data.rate = new_target.into();
                 Ok(resp)
             }
@@ -339,7 +358,7 @@ mod state {
             let asset_symbols = &self.asset_symbols;
             self.config.save(storage)?;
             AssetSymbols::save(storage, asset_symbols)?;
-            self.target.save(storage)?;
+            self.peg.save(storage)?;
             for symbol in asset_symbols.as_slice() {
                 self.basket[symbol].save(storage, symbol)?;
             }
@@ -426,6 +445,7 @@ mod state {
                 Uint64::new(SIX_HOURS),
                 basic_basket(),
                 target.into(),
+                Decimal256::percent(10),
                 &timestamp,
             )
             .unwrap()
@@ -438,17 +458,17 @@ mod state {
             let mut index_oracle = basic_index_init(target);
             index_oracle.compute_fixed_weights(&feed_0()).unwrap();
             index_oracle
-                .compute_target(Some(&feed_0()), &timestamp)
+                .compute_peg(Some(&feed_0()), &timestamp)
                 .unwrap();
 
-            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.peg.value, target, exp10(16));
 
             index_oracle
-                .compute_target(Some(&feed_1()), &timestamp)
+                .compute_peg(Some(&feed_1()), &timestamp)
                 .unwrap();
 
             let target = U256::new(112u128) * exp10(16);
-            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.peg.value, target, exp10(16));
         }
 
         #[test]
@@ -459,20 +479,20 @@ mod state {
             index_oracle.compute_fixed_weights(&feed_0()).unwrap();
 
             index_oracle
-                .compute_target(Some(&feed_0()), &timestamp)
+                .compute_peg(Some(&feed_0()), &timestamp)
                 .unwrap();
 
-            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.peg.value, target, exp10(16));
 
             let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
 
             index_oracle
-                .compute_target(Some(&feed_1()), &new_timestamp)
+                .compute_peg(Some(&feed_1()), &new_timestamp)
                 .unwrap();
 
-            assert!(index_oracle.target.frozen);
-            assert_eq!(index_oracle.target.last_updated, 0u64);
-            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
+            assert!(index_oracle.peg.frozen);
+            assert_eq!(index_oracle.peg.last_updated, 0u64);
+            MathAsserter::within_deviation(index_oracle.peg.value, target, exp10(16));
         }
 
         #[test]
@@ -484,29 +504,29 @@ mod state {
             index_oracle.compute_fixed_weights(&feed_2()).unwrap();
 
             index_oracle
-                .compute_target(Some(&feed_2()), &timestamp)
+                .compute_peg(Some(&feed_2()), &timestamp)
                 .unwrap();
 
-            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
+            MathAsserter::within_deviation(index_oracle.peg.value, target, exp10(16));
 
             let new_timestamp = Timestamp::from_seconds(SIX_HOURS + 10u64);
 
             index_oracle
-                .compute_target(Some(&feed_3()), &new_timestamp)
+                .compute_peg(Some(&feed_3()), &new_timestamp)
                 .unwrap();
 
-            assert!(index_oracle.target.frozen);
-            assert_eq!(index_oracle.target.last_updated, 0u64);
-            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
+            assert!(index_oracle.peg.frozen);
+            assert_eq!(index_oracle.peg.last_updated, 0u64);
+            MathAsserter::within_deviation(index_oracle.peg.value, target, exp10(16));
 
             index_oracle.rollback(&feed_3(), &timestamp).unwrap();
             index_oracle
-                .compute_target(Some(&feed_3()), &timestamp)
+                .compute_peg(Some(&feed_3()), &timestamp)
                 .unwrap();
 
-            assert!(!index_oracle.target.frozen);
-            assert_eq!(index_oracle.target.last_updated, 0u64);
-            MathAsserter::within_deviation(index_oracle.target.value, target, exp10(16));
+            assert!(!index_oracle.peg.frozen);
+            assert_eq!(index_oracle.peg.last_updated, 0u64);
+            MathAsserter::within_deviation(index_oracle.peg.value, target, exp10(16));
         }
     }
 }
