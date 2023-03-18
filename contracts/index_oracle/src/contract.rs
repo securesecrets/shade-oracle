@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint64, Uint256,
+    attr, entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint256, Uint64,
 };
 use cosmwasm_std::{to_binary, Deps, Env, Response};
 use shade_oracles::core::{Contract, RawContract};
@@ -175,7 +175,15 @@ pub fn try_admin_msg(
                     router,
                     when_stale,
                     deviation_threshold,
-                } => try_update_config(deps, env, oracle, symbol, router, when_stale, deviation_threshold),
+                } => try_update_config(
+                    deps,
+                    env,
+                    oracle,
+                    symbol,
+                    router,
+                    when_stale,
+                    deviation_threshold,
+                ),
                 AdminMsg::UpdateTarget(new_target) => {
                     try_update_target(deps, env, oracle, new_target)
                 }

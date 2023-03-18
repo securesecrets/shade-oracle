@@ -32,7 +32,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum AdminMsg {
     UpdateStatus(ContractStatus),
-    /// To remove assets that have been added, set the initial weight to be 0. 
+    /// To remove assets that have been added, set the initial weight to be 0.
     /// All other weight values will cause the corresponding asset to be added or changed.
     /// Assets not included in the mod list will remain in the oracle until removed.
     ///

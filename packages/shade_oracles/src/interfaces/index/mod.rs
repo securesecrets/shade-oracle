@@ -42,7 +42,7 @@ make_btr! {
 
 use better_secret_math::U256;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Decimal256, Uint64, Uint256};
+use cosmwasm_std::{Decimal256, Uint256, Uint64};
 
 use shade_protocol::Contract;
 #[cfg(feature = "index")]
@@ -59,7 +59,7 @@ mod state {
         ssp::{Bincode2, GenericItemStorage, Item, ItemStorage, Map, MapStorage},
     };
     use better_secret_math::{
-        common::{bankers_round, muldiv, muldiv18, exp10, abs_diff},
+        common::{abs_diff, bankers_round, exp10, muldiv, muldiv18},
         U256,
     };
     use cosmwasm_std::{StdResult, Storage, Timestamp};
@@ -248,14 +248,12 @@ mod state {
             }
 
             // Verify new weights sum to 100%
-            let weight_sum = self
-                .basket
-                .iter()
-                .map(|(_, w)| w.initial)
-                .sum::<U256>();
+            let weight_sum = self.basket.iter().map(|(_, w)| w.initial).sum::<U256>();
 
             if weight_sum != exp10(18) {
-                return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum.into() });
+                return Err(IndexOracleError::InvalidBasketWeights {
+                    weight: weight_sum.into(),
+                });
             }
             Ok(new_symbols)
         }
@@ -288,7 +286,9 @@ mod state {
             let now = time.seconds();
             let (new_target, last_updated_feeds) = self._compute_target(prices, now)?;
             if now - last_updated_feeds > self.config.when_stale {
-                return Err(IndexOracleError::RollbackStale { oldest_price: last_updated_feeds });
+                return Err(IndexOracleError::RollbackStale {
+                    oldest_price: last_updated_feeds,
+                });
             }
             let mut initial_weight_sum = U256::ZERO;
             let mut initial_weights = vec![];
@@ -302,7 +302,8 @@ mod state {
             }
             let target_weight_sum = exp10(18);
             for (asset_symbol, initial_weight) in initial_weights {
-                let normalized_weight = muldiv(initial_weight, target_weight_sum, initial_weight_sum)?;
+                let normalized_weight =
+                    muldiv(initial_weight, target_weight_sum, initial_weight_sum)?;
                 self.basket
                     .entry(asset_symbol.to_string())
                     .and_modify(|weight| {
@@ -390,7 +391,7 @@ mod state {
         use crate::{
             interfaces::common::OraclePrice, unit_test_interface::prices::generate_price_feed,
         };
-        use better_secret_math::{common::exp10, asserter::MathAsserter};
+        use better_secret_math::{asserter::MathAsserter, common::exp10};
 
         fn basic_basket() -> Vec<InitialBasketItem> {
             vec![

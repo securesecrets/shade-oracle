@@ -138,10 +138,11 @@ mod test {
     use std::{convert::TryInto, str::FromStr};
 
     fn usd_basket() -> Vec<InitialBasketItem> {
-        vec![("USD".into(), Decimal256::percent(100)),
-        ("EURO".into(), Decimal256::percent(0)),
-        ("GDP".into(), Decimal256::percent(0)),
-        ("JPY".into(), Decimal256::percent(0)),
+        vec![
+            ("USD".into(), Decimal256::percent(100)),
+            ("EURO".into(), Decimal256::percent(0)),
+            ("GDP".into(), Decimal256::percent(0)),
+            ("JPY".into(), Decimal256::percent(0)),
         ]
     }
 
@@ -211,7 +212,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
-            Decimal256::percent(10)
+            Decimal256::percent(10),
         );
 
         // Configure router w/ index oracle
@@ -278,7 +279,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
-            Decimal256::percent(10)
+            Decimal256::percent(10),
         );
 
         router
@@ -433,12 +434,17 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
-            Decimal256::percent(10)
+            Decimal256::percent(10),
         );
 
         // Configure router w/ index oracle
         router
-            .set_keys(&admin, &mut app, index_oracle.0.clone().into(), vec![symbol.clone()])
+            .set_keys(
+                &admin,
+                &mut app,
+                index_oracle.0.clone().into(),
+                vec![symbol.clone()],
+            )
             .unwrap();
 
         let price = router.query_price(&app, symbol.clone()).unwrap();
@@ -448,15 +454,18 @@ mod test {
 
         MathAsserter::within_deviation(expected, data.rate, TestScenario::ERROR);
 
-        assert!(index_oracle.update_target(&user, &mut app, new_target).is_err());
-        assert!(index_oracle.update_target(&admin, &mut app, new_target).is_ok());
+        assert!(index_oracle
+            .update_target(&user, &mut app, new_target)
+            .is_err());
+        assert!(index_oracle
+            .update_target(&admin, &mut app, new_target)
+            .is_ok());
 
         let price = router.query_price(&app, symbol.clone()).unwrap();
         let prices = router.query_prices(&app, vec![symbol]).unwrap();
         assert_eq!(price, prices[0]);
         let data = price.data();
         MathAsserter::within_deviation(expected_new, data.rate, TestScenario::ERROR);
-
     }
 
     /* - Setup oracle with symbol, basket, prices, & target -- check against expected_initial
@@ -575,7 +584,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
-            Decimal256::percent(20)
+            Decimal256::percent(20),
         );
 
         // Configure router w/ index oracle
@@ -632,6 +641,56 @@ mod test {
     }
 
     #[test]
+    fn test_peg_deviation() {
+        let prices: Vec<(String, Uint128)> = feed_2()
+            .iter()
+            .map(|p| (p.key.clone(), p.data.rate.try_into().unwrap()))
+            .collect();
+        let TestScenario {
+            mut app,
+            router,
+            admin,
+            provider,
+            ..
+        } = TestScenario::new(prices);
+        let target = Uint256::from_u128(1 * 10u128.pow(18));
+        let symbol = "SILK".to_string();
+        let world_basket = basic_basket();
+        let some_symbol = world_basket[0].0.clone();
+        let index_oracle = IndexOracleHelper::init(
+            &admin,
+            &mut app,
+            &router.clone().into(),
+            &world_basket,
+            target,
+            &symbol,
+            SIX_HOURS,
+            Decimal256::percent(10),
+        );
+
+        // Configure router w/ index oracle
+        router
+            .set_keys(
+                &admin,
+                &mut app,
+                index_oracle.0.clone().into(),
+                vec![symbol.clone()],
+            )
+            .unwrap();
+
+        let price = router.query_price(&app, symbol.clone()).unwrap();
+        MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
+
+        let new_prices = OracleCore::create_prices_hashmap(vec![(
+            some_symbol.clone(),
+            1_000_000 * 10u128.pow(18),
+        )])
+        .1;
+        provider.update_band_prices(&admin, &mut app, new_prices, None);
+        assert!(router.query_price(&app, symbol.clone()).is_err());
+    }
+
+    #[test]
     fn test_multiple_basket_updates() {
         let prices: Vec<(String, Uint128)> = feed_2()
             .iter()
@@ -655,7 +714,7 @@ mod test {
             target,
             &symbol,
             SIX_HOURS,
-            Decimal256::percent(10)
+            Decimal256::percent(10),
         );
 
         // Configure router w/ index oracle
@@ -675,8 +734,7 @@ mod test {
         for basket in basket_states {
             assert!(index_oracle.mod_basket(&admin, &mut app, &basket).is_ok());
             let price = router.query_price(&app, symbol.clone()).unwrap();
-            MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);    
+            MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
         }
     }
-
 }
