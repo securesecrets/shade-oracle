@@ -1,16 +1,16 @@
-use cosmwasm_std::{entry_point, StdError, Storage};
+use cosmwasm_std::{entry_point, StdError, Storage, Uint64};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use shade_oracles::core::{pad_query_result, ResponseStatus};
 use shade_oracles::interfaces::common::OraclePrice;
 use shade_oracles::interfaces::providers::{
     mock::{Config, ExecuteAnswer, MockPrice, OjoExecuteMsg, OjoInstantiateMsg},
-    BandQueryMsg, ReferenceData,
+    BandQueryMsg, OjoReferenceData,
 };
 use shade_oracles::ssp::{Item, Map};
 use shade_oracles::BLOCK_SIZE;
 
-const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
+const MOCK_DATA: Map<(String, String), OjoReferenceData> = Map::new("price-data");
 const CONFIG: Item<Config> = Item::new("config");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -35,10 +35,10 @@ pub fn instantiate(
         MOCK_DATA.save(
             deps.storage,
             (base, quote),
-            &ReferenceData {
+            &OjoReferenceData {
                 rate,
-                last_updated_base: now,
-                last_updated_quote: now,
+                last_updated_base: Uint64::new(now),
+                last_updated_quote: Uint64::new(now),
             },
         )?;
     }
@@ -115,10 +115,10 @@ pub fn set_mock_price(storage: &mut dyn Storage, now: u64, price: MockPrice) -> 
     MOCK_DATA.save(
         storage,
         (price.base_symbol, price.quote_symbol),
-        &ReferenceData {
+        &OjoReferenceData {
             rate: price.rate,
-            last_updated_base: price.last_updated.unwrap_or(now),
-            last_updated_quote: price.last_updated.unwrap_or(now),
+            last_updated_base: price.last_updated.unwrap_or(now).into(),
+            last_updated_quote: price.last_updated.unwrap_or(now).into(),
         },
     )
 }
@@ -147,11 +147,7 @@ pub fn query(deps: Deps, _env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
                 let data = MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol))?;
                 to_binary(&OraclePrice::new(
                     key,
-                    ReferenceData {
-                        rate: data.rate,
-                        last_updated_base: data.last_updated_base,
-                        last_updated_quote: data.last_updated_quote,
-                    },
+                    data.into(),
                 ))
             }
             BandQueryMsg::GetPrices { keys } => {
@@ -162,11 +158,7 @@ pub fn query(deps: Deps, _env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
                         MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol.clone()))?;
                     results.push(OraclePrice::new(
                         key,
-                        ReferenceData {
-                            rate: data.rate,
-                            last_updated_base: data.last_updated_base,
-                            last_updated_quote: data.last_updated_quote,
-                        },
+                        data.into(),
                     ));
                 }
                 to_binary(&results)
