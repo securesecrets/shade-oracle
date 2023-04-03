@@ -18,6 +18,7 @@ impl PricesFixture {
     pub const USDC: &'static str = "USDC";
     pub const SHD: &'static str = "SHD";
 
+    /// Two prices - USD, SILK
     pub fn basic_prices_1() -> Vec<(&'static str, u128)> {
         vec![
             (Self::USD, 10u128.pow(18)),         // $1

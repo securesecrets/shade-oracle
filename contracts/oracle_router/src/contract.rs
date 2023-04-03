@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
     Response, StdResult,
@@ -145,33 +147,35 @@ pub fn get_prices(
 ) -> StdResult<PricesResponse> {
     let map = router.group_keys_by_oracle(deps.storage, keys.as_slice())?;
     // Preserve symbol order
-    let mut prices: Vec<OraclePrice> = keys
+    let ordered_prices: Vec<OraclePrice> = keys
         .iter()
         .map(|key| OraclePrice::new(key.clone(), ReferenceData::default()))
         .collect();
     // Temp vector of fetched prices
-    let mut unordered_prices = vec![];
+    let mut fetched_prices: HashMap<String, OraclePrice> = HashMap::new();
 
     for (oracle, symbols) in map {
-        let mut queried_prices: PricesResponse = if oracle.eq(&router.config.this) {
+        let queried_prices: PricesResponse = if oracle.eq(&router.config.this) {
             router.query_provider_prices(&deps.querier, symbols)
         } else {
             query_prices(&oracle, &deps.querier, &symbols)
         }?;
-        unordered_prices.append(&mut queried_prices);
+        for price in queried_prices {
+            OracleRouter::try_deviation_test(deps.storage, &price)?;
+            if fetched_prices.get(price.key()).is_none() {
+                fetched_prices.insert(price.key.clone(), price);
+            }
+        }
     }
 
     // For every fetched price, find its position in the original request and replace the placeholder data with the actual data for that symbol.
-    for queried_price in unordered_prices {
-        OracleRouter::try_deviation_test(deps.storage, &queried_price)?;
-        let position = prices
-            .iter()
-            .position(|price| price.key.eq(queried_price.key()));
-        if let Some(index) = position {
-            _ = std::mem::replace(&mut prices[index], queried_price);
+    let ordered_prices: Vec<OraclePrice> = ordered_prices.into_iter().map(|mut p| {
+        if let Some(fetched_price) = fetched_prices.get(p.key()) {
+            p.data = fetched_price.data.clone();
         }
-    }
-    Ok(prices)
+        p
+}).collect();
+    Ok(ordered_prices)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
