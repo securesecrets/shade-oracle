@@ -19,6 +19,6 @@ build_oracle_error! {IndexOracle {
     RollbackNotFrozen,
     #[error("Prices are still stale so oracle cannot be rolled back. (Oldest price is {oldest_price}.)")]
     RollbackStale { oldest_price: u64 },
-    #[error("Peg {peg} has deviated too far from the target {target}. {deviation} > {threshold}.")]
-    PegDeviation { peg: Decimal256, target: Decimal256, deviation: Decimal256, threshold: Decimal256 },
+    #[error("Peg {peg} has deviated too far from the last_peg value {last_value}. {deviation} > {threshold}.")]
+    PegDeviation { peg: Decimal256, last_value: Decimal256, deviation: Decimal256, threshold: Decimal256 },
 }}

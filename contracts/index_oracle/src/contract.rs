@@ -62,7 +62,7 @@ pub fn execute(
     Ok(pad_handle_result(Ok(resp), BLOCK_SIZE)?)
 }
 
-/// Callable by anyone. Computes the index and updates the target, freezing it if the oracle prices are stale.
+/// Callable by anyone. Computes the peg value, freezing it if the oracle prices are stale.
 pub fn try_compute_index(
     deps: DepsMut,
     env: Env,
@@ -248,7 +248,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             let prices =
                 fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
             oracle.compute_peg(prices.as_ref(), &env.block.time)?;
-            oracle.require_peg_within_deviation()?;
             let price = OraclePrice::new(
                 oracle.config.symbol,
                 ReferenceData {
@@ -272,7 +271,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             let prices =
                 fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
             oracle.compute_peg(prices.as_ref(), &env.block.time)?;
-            oracle.require_peg_within_deviation()?;
             let price = OraclePrice::new(
                 oracle.config.symbol,
                 ReferenceData {

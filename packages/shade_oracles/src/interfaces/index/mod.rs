@@ -35,6 +35,7 @@ make_btr! {
     Peg {
         target: Uint256, U256, "Target value of the peg";
         value: Uint256, U256, "Peg price of the index asset";
+        last_value: Uint256, U256, "Last peg price of the index asset";
         frozen: bool, bool, "Whether or not this value is frozen";
         last_updated: Uint64, u64, "When this value was last updated (in seconds)"
     }
@@ -92,21 +93,6 @@ mod state {
     impl_global_status!(IndexOracle, IndexOracleError);
 
     impl IndexOracle {
-        pub fn require_peg_within_deviation(&self) -> StdResult<()> {
-            let diff = abs_diff(self.peg.target, self.peg.value);
-            let expected: U256 = self.peg.target.into();
-            let deviation = Decimal256::from_ratio(diff, expected);
-            if deviation > self.config.deviation_threshold {
-                return Err(IndexOracleError::PegDeviation {
-                    peg: self.peg.value.into(),
-                    target: self.peg.target.into(),
-                    deviation: deviation.into(),
-                    threshold: self.config.deviation_threshold.into(),
-                }
-                .into());
-            }
-            Ok(())
-        }
         pub fn load(storage: &dyn Storage) -> StdResult<Self> {
             let config = IndexOracleConfig::load(storage)?;
             let asset_symbols = AssetSymbols::load(storage)?;
@@ -170,7 +156,7 @@ mod state {
                 return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum }.into());
             }
 
-            let peg = BtrPeg::new(target.into(), target.into(), false, time.seconds());
+            let peg = BtrPeg::new(target.into(), target.into(), target.into(), false, time.seconds());
             Ok(Self {
                 config: IndexOracleConfig {
                     symbol: index_symbol,
@@ -347,14 +333,23 @@ mod state {
             // If the price feeds have gone stale, freeze the target peg and use its last calculated value.
             if now - last_updated_feeds > self.config.when_stale {
                 self.peg.frozen = true;
-                Ok(resp)
-            } else {
+                return Ok(resp);
+            }
+            let diff = abs_diff(self.peg.last_value, new_target);
+            let expected: U256 = self.peg.last_value.into();
+            let deviation = Decimal256::from_ratio(diff, expected);
+            
+            if deviation > self.config.deviation_threshold {
+                self.peg.frozen = true;
+                return Ok(resp);
+            }
                 self.peg.last_updated = now;
+                self.peg.last_value = new_target;
                 self.peg.value = new_target;
                 resp.data.rate = new_target.into();
                 Ok(resp)
-            }
         }
+
         pub fn save(&self, storage: &mut dyn Storage) -> IndexOracleResult<()> {
             let asset_symbols = &self.asset_symbols;
             self.config.save(storage)?;

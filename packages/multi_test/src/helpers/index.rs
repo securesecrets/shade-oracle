@@ -687,7 +687,16 @@ mod test {
         )])
         .1;
         provider.update_band_prices(&admin, &mut app, new_prices, None);
-        assert!(router.query_price(&app, symbol.clone()).is_err());
+        // Check price didn't change even though oracle is reporting very big price.
+        let new_price = router.query_price(&app, symbol.clone()).unwrap();
+        assert_eq!(new_price.data.rate, price.data.rate);
+
+        assert!(index_oracle.compute_index(&admin, &mut app).is_ok());
+
+        let resp = index_oracle.query_index_data(&app).unwrap();
+        assert_eq!(resp.peg.last_value, price.data.rate);
+        assert_eq!(resp.peg.value, price.data.rate);
+        assert_eq!(resp.peg.frozen, true);
     }
 
     #[test]
