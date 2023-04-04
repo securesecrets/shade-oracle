@@ -156,9 +156,19 @@ pub fn get_prices(
 
     for (oracle, symbols) in map {
         let queried_prices: PricesResponse = if oracle.eq(&router.config.this) {
-            router.query_provider_prices(&deps.querier, symbols)
+            if symbols.len() == 1 {
+                let price = router.query_provider_price(&deps.querier, symbols[0].clone())?;
+                Ok(vec![price])
+            } else {
+                router.query_provider_prices(&deps.querier, symbols)
+            }
         } else {
-            query_prices(&oracle, &deps.querier, &symbols)
+            if symbols.len() == 1 {
+                let price = query_price(&oracle, &deps.querier, &symbols[0])?;
+                Ok(vec![price])
+            } else {
+                query_prices(&oracle, &deps.querier, &symbols)
+            }
         }?;
         for price in queried_prices {
             OracleRouter::try_deviation_test(deps.storage, &price)?;

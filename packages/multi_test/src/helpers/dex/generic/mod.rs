@@ -24,6 +24,20 @@ impl GenericLiquidityPairOracleHelper {
         Self(contract)
     }
 
+    pub fn init_shadeswap_market(sender: &User, app: &mut App, router: &Contract) -> Self {
+        let contract = sender
+            .init(
+                app,
+                &InstantiateMsg {
+                    router: router.clone().into(),
+                },
+                ShadeSwapMarketOracle::default(),
+                "shadeswap_market_oracle",
+            )
+            .unwrap();
+        Self(contract)
+    }
+
     pub fn init_siennaswap_spot(sender: &User, app: &mut App, router: &Contract) -> Self {
         let contract = sender
             .init(
@@ -47,20 +61,6 @@ impl GenericLiquidityPairOracleHelper {
                 },
                 SiennaSwapReservesOracle::default(),
                 "siennaswap_reserves_oracle",
-            )
-            .unwrap();
-        Self(contract)
-    }
-
-    pub fn init_shadeswap_market(sender: &User, app: &mut App, router: &Contract) -> Self {
-        let contract = sender
-            .init(
-                app,
-                &InstantiateMsg {
-                    router: router.clone().into(),
-                },
-                ShadeSwapMarketOracle::default(),
-                "shadeswap_market_oracle",
             )
             .unwrap();
         Self(contract)

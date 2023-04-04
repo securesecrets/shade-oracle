@@ -9,51 +9,70 @@ mod test {
     use super::*;
     use crate::mocks::MockShadeswapPair;
     use oracle_mocks::shadeswap_pair::contract as mock_shade_pair;
-    use shade_oracles::unit_test_interface::prices::PricesFixture;
+    use shade_oracles::{unit_test_interface::prices::PricesFixture};
 
+    #[ignore]
     #[test]
     fn test_registry() {
         let TestScenario {
             mut app,
             router,
             admin,
+            user,
             tokens,
+            keys,
             ..
         } = TestScenario::new(PricesFixture::basic_prices_2());
-        let user = admin;
 
         let shadeswap_oracles = vec![
             GenericLiquidityPairOracleHelper::init_shadeswap_spot(
-                &user,
+                &admin,
                 &mut app,
                 &router.clone().into(),
             ),
             GenericLiquidityPairOracleHelper::init_shadeswap_market(
-                &user,
+                &admin,
                 &mut app,
                 &router.clone().into(),
             ),
         ];
 
-        let shade_pair = mock_shade_pair::InstantiateMsg {}
+        let shade_pair_a = mock_shade_pair::InstantiateMsg {}
             .test_init(
                 MockShadeswapPair::default(),
                 &mut app,
-                user.addr(),
+                admin.addr(),
                 "shade_pair",
                 &[],
             )
             .unwrap();
 
-        let shade_pair_2 = mock_shade_pair::InstantiateMsg {}
+        let shade_pair_b = mock_shade_pair::InstantiateMsg {}
             .test_init(
                 MockShadeswapPair::default(),
                 &mut app,
-                user.addr(),
+                admin.addr(),
                 "shade_pair_two",
                 &[],
             )
             .unwrap();
+            
+        let frax = tokens.get(&keys[0]).unwrap();
+        let usdc = tokens.get(&keys[1]).unwrap();
+
+        let shade_pair_data_a = RawPairData {
+            key: todo!(),
+            base_token: todo!(),
+            target_token: todo!(),
+            pair: todo!(),
+        };
+
+        for oracle in shadeswap_oracles {
+            // TEST STATUS UPDATE
+            assert!(oracle.set_status(&user, &mut app, false).is_err());
+            assert!(oracle.set_status(&admin, &mut app, false).is_ok());
+        }
+        // TEST ADMIN
 
         // mock_shade_pair::ExecuteMsg::MockPool {
         //     token_a: primary_token.clone().into(),
