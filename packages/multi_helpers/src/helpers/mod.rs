@@ -83,13 +83,6 @@ impl User {
     pub fn str(&self) -> String {
         self.address.to_string()
     }
-    pub fn query<T: DeserializeOwned>(
-        app: &App,
-        msg: &impl Query,
-        contract: &ContractInfo,
-    ) -> StdResult<T> {
-        msg.test_query(contract, app)
-    }
     pub fn init(
         &self,
         app: &mut App,
