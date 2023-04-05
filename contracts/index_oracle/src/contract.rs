@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint128, Uint64,
+    attr, entry_point, Decimal256, DepsMut, MessageInfo, QueryResponse, StdResult, Uint256, Uint64,
 };
 use cosmwasm_std::{to_binary, Deps, Env, Response};
 use shade_oracles::core::{Contract, RawContract};
@@ -33,6 +33,7 @@ pub fn instantiate(
         msg.when_stale,
         msg.basket,
         msg.target,
+        msg.deviation_threshold,
         &env.block.time,
     )?;
     let prices = query_prices(
@@ -61,7 +62,7 @@ pub fn execute(
     Ok(pad_handle_result(Ok(resp), BLOCK_SIZE)?)
 }
 
-/// Callable by anyone. Computes the index and updates the target, freezing it if the oracle prices are stale.
+/// Callable by anyone. Computes the peg value, freezing it if the oracle prices are stale.
 pub fn try_compute_index(
     deps: DepsMut,
     env: Env,
@@ -72,12 +73,12 @@ pub fn try_compute_index(
     let router = oracle.config.router.clone();
     let symbols = oracle.asset_symbols.clone();
     let prices = fetch_prices(deps.as_ref(), &router, &symbols)?;
-    oracle.compute_target(prices.as_ref(), &env.block.time)?;
+    oracle.compute_peg(prices.as_ref(), &env.block.time)?;
     oracle.save(deps.storage)?;
     Ok(Response::new().add_attributes(vec![
         attr_action!("compute_index"),
-        attr("new_target", oracle.target.value.to_string()),
-        attr("is_frozen", oracle.target.frozen.to_string()),
+        attr("new_target", oracle.peg.value.to_string()),
+        attr("is_frozen", oracle.peg.frozen.to_string()),
     ]))
 }
 
@@ -95,7 +96,7 @@ pub fn try_unfreeze(
     oracle.save(deps.storage)?;
     Ok(Response::new().add_attributes(vec![
         attr_action!("unfreeze"),
-        attr("new_target", oracle.target.value.to_string()),
+        attr("new_target", oracle.peg.value.to_string()),
     ]))
 }
 
@@ -106,6 +107,7 @@ pub fn try_update_config(
     symbol: Option<String>,
     router: Option<RawContract>,
     when_stale: Option<Uint64>,
+    deviation_threshold: Option<Decimal256>,
 ) -> IndexOracleResult<Response> {
     oracle.config.router = match router {
         Some(router) => router.into_valid(deps.api)?,
@@ -116,6 +118,10 @@ pub fn try_update_config(
         Some(when_stale) => when_stale.u64(),
         None => oracle.config.when_stale,
     };
+    oracle.config.deviation_threshold = match deviation_threshold {
+        Some(deviation_threshold) => deviation_threshold,
+        None => oracle.config.deviation_threshold,
+    };
     oracle.config.save(deps.storage)?;
 
     Ok(Response::new().add_attributes(vec![attr_action!("update_config")]))
@@ -125,19 +131,23 @@ pub fn try_update_target(
     deps: DepsMut,
     env: Env,
     mut oracle: IndexOracle,
-    new_target: Uint128,
+    new_target: Uint256,
 ) -> IndexOracleResult<Response> {
+    if oracle.peg.frozen {
+        return Err(IndexOracleError::FrozenPeg);
+    }
     let prices = query_prices(
         &oracle.config.router,
         &deps.querier,
         oracle.asset_symbols.as_slice(),
     )?;
-    oracle.target.value = new_target.into();
-    oracle.target.last_updated = env.block.time.seconds();
+    oracle.peg.target = new_target.into();
+    oracle.peg.value = new_target.into();
+    oracle.peg.last_updated = env.block.time.seconds();
     oracle.compute_fixed_weights(prices.as_slice())?;
     oracle.save(deps.storage)?;
     Ok(Response::new().add_attributes(vec![
-        attr_action!("unfreeze"),
+        attr_action!("update_target"),
         attr("new_target", new_target),
     ]))
 }
@@ -164,11 +174,20 @@ pub fn try_admin_msg(
                     symbol,
                     router,
                     when_stale,
-                } => try_update_config(deps, env, oracle, symbol, router, when_stale),
+                    deviation_threshold,
+                } => try_update_config(
+                    deps,
+                    env,
+                    oracle,
+                    symbol,
+                    router,
+                    when_stale,
+                    deviation_threshold,
+                ),
                 AdminMsg::UpdateTarget(new_target) => {
                     try_update_target(deps, env, oracle, new_target)
                 }
-                AdminMsg::Unfreeze {} => try_unfreeze(deps, env, oracle),
+                AdminMsg::UnfreezePeg {} => try_unfreeze(deps, env, oracle),
                 _ => panic!("code should never come here"),
             }
         }
@@ -198,11 +217,12 @@ pub fn try_mod_basket(
     mod_basket: impl IntoIterator<Item = (String, Decimal256)>,
     mut oracle: IndexOracle,
 ) -> IndexOracleResult<Response> {
-    // Compute target with old weights
+    if oracle.peg.frozen {
+        return Err(IndexOracleError::FrozenPeg);
+    }
     let router = oracle.config.router.clone();
     let prices = query_prices(&router, &deps.querier, oracle.asset_symbols.as_slice())?;
-    oracle.compute_target(Some(&prices), &env.block.time)?;
-    // Update weights
+    oracle.compute_peg(Some(&prices), &env.block.time)?;
     oracle.update_basket(mod_basket)?;
 
     let new_prices = query_prices(&router, &deps.querier, &oracle.asset_symbols)?;
@@ -227,11 +247,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             }
             let prices =
                 fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
-            oracle.compute_target(prices.as_ref(), &env.block.time)?;
+            oracle.compute_peg(prices.as_ref(), &env.block.time)?;
             let price = OraclePrice::new(
                 oracle.config.symbol,
                 ReferenceData {
-                    rate: oracle.target.value.into(),
+                    rate: oracle.peg.value.into(),
                     last_updated_base: now,
                     last_updated_quote: now,
                 },
@@ -250,11 +270,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             }
             let prices =
                 fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
-            oracle.compute_target(prices.as_ref(), &env.block.time)?;
+            oracle.compute_peg(prices.as_ref(), &env.block.time)?;
             let price = OraclePrice::new(
                 oracle.config.symbol,
                 ReferenceData {
-                    rate: oracle.target.value.into(),
+                    rate: oracle.peg.value.into(),
                     last_updated_base: now,
                     last_updated_quote: now,
                 },
@@ -266,7 +286,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             IndexOracle::require_can_run(deps.storage, true, true, false)?;
             let prices =
                 fetch_prices(deps, &oracle.config.router, oracle.asset_symbols.as_slice())?;
-            oracle.compute_target(prices.as_ref(), &env.block.time)?;
+            oracle.compute_peg(prices.as_ref(), &env.block.time)?;
             let basket = oracle
                 .basket
                 .iter()
@@ -279,7 +299,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
                 symbol: oracle.config.symbol,
                 router: oracle.config.router,
                 when_stale: Uint64::new(oracle.config.when_stale),
-                target: oracle.target.into(),
+                peg: oracle.peg.into(),
                 basket,
             })
         }

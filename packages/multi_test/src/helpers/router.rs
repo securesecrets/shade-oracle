@@ -258,6 +258,23 @@ mod test {
     }
 
     #[test]
+    fn duplicate_symbol_query_test() {
+        let TestScenario {
+            app,
+            router,
+            keys,
+            prices,
+            ..
+        } = TestScenario::new(PricesFixture::basic_prices_1());
+        let keys = vec![keys[0].clone(), keys[0].clone(), keys[1].clone()];
+        let resp = router.query_prices(&app, keys).unwrap();
+        for price in resp {
+            let p: Uint256 = (*prices.get(price.key()).unwrap()).into();
+            assert_eq!(price.data.rate, p);
+        }
+    }
+
+    #[test]
     fn registry_tests() {
         let prices = PricesFixture::basic_prices_2();
         let test_prices = prices.clone();

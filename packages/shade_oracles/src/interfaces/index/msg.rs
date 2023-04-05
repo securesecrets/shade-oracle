@@ -4,10 +4,10 @@ use crate::{
     interfaces::common::{PriceResponse, PricesResponse},
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal256, Uint128, Uint64};
+use cosmwasm_std::{Decimal256, Uint256, Uint64};
 use shade_protocol::{utils::asset::RawContract, Contract};
 
-use super::{AssetSymbol, AssetWeights, Target};
+use super::{AssetSymbol, AssetWeights, Peg};
 
 impl_msg_callbacks!();
 
@@ -17,9 +17,10 @@ pub type InitialBasketItem = (String, Decimal256);
 pub struct InstantiateMsg {
     pub router: RawContract,
     pub basket: Vec<InitialBasketItem>, //HashMap<String, Decimal256>,
-    pub target: Uint128,
+    pub target: Uint256,
     pub symbol: String,
     pub when_stale: Uint64,
+    pub deviation_threshold: Decimal256,
 }
 
 #[cw_serde]
@@ -31,7 +32,9 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum AdminMsg {
     UpdateStatus(ContractStatus),
-    /// Assets with weight 0 will be removed. All others are added or changed.
+    /// To remove assets that have been added, set the initial weight to be 0.
+    /// All other weight values will cause the corresponding asset to be added or changed.
+    /// Assets not included in the mod list will remain in the oracle until removed.
     ///
     /// Vec<(Symbol, Weight)> where Symbol is string and Weight is Decimal256
     ModBasket(Vec<InitialBasketItem>),
@@ -39,9 +42,10 @@ pub enum AdminMsg {
         symbol: Option<String>,
         router: Option<RawContract>,
         when_stale: Option<Uint64>,
+        deviation_threshold: Option<Decimal256>,
     },
-    UpdateTarget(Uint128),
-    Unfreeze {},
+    UpdateTarget(Uint256),
+    UnfreezePeg {},
 }
 
 #[cw_serde]
@@ -62,7 +66,7 @@ pub struct IndexDataResponse {
     pub symbol: String,
     pub router: Contract,
     pub when_stale: Uint64,
-    pub target: Target,
+    pub peg: Peg,
     pub basket: Vec<IndexAsset>,
 }
 

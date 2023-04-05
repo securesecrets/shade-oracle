@@ -1,7 +1,7 @@
 use crate::BLOCK_SIZE;
 use better_secret_math::U256;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Api, QuerierWrapper, Timestamp, Uint128, Uint256};
+use cosmwasm_std::{Api, QuerierWrapper, Timestamp, Uint128, Uint256, Uint64};
 use cosmwasm_std::{StdError, StdResult};
 use shade_protocol::admin::helpers::{validate_admin, AdminPermissions};
 use shade_protocol::utils::asset::RawContract;
@@ -22,6 +22,24 @@ pub struct ReferenceData {
     pub rate: Uint256,
     pub last_updated_base: u64,
     pub last_updated_quote: u64,
+}
+
+#[derive(Default)]
+#[cw_serde]
+pub struct OjoReferenceData {
+    pub rate: Uint256,
+    pub last_updated_base: Uint64,
+    pub last_updated_quote: Uint64,
+}
+
+impl From<OjoReferenceData> for ReferenceData {
+    fn from(r: OjoReferenceData) -> Self {
+        ReferenceData {
+            rate: r.rate,
+            last_updated_base: r.last_updated_base.into(),
+            last_updated_quote: r.last_updated_quote.into(),
+        }
+    }
 }
 
 impl ReferenceData {
@@ -98,13 +116,13 @@ impl Query for BandQueryMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum OjoQueryMsg {
-    #[returns(ReferenceData)]
+    #[returns(OjoReferenceData)]
     GetReferenceData { symbol_pair: (String, String) },
-    #[returns(Vec<ReferenceData>)]
+    #[returns(Vec<OjoReferenceData>)]
     GetReferenceDataBulk { symbol_pairs: Vec<(String, String)> },
-    #[returns(ReferenceData)]
+    #[returns(OjoReferenceData)]
     GetMedianReferenceData { symbol_pair: (String, String) },
-    #[returns(Vec<ReferenceData>)]
+    #[returns(Vec<OjoReferenceData>)]
     GetMedianReferenceDataBulk { symbol_pairs: Vec<(String, String)> },
     // Used for mocking
     #[returns(PriceResponse)]
@@ -152,10 +170,13 @@ impl Provider {
                 quote_symbol: symbol_pair.1.to_string(),
             }
             .query(querier, c),
-            Provider::Ojo(c) => OjoQueryMsg::GetReferenceData {
-                symbol_pair: (symbol_pair.0.to_string(), symbol_pair.1.to_string()),
+            Provider::Ojo(c) => {
+                let data: OjoReferenceData = OjoQueryMsg::GetReferenceData {
+                    symbol_pair: (symbol_pair.0.to_string(), symbol_pair.1.to_string()),
+                }
+                .query(querier, c)?;
+                Ok(data.into())
             }
-            .query(querier, c),
         }
     }
     pub fn reference_data_bulk<I>(
@@ -180,10 +201,13 @@ impl Provider {
                 }
                 .query(querier, c)
             }
-            Provider::Ojo(c) => OjoQueryMsg::GetReferenceDataBulk {
-                symbol_pairs: symbols.into_iter().map(|s| (s.0, s.1)).collect(),
+            Provider::Ojo(c) => {
+                let data: Vec<OjoReferenceData> = OjoQueryMsg::GetReferenceDataBulk {
+                    symbol_pairs: symbols.into_iter().map(|s| (s.0, s.1)).collect(),
+                }
+                .query(querier, c)?;
+                Ok(data.into_iter().map(|d| d.into()).collect())
             }
-            .query(querier, c),
         }
     }
     pub fn median_reference_data(
@@ -193,10 +217,13 @@ impl Provider {
     ) -> StdResult<ReferenceData> {
         match self {
             Provider::Band(_) => Err(ProviderError::Unimplemented.into()),
-            Provider::Ojo(c) => OjoQueryMsg::GetMedianReferenceData {
-                symbol_pair: (symbol_pair.0.to_string(), symbol_pair.1.to_string()),
+            Provider::Ojo(c) => {
+                let data: OjoReferenceData = OjoQueryMsg::GetMedianReferenceData {
+                    symbol_pair: (symbol_pair.0.to_string(), symbol_pair.1.to_string()),
+                }
+                .query(querier, c)?;
+                Ok(data.into())
             }
-            .query(querier, c),
         }
     }
     pub fn median_reference_data_bulk<I>(
@@ -209,10 +236,13 @@ impl Provider {
     {
         match self {
             Provider::Band(_) => Err(ProviderError::Unimplemented.into()),
-            Provider::Ojo(c) => OjoQueryMsg::GetMedianReferenceDataBulk {
-                symbol_pairs: symbols.into_iter().map(|s| (s.0, s.1)).collect(),
+            Provider::Ojo(c) => {
+                let data: Vec<OjoReferenceData> = OjoQueryMsg::GetMedianReferenceDataBulk {
+                    symbol_pairs: symbols.into_iter().map(|s| (s.0, s.1)).collect(),
+                }
+                .query(querier, c)?;
+                Ok(data.into_iter().map(|d| d.into()).collect())
             }
-            .query(querier, c),
         }
     }
 }

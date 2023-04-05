@@ -1,16 +1,16 @@
-use cosmwasm_std::{entry_point, StdError, Storage};
+use cosmwasm_std::{entry_point, StdError, Storage, Uint64};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use shade_oracles::core::{pad_query_result, ResponseStatus};
 use shade_oracles::interfaces::common::OraclePrice;
 use shade_oracles::interfaces::providers::{
     mock::{Config, ExecuteAnswer, MockPrice, OjoExecuteMsg, OjoInstantiateMsg},
-    BandQueryMsg, ReferenceData,
+    OjoQueryMsg, OjoReferenceData,
 };
 use shade_oracles::ssp::{Item, Map};
 use shade_oracles::BLOCK_SIZE;
 
-const MOCK_DATA: Map<(String, String), ReferenceData> = Map::new("price-data");
+const MOCK_DATA: Map<(String, String), OjoReferenceData> = Map::new("price-data");
 const CONFIG: Item<Config> = Item::new("config");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -35,10 +35,10 @@ pub fn instantiate(
         MOCK_DATA.save(
             deps.storage,
             (base, quote),
-            &ReferenceData {
+            &OjoReferenceData {
                 rate,
-                last_updated_base: now,
-                last_updated_quote: now,
+                last_updated_base: Uint64::new(now),
+                last_updated_quote: Uint64::new(now),
             },
         )?;
     }
@@ -115,46 +115,48 @@ pub fn set_mock_price(storage: &mut dyn Storage, now: u64, price: MockPrice) -> 
     MOCK_DATA.save(
         storage,
         (price.base_symbol, price.quote_symbol),
-        &ReferenceData {
+        &OjoReferenceData {
             rate: price.rate,
-            last_updated_base: price.last_updated.unwrap_or(now),
-            last_updated_quote: price.last_updated.unwrap_or(now),
+            last_updated_base: price.last_updated.unwrap_or(now).into(),
+            last_updated_quote: price.last_updated.unwrap_or(now).into(),
         },
     )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: OjoQueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     pad_query_result(
         match msg {
-            BandQueryMsg::GetReferenceData {
-                base_symbol,
-                quote_symbol,
+            OjoQueryMsg::GetReferenceData {
+                symbol_pair
             } => {
                 require_enabled(&config)?;
-                query_saved_band_data(deps, base_symbol, quote_symbol)
+                query_saved_data(deps, symbol_pair)
             }
-            BandQueryMsg::GetReferenceDataBulk {
-                base_symbols,
-                quote_symbols,
+            OjoQueryMsg::GetReferenceDataBulk {
+                symbol_pairs
             } => {
                 require_enabled(&config)?;
-                bulk_query_saved_band_data(deps, base_symbols, quote_symbols)
+                bulk_query_saved_data(deps, symbol_pairs)
             }
-            BandQueryMsg::GetPrice { key } => {
+            OjoQueryMsg::GetPrice { key } => {
                 require_enabled(&config)?;
                 let data = MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol))?;
                 to_binary(&OraclePrice::new(
                     key,
-                    ReferenceData {
-                        rate: data.rate,
-                        last_updated_base: data.last_updated_base,
-                        last_updated_quote: data.last_updated_quote,
-                    },
+                    data.into(),
                 ))
-            }
-            BandQueryMsg::GetPrices { keys } => {
+            },
+            OjoQueryMsg::GetMedianReferenceData { symbol_pair } => {
+                require_enabled(&config)?;
+                query_saved_data(deps, symbol_pair)
+            },
+            OjoQueryMsg::GetMedianReferenceDataBulk { symbol_pairs } => {
+                require_enabled(&config)?;
+                bulk_query_saved_data(deps, symbol_pairs)
+            },
+            OjoQueryMsg::GetPrices { keys } => {
                 require_enabled(&config)?;
                 let mut results = vec![];
                 for key in keys {
@@ -162,37 +164,31 @@ pub fn query(deps: Deps, _env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
                         MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol.clone()))?;
                     results.push(OraclePrice::new(
                         key,
-                        ReferenceData {
-                            rate: data.rate,
-                            last_updated_base: data.last_updated_base,
-                            last_updated_quote: data.last_updated_quote,
-                        },
+                        data.into(),
                     ));
                 }
                 to_binary(&results)
             }
-            BandQueryMsg::GetConfig {} => to_binary(&config),
+            OjoQueryMsg::GetConfig {} => to_binary(&config),
         },
         BLOCK_SIZE,
     )
 }
 
-fn query_saved_band_data(
+fn query_saved_data(
     deps: Deps,
-    base_symbol: String,
-    quote_symbol: String,
+    symbol_pair: (String, String),
 ) -> StdResult<Binary> {
-    to_binary(&MOCK_DATA.load(deps.storage, (base_symbol, quote_symbol))?)
+    to_binary(&MOCK_DATA.load(deps.storage, symbol_pair)?)
 }
 
-fn bulk_query_saved_band_data(
+fn bulk_query_saved_data(
     deps: Deps,
-    base_symbols: Vec<String>,
-    quote_symbols: Vec<String>,
+    symbol_pairs: Vec<(String, String)>,
 ) -> StdResult<Binary> {
     let mut results = vec![];
 
-    for (base, quote) in base_symbols.iter().zip(quote_symbols) {
+    for (base, quote) in symbol_pairs {
         results.push(MOCK_DATA.load(deps.storage, (base.to_string(), quote.to_string()))?);
     }
     to_binary(&results)

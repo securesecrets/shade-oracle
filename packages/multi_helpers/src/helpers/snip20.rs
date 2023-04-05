@@ -130,15 +130,6 @@ impl Snip20Helper {
         };
         for user in users {
             user.exec(app, &msg, &self.0).unwrap();
-            assert!(User::query::<QueryAnswer>(
-                app,
-                &QueryMsg::Balance {
-                    address: user.str(),
-                    key: viewing_key.into(),
-                },
-                &self.0,
-            )
-            .is_ok())
         }
     }
 
@@ -156,15 +147,10 @@ impl Snip20Helper {
     }
 
     pub fn get_balance(&self, app: &App, user: &str, viewing_key: impl Into<String>) -> Uint128 {
-        let resp = User::query(
-            app,
-            &QueryMsg::Balance {
-                address: user.to_string(),
-                key: viewing_key.into(),
-            },
-            &self.0,
-        )
-        .unwrap();
+        let resp = QueryMsg::Balance {
+            address: user.to_string(),
+            key: viewing_key.into(),
+        }.test_query(&self.0, app).unwrap();
         match resp {
             QueryAnswer::Balance { amount } => amount,
             _ => Uint128::zero(),

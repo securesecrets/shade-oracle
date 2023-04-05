@@ -44,6 +44,12 @@ workspace = false
 command = "cargo"
 args = ["cw-optimizoor"]
 
+[tasks.cov]
+workspace = false
+script = '''
+cargo llvm-cov nextest --lcov --output-path coverage/lcov.info
+'''
+
 [tasks.compress]
 workspace = false
 script = '''
