@@ -29,7 +29,6 @@ pub mod msg {
     #[cw_serde]
     pub enum DerivativeUpdates {
         Rates(Vec<(String, Decimal256)>),
-        APY(Vec<(String, Decimal256)>),
         Config(Vec<(String, DerivativeDataConfigUpdate)>),
     }
 
@@ -55,22 +54,15 @@ pub mod msg {
         /// The key for the asset the derivative is for.
         pub underlying_key: String,
         pub initial_rate: Decimal256,
-        pub rate_update_frequency: u64,
         pub rate_timeout: u64,
         pub rate_max_change: Decimal256,
-        pub apy: Decimal256,
-        pub apy_update_frequency: u64,
-        pub apy_max_change: Decimal256,
     }
 
     #[cw_serde]
     pub struct DerivativeDataConfigUpdate {
         pub underlying_key: Option<String>,
-        pub rate_update_frequency: Option<u64>,
         pub rate_timeout: Option<u64>,
         pub rate_max_change: Option<Decimal256>,
-        pub apy_update_frequency: Option<u64>,
-        pub apy_max_change: Option<Decimal256>,
     }
 
     #[cw_serde]
@@ -78,48 +70,31 @@ pub mod msg {
         pub key: String,
         pub underlying_key: String,
         pub rate: DerivativeRate,
-        pub apy: DerivativeApy,
     }
 
     #[cw_serde]
     pub struct DerivativeRate {
         pub value: Decimal256,
-        pub update_frequency: u64,
         pub timeout: u64,
         pub last_updated: u64,
         pub max_change: Decimal256,
     }
 
     #[cw_serde]
-    pub struct DerivativeApy {
-        pub value: Decimal256,
-        pub update_frequency: u64,
-        pub max_change: Decimal256,
-        pub last_updated: u64,
-    }
-
-    #[cw_serde]
     pub enum BotPermission {
         UpdateRates,
-        UpdateAPY,
     }
 
     impl DerivativeDataConfigUpdate {
         pub fn new(
             underlying_key: Option<String>,
-            rate_update_frequency: Option<u64>,
             rate_timeout: Option<u64>,
             rate_max_change: Option<Decimal256>,
-            apy_update_frequency: Option<u64>,
-            apy_max_change: Option<Decimal256>,
         ) -> Self {
             Self {
                 underlying_key,
-                rate_update_frequency,
                 rate_max_change,
                 rate_timeout,
-                apy_update_frequency,
-                apy_max_change,
             }
         }
     }
@@ -128,7 +103,6 @@ pub mod msg {
         fn to_string(&self) -> String {
             match self {
                 BotPermission::UpdateRates => "SHADE_ORACLES_STRIDE_RATES_BOT".to_string(),
-                BotPermission::UpdateAPY => "SHADE_ORACLES_STRIDE_APY_BOT".to_string(),
             }
         }
     }
@@ -145,80 +119,15 @@ mod state {
     use cosmwasm_std::{Decimal256, StdResult, Storage};
     use ssp::{Item, ItemStorage, Map};
 
-    impl DerivativeApy {
-        pub fn new(
-            value: Decimal256,
-            update_frequency: u64,
-            max_change: Decimal256,
-            last_updated: u64,
-        ) -> StdResult<Self> {
-            let mut apy = Self {
-                value,
-                update_frequency,
-                max_change,
-                last_updated,
-            };
-            apy.set_value(value)?;
-            apy.set_max_change(max_change)?;
-            Ok(apy)
-        }
-        pub fn set_value(&mut self, value: Decimal256) -> StdResult<()> {
-            if value.is_zero() {
-                return Err(StdError::generic_err("APY must be greater than 0"));
-            };
-            self.value = value;
-            Ok(())
-        }
-        pub fn set_max_change(&mut self, max_change: Decimal256) -> StdResult<()> {
-            if max_change.is_zero() {
-                return Err(StdError::generic_err("Max change must be greater than 0"));
-            };
-            self.max_change = max_change;
-            Ok(())
-        }
-        pub fn require_valid_change(&self, now: u64, new_apy: Decimal256) -> StdResult<()> {
-            let time_since_updated = now - self.last_updated;
-            if time_since_updated < self.update_frequency {
-                return Err(StdError::generic_err(format!(
-                    "Derivative APY is being updated too frequently. Please wait {0} seconds before updating again.",
-                    self.update_frequency - time_since_updated
-                )));
-            }
-            if self.value.eq(&new_apy) {
-                Ok(())
-            } else if self.value > new_apy {
-                let change = self.value - new_apy;
-                if change > self.max_change {
-                    Err(StdError::generic_err(format!(
-                        "Derivative APY is changing too much. Maximum downside is {0}. Attempted change is {change}.", self.max_change
-                    )))
-                } else {
-                    Ok(())
-                }
-            } else {
-                let change = new_apy - self.value;
-                if change > self.max_change {
-                    Err(StdError::generic_err(format!(
-                        "Derivative rate is changing too much. Maximum upside is {0}. Attempted change is {change}.", self.max_change
-                    )))
-                } else {
-                    Ok(())
-                }
-            }
-        }
-    }
-
     impl DerivativeRate {
         pub fn new(
             value: Decimal256,
-            update_frequency: u64,
             timeout: u64,
             last_updated: u64,
             max_change: Decimal256,
         ) -> StdResult<Self> {
             let mut rate = Self {
                 value,
-                update_frequency,
                 timeout,
                 last_updated,
                 max_change,
@@ -246,17 +155,8 @@ mod state {
         pub fn require_valid_change(
             &self,
             now: u64,
-            apy: Decimal256,
             new_rate: Decimal256,
         ) -> StdResult<()> {
-            let time_since_updated = now - self.last_updated;
-            if time_since_updated < self.update_frequency {
-                return Err(StdError::generic_err(format!(
-                    "Derivative rate is being updated too frequently. Please wait {0} seconds before updating again.",
-                    self.update_frequency - time_since_updated
-                )));
-            }
-
             if self.value.eq(&new_rate) {
                 return Ok(());
             }
@@ -282,27 +182,20 @@ mod state {
             key: String,
             underlying_key: String,
             initial_rate: Decimal256,
-            rate_update_frequency: u64,
             rate_max_change: Decimal256,
             rate_timeout: u64,
-            apy: Decimal256,
-            apy_update_frequency: u64,
-            apy_max_change: Decimal256,
             last_updated: u64,
         ) -> StdResult<Self> {
             let rate = DerivativeRate::new(
                 initial_rate,
-                rate_update_frequency,
                 rate_timeout,
                 last_updated,
                 rate_max_change,
             )?;
-            let apy = DerivativeApy::new(apy, apy_update_frequency, apy_max_change, last_updated)?;
             Ok(Self {
                 key,
                 underlying_key,
                 rate,
-                apy,
             })
         }
     }
@@ -353,12 +246,8 @@ mod state {
                     data.key,
                     data.underlying_key,
                     data.initial_rate,
-                    data.rate_update_frequency,
                     data.rate_max_change,
                     data.rate_timeout,
-                    data.apy,
-                    data.apy_update_frequency,
-                    data.apy_max_change,
                     now,
                 )?;
                 Self::DERIVATIVES.save(storage, &data.key, &data)?;
@@ -399,17 +288,8 @@ mod state {
                         .require_valid_router_symbol(querier, &underlying_key)?;
                     data.underlying_key = underlying_key;
                 }
-                if let Some(rate_update_frequency) = update.rate_update_frequency {
-                    data.rate.update_frequency = rate_update_frequency;
-                }
                 if let Some(rate_timeout) = update.rate_timeout {
                     data.rate.timeout = rate_timeout;
-                }
-                if let Some(apy_update_frequency) = update.apy_update_frequency {
-                    data.apy.update_frequency = apy_update_frequency;
-                }
-                if let Some(apy_max_change) = update.apy_max_change {
-                    data.apy.set_max_change(apy_max_change)?;
                 }
                 Self::DERIVATIVES.save(storage, &key, &data)?;
             }
@@ -423,24 +303,9 @@ mod state {
         ) -> StdResult<()> {
             for (key, rate) in rates {
                 let mut data = Self::DERIVATIVES.load(storage, &key)?;
-                data.rate.require_valid_change(now, data.apy.value, rate)?;
+                data.rate.require_valid_change(now, rate)?;
                 data.rate.last_updated = now;
                 data.rate.value = rate;
-                Self::DERIVATIVES.save(storage, &key, &data)?;
-            }
-            Ok(())
-        }
-
-        pub fn update_apys(
-            storage: &mut dyn Storage,
-            now: u64,
-            apys: Vec<(String, Decimal256)>,
-        ) -> StdResult<()> {
-            for (key, apy) in apys {
-                let mut data = Self::DERIVATIVES.load(storage, &key)?;
-                data.apy.require_valid_change(now, apy)?;
-                data.apy.last_updated = now;
-                data.apy.value = apy;
                 Self::DERIVATIVES.save(storage, &key, &data)?;
             }
             Ok(())
@@ -455,34 +320,6 @@ mod state {
                 )?);
             }
             Ok(supported_pairs)
-        }
-    }
-
-    #[cfg(feature = "derivatives")]
-    #[cfg(test)]
-    mod test {
-        use std::str::FromStr;
-
-        use super::*;
-
-        #[cfg(feature = "derivatives")]
-        #[test]
-        fn test_derivative_rate() {
-            let rate = DerivativeRate::new(
-                Decimal256::from_str("1.158648705485855149").unwrap(),
-                100,
-                100,
-                0,
-                Decimal256::from_str("0.01").unwrap(),
-            )
-            .unwrap();
-            let apy = Decimal256::from_str("0.3108").unwrap();
-
-            let new_rate = Decimal256::from_str("1.158859249527666430").unwrap();
-            let now = 2 * 3600u64;
-            assert!(rate.require_valid_change(now, apy, new_rate).is_ok());
-            let now = 50u64;
-            assert!(rate.require_valid_change(now, apy, new_rate).is_err());
         }
     }
 }
