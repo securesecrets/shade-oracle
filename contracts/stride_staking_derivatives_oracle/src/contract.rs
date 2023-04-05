@@ -68,18 +68,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                             "shade_staking_derivatives_oracle_exchange_rate_update",
                         )
                     }
-                    DerivativeUpdates::APY(apys) => {
-                        oracle.config.require_permission(
-                            &deps.querier,
-                            info,
-                            BotPermission::UpdateAPY,
-                        )?;
-                        StrideStakingDerivativesOracle::update_apys(deps.storage, now, apys)?;
-                        resp.add_attribute_plaintext(
-                            "action",
-                            "shade_staking_derivatives_oracle_apy_update",
-                        )
-                    }
                     DerivativeUpdates::Config(configs) => {
                         oracle.config.require_admin(&deps.querier, info)?;
                         oracle.update_derivatives(&deps.querier, deps.storage, configs)?;
