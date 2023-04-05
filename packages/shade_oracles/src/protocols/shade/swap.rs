@@ -289,8 +289,8 @@ impl TokenType {
 #[cw_serde]
 #[derive(Default)]
 pub struct Fee {
-    pub nom: u8,
-    pub denom: u16,
+    pub nom: u64,
+    pub denom: u64,
 }
 
 #[cw_serde]
