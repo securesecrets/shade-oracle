@@ -373,8 +373,7 @@ mod state {
                 let price: U256 = price.data.rate.into();
                 new_target += muldiv18(weight.fixed, price)?;
             }
-            // Because Band never updates one of them.
-            let last_updated_feeds = max(last_updated_base, last_updated_quote);
+            let last_updated_feeds = min(last_updated_base, last_updated_quote);
             // Smooth out peg calculation to 10e-9 precision
             Ok((bankers_round(new_target, 9), last_updated_feeds))
         }

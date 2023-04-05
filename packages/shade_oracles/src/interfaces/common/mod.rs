@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 
 use super::*;
 use crate::BLOCK_SIZE;
@@ -93,7 +93,9 @@ impl BtrOraclePrice {
         let quote = self.data().last_updated_quote;
         let time_since_base = now - base;
         let time_since_quote = now - quote;
-        let time_since_updated = max(time_since_base, time_since_quote);
+        // Band randomly started setting the quote of USD to the max u64 value rather than
+        // never updating it.
+        let time_since_updated = min(time_since_base, time_since_quote);
         Ok(time_since_updated)
     }
     /// Allows us to pass a variable amount of precision decimals in the future
