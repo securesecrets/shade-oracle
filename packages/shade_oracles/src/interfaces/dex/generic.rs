@@ -83,7 +83,7 @@ mod state {
     };
 
     use super::*;
-    use cosmwasm_std::{Api, QuerierWrapper, StdResult, Storage, Uint128};
+    use cosmwasm_std::{Api, QuerierWrapper, StdResult, Storage, Uint128, Uint256};
     use shade_protocol::snip20::helpers::TokenInfo;
 
     #[cw_serde]
@@ -228,18 +228,24 @@ mod state {
                 decimals: data.target_token.decimals,
             };
 
-            let rate = LiquidityPoolMath::get_lp_token_spot_price(
+            let mut data = ReferenceData {
+                rate: Uint256::zero(),
+                last_updated_base: min(price_0.last_updated_base, price_1.last_updated_base),
+                last_updated_quote: min(price_0.last_updated_quote, price_1.last_updated_quote),
+            };
+
+            if a.reserve == 0 && b.reserve == 0 {
+                return Ok(data);
+            }
+
+            data.rate = LiquidityPoolMath::get_lp_token_spot_price(
                 a,
                 b,
                 total_supply.u128(),
                 lp_token_decimals,
             )?;
 
-            Ok(ReferenceData {
-                rate,
-                last_updated_base: min(price_0.last_updated_base, price_1.last_updated_base),
-                last_updated_quote: min(price_0.last_updated_quote, price_1.last_updated_quote),
-            })
+            Ok(data)
         }
 
         /// Infers the price of an LP token based on its expected reserves.

@@ -143,6 +143,7 @@ pub fn try_update_target(
     )?;
     oracle.peg.target = new_target.into();
     oracle.peg.value = new_target.into();
+    oracle.peg.last_value = new_target.into();
     oracle.peg.last_updated = env.block.time.seconds();
     oracle.compute_fixed_weights(prices.as_slice())?;
     oracle.save(deps.storage)?;
