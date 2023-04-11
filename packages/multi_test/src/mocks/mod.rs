@@ -87,26 +87,6 @@ mod shadeswap {
                 .unwrap();
             Self(contract)
         }
-        pub fn create_pool(
-            &self,
-            user: &User,
-            app: &mut App,
-            token_a: Contract,
-            amount_a: Uint128,
-            token_b: Contract,
-            amount_b: Uint128,
-        ) -> AppResult {
-            user.exec(
-                app,
-                &ExecuteMsg::MockPool {
-                    token_a,
-                    amount_a,
-                    token_b,
-                    amount_b,
-                },
-                &self.0,
-            )
-        }
         pub fn query_pair_info(&self, app: &App) -> PairInfo {
             let msg: ShadeSwapQueryMsgResponse =
                 QueryMsg::GetPairInfo {}.test_query(&self.0, app).unwrap();

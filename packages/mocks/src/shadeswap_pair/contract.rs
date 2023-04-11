@@ -9,6 +9,7 @@ use shade_oracles::{
     },
     ssp::Item,
 };
+use shade_protocol::contract_interfaces::snip20::ExecuteMsg as Snip20ExecuteMsg;
 
 pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
     Uint128::from(
@@ -46,6 +47,8 @@ pub enum ExecuteMsg {
         amount_a: Uint128,
         token_b: Contract,
         amount_b: Uint128,
+        liquidity_token: Contract,
+        liquidity_tokens: Uint128,
     },
 }
 
@@ -62,14 +65,13 @@ pub fn execute(
             amount_a,
             token_b,
             amount_b,
+            liquidity_token,
+            liquidity_tokens,
         } => {
             PAIR_INFO.save(
                 deps.storage,
                 &PairInfo {
-                    liquidity_token: Contract {
-                        address: Addr::unchecked("".to_string()),
-                        code_hash: "".to_string(),
-                    },
+                    liquidity_token: liquidity_token.clone(),
                     factory: Some(Contract {
                         address: Addr::unchecked("".to_string()),
                         code_hash: "".to_string(),
@@ -89,7 +91,7 @@ pub fn execute(
                     ),
                     amount_0: amount_a,
                     amount_1: amount_b,
-                    total_liquidity: Uint128::zero(),
+                    total_liquidity: liquidity_tokens,
                     contract_version: 1,
                     fee_info: FeeInfo {
                         shade_dao_address: Addr::unchecked("".to_string()),
@@ -102,7 +104,15 @@ pub fn execute(
                 },
             )?;
 
-            Ok(Response::default())
+            let mut msgs = vec![];
+            msgs.push(Snip20ExecuteMsg::Mint {
+                recipient: Addr::unchecked("voidvoidvoid").to_string(),
+                amount: amount_a,
+                memo: None,
+                padding: None,
+            }.to_cosmos_msg(&liquidity_token, vec![])?);
+
+            Ok(Response::default().add_messages(msgs))
         }
     }
 }

@@ -5,11 +5,101 @@
 )]
 use super::*;
 
+#[cfg(test)]
 mod test {
     use super::*;
-    use crate::mocks::MockShadeswapPair;
+    use crate::{mocks::MockShadeswapPair, helpers::router::OracleRouterHelper, harness::derivatives::shade};
+    use multi_test_helpers::Asserter;
     use oracle_mocks::shadeswap_pair::contract as mock_shade_pair;
-    use shade_oracles::{unit_test_interface::prices::PricesFixture};
+    use shade_oracles::{unit_test_interface::prices::PricesFixture, interfaces::providers::RawProvider};
+
+    fn create_mock_lp_token(admin: &User, app: &mut App) -> (String, Snip20Helper) {
+        let mock_liquidity_token_key = "MOCKLP";
+        let liquidity_token = Snip20Helper::init(
+            &admin,
+            app,
+            mock_liquidity_token_key,
+            mock_liquidity_token_key,
+            6,
+            &admin.address,
+            &None,
+            &to_binary("wdwdadwad").unwrap(),
+            &format!("{mock_liquidity_token_key}-snip20"),
+        );
+        (mock_liquidity_token_key.to_string(), liquidity_token)
+    }
+
+    #[test]
+    fn test_spot_oracle() {
+        let TestScenario {
+            mut app,
+            router,
+            admin,
+            user,
+            tokens,
+            provider,
+            ..
+        } = TestScenario::new(PricesFixture::basic_prices_2());
+
+        let shadeswap_oracle = GenericLiquidityPairOracleHelper::init_shadeswap_spot(
+            &admin,
+            &mut app,
+            &router.clone().into(),
+        );
+        let shade_pair = mock_shade_pair::InstantiateMsg {}
+        .test_init(
+            MockShadeswapPair::default(),
+            &mut app,
+            admin.addr(),
+            "shade_pair",
+            &[],
+        )
+        .unwrap();
+
+        let token_a_price = 10u128.pow(18);
+        let token_b_price = 10u128.pow(18);
+        let token_a_symbol = "FRAX";
+        let token_b_symbol = "USDC";
+        let new_prices = vec![("FRAX", token_a_price), ("USDC", token_b_price)];
+        let (_, new_prices) = OracleCore::create_prices_hashmap(new_prices);
+        provider.update_band_prices(&admin, &mut app, new_prices, None);
+
+        let frax = tokens.get(token_a_symbol).unwrap();
+        let usdc = tokens.get(token_b_symbol).unwrap();
+        let frax_token_info = frax.query_token_info(&app).unwrap();
+        let usdc_token_info = usdc.query_token_info(&app).unwrap();
+
+        let pair_key = format!("{}-{}", token_a_symbol, token_b_symbol);
+
+        let shade_pair_data = RawPairData {
+            key: pair_key.clone(),
+            base_token: frax.to_raw_asset(token_a_symbol),
+            target_token: usdc.to_raw_asset(token_b_symbol),
+            pair: shade_pair.clone().into(),
+        };
+
+        let (_, lp_token) = create_mock_lp_token(&admin, &mut app);
+        let lp_token_info = lp_token.query_token_info(&app).unwrap();
+
+        lp_token.add_minters(&mut app, &admin, vec![shade_pair.address.to_string()]);
+
+        mock_shade_pair::ExecuteMsg::MockPool {
+            token_a: frax.clone().into(),
+            amount_a: Uint128::new(10u128.pow(frax_token_info.decimals as u32)),
+            token_b: usdc.clone().into(),
+            amount_b: Uint128::new(10u128.pow(usdc_token_info.decimals as u32)),
+            liquidity_token: lp_token.clone().into(),
+            liquidity_tokens: Uint128::new(10u128.pow(lp_token_info.decimals as u32)),
+        }
+        .test_exec(&shade_pair, &mut app, user.addr(), &[])
+        .unwrap();
+
+        assert!(shadeswap_oracle.set_pairs(&admin, &mut app, vec![shade_pair_data.clone()]).is_ok());
+        assert!(router.set_keys(&admin, &mut app, shadeswap_oracle.0.clone().into(), vec![pair_key.clone()]).is_ok());
+
+        let lp_price = router.query_price(&app, pair_key).unwrap();
+        assert_eq!(lp_price.data.rate, Uint256::from_u128(2 * 10u128.pow(18)));
+    }
 
     #[test]
     fn test_registry() {
@@ -20,8 +110,12 @@ mod test {
             user,
             tokens,
             keys,
+            provider,
+            admin_auth,
             ..
         } = TestScenario::new(PricesFixture::basic_prices_2());
+
+        let new_router = OracleRouterHelper::init(&admin, &mut app, &admin_auth.clone().into(), RawProvider::Band(provider.clone().into()), "USD");
 
         let shadeswap_oracles = vec![
             GenericLiquidityPairOracleHelper::init_shadeswap_spot(
@@ -55,62 +149,117 @@ mod test {
                 &[],
             )
             .unwrap();
-            
-        let frax = tokens.get(&keys[0]).unwrap();
-        let usdc = tokens.get(&keys[1]).unwrap();
 
-        let pair_a_key = format!("{}-{}", keys[0], keys[1]);
-        let pair_b_key = format!("{}-{}", keys[1], keys[0]);
+            let frax = tokens.get(&keys[0]).unwrap();
+            let usdc = tokens.get(&keys[1]).unwrap();
+            let frax_token_info = frax.query_token_info(&app).unwrap();
+            let usdc_token_info = usdc.query_token_info(&app).unwrap();
+    
+            let pair_a_key = format!("{}-{}", keys[0], keys[1]);
+            let pair_b_key = format!("{}-{}", keys[1], keys[0]);
+    
+            let shade_pair_data_a = RawPairData {
+                key: pair_a_key.clone(),
+                base_token: frax.to_raw_asset(&keys[0]),
+                target_token: usdc.to_raw_asset(&keys[1]),
+                pair: shade_pair_a.clone().into(),
+            };
+    
+            let shade_pair_data_b = RawPairData {
+                key: pair_b_key.clone(),
+                base_token: usdc.to_raw_asset(&keys[1]),
+                target_token: frax.to_raw_asset(&keys[0]),
+                pair: shade_pair_b.clone().into(),
+            };
 
-        let shade_pair_data_a = RawPairData {
-            key: pair_a_key.clone(),
-            base_token: frax.to_raw_asset(&keys[0]),
-            target_token: usdc.to_raw_asset(&keys[1]),
-            pair: shade_pair_a.clone().into(),
-        };
+            let (_, lp_token) = create_mock_lp_token(&admin, &mut app);
 
-        let shade_pair_data_b = RawPairData {
-            key: pair_b_key.clone(),
-            base_token: usdc.to_raw_asset(&keys[1]),
-            target_token: frax.to_raw_asset(&keys[0]),
-            pair: shade_pair_b.clone().into(),
-        };
+            lp_token.add_minters(&mut app, &admin, vec![shade_pair_a.address.to_string(), shade_pair_b.address.to_string()]);
+
+            mock_shade_pair::ExecuteMsg::MockPool {
+                token_a: frax.clone().into(),
+                amount_a: Uint128::new(100 * 10u128.pow(frax_token_info.decimals as u32)),
+                token_b: usdc.clone().into(),
+                amount_b: Uint128::new(100 * 10u128.pow(usdc_token_info.decimals as u32)),
+                liquidity_token: lp_token.clone().into(),
+                liquidity_tokens: Uint128::one(),
+            }
+            .test_exec(&shade_pair_a, &mut app, user.addr(), &[])
+            .unwrap();
+
+            mock_shade_pair::ExecuteMsg::MockPool {
+                token_a: usdc.clone().into(),
+                amount_a: Uint128::new(100 * 10u128.pow(usdc_token_info.decimals as u32)),
+                token_b: frax.clone().into(),
+                amount_b: Uint128::new(100 * 10u128.pow(frax_token_info.decimals as u32)),
+                liquidity_token: lp_token.clone().into(),
+                liquidity_tokens: Uint128::one(),
+            }.test_exec(&shade_pair_b, &mut app, user.addr(), &[]).unwrap();
 
         for oracle in shadeswap_oracles {
+            let original_router = oracle.query_config(&app).unwrap().config.router;
+
             // TEST STATUS UPDATE
             assert!(oracle.set_status(&user, &mut app, false).is_err());
             assert!(oracle.set_status(&admin, &mut app, false).is_ok());
+            assert_eq!(oracle.query_config(&app).unwrap().config.enabled, false);
+            assert!(oracle.set_status(&admin, &mut app, true).is_ok());
+            assert_eq!(oracle.query_config(&app).unwrap().config.enabled, true);
+            assert_eq!(oracle.query_config(&app).unwrap().config.router, original_router);
+            assert!(oracle.query_config(&app).unwrap().supported_keys.is_empty());
+
+            let initial_pair_data = vec![shade_pair_data_a.clone(), shade_pair_data_b.clone()];
+
+            // TEST CONFIG
+            assert!(oracle.update_config(&user, &mut app, &new_router.clone().into()).is_err());
+            assert!(oracle.update_config(&admin, &mut app, &new_router.clone().into()).is_ok());
+            assert_eq!(oracle.query_config(&app).unwrap().config.router, new_router.clone().into());
+            assert!(oracle.update_config(&admin, &mut app, &original_router.clone().into()).is_ok());
+            assert_eq!(oracle.query_config(&app).unwrap().config.router, original_router);
+
+            // TEST SET PAIRS
+            assert!(oracle.set_pairs(&user, &mut app, initial_pair_data.clone()).is_err());
+            oracle.set_pairs(&admin, &mut app, initial_pair_data.clone()).unwrap();
+            assert!(oracle
+                .set_pairs(&admin, &mut app, initial_pair_data.clone())
+                .is_ok());
+            let initial_pairs = oracle.query_pairs(&app).unwrap();
+            assert_eq!(initial_pairs.len(), initial_pair_data.len());
+            
+            for pair in initial_pairs {
+                assert!(pair.key == pair_a_key || pair.key == pair_b_key);
+                assert!(pair.base_token == frax.to_asset(&app, &keys[0]) || pair.base_token == usdc.to_asset(&app, &keys[1]));
+                assert!(pair.target_token == frax.to_asset(&app, &keys[0]) || pair.target_token == usdc.to_asset(&app, &keys[1]));
+                assert!(pair.pair == shade_pair_a.clone().into() || pair.pair == shade_pair_b.clone().into());
+            }
+
+            Asserter::equal_vecs(&oracle.query_config(&app).unwrap().supported_keys, &vec![pair_a_key.clone(), pair_b_key.clone()]);
+
+            // TEST UPDATE ASSETS
+            assert!(oracle.update_assets(&user, &mut app, &[frax.to_raw_asset(&keys[1])]).is_err());
+            assert!(oracle
+                .update_assets(&admin, &mut app, &[frax.to_raw_asset(&keys[1])])
+                .is_ok());
+            let updated_pairs = oracle.query_pairs(&app).unwrap();
+            assert_eq!(updated_pairs.len(), initial_pair_data.len());
+
+            for pair in updated_pairs {
+                assert!(pair.key == pair_a_key || pair.key == pair_b_key);
+                assert!(pair.base_token == frax.to_asset(&app, &keys[1]) || pair.base_token == usdc.to_asset(&app, &keys[1]));
+                assert!(pair.target_token == frax.to_asset(&app, &keys[1]) || pair.target_token == usdc.to_asset(&app, &keys[1]));
+                assert!(pair.pair == shade_pair_a.clone().into() || pair.pair == shade_pair_b.clone().into());
+            }
+
+            // TEST REMOVE PAIRS
+            assert!(oracle.remove_pairs(&user, &mut app, &[pair_a_key.clone()]).is_err());
+            assert!(oracle
+                .remove_pairs(&admin, &mut app, &[pair_a_key.clone()])
+                .is_ok());
+            let updated_pairs = oracle.query_pairs(&app).unwrap();
+            assert_eq!(updated_pairs.len(), initial_pair_data.len() - 1);
+            assert!(updated_pairs.iter().all(|pair| pair.key != pair_a_key));
+            assert!(oracle.query_config(&app).unwrap().supported_keys.iter().all(|key| key != &pair_a_key));
         }
-        // TEST ADMIN
-
-        // mock_shade_pair::ExecuteMsg::MockPool {
-        //     token_a: primary_token.clone().into(),
-        //     amount_a: primary_pool,
-        //     token_b: base_token.clone().into(),
-        //     amount_b: base_pool,
-        // }
-        // .test_exec(&shade_pair, &mut app, user.addr(), &[])
-        // .unwrap();
-
-        // let pair = RawPairData {
-        //     target_token: RawAsset::new(primary_token.0.clone(), primary_symbol.clone()),
-        //     base_token: RawAsset::new(base_token.0.clone(), base_symbol.clone()),
-        //     key: symbol.clone(),
-        //     pair: shade_pair.clone().into(),
-        // };
-
-        // market_oracle
-        //     .set_pairs(&user, &mut app, vec![pair])
-        //     .unwrap();
-
-        // router
-        //     .set_keys(
-        //         &user,
-        //         &mut app,
-        //         market_oracle.clone().0.into(),
-        //         vec![symbol.clone()],
-        //     )
-        //     .unwrap();
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -132,7 +281,7 @@ mod test {
             admin,
             ..
         } = TestScenario::new(prices);
-        let user = admin;
+        let user = admin.clone();
 
         // Setup tokens
         let primary_token = Snip20Helper::init(
@@ -168,12 +317,17 @@ mod test {
                 &[],
             )
             .unwrap();
+        
+        let (_, lp_token) = create_mock_lp_token(&admin, &mut app);
+        lp_token.add_minters(&mut app, &admin, vec![shade_pair.address.to_string()]);
 
         mock_shade_pair::ExecuteMsg::MockPool {
             token_a: primary_token.clone().into(),
             amount_a: primary_pool,
             token_b: base_token.clone().into(),
             amount_b: base_pool,
+            liquidity_token: lp_token.clone().into(),
+            liquidity_tokens: Uint128::one(),
         }
         .test_exec(&shade_pair, &mut app, user.addr(), &[])
         .unwrap();
