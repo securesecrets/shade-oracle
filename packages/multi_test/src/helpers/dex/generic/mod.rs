@@ -170,9 +170,8 @@ mod test {
                 primary_symbol.as_str(),
                 primary_decimals as u8,
                 &user.addr(),
-                &None,
-                &to_binary("").ok().unwrap(),
-                "primary_token",
+                None,
+                None,
             );
 
             let base_token = Snip20Helper::init(
@@ -182,9 +181,8 @@ mod test {
                 base_symbol.as_str(),
                 base_decimals as u8,
                 &user.addr(),
-                &None,
-                &to_binary("").ok().unwrap(),
-                "base_token",
+                None,
+                None,
             );
 
             let siennaswap_pair = mock_sienna_pair::InstantiateMsg {}
