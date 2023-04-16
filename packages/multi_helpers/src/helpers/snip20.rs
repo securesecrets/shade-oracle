@@ -8,8 +8,6 @@ use shade_protocol::snip20::{helpers::TokenInfo, *};
 
 create_test_helper!(Snip20Helper);
 
-pub const DEFAULT_PRNG_SEED: [u8; 8] = [0x8b, 0x67, 0x64, 0x84, 0xb5, 0xfb, 0x1f, 0x37];
-
 impl Snip20Helper {
     #[allow(clippy::too_many_arguments)]
     pub fn init(
@@ -19,8 +17,9 @@ impl Snip20Helper {
         symbol: &str,
         decimals: u8,
         admin: &Addr,
-        initial_balances: Option<&[InitialBalance]>,
-        prng_seed: Option<[u8; 8]>,
+        initial_balances: &Option<Vec<InitialBalance>>,
+        prng_seed: &Binary,
+        label: &str,
     ) -> Self {
         let config = InitConfig {
             public_total_supply: Some(true),
@@ -36,13 +35,13 @@ impl Snip20Helper {
             admin: Some(admin.to_string()),
             symbol: symbol.to_owned(),
             decimals,
-            initial_balances: initial_balances.map(|x| x.to_vec()),
-            prng_seed: Binary::from(prng_seed.unwrap_or(DEFAULT_PRNG_SEED)),
+            initial_balances: initial_balances.clone(),
+            prng_seed: prng_seed.clone(),
             config: Some(config),
             query_auth: None,
         };
 
-        let contract = user.init(app, &msg, Snip20::default(), format!("{}-Snip20",name).as_str()).unwrap();
+        let contract = user.init(app, &msg, Snip20::default(), label).unwrap();
 
         Snip20Helper(contract)
     }
@@ -265,8 +264,9 @@ impl Snip20Helper {
                 info.1,
                 info.2,
                 &user.address,
-                None,
-                None,
+                &None,
+                &to_binary(&"seed").unwrap(),
+                info.1,
             );
             tokens.push(token);
         }

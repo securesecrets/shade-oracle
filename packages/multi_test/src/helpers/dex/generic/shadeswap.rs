@@ -22,8 +22,9 @@ mod test {
             mock_liquidity_token_key,
             6,
             &admin.address,
-            None,
-            None,
+            &None,
+            &to_binary("wdwdadwad").unwrap(),
+            &format!("{mock_liquidity_token_key}-snip20"),
         );
         (mock_liquidity_token_key.to_string(), liquidity_token)
     }
@@ -290,8 +291,9 @@ mod test {
             primary_symbol.as_str(),
             primary_decimals as u8,
             &user.addr(),
-            None,
-            None,
+            &None,
+            &to_binary("").ok().unwrap(),
+            "primary_token",
         );
 
         let base_token = Snip20Helper::init(
@@ -301,8 +303,9 @@ mod test {
             base_symbol.as_str(),
             base_decimals as u8,
             &user.addr(),
-            None,
-            None,
+            &None,
+            &to_binary("").ok().unwrap(),
+            "base_token",
         );
 
         let shade_pair = mock_shade_pair::InstantiateMsg {}

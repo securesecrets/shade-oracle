@@ -238,8 +238,9 @@ impl TestScenario {
                     key,
                     6,
                     &admin.address,
-                    None,
-                    None,
+                    &None,
+                    &to_binary("wdwdadwad").unwrap(),
+                    &format!("{key}-snip20"),
                 ),
             );
         }
