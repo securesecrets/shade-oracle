@@ -6,9 +6,9 @@ members = [
 ]
 
 [workspace.dependencies]
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
-multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
-shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
+shade-protocol = { git = "https://github.com/securesecrets/shade", rev = "lend-v1" }
+multi-derive = { git = "https://github.com/securesecrets/shade", rev = "lend-v1" }
+shade-multi-test = { git = "https://github.com/securesecrets/shade", rev = "lend-v1" }
 
 [profile.release]
 opt-level = 3
