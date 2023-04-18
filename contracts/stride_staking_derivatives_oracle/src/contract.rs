@@ -149,7 +149,7 @@ pub fn query_price(
         let price = rate.value * underlying_price.data().rate;
         ReferenceData::new(
             price,
-            min(underlying_price.data().last_updated_base, rate.last_updated),
+            underlying_price.data().last_updated_base,
             underlying_price.data().last_updated_quote,
         )
     };
