@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult, Storage};
-use shade_oracles::storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
+use shade_oracles::ssp::{Item};
 use shade_oracles::{
     core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::siennaswap::{
@@ -26,15 +26,7 @@ impl ExecuteCallback for ExecuteMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-pub static PAIR_INFO: &[u8] = b"pair_info";
-
-pub fn pair_info_r(storage: &dyn Storage) -> ReadonlySingleton<PairInfo> {
-    singleton_read(storage, PAIR_INFO)
-}
-
-pub fn pair_info_w(storage: &mut dyn Storage) -> Singleton<PairInfo> {
-    singleton(storage, PAIR_INFO)
-}
+pub const PAIR_INFO: Item<PairInfo> = Item::new("pair_info");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -95,7 +87,7 @@ pub fn execute(
                 contract_version: 0,
             };
 
-            pair_info_w(deps.storage).save(&pair_info)?;
+            PAIR_INFO.save(deps.storage, &pair_info)?;
 
             Ok(Response::default())
         }
@@ -106,7 +98,7 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::PairInfo => to_binary(&PairInfoResponse {
-            pair_info: pair_info_r(deps.storage).load()?,
+            pair_info: PAIR_INFO.load(deps.storage)?,
         }),
         QueryMsg::SwapSimulation { offer } => {
             let in_token = match offer.token {
@@ -122,7 +114,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 }
             };
 
-            let pair_info = pair_info_r(deps.storage).load()?;
+            let pair_info = PAIR_INFO.load(deps.storage)?;
 
             match pair_info.pair.token_0 {
                 TokenType::CustomToken {

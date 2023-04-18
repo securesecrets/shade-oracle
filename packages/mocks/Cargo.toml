@@ -22,5 +22,5 @@ default = []
 [dependencies]
 cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
 shade-oracles = { path = "../shade_oracles", features = ["core"] }
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test", "snip20" ] }
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", default-features = false, features = [ "multi-test", "snip20" ] }
 cosmwasm-schema = "1.1.5"

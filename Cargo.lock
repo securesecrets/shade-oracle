@@ -3,15 +3,9 @@
 version = 3
 
 [[package]]
-name = "Inflector"
-version = "0.11.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
-
-[[package]]
 name = "admin"
 version = "0.2.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-protocol",
@@ -42,7 +36,7 @@ dependencies = [
 [[package]]
 name = "airdrop"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
  "rs_merkle",
  "shade-protocol",
@@ -227,9 +221,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
 
 [[package]]
+name = "const_format"
+version = "0.2.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7309d9b4d3d2c0641e018d449232f2e28f1b22933c137f157d3dbc14228b8c0e"
+dependencies = [
+ "const_format_proc_macros",
+]
+
+[[package]]
+name = "const_format_proc_macros"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d897f47bf7270cf70d370f8f98c1abb6d2d4cf60a6845d30e05bfb90c6568650"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
+]
+
+[[package]]
 name = "contract-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
  "syn 1.0.109",
 ]
@@ -506,7 +520,7 @@ checksum = "89ca545a94061b6365f2c7355b4b32bd20df3ff95f02da9329b34ccc3bd6ee72"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.14",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -686,7 +700,7 @@ dependencies = [
 [[package]]
 name = "multi-derive"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 
 [[package]]
 name = "multi-test-helpers"
@@ -870,7 +884,7 @@ dependencies = [
 [[package]]
 name = "query_auth"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
  "schemars 0.7.6",
  "secret-cosmwasm-std",
@@ -940,7 +954,7 @@ checksum = "e13cca257d068dd3a390d04b2c3009a3fad2ee5048dfa8f239d048372810470c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.14",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -1219,7 +1233,7 @@ checksum = "291a097c63d8497e00160b166a967a4a79c64f3facdd01cbd7502231688d77df"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.14",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -1246,9 +1260,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.95"
+version = "1.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d721eca97ac802aa7777b701877c8004d950fc142651367300d21c1cc0194744"
+checksum = "057d394a50403bcac12672b2b18fb387ab6d289d957dab67dd201875391e52f1"
 dependencies = [
  "itoa",
  "ryu",
@@ -1271,7 +1285,7 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
  "admin",
  "airdrop",
@@ -1295,12 +1309,10 @@ dependencies = [
  "schemars 0.8.12",
  "secret-borsh-storage",
  "secret-cosmwasm-std",
- "secret-cosmwasm-storage",
  "secret-storage-plus",
  "serde",
  "shade-protocol",
  "thiserror",
- "ts-rs",
 ]
 
 [[package]]
@@ -1332,11 +1344,12 @@ dependencies = [
 [[package]]
 name = "shade-protocol"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
  "anyhow",
  "base64 0.12.3",
  "chrono",
+ "const_format",
  "contract-derive",
  "cosmwasm-schema",
  "query-authentication",
@@ -1350,6 +1363,8 @@ dependencies = [
  "secret-storage-plus",
  "serde",
  "sha2",
+ "strum",
+ "strum_macros",
  "subtle",
  "thiserror",
 ]
@@ -1424,7 +1439,7 @@ dependencies = [
 [[package]]
 name = "snip20"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#dc8d240abc70b572c722cbb8c8b636d1e1a51b2e"
+source = "git+https://github.com/securesecrets/shade?branch=cosmwasm_v1_upgrade#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-protocol",
@@ -1508,9 +1523,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.14"
+version = "2.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcf316d5356ed6847742d036f8a39c3b8435cac10bd528a4bd461928a6ab34d5"
+checksum = "a34fcf3e8b60f57e6a14301a2e916d323af98b0ea63c599441eec8558660c822"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1526,15 +1541,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "termcolor"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be55cf8942feac5c765c2c993422806843c9a9a45d4d5c407ad6dd2ea95eb9b6"
-dependencies = [
- "winapi-util",
 ]
 
 [[package]]
@@ -1554,7 +1560,7 @@ checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.14",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -1575,29 +1581,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "ts-rs"
-version = "6.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4added4070a4fdf9df03457206cd2e4b12417c8560a2954d91ffcbe60177a56a"
-dependencies = [
- "thiserror",
- "ts-rs-macros",
-]
-
-[[package]]
-name = "ts-rs-macros"
-version = "6.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f807fdb3151fee75df7485b901a89624358cd07a67a8fb1a5831bf5a07681ff"
-dependencies = [
- "Inflector",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "termcolor",
 ]
 
 [[package]]
@@ -1623,6 +1606,12 @@ name = "unicode-ident"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5464a87b239f13a63a501f2701565754bae92d243d4bb7eb12f6d57d2269bf4"
+
+[[package]]
+name = "unicode-xid"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "version_check"
@@ -1657,15 +1646,6 @@ name = "winapi-i686-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
-
-[[package]]
-name = "winapi-util"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70ec6ce85bb158151cae5e5c87f95a8e97d2c0c4b001223f33a334e3ce5de178"
-dependencies = [
- "winapi",
-]
 
 [[package]]
 name = "winapi-x86_64-pc-windows-gnu"

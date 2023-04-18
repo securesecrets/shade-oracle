@@ -21,7 +21,6 @@ pub mod unit_test_interface;
 pub use storage::*;
 #[cfg(feature = "storage")]
 pub mod storage {
-    pub use cosmwasm_storage::*;
     pub use secret_storage_plus as ssp;
 }
 #[cfg(feature = "core")]
