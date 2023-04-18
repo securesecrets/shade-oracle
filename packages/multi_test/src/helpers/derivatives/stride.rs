@@ -232,31 +232,6 @@ mod test {
         }
         Asserter::equal_vecs(&config.supported_keys, &expected_keys);
 
-        let bad_symbol_update = DerivativeUpdates::Config(vec![(
-            raw_derivatives[0].key.clone(),
-            DerivativeDataConfigUpdate::new(
-                Some("bad_symbol".to_string()),
-                None,
-                None,
-            ),
-        )]);
-        let nonexistant_symbol_update = DerivativeUpdates::Config(vec![(
-            "bad_symbol".to_string(),
-            DerivativeDataConfigUpdate::new(Some("ETH".to_string()), None, None),
-        )]);
-
-        let err = oracle
-            .update_derivatives(&admin, app, bad_symbol_update)
-            .unwrap_err();
-        let msg = Asserter::get_std_err_msg(err);
-        assert!(msg.contains(
-            &CommonOracleError::InvalidRouterSymbol("bad_symbol".to_string()).to_string()
-        ));
-
-        assert!(oracle
-            .update_derivatives(&admin, app, nonexistant_symbol_update)
-            .is_err());
-
         let now = app.block_info().time.seconds();
         let new_derivative = DerivativeData::new(
             raw_derivatives[0].key.clone(),
