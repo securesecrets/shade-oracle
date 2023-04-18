@@ -154,7 +154,6 @@ mod state {
         }
         pub fn require_valid_change(
             &self,
-            now: u64,
             new_rate: Decimal256,
         ) -> StdResult<()> {
             if self.value.eq(&new_rate) {
@@ -235,13 +234,10 @@ mod state {
         pub fn set_derivatives(
             &self,
             storage: &mut dyn Storage,
-            querier: &QuerierWrapper,
             now: u64,
             derivatives: Vec<RawDerivativeData>,
         ) -> StdResult<()> {
             for data in derivatives {
-                self.config
-                    .require_valid_router_symbol(querier, &data.underlying_key)?;
                 let data = DerivativeData::new(
                     data.key,
                     data.underlying_key,
@@ -284,8 +280,6 @@ mod state {
             for (key, update) in updates {
                 let mut data = Self::DERIVATIVES.load(storage, &key)?;
                 if let Some(underlying_key) = update.underlying_key {
-                    self.config
-                        .require_valid_router_symbol(querier, &underlying_key)?;
                     data.underlying_key = underlying_key;
                 }
                 if let Some(rate_timeout) = update.rate_timeout {
@@ -303,7 +297,7 @@ mod state {
         ) -> StdResult<()> {
             for (key, rate) in rates {
                 let mut data = Self::DERIVATIVES.load(storage, &key)?;
-                data.rate.require_valid_change(now, rate)?;
+                data.rate.require_valid_change(rate)?;
                 data.rate.last_updated = now;
                 data.rate.value = rate;
                 Self::DERIVATIVES.save(storage, &key, &data)?;

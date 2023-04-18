@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use cosmwasm_std::{
     entry_point, to_binary, Deps, Env, QuerierWrapper, Response, StdResult, Storage,
 };
@@ -47,7 +45,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             match msg {
                 ExecuteMsg::SetDerivatives(data) => {
                     oracle.config.require_admin(&deps.querier, info)?;
-                    oracle.set_derivatives(deps.storage, &deps.querier, now, data)?;
+                    oracle.set_derivatives(deps.storage,  now, data)?;
                     resp.add_attributes(vec![attr_action!("set_derivatives")])
                 }
                 ExecuteMsg::RemoveDerivatives(keys) => {
