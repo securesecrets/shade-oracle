@@ -41,6 +41,6 @@ rstest = "0.15.0"
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 multi-test-helpers = { path = "../multi_helpers" }
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", default-features = false, features = [ "multi-test" ] }
-shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "snip20", "admin" ] }
-multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
+shade-protocol = { workspace = true, default-features = false, features = [ "multi-test" ] }
+shade-multi-test = { workspace = true, features = [ "snip20", "admin" ] }
+multi-derive = { workspace = true }

@@ -5,6 +5,11 @@ members = [
   "contracts/*",
 ]
 
+[workspace.dependencies]
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
+multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
+shade-multi-test = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
+
 [profile.release]
 opt-level = 3
 debug = false

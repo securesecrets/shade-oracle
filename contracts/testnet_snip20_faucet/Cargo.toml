@@ -29,4 +29,4 @@ serde = { version = "1.0.103", default-features = false, features = [
 ] }
 thiserror = "1.0"
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", default-features = false, features = ["utils", "interface", "snip20", "math", "admin"] }
+shade-protocol = { workspace = true, default-features = false, features = ["utils", "interface", "snip20", "math", "admin"] }
