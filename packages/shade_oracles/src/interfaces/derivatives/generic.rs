@@ -64,7 +64,7 @@ pub use state::*;
 mod state {
     use super::*;
     use crate::{
-        asset::{Asset, RawAsset},
+        asset::{Asset},
         interfaces::common::config::CommonConfig,
     };
     use cosmwasm_std::{Api, QuerierWrapper, StdResult, Storage};

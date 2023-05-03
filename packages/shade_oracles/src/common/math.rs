@@ -17,7 +17,7 @@ impl GeneralMath {
         let tolerance: U256 = tolerance.into();
         let diff = abs_diff(a, b);
         if b == U256::ZERO && a == U256::ZERO {
-            return Ok(());
+            Ok(())
         } else {
             let actual_deviation = Decimal256::from_ratio(diff, b);
             let max_deviation = tolerance.into();

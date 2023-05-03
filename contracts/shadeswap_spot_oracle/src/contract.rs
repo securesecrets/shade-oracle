@@ -1,4 +1,4 @@
-use cosmwasm_std::{entry_point, QuerierWrapper, StdError, Storage};
+use cosmwasm_std::{entry_point, QuerierWrapper, Storage};
 use cosmwasm_std::{
     to_binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdResult,
 };

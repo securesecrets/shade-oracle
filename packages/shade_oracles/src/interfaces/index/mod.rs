@@ -51,7 +51,7 @@ pub use state::*;
 #[cfg(feature = "index")]
 mod state {
     use std::{
-        cmp::{max, min},
+        cmp::{min},
         collections::HashMap,
     };
 
@@ -189,7 +189,6 @@ mod state {
             let mut weights = self
                 .basket
                 .iter()
-                .into_iter()
                 .map(|(sym, w)| (sym.to_owned(), w.initial.into()))
                 .collect::<Vec<(String, Decimal256)>>();
 
@@ -243,7 +242,7 @@ mod state {
             }
 
             // Verify new weights sum to 100%
-            let weight_sum = self.basket.iter().map(|(_, w)| w.initial).sum::<U256>();
+            let weight_sum = self.basket.values().map(|w| w.initial).sum::<U256>();
 
             if weight_sum != exp10(18) {
                 return Err(IndexOracleError::InvalidBasketWeights {
@@ -275,7 +274,7 @@ mod state {
             prices: &[OraclePrice],
             time: &Timestamp,
         ) -> IndexOracleResult<()> {
-            if self.peg.frozen != true {
+            if !self.peg.frozen {
                 return Err(IndexOracleError::RollbackNotFrozen {});
             }
             let now = time.seconds();
@@ -345,7 +344,7 @@ mod state {
                 return Ok(resp);
             }
             let diff = abs_diff(self.peg.last_value, new_target);
-            let expected: U256 = self.peg.last_value.into();
+            let expected: U256 = self.peg.last_value;
             let deviation = Decimal256::from_ratio(diff, expected);
 
             if deviation > self.config.deviation_threshold {

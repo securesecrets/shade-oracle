@@ -191,7 +191,7 @@ impl Serialize for TokenPair {
     where
         S: Serializer,
     {
-        (self.0.clone(), self.1.clone(), self.2.clone()).serialize(serializer)
+        (self.0.clone(), self.1.clone(), self.2).serialize(serializer)
     }
 }
 

@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Binary, Deps, Env, Response, StdResult};
 use shade_oracles::{
-    core::{ExecuteCallback, InstantiateCallback},
+    core::{InstantiateCallback},
     protocols::shade_staking_derivatives::{StakingDerivativeQueryMsg, StakingInfoResponse},
     ssp::Item,
 };

@@ -119,7 +119,7 @@ impl IndexOracleHelper {
             .into_iter()
             .map(|(sym, w)| {
                 (
-                    sym.into().to_string(),
+                    sym.into(),
                     Decimal256::from_str(&w.into()).unwrap(),
                 )
             })
@@ -358,9 +358,9 @@ mod test {
         ],
         vec![
             ("USD", 1_00 * 10u128.pow(14)), // $1
-            ("BTC", 29_398_20 * 10u128.pow(14)), // $29398.2
-            ("ETH", 1_831_26 * 10u128.pow(14)), // $1831.26
-            ("XAU", 1_852_65 * 10u128.pow(14)), // $1852.65
+            ("BTC", 2_939_820 * 10u128.pow(14)), // $29398.2
+            ("ETH", 183_126 * 10u128.pow(14)), // $1831.26
+            ("XAU", 185_265 * 10u128.pow(14)), // $1852.65
         ],
         (10u128.pow(18)).into(),
         (10u128.pow(18)).into(),
@@ -400,8 +400,8 @@ mod test {
                 ("SEK", 0_10 * 10u128.pow(14)), // $0.10
                 ("NOK", 0_10 * 10u128.pow(14)), // $0.10
                 ("SGD", 0_73 * 10u128.pow(14)), // $0.73
-                ("XAU", 1_852_65 * 10u128.pow(14)), // $1852.65
-                ("BTC", 29_398_20 * 10u128.pow(14)), // $29398.2
+                ("XAU", 185_265 * 10u128.pow(14)), // $1852.65
+                ("BTC", 2_939_820 * 10u128.pow(14)), // $29398.2
             ],
             (1_05 * 10u128.pow(16)).into(),
             (1_05 * 10u128.pow(16)).into(),
@@ -653,7 +653,7 @@ mod test {
             provider,
             ..
         } = TestScenario::new(prices);
-        let target = Uint256::from_u128(1 * 10u128.pow(18));
+        let target = Uint256::from_u128(10u128.pow(18));
         let symbol = "SILK".to_string();
         let world_basket = basic_basket();
         let some_symbol = world_basket[0].0.clone();
@@ -682,7 +682,7 @@ mod test {
         MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
 
         let new_prices = OracleCore::create_prices_hashmap(vec![(
-            some_symbol.clone(),
+            some_symbol,
             1_000_000 * 10u128.pow(18),
         )])
         .1;
@@ -696,7 +696,7 @@ mod test {
         let resp = index_oracle.query_index_data(&app).unwrap();
         assert_eq!(resp.peg.last_value, price.data.rate);
         assert_eq!(resp.peg.value, price.data.rate);
-        assert_eq!(resp.peg.frozen, true);
+        assert!(resp.peg.frozen);
     }
 
     #[test]
@@ -711,7 +711,7 @@ mod test {
             admin,
             ..
         } = TestScenario::new(prices);
-        let target = Uint256::from_u128(1 * 10u128.pow(18));
+        let target = Uint256::from_u128(10u128.pow(18));
         let symbol = "SILK".to_string();
         let usd_basket = usd_basket();
         let world_basket = basic_basket();
@@ -741,7 +741,7 @@ mod test {
 
         let basket_states = vec![&world_basket, &usd_basket, &world_basket];
         for basket in basket_states {
-            assert!(index_oracle.mod_basket(&admin, &mut app, &basket).is_ok());
+            assert!(index_oracle.mod_basket(&admin, &mut app, basket).is_ok());
             let price = router.query_price(&app, symbol.clone()).unwrap();
             MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
         }

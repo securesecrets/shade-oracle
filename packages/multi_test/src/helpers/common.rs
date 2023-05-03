@@ -313,7 +313,7 @@ mod tests {
             &admin,
             &mut app,
             initial_ojo_prices,
-            admin_auth.clone().into(),
+            admin_auth.into(),
             Some(quote_symbol.clone()),
         );
 
@@ -386,7 +386,7 @@ mod tests {
         let config: ProviderConfig = BandQueryMsg::GetConfig {}
             .test_query(&band.0, &app)
             .unwrap();
-        assert_eq!(config.enabled, false);
+        assert!(!config.enabled);
         for msg in band_queries.clone() {
             assert!(msg.test_query::<PriceResponse>(&band.0, &app).is_err());
         }
@@ -396,7 +396,7 @@ mod tests {
         let config: ProviderConfig = BandQueryMsg::GetConfig {}
             .test_query(&band.0, &app)
             .unwrap();
-        assert_eq!(config.enabled, true);
+        assert!(config.enabled);
         assert_eq!(
             Uint256::from_u128(prices[0].1),
             band_queries[0]
@@ -444,7 +444,7 @@ mod tests {
             .exec(&mut app, &OjoExecuteMsg::SetStatus(false), &ojo.0)
             .is_ok());
         let config: ProviderConfig = OjoQueryMsg::GetConfig {}.test_query(&ojo.0, &app).unwrap();
-        assert_eq!(config.enabled, false);
+        assert!(!config.enabled);
         for msg in ojo_queries.clone() {
             assert!(msg.test_query::<PriceResponse>(&ojo.0, &app).is_err());
         }
@@ -452,7 +452,7 @@ mod tests {
             .exec(&mut app, &OjoExecuteMsg::SetStatus(true), &ojo.0)
             .is_ok());
         let config: ProviderConfig = OjoQueryMsg::GetConfig {}.test_query(&ojo.0, &app).unwrap();
-        assert_eq!(config.enabled, true);
+        assert!(config.enabled);
         assert_eq!(
             Uint256::from_u128(prices[0].1),
             ojo_queries[0]

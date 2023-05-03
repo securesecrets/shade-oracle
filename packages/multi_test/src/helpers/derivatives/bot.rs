@@ -349,9 +349,9 @@ mod test {
                 derivatives[1].initial_rate.atomics()
             ],
             vec![
-                actual_price[0].data.rate.into(),
-                actual_price[1].data.rate.into(),
-                actual_price[2].data.rate.into()
+                actual_price[0].data.rate,
+                actual_price[1].data.rate,
+                actual_price[2].data.rate
             ]
         );
         app.update_block(|b| b.time = b.time.plus_seconds(3u64));

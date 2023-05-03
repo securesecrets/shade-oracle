@@ -1,9 +1,7 @@
-pub(crate) use cosmwasm_std::{to_binary, Addr, Binary, Coin, ContractInfo, StdResult, Uint128};
+pub(crate) use cosmwasm_std::{to_binary, Binary, Coin, ContractInfo, StdResult, Uint128};
 pub(crate) use serde::Serialize;
 pub(crate) use shade_protocol::{
-    multi_test::{App, AppResponse},
-    utils::{ExecuteCallback, InstantiateCallback, MultiTestable, Query},
-    AnyResult,
+    utils::{ExecuteCallback, InstantiateCallback, Query},
 };
 
 #[cfg(not(target_arch = "wasm32"))]

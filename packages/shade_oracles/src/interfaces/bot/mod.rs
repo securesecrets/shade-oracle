@@ -435,7 +435,7 @@ mod state {
                     Ok(p)
                 })
                 .collect();
-            Ok(ordered_prices?)
+            ordered_prices
         }
 
         fn query_config(&self, storage: &dyn Storage) -> StdResult<CommonConfigResponse> {

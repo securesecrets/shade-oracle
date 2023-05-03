@@ -20,7 +20,7 @@ mod test {
     fn create_mock_lp_token(admin: &User, app: &mut App) -> (String, Snip20Helper) {
         let mock_liquidity_token_key = "MOCKLP";
         let liquidity_token = Snip20Helper::init(
-            &admin,
+            admin,
             app,
             mock_liquidity_token_key,
             mock_liquidity_token_key,
@@ -99,7 +99,7 @@ mod test {
         .unwrap();
 
         assert!(shadeswap_oracle
-            .set_pairs(&admin, &mut app, vec![shade_pair_data.clone()])
+            .set_pairs(&admin, &mut app, vec![shade_pair_data])
             .is_ok());
         assert!(router
             .set_keys(
@@ -131,8 +131,8 @@ mod test {
         let new_router = OracleRouterHelper::init(
             &admin,
             &mut app,
-            &admin_auth.clone().into(),
-            RawProvider::Band(provider.clone().into()),
+            &admin_auth.into(),
+            RawProvider::Band(provider.into()),
             "USD",
         );
 
@@ -145,7 +145,7 @@ mod test {
             GenericLiquidityPairOracleHelper::init_shadeswap_market(
                 &admin,
                 &mut app,
-                &router.clone().into(),
+                &router.into(),
             ),
         ];
 
@@ -230,9 +230,9 @@ mod test {
             // TEST STATUS UPDATE
             assert!(oracle.set_status(&user, &mut app, false).is_err());
             assert!(oracle.set_status(&admin, &mut app, false).is_ok());
-            assert_eq!(oracle.query_config(&app).unwrap().config.enabled, false);
+            assert!(!oracle.query_config(&app).unwrap().config.enabled);
             assert!(oracle.set_status(&admin, &mut app, true).is_ok());
-            assert_eq!(oracle.query_config(&app).unwrap().config.enabled, true);
+            assert!(oracle.query_config(&app).unwrap().config.enabled);
             assert_eq!(
                 oracle.query_config(&app).unwrap().config.router,
                 original_router
@@ -291,7 +291,7 @@ mod test {
 
             Asserter::equal_vecs(
                 &oracle.query_config(&app).unwrap().supported_keys,
-                &vec![pair_a_key.clone(), pair_b_key.clone()],
+                &[pair_a_key.clone(), pair_b_key.clone()],
             );
 
             // TEST UPDATE ASSETS
@@ -342,7 +342,7 @@ mod test {
     #[allow(clippy::too_many_arguments)]
     fn basic_market_test(
         symbol: String,
-        base_peg: Option<String>,
+        _base_peg: Option<String>,
         prices: Vec<(&str, u128)>,
         primary_symbol: String,
         primary_pool: Uint128,
@@ -418,8 +418,8 @@ mod test {
         );
 
         let pair = RawPairData {
-            target_token: RawAsset::new(primary_token.0.clone(), primary_symbol.clone()),
-            base_token: RawAsset::new(base_token.0.clone(), base_symbol.clone()),
+            target_token: RawAsset::new(primary_token.0, primary_symbol.clone()),
+            base_token: RawAsset::new(base_token.0, base_symbol.clone()),
             key: symbol.clone(),
             pair: shade_pair.clone().into(),
         };

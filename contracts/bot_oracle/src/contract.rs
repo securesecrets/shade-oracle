@@ -2,7 +2,7 @@ use cosmwasm_std::{
     entry_point, Deps, Env, Response, StdResult,
 };
 use cosmwasm_std::{DepsMut, MessageInfo, QueryResponse};
-use shade_oracles::interfaces::common::config::BotPermission;
+
 use shade_oracles::{interfaces::bot::*};
 
 const ACTION_PREFIX: &str = "bot-oracle_";

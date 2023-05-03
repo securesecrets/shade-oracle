@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::{min};
 
 use super::*;
 use crate::BLOCK_SIZE;

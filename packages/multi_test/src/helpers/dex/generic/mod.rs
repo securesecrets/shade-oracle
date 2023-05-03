@@ -144,7 +144,7 @@ mod test {
         #[allow(clippy::too_many_arguments)]
         fn basic_market_test(
             symbol: String,
-            base_peg: Option<String>,
+            _base_peg: Option<String>,
             prices: Vec<(&str, u128)>,
             primary_symbol: String,
             primary_pool: Uint128,
@@ -216,8 +216,8 @@ mod test {
             .unwrap();
 
             let pair = RawPairData {
-                target_token: RawAsset::new(primary_token.0.clone(), primary_symbol.clone()),
-                base_token: RawAsset::new(base_token.0.clone(), base_symbol.clone()),
+                target_token: RawAsset::new(primary_token.0, primary_symbol.clone()),
+                base_token: RawAsset::new(base_token.0, base_symbol.clone()),
                 key: symbol.clone(),
                 pair: siennaswap_pair.clone().into(),
             };

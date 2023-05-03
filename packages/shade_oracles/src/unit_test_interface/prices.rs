@@ -30,9 +30,9 @@ impl PricesFixture {
     pub fn basic_prices_2() -> Vec<(&'static str, u128)> {
         vec![
             (Self::USD, 1_00 * 10u128.pow(16)),      // $1
-            (Self::BTC, 29_398_20 * 10u128.pow(14)), // $29398.2
-            (Self::ETH, 1_831_26 * 10u128.pow(14)),  // $1831.26
-            (Self::XAU, 1_852_65 * 10u128.pow(14)),  // $1852.65
+            (Self::BTC, 2_939_820 * 10u128.pow(14)), // $29398.2
+            (Self::ETH, 183_126 * 10u128.pow(14)),  // $1831.26
+            (Self::XAU, 185_265 * 10u128.pow(14)),  // $1852.65
             (Self::FRAX, 1_00 * 10u128.pow(16)),     // $1
             (Self::OSMO, 0_944 * 10u128.pow(16)),    // .944
             (Self::USDC, 1_00 * 10u128.pow(16)),     // $1

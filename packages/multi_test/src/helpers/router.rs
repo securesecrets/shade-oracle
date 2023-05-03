@@ -378,11 +378,11 @@ mod test {
 
         let operations = vec![
             RegistryOperation::SetKeys {
-                oracle: provider.clone().into(),
+                oracle: provider.into(),
                 keys: keys_to_remove.clone(),
             },
             RegistryOperation::RemoveKeys {
-                keys: keys_to_remove.clone(),
+                keys: keys_to_remove,
             },
         ];
         router

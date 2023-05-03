@@ -10,17 +10,15 @@ use secret_storage_plus::{Item, ItemStorage};
 /// Deprecated - only time migrations are allowed, other permitted operations TBD by target
 ///
 /// Frozen - only status change allowed
+#[derive(Default)]
 pub enum ContractStatus {
+    #[default]
     Normal,
     Deprecated,
     Frozen,
 }
 
-impl Default for ContractStatus {
-    fn default() -> Self {
-        ContractStatus::Normal
-    }
-}
+
 
 pub trait GlobalStatus<T: Error + Into<StdError>> {
     fn normal_err() -> T;

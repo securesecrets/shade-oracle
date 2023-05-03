@@ -162,13 +162,11 @@ pub fn get_prices(
             } else {
                 router.query_provider_prices(&deps.querier, symbols)
             }
+        } else if symbols.len() == 1 {
+            let price = query_price(&oracle, &deps.querier, &symbols[0])?;
+            Ok(vec![price])
         } else {
-            if symbols.len() == 1 {
-                let price = query_price(&oracle, &deps.querier, &symbols[0])?;
-                Ok(vec![price])
-            } else {
-                query_prices(&oracle, &deps.querier, &symbols)
-            }
+            query_prices(&oracle, &deps.querier, &symbols)
         }?;
         for price in queried_prices {
             OracleRouter::try_deviation_test(deps.storage, &price)?;
