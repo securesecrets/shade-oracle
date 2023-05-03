@@ -1331,6 +1331,7 @@ dependencies = [
 name = "shade-oracles"
 version = "1.0.0"
 dependencies = [
+ "anyhow",
  "better-secret-math",
  "borsh",
  "btr-macros",

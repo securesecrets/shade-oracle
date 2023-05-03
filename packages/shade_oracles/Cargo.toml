@@ -8,6 +8,14 @@ authors = [
 ]
 edition = "2021"
 
+[[bin]]
+name = "schemas"
+path = "src/schemas.rs"
+required-features = [
+  "schemas",
+  "proxy-band", "index", "router", "derivatives", "dex", "bot", 
+]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -21,6 +29,7 @@ router = ["core"]
 derivatives = ["core"]
 dex = ["core"]
 bot = ["core"]
+schemas = ["dep:anyhow"]
 
 [dependencies]
 cosmwasm-std = { workspace = true }
@@ -40,5 +49,6 @@ better-secret-math = { workspace = true }
 secret-storage-plus = { workspace = true }
 secret-borsh-storage = { workspace = true }
 
+anyhow = { workspace = true, optional = true }
 [dev-dependencies]
 rstest = { workspace = true }

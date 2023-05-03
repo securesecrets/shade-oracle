@@ -1,0 +1,855 @@
+{
+  "contract_name": "OracleRouter",
+  "contract_version": "1.0.0",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InstantiateMsg",
+    "type": "object",
+    "required": [
+      "admin_auth",
+      "provider",
+      "quote_symbol"
+    ],
+    "properties": {
+      "admin_auth": {
+        "$ref": "#/definitions/RawContract"
+      },
+      "provider": {
+        "$ref": "#/definitions/RawProvider"
+      },
+      "quote_symbol": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "RawContract": {
+        "description": "A contract that does not contain a validated address. Should be accepted as user input because we shouldn't assume addresses are verified Addrs. https://docs.rs/cosmwasm-std/latest/cosmwasm_std/struct.Addr.html",
+        "type": "object",
+        "required": [
+          "address",
+          "code_hash"
+        ],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "code_hash": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RawProvider": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "band"
+            ],
+            "properties": {
+              "band": {
+                "$ref": "#/definitions/RawContract"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "ojo"
+            ],
+            "properties": {
+              "ojo": {
+                "$ref": "#/definitions/RawContract"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "execute": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "ExecuteMsg",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": [
+          "set_status"
+        ],
+        "properties": {
+          "set_status": {
+            "$ref": "#/definitions/ContractStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "update_protected_keys"
+        ],
+        "properties": {
+          "update_protected_keys": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/definitions/Uint256"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "update_config"
+        ],
+        "properties": {
+          "update_config": {
+            "$ref": "#/definitions/UpdateConfig"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "update_registry"
+        ],
+        "properties": {
+          "update_registry": {
+            "$ref": "#/definitions/RegistryOperation"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "batch_update_registry"
+        ],
+        "properties": {
+          "batch_update_registry": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/RegistryOperation"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "definitions": {
+      "ContractStatus": {
+        "description": "Normal - all operations allowed except migrations\n\nDeprecated - only time migrations are allowed, other permitted operations TBD by target\n\nFrozen - only status change allowed",
+        "type": "string",
+        "enum": [
+          "normal",
+          "deprecated",
+          "frozen"
+        ]
+      },
+      "Decimal256": {
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 (which is (2^256 - 1) / 10^18)",
+        "type": "string"
+      },
+      "ProtectedKeyInfo": {
+        "type": "object",
+        "required": [
+          "deviation",
+          "key",
+          "price"
+        ],
+        "properties": {
+          "deviation": {
+            "$ref": "#/definitions/Decimal256"
+          },
+          "key": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/definitions/Uint256"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RawContract": {
+        "description": "A contract that does not contain a validated address. Should be accepted as user input because we shouldn't assume addresses are verified Addrs. https://docs.rs/cosmwasm-std/latest/cosmwasm_std/struct.Addr.html",
+        "type": "object",
+        "required": [
+          "address",
+          "code_hash"
+        ],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "code_hash": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RawProvider": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "band"
+            ],
+            "properties": {
+              "band": {
+                "$ref": "#/definitions/RawContract"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "ojo"
+            ],
+            "properties": {
+              "ojo": {
+                "$ref": "#/definitions/RawContract"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "RegistryOperation": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "remove_keys"
+            ],
+            "properties": {
+              "remove_keys": {
+                "type": "object",
+                "required": [
+                  "keys"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "set_keys"
+            ],
+            "properties": {
+              "set_keys": {
+                "type": "object",
+                "required": [
+                  "keys",
+                  "oracle"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "oracle": {
+                    "$ref": "#/definitions/RawContract"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "set_protection"
+            ],
+            "properties": {
+              "set_protection": {
+                "type": "object",
+                "required": [
+                  "infos"
+                ],
+                "properties": {
+                  "infos": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/ProtectedKeyInfo"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "remove_protection"
+            ],
+            "properties": {
+              "remove_protection": {
+                "type": "object",
+                "required": [
+                  "keys"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Uint256": {
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+        "type": "string"
+      },
+      "UpdateConfig": {
+        "type": "object",
+        "properties": {
+          "admin_auth": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/RawContract"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/RawProvider"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quote_symbol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "query": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "QueryMsg",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": [
+          "get_config"
+        ],
+        "properties": {
+          "get_config": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Get oracle at that key",
+        "type": "object",
+        "required": [
+          "get_oracle"
+        ],
+        "properties": {
+          "get_oracle": {
+            "type": "object",
+            "required": [
+              "key"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Get price of oracle at that key",
+        "type": "object",
+        "required": [
+          "get_price"
+        ],
+        "properties": {
+          "get_price": {
+            "type": "object",
+            "required": [
+              "key"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_oracles"
+        ],
+        "properties": {
+          "get_oracles": {
+            "type": "object",
+            "required": [
+              "keys"
+            ],
+            "properties": {
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_prices"
+        ],
+        "properties": {
+          "get_prices": {
+            "type": "object",
+            "required": [
+              "keys"
+            ],
+            "properties": {
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_keys"
+        ],
+        "properties": {
+          "get_keys": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_protected_keys"
+        ],
+        "properties": {
+          "get_protected_keys": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "migrate": null,
+  "sudo": null,
+  "responses": {
+    "get_config": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ConfigResponse",
+      "type": "object",
+      "required": [
+        "config",
+        "status"
+      ],
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/Config"
+        },
+        "status": {
+          "$ref": "#/definitions/ContractStatus"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Config": {
+          "type": "object",
+          "required": [
+            "admin_auth",
+            "provider",
+            "quote_symbol",
+            "this"
+          ],
+          "properties": {
+            "admin_auth": {
+              "$ref": "#/definitions/Contract"
+            },
+            "provider": {
+              "$ref": "#/definitions/Provider"
+            },
+            "quote_symbol": {
+              "type": "string"
+            },
+            "this": {
+              "$ref": "#/definitions/Contract"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Contract": {
+          "description": "In the process of being deprecated for [cosmwasm_std::ContractInfo] so use that instead when possible.",
+          "type": "object",
+          "required": [
+            "address",
+            "code_hash"
+          ],
+          "properties": {
+            "address": {
+              "$ref": "#/definitions/Addr"
+            },
+            "code_hash": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "ContractStatus": {
+          "description": "Normal - all operations allowed except migrations\n\nDeprecated - only time migrations are allowed, other permitted operations TBD by target\n\nFrozen - only status change allowed",
+          "type": "string",
+          "enum": [
+            "normal",
+            "deprecated",
+            "frozen"
+          ]
+        },
+        "Provider": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "band"
+              ],
+              "properties": {
+                "band": {
+                  "$ref": "#/definitions/Contract"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "ojo"
+              ],
+              "properties": {
+                "ojo": {
+                  "$ref": "#/definitions/Contract"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    "get_keys": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_String",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "get_oracle": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OracleResponse",
+      "type": "object",
+      "required": [
+        "key",
+        "oracle"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "oracle": {
+          "$ref": "#/definitions/Contract"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Contract": {
+          "description": "In the process of being deprecated for [cosmwasm_std::ContractInfo] so use that instead when possible.",
+          "type": "object",
+          "required": [
+            "address",
+            "code_hash"
+          ],
+          "properties": {
+            "address": {
+              "$ref": "#/definitions/Addr"
+            },
+            "code_hash": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "get_oracles": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_OracleResponse",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/OracleResponse"
+      },
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Contract": {
+          "description": "In the process of being deprecated for [cosmwasm_std::ContractInfo] so use that instead when possible.",
+          "type": "object",
+          "required": [
+            "address",
+            "code_hash"
+          ],
+          "properties": {
+            "address": {
+              "$ref": "#/definitions/Addr"
+            },
+            "code_hash": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "OracleResponse": {
+          "type": "object",
+          "required": [
+            "key",
+            "oracle"
+          ],
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "oracle": {
+              "$ref": "#/definitions/Contract"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "get_price": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OraclePrice",
+      "type": "object",
+      "required": [
+        "data",
+        "key"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/ReferenceData"
+        },
+        "key": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "ReferenceData": {
+          "type": "object",
+          "required": [
+            "last_updated_base",
+            "last_updated_quote",
+            "rate"
+          ],
+          "properties": {
+            "last_updated_base": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "last_updated_quote": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "rate": {
+              "$ref": "#/definitions/Uint256"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Uint256": {
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+          "type": "string"
+        }
+      }
+    },
+    "get_prices": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_OraclePrice",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/OraclePrice"
+      },
+      "definitions": {
+        "OraclePrice": {
+          "type": "object",
+          "required": [
+            "data",
+            "key"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReferenceData"
+            },
+            "key": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "ReferenceData": {
+          "type": "object",
+          "required": [
+            "last_updated_base",
+            "last_updated_quote",
+            "rate"
+          ],
+          "properties": {
+            "last_updated_base": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "last_updated_quote": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "rate": {
+              "$ref": "#/definitions/Uint256"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Uint256": {
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+          "type": "string"
+        }
+      }
+    },
+    "get_protected_keys": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_ProtectedKeyInfo",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ProtectedKeyInfo"
+      },
+      "definitions": {
+        "Decimal256": {
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 (which is (2^256 - 1) / 10^18)",
+          "type": "string"
+        },
+        "ProtectedKeyInfo": {
+          "type": "object",
+          "required": [
+            "deviation",
+            "key",
+            "price"
+          ],
+          "properties": {
+            "deviation": {
+              "$ref": "#/definitions/Decimal256"
+            },
+            "key": {
+              "type": "string"
+            },
+            "price": {
+              "$ref": "#/definitions/Uint256"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Uint256": {
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
