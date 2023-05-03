@@ -13,19 +13,19 @@ crate-type = ["cdylib", "rlib"]
 default = []
 
 [dependencies]
-strum = { version = "0.24", features = ["derive"] }
-anyhow = "1"
-cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
-cosmwasm-schema = "1.1.5"
-schemars = "0.8.9"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = "1.0"
+strum = { workspace = true }
+anyhow = { workspace = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
 shade-oracles = { path = "../shade_oracles" }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-shade-protocol = { workspace = true, default-features = false, features = [ "multi-test", "admin", "airdrop" ] }
+shade-protocol = { workspace = true, features = [ "multi-test", "admin", "airdrop" ] }
 multi-derive = { workspace = true }
 shade-multi-test = { workspace = true, features = ["snip20", "query_auth", "admin", "airdrop" ]}
 
 [dev-dependencies]
-rstest = "0.15.0"
+rstest = { workspace = true }

@@ -44,9 +44,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.70"
+version = "1.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7de8ce5e0f9f8d88245311066a578d72b7af3e7088f32783804676302df237e4"
+checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
 
 [[package]]
 name = "autocfg"
@@ -167,6 +167,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bot_oracle"
+version = "0.1.0"
+dependencies = [
+ "secret-cosmwasm-std",
+ "shade-oracles",
+]
+
+[[package]]
 name = "btr-macros"
 version = "0.1.0"
 source = "git+https://github.com/securesecrets/better-secret-math#e24e3b04b5762ff38be19e8b73c5b745b8f41580"
@@ -250,18 +258,18 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-derive"
-version = "1.2.3"
+version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2e64f710a18ef90d0a632cf27842e98ffc2d005a38a6f76c12fd0bc03bc1a2d"
+checksum = "1c9f7f0e51bfc7295f7b2664fe8513c966428642aa765dad8a74acdab5e0c773"
 dependencies = [
  "syn 1.0.109",
 ]
 
 [[package]]
 name = "cosmwasm-schema"
-version = "1.2.3"
+version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe5ad2e23a971b9e4cd57b20cee3e2e79c33799bed4b128e473aca3702bfe5dd"
+checksum = "0f00b363610218eea83f24bbab09e1a7c3920b79f068334fdfcc62f6129ef9fc"
 dependencies = [
  "cosmwasm-schema-derive",
  "schemars 0.8.12",
@@ -272,9 +280,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema-derive"
-version = "1.2.3"
+version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2926d159a9bb1a716a592b40280f1663f2491a9de3b6da77c0933cee2a2655b8"
+checksum = "ae38f909b2822d32b275c9e2db9728497aa33ffe67dd463bc67c6a3b7092785c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -283,9 +291,9 @@ dependencies = [
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "280a9f2d8b3a38871a3c8a46fb80db65e5e5ed97da80c4d08bf27fb63e35e181"
+checksum = "3e4c1eaa2012c47becbbad2ab175484c2a84d1185b566fb2cc5b8707343dfe58"
 dependencies = [
  "libc",
 ]
@@ -669,9 +677,17 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.141"
+version = "0.2.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3304a64d199bb964be99741b7a14d26972741915b3649639149b2479bb46f4b5"
+checksum = "6a987beff54b60ffa6d51982e1aa1146bc42f19bd26be28b0586f252fccf5317"
+
+[[package]]
+name = "lido_staking_derivatives_oracle"
+version = "0.1.0"
+dependencies = [
+ "secret-cosmwasm-std",
+ "shade-oracles",
+]
 
 [[package]]
 name = "memchr"
@@ -785,6 +801,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
 
 [[package]]
+name = "persistence_staking_derivatives_oracle"
+version = "0.1.0"
+dependencies = [
+ "secret-cosmwasm-std",
+ "shade-oracles",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -889,6 +913,14 @@ dependencies = [
  "schemars 0.7.6",
  "secret-cosmwasm-std",
  "shade-protocol",
+]
+
+[[package]]
+name = "quicksilver_staking_derivatives_oracle"
+version = "0.1.0"
+dependencies = [
+ "secret-cosmwasm-std",
+ "shade-oracles",
 ]
 
 [[package]]

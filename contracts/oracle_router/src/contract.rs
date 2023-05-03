@@ -179,12 +179,15 @@ pub fn get_prices(
     }
 
     // For every fetched price, find its position in the original request and replace the placeholder data with the actual data for that symbol.
-    let ordered_prices: Vec<OraclePrice> = ordered_prices.into_iter().map(|mut p| {
-        if let Some(fetched_price) = fetched_prices.get(p.key()) {
-            p.data = fetched_price.data.clone();
-        }
-        p
-}).collect();
+    let ordered_prices: Vec<OraclePrice> = ordered_prices
+        .into_iter()
+        .map(|mut p| {
+            if let Some(fetched_price) = fetched_prices.get(p.key()) {
+                p.data = fetched_price.data.clone();
+            }
+            p
+        })
+        .collect();
     Ok(ordered_prices)
 }
 

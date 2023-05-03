@@ -12,6 +12,33 @@ pub struct CommonConfigResponse {
     pub supported_keys: Vec<String>,
 }
 
+#[cw_serde]
+pub enum BotPermission {
+    UpdateStrideRates,
+    UpdatePersistenceRates,
+    UpdateQuicksilverRates,
+    UpdateLidoRates,
+    UpdateIstPrice,
+}
+
+const PERMISSION_PREFIX: &str = "SHADE_ORACLES_";
+
+impl ToString for BotPermission {
+    fn to_string(&self) -> String {
+        match self {
+            BotPermission::UpdateStrideRates => format!("{}STRIDE_RATES_BOT", PERMISSION_PREFIX),
+            BotPermission::UpdatePersistenceRates => {
+                format!("{}PERSISTENCE_RATES_BOT", PERMISSION_PREFIX)
+            }
+            BotPermission::UpdateQuicksilverRates => {
+                format!("{}QUICKSILVER_RATES_BOT", PERMISSION_PREFIX)
+            }
+            BotPermission::UpdateLidoRates => format!("{}LIDO_RATES_BOT", PERMISSION_PREFIX),
+            BotPermission::UpdateIstPrice => format!("{}IST_PRICE_BOT", PERMISSION_PREFIX),
+        }
+    }
+}
+
 #[cfg(feature = "core")]
 pub use state::*;
 #[cfg(feature = "core")]
@@ -110,7 +137,7 @@ mod state {
         pub fn require_permission(
             &self,
             querier: &QuerierWrapper,
-            info: MessageInfo,
+            sender: &Addr,
             permission: impl ToString,
         ) -> StdResult<()> {
             let get_admin_auth_req: RouterConfigResponse =
@@ -118,14 +145,14 @@ mod state {
             let admin_auth = get_admin_auth_req.config.admin_auth;
             let admin_resp: ValidateAdminPermissionResponse = QueryMsg::ValidateAdminPermission {
                 permission: permission.to_string(),
-                user: info.sender.clone().into(),
+                user: sender.clone().into(),
             }
             .query(querier, &admin_auth)?;
             if admin_resp.has_permission {
                 Ok(())
             } else {
                 Err(
-                    CommonOracleError::UnauthorizedPermission(info.sender, permission.to_string())
+                    CommonOracleError::UnauthorizedPermission(sender.clone(), permission.to_string())
                         .into(),
                 )
             }

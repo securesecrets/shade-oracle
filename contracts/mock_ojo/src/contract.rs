@@ -128,44 +128,34 @@ pub fn query(deps: Deps, _env: Env, msg: OjoQueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     pad_query_result(
         match msg {
-            OjoQueryMsg::GetReferenceData {
-                symbol_pair
-            } => {
+            OjoQueryMsg::GetReferenceData { symbol_pair } => {
                 require_enabled(&config)?;
                 query_saved_data(deps, symbol_pair)
             }
-            OjoQueryMsg::GetReferenceDataBulk {
-                symbol_pairs
-            } => {
+            OjoQueryMsg::GetReferenceDataBulk { symbol_pairs } => {
                 require_enabled(&config)?;
                 bulk_query_saved_data(deps, symbol_pairs)
             }
             OjoQueryMsg::GetPrice { key } => {
                 require_enabled(&config)?;
                 let data = MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol))?;
-                to_binary(&OraclePrice::new(
-                    key,
-                    data.into(),
-                ))
-            },
+                to_binary(&OraclePrice::new(key, data.into()))
+            }
             OjoQueryMsg::GetMedianReferenceData { symbol_pair } => {
                 require_enabled(&config)?;
                 query_saved_data(deps, symbol_pair)
-            },
+            }
             OjoQueryMsg::GetMedianReferenceDataBulk { symbol_pairs } => {
                 require_enabled(&config)?;
                 bulk_query_saved_data(deps, symbol_pairs)
-            },
+            }
             OjoQueryMsg::GetPrices { keys } => {
                 require_enabled(&config)?;
                 let mut results = vec![];
                 for key in keys {
                     let data =
                         MOCK_DATA.load(deps.storage, (key.clone(), config.quote_symbol.clone()))?;
-                    results.push(OraclePrice::new(
-                        key,
-                        data.into(),
-                    ));
+                    results.push(OraclePrice::new(key, data.into()));
                 }
                 to_binary(&results)
             }
@@ -175,17 +165,11 @@ pub fn query(deps: Deps, _env: Env, msg: OjoQueryMsg) -> StdResult<Binary> {
     )
 }
 
-fn query_saved_data(
-    deps: Deps,
-    symbol_pair: (String, String),
-) -> StdResult<Binary> {
+fn query_saved_data(deps: Deps, symbol_pair: (String, String)) -> StdResult<Binary> {
     to_binary(&MOCK_DATA.load(deps.storage, symbol_pair)?)
 }
 
-fn bulk_query_saved_data(
-    deps: Deps,
-    symbol_pairs: Vec<(String, String)>,
-) -> StdResult<Binary> {
+fn bulk_query_saved_data(deps: Deps, symbol_pairs: Vec<(String, String)>) -> StdResult<Binary> {
     let mut results = vec![];
 
     for (base, quote) in symbol_pairs {

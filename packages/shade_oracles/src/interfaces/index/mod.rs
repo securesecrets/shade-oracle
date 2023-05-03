@@ -50,7 +50,10 @@ use shade_protocol::Contract;
 pub use state::*;
 #[cfg(feature = "index")]
 mod state {
-    use std::{cmp::{min, max}, collections::HashMap};
+    use std::{
+        cmp::{max, min},
+        collections::HashMap,
+    };
 
     use super::{error::*, msg::*, *};
     use crate::{
@@ -156,7 +159,13 @@ mod state {
                 return Err(IndexOracleError::InvalidBasketWeights { weight: weight_sum }.into());
             }
 
-            let peg = BtrPeg::new(target.into(), target.into(), target.into(), false, time.seconds());
+            let peg = BtrPeg::new(
+                target.into(),
+                target.into(),
+                target.into(),
+                false,
+                time.seconds(),
+            );
             Ok(Self {
                 config: IndexOracleConfig {
                     symbol: index_symbol,
@@ -338,16 +347,16 @@ mod state {
             let diff = abs_diff(self.peg.last_value, new_target);
             let expected: U256 = self.peg.last_value.into();
             let deviation = Decimal256::from_ratio(diff, expected);
-            
+
             if deviation > self.config.deviation_threshold {
                 self.peg.frozen = true;
                 return Ok(resp);
             }
-                self.peg.last_updated = now;
-                self.peg.last_value = new_target;
-                self.peg.value = new_target;
-                resp.data.rate = new_target.into();
-                Ok(resp)
+            self.peg.last_updated = now;
+            self.peg.last_value = new_target;
+            self.peg.value = new_target;
+            resp.data.rate = new_target.into();
+            Ok(resp)
         }
 
         pub fn save(&self, storage: &mut dyn Storage) -> IndexOracleResult<()> {

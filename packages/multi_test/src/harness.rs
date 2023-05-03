@@ -39,7 +39,7 @@ pub mod derivatives {
     );
     create_harness!(
         stride,
-        StrideStakingDerivativesOracle,
+        BotStakingDerivativesOracle,
         stride_staking_derivatives_oracle
     );
 }

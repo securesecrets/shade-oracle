@@ -20,27 +20,25 @@ index = ["core"]
 router = ["core"]
 derivatives = ["core"]
 dex = ["core"]
+bot = ["core"]
 
 [dependencies]
-cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
-cosmwasm-schema = "1.1.5"
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = [
-  "derive",
-  "alloc",
-] }
-thiserror = "1.0"
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
 
-borsh = "0.10.2"
-paste = "1.0"
-derive-from-ext = "0.2"
+borsh = { workspace = true }
+paste = { workspace = true }
+derive-from-ext = { workspace = true }
 
-shade-protocol = { workspace = true, default-features = false, features = ["utils", "interface", "snip20", "math", "admin"] }
+shade-protocol = { workspace = true, features = ["utils", "interface", "snip20", "math", "admin"] }
 
-btr-macros = { git = "https://github.com/securesecrets/better-secret-math" }
-better-secret-math = { git = "https://github.com/securesecrets/better-secret-math" }
-secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
-secret-borsh-storage = { git = "https://github.com/securesecrets/secret-plus-utils" }
+btr-macros = { workspace = true }
+better-secret-math = { workspace = true }
+secret-storage-plus = { workspace = true }
+secret-borsh-storage = { workspace = true }
 
 [dev-dependencies]
-rstest = "0.15.0"
+rstest = { workspace = true }

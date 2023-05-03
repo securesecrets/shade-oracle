@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, DepsMut, MessageInfo, Uint128};
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Response, StdError, StdResult, Storage};
-use shade_oracles::ssp::{Item};
+use shade_oracles::ssp::Item;
 use shade_oracles::{
     core::{Contract, ExecuteCallback, InstantiateCallback},
     protocols::siennaswap::{

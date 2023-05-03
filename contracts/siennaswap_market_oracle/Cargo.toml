@@ -17,5 +17,5 @@ default = []
 
 
 [dependencies]
-cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
+cosmwasm-std = { workspace = true }
 shade-oracles = { path = "../../packages/shade_oracles", features = ["dex"] }

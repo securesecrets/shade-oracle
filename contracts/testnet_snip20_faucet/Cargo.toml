@@ -20,13 +20,10 @@ default = []
 # for quicker tests, cargo test --lib
 
 [dependencies]
-cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
-cosmwasm-schema = "1.1.5"
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = [
-  "derive",
-  "alloc",
-] }
-thiserror = "1.0"
-secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
-shade-protocol = { workspace = true, default-features = false, features = ["utils", "interface", "snip20", "math", "admin"] }
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+secret-storage-plus = { workspace = true }
+shade-protocol = { workspace = true, features = ["utils", "interface", "snip20", "math", "admin"] }

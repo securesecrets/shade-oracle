@@ -150,7 +150,9 @@ impl Snip20Helper {
         let resp = QueryMsg::Balance {
             address: user.to_string(),
             key: viewing_key.into(),
-        }.test_query(&self.0, app).unwrap();
+        }
+        .test_query(&self.0, app)
+        .unwrap();
         match resp {
             QueryAnswer::Balance { amount } => amount,
             _ => Uint128::zero(),

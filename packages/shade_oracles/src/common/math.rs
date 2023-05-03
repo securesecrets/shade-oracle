@@ -2,10 +2,36 @@
 use super::asset::Asset;
 use super::*;
 use better_secret_math::{
-    common::{bankers_round, exp10, muldiv},
+    common::{bankers_round, exp10, muldiv, abs_diff},
     ud60x18::{mul, sqrt},
     U256,
 };
+use cosmwasm_std::Decimal256;
+
+pub struct GeneralMath;
+impl GeneralMath {
+    // Require that a is within some % of b.
+    pub fn require_within_precision(a: impl Into<U256> + Copy, b: impl Into<U256> + Copy, tolerance: impl Into<U256> + Copy) -> StdResult<()> {
+        let a: U256 = a.into();
+        let b: U256 = b.into();
+        let tolerance: U256 = tolerance.into();
+        let diff = abs_diff(a, b);
+        if b == U256::ZERO && a == U256::ZERO {
+            return Ok(());
+        } else {
+            let actual_deviation = Decimal256::from_ratio(diff, b);
+            let max_deviation = tolerance.into();
+            if actual_deviation > max_deviation {
+                Err(StdError::generic_err(format!(
+                    "Expected {} to be within {} of {}. (Actual deviation: {})",
+                    a, tolerance, b, actual_deviation
+                )))
+            } else {
+                Ok(())
+            }
+        }
+    }
+}
 
 /// Provides methods that deal with token prices, values, and amounts.
 pub struct TokenMath;

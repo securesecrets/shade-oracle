@@ -14,8 +14,8 @@ default = []
 multi-test = []
 
 [dependencies]
-cosmwasm-std = { version = "1.0.0", package = "secret-cosmwasm-std" }
-strum = { version = "0.24", features = ["derive"] }
+cosmwasm-std = { workspace = true }
+strum = { workspace = true }
 shade-oracles = { path = "../shade_oracles" }
 oracle_router = { path = "../../contracts/oracle_router" }
 
@@ -25,7 +25,7 @@ mock_ojo = { path = "../../contracts/mock_ojo" }
 index_oracle = { path = "../../contracts/index_oracle" }
 
 shade_staking_derivatives_oracle = { path = "../../contracts/shade_staking_derivatives_oracle" }
-stride_staking_derivatives_oracle = { path = "../../contracts/stride_staking_derivatives_oracle" }
+stride_staking_derivatives_oracle = { path = "../../contracts/staking_derivatives/stride" }
 
 shadeswap_market_oracle = { path = "../../contracts/shadeswap_market_oracle" }
 siennaswap_market_oracle = { path = "../../contracts/siennaswap_market_oracle" }
@@ -37,10 +37,10 @@ shadeswap_spot_oracle = { path = "../../contracts/shadeswap_spot_oracle" }
 oracle_mocks = { path = "../mocks" }
 
 [dev-dependencies]
-rstest = "0.15.0"
+rstest = { workspace = true }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 multi-test-helpers = { path = "../multi_helpers" }
-shade-protocol = { workspace = true, default-features = false, features = [ "multi-test" ] }
+shade-protocol = { workspace = true, features = [ "multi-test" ] }
 shade-multi-test = { workspace = true, features = [ "snip20", "admin" ] }
 multi-derive = { workspace = true }

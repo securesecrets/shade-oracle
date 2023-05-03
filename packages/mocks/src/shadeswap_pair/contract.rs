@@ -105,12 +105,15 @@ pub fn execute(
             )?;
 
             let mut msgs = vec![];
-            msgs.push(Snip20ExecuteMsg::Mint {
-                recipient: Addr::unchecked("voidvoidvoid").to_string(),
-                amount: amount_a,
-                memo: None,
-                padding: None,
-            }.to_cosmos_msg(&liquidity_token, vec![])?);
+            msgs.push(
+                Snip20ExecuteMsg::Mint {
+                    recipient: Addr::unchecked("voidvoidvoid").to_string(),
+                    amount: amount_a,
+                    memo: None,
+                    padding: None,
+                }
+                .to_cosmos_msg(&liquidity_token, vec![])?,
+            );
 
             Ok(Response::default().add_messages(msgs))
         }
