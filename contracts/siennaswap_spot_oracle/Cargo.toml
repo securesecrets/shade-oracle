@@ -1,7 +1,7 @@
 [package]
 name = "siennaswap_spot_oracle"
 version = "0.1.0"
-authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp"]
 edition = "2021"
 
 exclude = [

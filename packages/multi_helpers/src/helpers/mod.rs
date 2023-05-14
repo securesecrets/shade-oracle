@@ -17,6 +17,7 @@ pub mod snip20;
 
 pub type AppResult = AnyResult<AppResponse>;
 
+// TODO: change this to Suite trait
 pub struct Asserter;
 
 impl Asserter {

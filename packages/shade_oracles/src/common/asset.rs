@@ -2,10 +2,10 @@
 //! We care most about the token decimals, the asset contract itself, and the symbol used
 //! to query the price via our oracle system so we can query prices for them.
 use crate::error::CommonOracleError;
-use crate::interfaces::common::{BtrOraclePrice, OraclePrice};
+use crate::interfaces::common::{OraclePrice};
 use crate::querier::query_price;
 use better_secret_math::common::{bankers_round, checked_add, exp10, muldiv};
-use better_secret_math::{BtrRebase, U256};
+use better_secret_math::{U256};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256};
 use secret_storage_plus::Map;
@@ -218,48 +218,5 @@ impl BtrValuedAmount {
     }
     pub fn is_zero(&self) -> bool {
         self.amount.le(&U256::ZERO) && self.value.le(&U256::ZERO)
-    }
-}
-
-make_btr! {
-    /// The valued amount of some tokens associated with a rebase.
-    #[derive(Default)]
-    ValuedRebaseAmount {
-        base: ValuedAmount, BtrValuedAmount, "";
-        elastic: ValuedAmount, BtrValuedAmount, ""
-    }
-}
-
-impl BtrValuedRebaseAmount {
-    pub fn init(
-        base_amount: U256,
-        elastic_amount: U256,
-        base_value: U256,
-        elastic_value: U256,
-    ) -> Self {
-        BtrValuedRebaseAmount {
-            base: BtrValuedAmount::new(base_amount, base_value),
-            elastic: BtrValuedAmount::new(elastic_amount, elastic_value),
-        }
-    }
-    pub fn from_base(rebase: &BtrRebase, base: U256, price: &BtrOraclePrice) -> StdResult<Self> {
-        let elastic = rebase.to_elastic(base, false)?;
-        let elastic_value = price.calc_value(elastic)?;
-        let base_value = price.calc_value(base)?;
-        Ok(Self::init(base, elastic, base_value, elastic_value))
-    }
-    pub fn from_elastic(
-        rebase: &BtrRebase,
-        elastic: U256,
-        price: &BtrOraclePrice,
-    ) -> StdResult<Self> {
-        let base = rebase.to_base(elastic, false)?;
-        let base_value = price.calc_value(base)?;
-        let elastic_value = price.calc_value(elastic)?;
-        Ok(Self::init(base, elastic, base_value, elastic_value))
-    }
-    pub fn from_safe(amount: U256, price: &BtrOraclePrice) -> StdResult<Self> {
-        let value = price.calc_value(amount)?;
-        Ok(Self::init(amount, amount, value, value))
     }
 }

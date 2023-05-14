@@ -2,7 +2,7 @@
 name = "shade-oracles-multi-test"
 version = "0.1.0"
 authors = [
-   "hoomp <flammable.shower939@anonaddy.me>"
+   "hoomp"
 ]
 edition = "2018"
 

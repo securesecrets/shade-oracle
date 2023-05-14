@@ -1,7 +1,7 @@
 [package]
 name = "index_oracle"
 version = "0.1.0"
-authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>", "DrPresident <jacksonswenson@securesecrets.org"]
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp", "DrPresident <jacksonswenson@securesecrets.org"]
 
 edition = "2021"
 
