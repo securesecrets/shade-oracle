@@ -117,12 +117,7 @@ impl IndexOracleHelper {
     ) -> Vec<InitialBasketItem> {
         prices
             .into_iter()
-            .map(|(sym, w)| {
-                (
-                    sym.into(),
-                    Decimal256::from_str(&w.into()).unwrap(),
-                )
-            })
+            .map(|(sym, w)| (sym.into(), Decimal256::from_str(&w.into()).unwrap()))
             .collect()
     }
 }
@@ -681,11 +676,8 @@ mod test {
         let price = router.query_price(&app, symbol.clone()).unwrap();
         MathAsserter::within_deviation(target, price.data.rate, TestScenario::ERROR);
 
-        let new_prices = OracleCore::create_prices_hashmap(vec![(
-            some_symbol,
-            1_000_000 * 10u128.pow(18),
-        )])
-        .1;
+        let new_prices =
+            OracleCore::create_prices_hashmap(vec![(some_symbol, 1_000_000 * 10u128.pow(18))]).1;
         provider.update_band_prices(&admin, &mut app, new_prices, None);
         // Check price didn't change even though oracle is reporting very big price.
         let new_price = router.query_price(&app, symbol.clone()).unwrap();

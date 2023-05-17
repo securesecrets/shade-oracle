@@ -74,7 +74,7 @@ mod shade_stkd_scrt {
 
 mod shadeswap {
     use super::*;
-    
+
     use oracle_mocks::shadeswap_pair::contract::*;
     use shade_oracles::protocols::shadeswap::{PairInfo, QueryMsg, ShadeSwapQueryMsgResponse};
 

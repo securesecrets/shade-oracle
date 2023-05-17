@@ -1,18 +1,14 @@
 use ::std::{
-    error::Error as StdError,
     env::current_dir,
-    fs::{create_dir_all, write, create_dir, read_dir},
+    error::Error as StdError,
+    fs::{create_dir, create_dir_all, read_dir, write},
     process::Command,
 };
 use anyhow::Result;
-use cosmwasm_schema::{Api, generate_api};
+use cosmwasm_schema::{generate_api, Api};
 use shade_oracles::interfaces::{
-    bot,
-    index::msg as index,
-    router::msg as router,
-    derivatives::bot as derivatives_bot,
-    derivatives::generic as derivatives_generic, providers,
-    dex::generic as dex_generic,
+    bot, derivatives::bot as derivatives_bot, derivatives::generic as derivatives_generic,
+    dex::generic as dex_generic, index::msg as index, providers, router::msg as router,
 };
 
 const ROOT_DIR: &str = "schemas";

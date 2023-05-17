@@ -1,9 +1,9 @@
-use std::cmp::{min};
+use std::cmp::min;
 
 use super::*;
 use crate::BLOCK_SIZE;
-use better_secret_math::common::{exp10, muldiv};
 use better_secret_math::U256;
+use better_secret_math::traits::PriceMath;
 use shade_protocol::utils::Query;
 
 pub mod config;
@@ -98,28 +98,6 @@ impl BtrOraclePrice {
         let time_since_updated = min(time_since_base, time_since_quote);
         Ok(time_since_updated)
     }
-    /// Allows us to pass a variable amount of precision decimals in the future
-    /// in case our oracles lose their constant decimal precision (currently 18).
-    /// Gets the value for some amount using the price.
-    pub fn calc_value(&self, amount: U256) -> StdResult<U256> {
-        let price_precision = exp10(18);
-        muldiv(amount, self.data.rate, price_precision)
-    }
-    /// Gets the amount equivalent to the provided value divided by the unit price.
-    pub fn calc_amount(
-        &self,
-        value: U256,
-        value_precision: u8,
-        amount_precision: u8,
-    ) -> StdResult<U256> {
-        let price_precision = exp10(18);
-        let value_precision = exp10(value_precision as u16);
-        let amount_precision = exp10(amount_precision as u16);
-
-        let normalized_value = muldiv(value, price_precision, value_precision)?;
-        muldiv(normalized_value, amount_precision, self.data.rate)
-    }
-
     pub fn is_stale_price(
         &self,
         delay_tolerance: u64,
@@ -129,6 +107,14 @@ impl BtrOraclePrice {
             return Ok(true);
         }
         Ok(false)
+    }
+}
+
+impl PriceMath for BtrOraclePrice {
+    const PRICE_PRECISION: u8 = 18;
+
+    fn price(&self) -> U256 {
+        self.data.rate
     }
 }
 

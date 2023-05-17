@@ -151,10 +151,11 @@ mod state {
             if admin_resp.has_permission {
                 Ok(())
             } else {
-                Err(
-                    CommonOracleError::UnauthorizedPermission(sender.clone(), permission.to_string())
-                        .into(),
+                Err(CommonOracleError::UnauthorizedPermission(
+                    sender.clone(),
+                    permission.to_string(),
                 )
+                .into())
             }
         }
 

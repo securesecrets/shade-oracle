@@ -50,10 +50,7 @@ use shade_protocol::Contract;
 pub use state::*;
 #[cfg(feature = "index")]
 mod state {
-    use std::{
-        cmp::{min},
-        collections::HashMap,
-    };
+    use std::{cmp::min, collections::HashMap};
 
     use super::{error::*, msg::*, *};
     use crate::{

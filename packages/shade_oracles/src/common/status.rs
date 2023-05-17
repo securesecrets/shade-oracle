@@ -18,8 +18,6 @@ pub enum ContractStatus {
     Frozen,
 }
 
-
-
 pub trait GlobalStatus<T: Error + Into<StdError>> {
     fn normal_err() -> T;
     fn deprecated_err() -> T;

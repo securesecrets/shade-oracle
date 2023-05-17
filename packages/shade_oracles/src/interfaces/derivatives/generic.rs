@@ -63,10 +63,7 @@ pub use state::*;
 #[cfg(feature = "derivatives")]
 mod state {
     use super::*;
-    use crate::{
-        asset::{Asset},
-        interfaces::common::config::CommonConfig,
-    };
+    use crate::{asset::Asset, interfaces::common::config::CommonConfig};
     use cosmwasm_std::{Api, QuerierWrapper, StdResult, Storage};
     use ssp::{Item, ItemStorage, Map};
 

@@ -105,16 +105,21 @@ mod state {
     use std::collections::HashMap;
 
     use super::*;
-    use crate::{interfaces::{
-        common::{
-            config::{CommonConfig, CommonConfigResponse},
-            OraclePrice, PriceResponse, PricesResponse,
+    use crate::{
+        interfaces::{
+            common::{
+                config::{CommonConfig, CommonConfigResponse},
+                OraclePrice, PriceResponse, PricesResponse,
+            },
+            providers::ReferenceData,
+            querier::{query_price as query_router_price, query_prices as query_router_prices},
         },
-        providers::ReferenceData,
-        querier::{query_price as query_router_price, query_prices as query_router_prices},
-    }, math::GeneralMath};
-    use cosmwasm_std::{Decimal256, Env, StdResult, Storage, QueryResponse, Deps, to_binary, Response, DepsMut};
-    use shade_protocol::utils::{pad_query_result, pad_handle_result};
+        math::GeneralMath,
+    };
+    use cosmwasm_std::{
+        to_binary, Decimal256, Deps, DepsMut, Env, QueryResponse, Response, StdResult, Storage,
+    };
+    use shade_protocol::utils::{pad_handle_result, pad_query_result};
     use ssp::{Item, ItemStorage, Map};
 
     impl DerivativeRate {
@@ -192,15 +197,12 @@ mod state {
         pub fn add_plaintext_attribute(
             response: Response,
             prefix: &'static str,
-            action: &'static str,   
+            action: &'static str,
         ) -> Response {
             response.add_attribute_plaintext("action", format!("{}{}", prefix, action))
         }
 
-        pub fn instantiate(
-            deps: DepsMut,
-            msg: InstantiateMsg,
-        ) -> StdResult<Response> {
+        pub fn instantiate(deps: DepsMut, msg: InstantiateMsg) -> StdResult<Response> {
             let config = CommonConfig::init(deps.api, deps.storage, msg.router)?;
             BotStakingDerivativesOracle { config }.save(deps.storage)?;
             Ok(Response::new().add_attribute("action", "instantiate"))
@@ -244,12 +246,25 @@ mod state {
                                     &info.sender,
                                     rate_permission,
                                 )?;
-                                BotStakingDerivativesOracle::update_rates(deps.storage, now, rates)?;
-                                Self::add_plaintext_attribute(resp, prefix, "update_derivative_rates")
+                                BotStakingDerivativesOracle::update_rates(
+                                    deps.storage,
+                                    now,
+                                    rates,
+                                )?;
+                                Self::add_plaintext_attribute(
+                                    resp,
+                                    prefix,
+                                    "update_derivative_rates",
+                                )
                             }
                             DerivativeUpdates::Config(configs) => {
                                 oracle.config.require_admin(&deps.querier, info)?;
-                                oracle.update_derivatives(deps.storage, configs)?;                               Self::add_plaintext_attribute(resp, prefix, "update_derivative_configs")
+                                oracle.update_derivatives(deps.storage, configs)?;
+                                Self::add_plaintext_attribute(
+                                    resp,
+                                    prefix,
+                                    "update_derivative_configs",
+                                )
                             }
                         },
                         ExecuteMsg::UpdateConfig(new_router) => {
@@ -267,34 +282,22 @@ mod state {
             pad_handle_result(Ok(resp), BLOCK_SIZE)
         }
 
-        pub fn query(
-            deps: Deps,
-            env: Env,
-            msg: QueryMsg
-        ) -> StdResult<QueryResponse> {
+        pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             let oracle = Self::load(deps.storage)?;
             pad_query_result(
                 match msg {
                     QueryMsg::GetPrice { key } => {
                         oracle.config.require_enabled()?;
-                        to_binary(&oracle.query_price(
-                            &env,
-                            deps.storage,
-                            &deps.querier,
-                            key,
-                        )?)
+                        to_binary(&oracle.query_price(&env, deps.storage, &deps.querier, key)?)
                     }
                     QueryMsg::GetPrices { keys } => {
                         oracle.config.require_enabled()?;
-                        to_binary(&oracle.query_prices(
-                            &env,
-                            deps.storage,
-                            &deps.querier,
-                            keys,
-                        )?)
+                        to_binary(&oracle.query_prices(&env, deps.storage, &deps.querier, keys)?)
                     }
                     QueryMsg::GetConfig {} => to_binary(&oracle.query_config(deps.storage)?),
-                    QueryMsg::GetDerivatives {} => to_binary(&Self::get_supported_derivatives(deps.storage)?),
+                    QueryMsg::GetDerivatives {} => {
+                        to_binary(&Self::get_supported_derivatives(deps.storage)?)
+                    }
                 },
                 BLOCK_SIZE,
             )
@@ -415,14 +418,12 @@ mod state {
                         price.data().last_updated_base,
                         price.data().last_updated_quote,
                     ))
-                },
-                None => {
-                    Ok(ReferenceData::new(
-                        data.rate.value.atomics(),
-                        data.rate.last_updated,
-                        data.rate.last_updated,
-                    ))
-                },
+                }
+                None => Ok(ReferenceData::new(
+                    data.rate.value.atomics(),
+                    data.rate.last_updated,
+                    data.rate.last_updated,
+                )),
             }
         }
 
@@ -440,11 +441,15 @@ mod state {
             let underlying_price = if is_rate {
                 None
             } else {
-                Some(query_router_price(&self.config.router, querier, &stored_data.underlying_key)?)
+                Some(query_router_price(
+                    &self.config.router,
+                    querier,
+                    &stored_data.underlying_key,
+                )?)
             };
-            
+
             let data = Self::calculate_price(env, &stored_data, underlying_price.as_ref())?;
-            
+
             Ok(OraclePrice::new(original_key, data))
         }
 
@@ -457,11 +462,9 @@ mod state {
         ) -> StdResult<PricesResponse> {
             // Preserve symbol order
             let ordered_prices: Vec<OraclePrice> = keys
-            .iter()
-            .map(|key| {    
-                OraclePrice::new(key.clone(), ReferenceData::default())
-            })
-            .collect();
+                .iter()
+                .map(|key| OraclePrice::new(key.clone(), ReferenceData::default()))
+                .collect();
             // Temp vector of fetched prices
             let mut derivative_data_cache: HashMap<String, DerivativeData> = HashMap::new();
             let mut underlying_price_symbols: Vec<String> = vec![];
@@ -482,11 +485,8 @@ mod state {
                 }
             }
 
-            let underlying_prices = query_router_prices(
-                &self.config.router,
-                querier,
-                &underlying_price_symbols,
-            )?;
+            let underlying_prices =
+                query_router_prices(&self.config.router, querier, &underlying_price_symbols)?;
 
             let mut underlying_price_cache: HashMap<String, OraclePrice> = HashMap::new();
 
@@ -503,7 +503,11 @@ mod state {
                     let underlying_price = if is_rate {
                         None
                     } else {
-                        Some(underlying_price_cache.get(&stored_data.underlying_key).unwrap())
+                        Some(
+                            underlying_price_cache
+                                .get(&stored_data.underlying_key)
+                                .unwrap(),
+                        )
                     };
                     let data = Self::calculate_price(env, stored_data, underlying_price)?;
                     p.data = data;

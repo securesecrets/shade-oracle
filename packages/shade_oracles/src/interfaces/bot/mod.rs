@@ -3,7 +3,7 @@ use super::*;
 
 pub mod msg {
     use crate::interfaces::common::{config::CommonConfigResponse, PriceResponse, PricesResponse};
-    use cosmwasm_std::{Decimal256};
+    use cosmwasm_std::Decimal256;
 
     use super::*;
 
@@ -75,10 +75,7 @@ pub mod msg {
     }
 
     impl RateDataConfigUpdate {
-        pub fn new(
-            timeout: Option<u64>,
-            max_change: Option<Decimal256>,
-        ) -> Self {
+        pub fn new(timeout: Option<u64>, max_change: Option<Decimal256>) -> Self {
             Self {
                 timeout,
                 max_change,
@@ -96,15 +93,20 @@ mod state {
     use std::collections::{HashMap, HashSet};
 
     use super::*;
-    use crate::{interfaces::{
-        common::{
-            config::{CommonConfig, CommonConfigResponse},
-            OraclePrice, PriceResponse, PricesResponse,
+    use crate::{
+        interfaces::{
+            common::{
+                config::{CommonConfig, CommonConfigResponse},
+                OraclePrice, PriceResponse, PricesResponse,
+            },
+            providers::ReferenceData,
         },
-        providers::ReferenceData,
-    }, math::GeneralMath};
-    use cosmwasm_std::{Decimal256, Env, StdResult, Storage, QueryResponse, Deps, to_binary, Response, DepsMut};
-    use shade_protocol::utils::{pad_query_result, pad_handle_result};
+        math::GeneralMath,
+    };
+    use cosmwasm_std::{
+        to_binary, Decimal256, Deps, DepsMut, Env, QueryResponse, Response, StdResult, Storage,
+    };
+    use shade_protocol::utils::{pad_handle_result, pad_query_result};
     use ssp::{Item, ItemStorage, Map};
 
     #[cw_serde]
@@ -191,15 +193,12 @@ mod state {
         fn add_plaintext_attribute(
             response: Response,
             prefix: &'static str,
-            action: &'static str,   
+            action: &'static str,
         ) -> Response {
             response.add_attribute_plaintext("action", format!("{}{}", prefix, action))
         }
 
-        pub fn instantiate(
-            deps: DepsMut,
-            msg: InstantiateMsg,
-        ) -> StdResult<Response> {
+        pub fn instantiate(deps: DepsMut, msg: InstantiateMsg) -> StdResult<Response> {
             let config = CommonConfig::init(deps.api, deps.storage, msg.router)?;
             BotRateOracle { config }.save(deps.storage)?;
             Ok(Response::new().add_attribute("action", "instantiate"))
@@ -237,12 +236,19 @@ mod state {
                         }
                         ExecuteMsg::UpdateRates(update) => match update {
                             RateDataUpdate::Rates(rates) => {
-                                oracle.update_rates(&deps.querier, &info.sender, deps.storage, now, rates)?;
+                                oracle.update_rates(
+                                    &deps.querier,
+                                    &info.sender,
+                                    deps.storage,
+                                    now,
+                                    rates,
+                                )?;
                                 Self::add_plaintext_attribute(resp, prefix, "update_rates")
                             }
                             RateDataUpdate::Config(configs) => {
                                 oracle.config.require_admin(&deps.querier, info)?;
-                                oracle.update_rate_configs(deps.storage, configs)?;                               Self::add_plaintext_attribute(resp, prefix, "update_rate_configs")
+                                oracle.update_rate_configs(deps.storage, configs)?;
+                                Self::add_plaintext_attribute(resp, prefix, "update_rate_configs")
                             }
                         },
                         ExecuteMsg::UpdateConfig(new_router) => {
@@ -260,29 +266,17 @@ mod state {
             pad_handle_result(Ok(resp), BLOCK_SIZE)
         }
 
-        pub fn query(
-            deps: Deps,
-            env: Env,
-            msg: QueryMsg
-        ) -> StdResult<QueryResponse> {
+        pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
             let oracle = Self::load(deps.storage)?;
             pad_query_result(
                 match msg {
                     QueryMsg::GetPrice { key } => {
                         oracle.config.require_enabled()?;
-                        to_binary(&oracle.query_price(
-                            &env,
-                            deps.storage,
-                            key,
-                        )?)
+                        to_binary(&oracle.query_price(&env, deps.storage, key)?)
                     }
                     QueryMsg::GetPrices { keys } => {
                         oracle.config.require_enabled()?;
-                        to_binary(&oracle.query_prices(
-                            &env,
-                            deps.storage,
-                            keys,
-                        )?)
+                        to_binary(&oracle.query_prices(&env, deps.storage, keys)?)
                     }
                     QueryMsg::GetConfig {} => to_binary(&oracle.query_config(deps.storage)?),
                     QueryMsg::GetRates {} => to_binary(&Self::get_supported_rates(deps.storage)?),
@@ -359,15 +353,13 @@ mod state {
             }
             // Check that the sender has all the required permissions before allowing the transaction to succeed.
             for permission in required_permissions {
-                self.config.require_permission(querier, sender, &permission)?;
+                self.config
+                    .require_permission(querier, sender, &permission)?;
             }
             Ok(())
         }
 
-        fn get_rate_data(
-            key: &str,
-            storage: &dyn Storage,
-        ) -> StdResult<RateData> {
+        fn get_rate_data(key: &str, storage: &dyn Storage) -> StdResult<RateData> {
             let data = Self::RATES.load(storage, key)?;
             Ok(RateData::new(
                 key.to_string(),
@@ -383,9 +375,7 @@ mod state {
             let keys = CommonConfig::SUPPORTED_KEYS.load(storage)?;
             let mut supported_pairs = vec![];
             for key in keys {
-                supported_pairs.push(BotRateOracle::get_rate_data(
-                    &key, storage,
-                )?);
+                supported_pairs.push(BotRateOracle::get_rate_data(&key, storage)?);
             }
             Ok(supported_pairs)
         }
@@ -398,7 +388,14 @@ mod state {
         ) -> StdResult<PriceResponse> {
             let rate = Self::RATES.load(storage, &key)?;
             rate.require_fresh(env.block.time.seconds())?;
-            Ok(OraclePrice::new(key, ReferenceData { rate: rate.rate.atomics(), last_updated_base: rate.last_updated, last_updated_quote: rate.last_updated }))
+            Ok(OraclePrice::new(
+                key,
+                ReferenceData {
+                    rate: rate.rate.atomics(),
+                    last_updated_base: rate.last_updated,
+                    last_updated_quote: rate.last_updated,
+                },
+            ))
         }
 
         fn query_prices(
@@ -410,12 +407,12 @@ mod state {
             // Preserve symbol order
             let mut unique_keys: HashSet<String> = HashSet::new();
             let ordered_prices: Vec<OraclePrice> = keys
-            .iter()
-            .map(|key| {    
-                unique_keys.insert(key.clone());
-                OraclePrice::new(key.clone(), ReferenceData::default())
-            })
-            .collect();
+                .iter()
+                .map(|key| {
+                    unique_keys.insert(key.clone());
+                    OraclePrice::new(key.clone(), ReferenceData::default())
+                })
+                .collect();
 
             let mut price_cache: HashMap<String, OraclePrice> = HashMap::new();
 

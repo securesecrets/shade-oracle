@@ -2,7 +2,7 @@
 use super::asset::Asset;
 use super::*;
 use better_secret_math::{
-    common::{bankers_round, exp10, muldiv, abs_diff},
+    common::{abs_diff, bankers_round, exp10, muldiv},
     ud60x18::{mul, sqrt},
     U256,
 };
@@ -11,7 +11,11 @@ use cosmwasm_std::Decimal256;
 pub struct GeneralMath;
 impl GeneralMath {
     // Require that a is within some % of b.
-    pub fn require_within_precision(a: impl Into<U256> + Copy, b: impl Into<U256> + Copy, tolerance: impl Into<U256> + Copy) -> StdResult<()> {
+    pub fn require_within_precision(
+        a: impl Into<U256> + Copy,
+        b: impl Into<U256> + Copy,
+        tolerance: impl Into<U256> + Copy,
+    ) -> StdResult<()> {
         let a: U256 = a.into();
         let b: U256 = b.into();
         let tolerance: U256 = tolerance.into();
@@ -46,7 +50,7 @@ impl TokenMath {
         if decimals == 18 {
             Ok(value)
         } else {
-            Ok(muldiv(value, exp10(18), exp10(decimals as u16))?)
+            Ok(muldiv(value, exp10(18), exp10(decimals))?)
         }
     }
     /// Normalizes the asset amount from being based off asset decimals -> 18 decimals.
@@ -54,7 +58,7 @@ impl TokenMath {
         if asset.decimals == 18 {
             Ok(amount.into())
         } else {
-            muldiv(amount.into(), exp10(18), exp10(asset.decimals as u16))
+            muldiv(amount.into(), exp10(18), exp10(asset.decimals))
         }
     }
     /// Gets the amount of asset the amount normalized to 18 decimals represents.
@@ -64,8 +68,8 @@ impl TokenMath {
             Ok(normalized_amount.into())
         } else {
             let precision_diff = 18 - asset.decimals;
-            let amount = bankers_round(normalized_amount.into(), precision_diff)
-                / exp10(precision_diff as u16);
+            let amount =
+                bankers_round(normalized_amount.into(), precision_diff) / exp10(precision_diff);
             Ok(amount)
         }
     }

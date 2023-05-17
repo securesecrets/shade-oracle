@@ -2,10 +2,10 @@
 //! We care most about the token decimals, the asset contract itself, and the symbol used
 //! to query the price via our oracle system so we can query prices for them.
 use crate::error::CommonOracleError;
-use crate::interfaces::common::{OraclePrice};
+use crate::interfaces::common::OraclePrice;
 use crate::querier::query_price;
 use better_secret_math::common::{bankers_round, checked_add, exp10, muldiv};
-use better_secret_math::{U256};
+use better_secret_math::U256;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256};
 use secret_storage_plus::Map;
@@ -130,7 +130,7 @@ impl Asset {
         if self.decimals == 18 {
             Ok(amount.into())
         } else {
-            muldiv(amount.into(), exp10(18), exp10(self.decimals as u16))
+            muldiv(amount.into(), exp10(18), exp10(self.decimals))
         }
     }
     /// Gets the amount of asset the amount normalized to 18 decimals represents.
@@ -139,8 +139,8 @@ impl Asset {
             Ok(normalized_amount.into())
         } else {
             let precision_diff = 18 - self.decimals;
-            let amount = bankers_round(normalized_amount.into(), precision_diff)
-                / exp10(precision_diff as u16);
+            let amount =
+                bankers_round(normalized_amount.into(), precision_diff) / exp10(precision_diff);
             Ok(amount)
         }
     }
