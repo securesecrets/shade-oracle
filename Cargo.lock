@@ -1648,7 +1648,7 @@ dependencies = [
 [[package]]
 name = "snip20-reference-impl"
 version = "1.0.0"
-source = "git+https://github.com/securesecrets/snip20-reference-impl?branch=toolkit#dd8c74d8f2a7874cc96471286010a30a8a4f66ff"
+source = "git+https://github.com/securesecrets/snip20-reference-impl?branch=shade-plus#dd8c74d8f2a7874cc96471286010a30a8a4f66ff"
 dependencies = [
  "base64 0.21.0",
  "cosmwasm-schema",

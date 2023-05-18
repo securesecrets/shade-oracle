@@ -41,7 +41,7 @@ btr-macros = { git = "https://github.com/securesecrets/shade-plus" }
 secret-storage-plus = { git = "https://github.com/securesecrets/shade-plus" }
 secret-borsh-storage = { git = "https://github.com/securesecrets/shade-plus" }
 
-snip20 = { package = "snip20-reference-impl", git = "https://github.com/securesecrets/snip20-reference-impl", branch = "toolkit", features = ["library"] }
+snip20 = { package = "snip20-reference-impl", git = "https://github.com/securesecrets/snip20-reference-impl", branch = "shade-plus", features = ["library"] }
 
 anyhow = "1.0.71"
 rstest = "0.15.0"
