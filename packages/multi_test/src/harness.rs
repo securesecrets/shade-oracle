@@ -2,7 +2,7 @@ macro_rules! create_harness {
     ($mod_name:ident, $name:ident, $contract:ident) => {
         pub use $mod_name::*;
         pub mod $mod_name {
-            shade_toolkit::implement_testable!($name, $contract);
+            shade_toolkit::implement_harness!($name, $contract);
         }
     };
 }

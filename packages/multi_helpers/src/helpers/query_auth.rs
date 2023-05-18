@@ -1,9 +1,9 @@
-use shade_toolkit::{implement_testable, interfaces::query_auth::{InstantiateMsg, ExecuteMsg}};
+use shade_toolkit::{implement_harness, interfaces::query_auth::{InstantiateMsg, ExecuteMsg}};
 
 use super::*;
 use ::query_auth as query_auth_crate;
 
-implement_testable!(QueryAuth, query_auth_crate);
+implement_harness!(QueryAuth, query_auth_crate);
 create_test_helper!(QueryAuthHelper);
 
 impl QueryAuthHelper {
