@@ -1,7 +1,7 @@
+use shade_toolkit::{implement_testable, interfaces::admin_auth::{InstantiateMsg, RegistryAction, ExecuteMsg}};
 use super::*;
-use shade_multi_test::multi::admin::Admin;
-use shade_protocol::admin::{ExecuteMsg, InstantiateMsg};
 
+implement_testable!(Admin, admin);
 create_test_helper!(AdminAuthHelper);
 
 impl AdminAuthHelper {
@@ -20,7 +20,7 @@ impl AdminAuthHelper {
         &self,
         sender: &User,
         app: &mut App,
-        action: shade_protocol::admin::RegistryAction,
+        action: RegistryAction,
     ) -> AnyResult<AppResponse> {
         sender.exec(app, &ExecuteMsg::UpdateRegistry { action }, &self.0)
     }
@@ -31,11 +31,11 @@ impl AdminAuthHelper {
         user: String,
         permissions: Vec<String>,
     ) {
-        let action = shade_protocol::admin::RegistryAction::GrantAccess { permissions, user };
+        let action = RegistryAction::GrantAccess { permissions, user };
         self.update_registry(sender, app, action).unwrap();
     }
     pub fn register_admin(&self, sender: &User, app: &mut App, user: String) {
-        let action = shade_protocol::admin::RegistryAction::RegisterAdmin { user };
+        let action = RegistryAction::RegisterAdmin { user };
         self.update_registry(sender, app, action).unwrap();
     }
     pub fn revoke_access(
@@ -45,7 +45,7 @@ impl AdminAuthHelper {
         user: String,
         permissions: Vec<String>,
     ) {
-        let action = shade_protocol::admin::RegistryAction::RevokeAccess { permissions, user };
+        let action = RegistryAction::RevokeAccess { permissions, user };
         self.update_registry(sender, app, action).unwrap();
     }
 }

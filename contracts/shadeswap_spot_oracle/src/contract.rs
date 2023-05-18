@@ -2,18 +2,19 @@ use cosmwasm_std::{entry_point, QuerierWrapper, Storage};
 use cosmwasm_std::{
     to_binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdResult,
 };
-use shade_oracles::core::pad_handle_result;
+use shade_oracles::core::pad_execute_result;
 use shade_oracles::create_attr_action;
 use shade_oracles::interfaces::common::config::{CommonConfig, CommonConfigResponse};
 use shade_oracles::interfaces::common::{OraclePrice, PriceResponse, PricesResponse};
 use shade_oracles::protocols::shadeswap::ShadeSwapQuerier;
 use shade_oracles::{
-    common::querier::{query_prices as query_router_prices, query_token_info},
+    common::querier::{query_prices as query_router_prices},
     core::pad_query_result,
     interfaces::dex::generic::*,
     ssp::ItemStorage,
     BLOCK_SIZE,
 };
+use snip20::helpers::query_token_info;
 
 create_attr_action!("shadeswap-spot-oracle_");
 
@@ -86,7 +87,7 @@ pub fn execute(
             }
         }
     };
-    pad_handle_result(Ok(resp), BLOCK_SIZE)
+    pad_execute_result(Ok(resp), BLOCK_SIZE)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -127,7 +128,7 @@ pub fn query_price(
     )?;
     let pair_resp = ShadeSwapQuerier::query_pair_info(querier, &data.pair)?;
 
-    let lp_token_info = query_token_info(&pair_resp.liquidity_token, querier)?;
+    let lp_token_info = query_token_info(querier, &pair_resp.liquidity_token)?;
 
     let reserves_0 = pair_resp.amount_0;
     let reserves_1 = pair_resp.amount_1;

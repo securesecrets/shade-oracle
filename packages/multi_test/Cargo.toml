@@ -41,6 +41,4 @@ rstest = { workspace = true }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 multi-test-helpers = { path = "../multi_helpers" }
-shade-protocol = { workspace = true, features = [ "multi-test" ] }
-shade-multi-test = { workspace = true, features = [ "snip20", "admin" ] }
-multi-derive = { workspace = true }
+shade-toolkit = { workspace = true, features = ["testing"] }

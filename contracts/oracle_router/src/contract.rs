@@ -6,8 +6,8 @@ use cosmwasm_std::{
 };
 use shade_oracles::{
     core::{
-        admin::helpers::{validate_admin, AdminPermissions},
-        pad_handle_result, pad_query_result,
+        validate_admin, AdminPermissions,
+        pad_execute_result, pad_query_result,
         ssp::ItemStorage,
         Contract,
     },
@@ -32,9 +32,9 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> OracleRouterResult<Response> {
     let config = Config {
-        admin_auth: msg.admin_auth.into_valid(deps.api)?,
-        this: Contract::new(&env.contract.address, &env.contract.code_hash),
-        provider: msg.provider.into_valid(deps.api)?,
+        admin_auth: msg.admin_auth.validate(deps.api)?,
+        this: Contract::new(env.contract.address.as_str(), &env.contract.code_hash),
+        provider: msg.provider.validate(deps.api)?,
         quote_symbol: msg.quote_symbol,
     };
     OracleRouter::init_status(deps.storage)?;
@@ -124,7 +124,7 @@ pub fn execute(
             }
         }
     };
-    Ok(pad_handle_result(result, BLOCK_SIZE)?)
+    Ok(pad_execute_result(result, BLOCK_SIZE)?)
 }
 
 /// Queries the oracle at the key, if no oracle exists at the key, queries the default oracle.

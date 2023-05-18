@@ -42,7 +42,8 @@ borsh = { workspace = true }
 paste = { workspace = true }
 derive-from-ext = { workspace = true }
 
-shade-protocol = { workspace = true, features = ["utils", "interface", "snip20", "math", "admin"] }
+snip20 = { workspace = true }
+shade-toolkit = { workspace = true, features = ["admin-auth"] }
 
 btr-macros = { workspace = true }
 better-secret-math = { workspace = true }
@@ -50,5 +51,6 @@ secret-storage-plus = { workspace = true }
 secret-borsh-storage = { workspace = true }
 
 anyhow = { workspace = true, optional = true }
+
 [dev-dependencies]
 rstest = { workspace = true }

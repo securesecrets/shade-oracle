@@ -4,7 +4,7 @@ use cosmwasm_std::Timestamp;
 use multi_test_helpers::admin_auth::AdminAuthHelper;
 use shade_oracles::interfaces::providers::mock::{BandExecuteMsg, BandMockPrice, MockPrice};
 use shade_oracles::interfaces::providers::{self, Provider, RawProvider};
-use shade_protocol::{multi_test::App, AnyResult, Contract};
+use shade_toolkit::{multi_test::App, AnyResult, Contract};
 
 create_test_helper!(MockProviderHelper);
 impl MockProviderHelper {

@@ -9,7 +9,7 @@ use shade_oracles::interfaces::index::{error::*, msg::*, *};
 use shade_oracles::querier::{query_prices, require_admin};
 use shade_oracles::{
     common::status::GlobalStatus,
-    core::{pad_handle_result, pad_query_result},
+    core::{pad_execute_result, pad_query_result},
     interfaces::providers::ReferenceData,
     ssp::ItemStorage,
     BLOCK_SIZE,
@@ -25,7 +25,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> IndexOracleResult<Response> {
-    let router = msg.router.into_valid(deps.api)?;
+    let router = msg.router.validate(deps.api)?;
     IndexOracle::init_status(deps.storage)?;
     let mut index_oracle = IndexOracle::init(
         msg.symbol,
@@ -59,7 +59,7 @@ pub fn execute(
         ExecuteMsg::ComputeIndex {} => try_compute_index(deps, env, info, index_oracle),
         ExecuteMsg::Admin(msg) => try_admin_msg(deps, env, info, msg, index_oracle),
     }?;
-    Ok(pad_handle_result(Ok(resp), BLOCK_SIZE)?)
+    Ok(pad_execute_result(Ok(resp), BLOCK_SIZE)?)
 }
 
 /// Callable by anyone. Computes the peg value, freezing it if the oracle prices are stale.
@@ -110,7 +110,7 @@ pub fn try_update_config(
     deviation_threshold: Option<Decimal256>,
 ) -> IndexOracleResult<Response> {
     oracle.config.router = match router {
-        Some(router) => router.into_valid(deps.api)?,
+        Some(router) => router.validate(deps.api)?,
         None => oracle.config.router,
     };
     oracle.config.symbol = symbol.unwrap_or(oracle.config.symbol);

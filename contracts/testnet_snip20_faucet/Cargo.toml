@@ -26,4 +26,5 @@ schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 secret-storage-plus = { workspace = true }
-shade-protocol = { workspace = true, features = ["utils", "interface", "snip20", "math", "admin"] }
+shade-toolkit = { workspace = true }
+snip20 = { workspace = true }

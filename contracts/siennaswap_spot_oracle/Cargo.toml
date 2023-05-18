@@ -19,4 +19,4 @@ default = []
 [dependencies]
 cosmwasm-std = { workspace = true }
 shade-oracles = { path = "../../packages/shade_oracles", features = ["dex"] }
-
+snip20 = { workspace = true }

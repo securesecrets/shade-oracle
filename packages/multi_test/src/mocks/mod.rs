@@ -9,7 +9,7 @@ macro_rules! create_harness {
         pub use $mod_name::*;
         mod $mod_name {
             use $contract_path;
-            multi_derive::implement_multi!($name, $contract);
+            shade_toolkit::implement_testable!($name, $contract);
         }
     };
 }

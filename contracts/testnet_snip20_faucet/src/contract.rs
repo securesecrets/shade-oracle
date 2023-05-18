@@ -2,15 +2,9 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, Addr, StdError, Uint128};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use secret_storage_plus::{Item, Map};
-use shade_protocol::snip20::QueryAnswer;
-use shade_protocol::utils::{ExecuteCallback, Query};
-use shade_protocol::{
-    contract_interfaces::snip20::{
-        helpers::token_info, ExecuteMsg as Snip20ExecuteMsg, QueryMsg as Snip20QueryMsg,
-    },
-    utils::{asset::RawContract, pad_handle_result, pad_query_result},
-    Contract, BLOCK_SIZE,
-};
+use shade_toolkit::{ExecuteCallback, Query, pad_query_result, pad_execute_result, BLOCK_SIZE, RawContract, Contract};
+use snip20::helpers::{query_token_info};
+use snip20::msg::{QueryAnswer, ExecuteMsg as Snip20ExecuteMsg, QueryMsg as Snip20QueryMsg};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -87,9 +81,9 @@ pub struct TokenData {
 }
 
 impl TokenData {
-    pub fn into_valid(faucet: &Addr, deps: Deps, raw: RawContract) -> StdResult<Self> {
-        let contract = raw.into_valid(deps.api)?;
-        let token_info = token_info(&deps.querier, &contract)?;
+    pub fn validate(faucet: &Addr, deps: Deps, raw: RawContract) -> StdResult<Self> {
+        let contract = raw.validate(deps.api)?;
+        let query_token_info = query_token_info(&deps.querier, &contract)?;
         let resp: QueryAnswer = Snip20QueryMsg::Minters {}.query(&deps.querier, &contract)?;
         let minters = match resp {
             QueryAnswer::Minters { minters } => minters,
@@ -103,7 +97,7 @@ impl TokenData {
         }
         Ok(Self {
             contract,
-            decimals: token_info.decimals,
+            decimals: query_token_info.decimals,
         })
     }
 }
@@ -132,7 +126,7 @@ pub fn instantiate(
     let tokens: Result<Vec<_>, _> = msg
         .tokens
         .into_iter()
-        .map(|t| TokenData::into_valid(&env.contract.address, deps.as_ref(), t))
+        .map(|t| TokenData::validate(&env.contract.address, deps.as_ref(), t))
         .collect();
 
     let config = Config {
@@ -168,6 +162,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                         amount: mint_amount,
                         memo: None,
                         padding: None,
+                        decoys: None,
+                        entropy: None,
                     }
                     .to_cosmos_msg(&token.contract, vec![])?,
                 )
@@ -207,7 +203,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                 ExecuteMsg::AddTokens(tokens) => {
                     let tokens: Result<Vec<_>, _> = tokens
                         .into_iter()
-                        .map(|t| TokenData::into_valid(&env.contract.address, deps.as_ref(), t))
+                        .map(|t| TokenData::validate(&env.contract.address, deps.as_ref(), t))
                         .collect();
                     let tokens = tokens?;
                     for token in tokens {
@@ -223,7 +219,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             Ok(resp)
         }
     };
-    pad_handle_result(resp, BLOCK_SIZE)
+    pad_execute_result(resp, BLOCK_SIZE)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

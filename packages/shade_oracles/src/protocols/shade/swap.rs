@@ -262,7 +262,7 @@ impl TokenType {
                 contract_addr,
                 token_code_hash,
                 ..
-            } => Ok(Contract::new(contract_addr, token_code_hash)),
+            } => Ok(Contract::new(contract_addr.as_str(), token_code_hash)),
             TokenType::NativeToken { .. } => Err(StdError::generic_err(
                 "Pair Error: Token pair is not a snip20 pair.",
             )),

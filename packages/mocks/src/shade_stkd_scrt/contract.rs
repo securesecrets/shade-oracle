@@ -6,7 +6,8 @@ use shade_oracles::{
     protocols::shade_staking_derivatives::{StakingDerivativeQueryMsg, StakingInfoResponse},
     ssp::Item,
 };
-use shade_protocol::contract_interfaces::snip20::{helpers::TokenInfo, QueryAnswer};
+use snip20::helpers::{TokenInfo, query_token_info};
+use snip20::msg::QueryAnswer;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -21,7 +22,7 @@ impl InstantiateCallback for InstantiateMsg {
 }
 
 const STAKING_INFO: Item<StakingInfoResponse> = Item::new("pair_info");
-const TOKEN_INFO: Item<TokenInfo> = Item::new("token_info");
+const TOKEN_INFO: Item<TokenInfo> = Item::new("query_token_info");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -30,7 +31,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let token_info = TokenInfo {
+    let query_token_info = TokenInfo {
         name: msg.name,
         symbol: msg.symbol,
         decimals: msg.decimals,
@@ -50,7 +51,7 @@ pub fn instantiate(
         total_derivative_token_supply: Uint128::zero(),
         price: msg.price,
     };
-    TOKEN_INFO.save(deps.storage, &token_info)?;
+    TOKEN_INFO.save(deps.storage, &query_token_info)?;
     STAKING_INFO.save(deps.storage, &staking_info)?;
     Ok(Response::default())
 }

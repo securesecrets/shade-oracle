@@ -17,5 +17,5 @@ crate-type = ["cdylib", "rlib"]
 default = []
 
 [dependencies]
-cosmwasm-std = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["random"] }
 shade-oracles = { path = "../../packages/shade_oracles", features = ["router"] }

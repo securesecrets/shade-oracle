@@ -1,17 +1,12 @@
-use crate::interfaces::{
+use crate::{interfaces::{
     common::{OracleQuery, PriceResponse, PricesResponse},
     router::msg::{ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg},
-};
+}};
 use cosmwasm_std::{QuerierWrapper, StdError, StdResult, Uint128};
-use shade_protocol::{
-    contract_interfaces::{
-        admin::helpers::{validate_admin, AdminPermissions},
-        snip20::{QueryAnswer as Snip20QueryAnswer, QueryMsg as Snip20QueryMsg},
-    },
-    snip20::helpers::{token_info, TokenInfo},
-    utils::Query,
-    Contract,
-};
+use shade_toolkit::{Contract, Query, interfaces::admin_auth::{
+    AdminPermissions,
+    validate_admin,
+}};
 
 pub fn query_price(
     oracle: &Contract,
@@ -86,29 +81,5 @@ pub fn require_admin_or_bot(
         Err(StdError::generic_err("User is not an admin or bot."))
     } else {
         Ok(())
-    }
-}
-
-pub fn query_token_info(contract: &Contract, querier: &QuerierWrapper) -> StdResult<TokenInfo> {
-    token_info(querier, contract)
-}
-
-pub fn query_token_balance(
-    contract: &Contract,
-    querier: &QuerierWrapper,
-    address: impl Into<String>,
-    key: impl Into<String>,
-) -> StdResult<Uint128> {
-    let answer: Snip20QueryAnswer = Snip20QueryMsg::Balance {
-        address: address.into(),
-        key: key.into(),
-    }
-    .query(querier, contract)?;
-    match answer {
-        Snip20QueryAnswer::Balance { amount } => Ok(amount),
-        Snip20QueryAnswer::ViewingKeyError { msg } => Err(StdError::generic_err(msg)),
-        _ => Err(StdError::generic_err(
-            "Invalid response to query token balance.",
-        )),
     }
 }

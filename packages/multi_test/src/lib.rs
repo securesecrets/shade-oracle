@@ -15,11 +15,11 @@ use shade_oracles::{
     asset::RawAsset,
     interfaces::common::{PriceResponse, PricesResponse},
 };
-use shade_protocol::multi_test::{App, AppResponse};
+use shade_toolkit::multi_test::{App, AppResponse};
 
-use shade_protocol::{
-    utils::{
-        asset::{Contract, RawContract},
+use shade_toolkit::{
+    {
+        {Contract, RawContract},
         ExecuteCallback, InstantiateCallback, MultiTestable, Query,
     },
     AnyResult,

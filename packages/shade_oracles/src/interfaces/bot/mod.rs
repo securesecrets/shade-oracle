@@ -106,7 +106,7 @@ mod state {
     use cosmwasm_std::{
         to_binary, Decimal256, Deps, DepsMut, Env, QueryResponse, Response, StdResult, Storage,
     };
-    use shade_protocol::utils::{pad_handle_result, pad_query_result};
+    use shade_toolkit::{pad_execute_result, pad_query_result};
     use ssp::{Item, ItemStorage, Map};
 
     #[cw_serde]
@@ -263,7 +263,7 @@ mod state {
                     }
                 }
             };
-            pad_handle_result(Ok(resp), BLOCK_SIZE)
+            pad_execute_result(Ok(resp), BLOCK_SIZE)
         }
 
         pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {

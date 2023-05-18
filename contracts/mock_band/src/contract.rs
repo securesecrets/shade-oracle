@@ -22,7 +22,7 @@ pub fn instantiate(
     msg: BandInstantiateMsg,
 ) -> StdResult<Response> {
     let now = env.block.time.seconds();
-    let admin_auth = msg.admin_auth.into_valid(deps.api)?;
+    let admin_auth = msg.admin_auth.validate(deps.api)?;
     let quote_symbol = msg.quote_symbol.unwrap_or("USD".to_string());
 
     let config = Config {
@@ -108,7 +108,7 @@ pub fn execute(
             require_enabled(&config)?;
             config.require_admin(&deps.querier, info.sender)?;
             if let Some(admin_auth) = admin_auth {
-                config.admin_auth = admin_auth.into_valid(deps.api)?;
+                config.admin_auth = admin_auth.validate(deps.api)?;
             }
             if let Some(quote_symbol) = quote_symbol {
                 config.quote_symbol = quote_symbol;

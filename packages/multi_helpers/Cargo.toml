@@ -22,10 +22,13 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 shade-oracles = { path = "../shade_oracles" }
 
+admin = { workspace = true }
+snip20 = { workspace = true, features = [] }
+query_auth = { workspace = true }
+shade-toolkit = { workspace = true, features = ["query-auth"] }
+
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-shade-protocol = { workspace = true, features = [ "multi-test", "admin", "airdrop" ] }
-multi-derive = { workspace = true }
-shade-multi-test = { workspace = true, features = ["snip20", "query_auth", "admin", "airdrop" ]}
+shade-toolkit = { workspace = true, features = ["testing", "query-auth", "admin-auth"] }
 
 [dev-dependencies]
 rstest = { workspace = true }

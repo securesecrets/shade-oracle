@@ -1,9 +1,9 @@
 use super::*;
 use cosmwasm_std::{Addr, StdError};
 use serde::de::DeserializeOwned;
-use shade_protocol::{
+use shade_toolkit::{
     multi_test::{App, AppResponse},
-    utils::MultiTestable,
+    MultiTestable,
     AnyResult,
 };
 use std::{
@@ -17,7 +17,6 @@ pub mod snip20;
 
 pub type AppResult = AnyResult<AppResponse>;
 
-// TODO: change this to Suite trait
 pub struct Asserter;
 
 impl Asserter {

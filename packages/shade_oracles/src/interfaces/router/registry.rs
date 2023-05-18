@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal256, Uint256};
-use shade_protocol::Contract;
+use shade_toolkit::Contract;
 
 #[cw_serde]
 pub struct OracleRouter {
@@ -164,7 +164,7 @@ mod state {
                     Self::KEYS.save(storage, &current_keys)?;
                 }
                 RegistryOperation::SetKeys { oracle, keys } => {
-                    let oracle = oracle.into_valid(api)?;
+                    let oracle = oracle.validate(api)?;
                     let mut current_keys = Self::KEYS.load(storage)?;
                     for key in keys {
                         Oracle::MAP.save(storage, &key, &oracle)?;
@@ -224,10 +224,10 @@ mod state {
         pub fn update_config(mut self, api: &dyn Api, config: UpdateConfig) -> StdResult<Self> {
             let mut new_config = self.config;
             if let Some(admin_auth) = config.admin_auth {
-                new_config.admin_auth = admin_auth.into_valid(api)?;
+                new_config.admin_auth = admin_auth.validate(api)?;
             }
             if let Some(provider) = config.provider {
-                new_config.provider = provider.into_valid(api)?;
+                new_config.provider = provider.validate(api)?;
             }
             new_config.quote_symbol = config.quote_symbol.unwrap_or(new_config.quote_symbol);
             self.config = new_config;

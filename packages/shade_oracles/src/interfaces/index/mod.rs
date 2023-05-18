@@ -45,7 +45,7 @@ use better_secret_math::U256;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal256, Uint256, Uint64};
 
-use shade_protocol::Contract;
+use shade_toolkit::Contract;
 #[cfg(feature = "index")]
 pub use state::*;
 #[cfg(feature = "index")]

@@ -9,7 +9,7 @@ use shade_oracles::{
     },
     ssp::Item,
 };
-use shade_protocol::contract_interfaces::snip20::ExecuteMsg as Snip20ExecuteMsg;
+use snip20::msg::ExecuteMsg as Snip20ExecuteMsg;
 
 pub fn pool_take_amount(give_amount: Uint128, give_pool: Uint128, take_pool: Uint128) -> Uint128 {
     Uint128::from(
@@ -111,6 +111,8 @@ pub fn execute(
                     amount: amount_a,
                     memo: None,
                     padding: None,
+                    decoys: None,
+                    entropy: None,
                 }
                 .to_cosmos_msg(&liquidity_token, vec![])?,
             );

@@ -3,12 +3,9 @@ use better_secret_math::U256;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Api, QuerierWrapper, Timestamp, Uint128, Uint256, Uint64};
 use cosmwasm_std::{StdError, StdResult};
-use shade_protocol::admin::helpers::{validate_admin, AdminPermissions};
-use shade_protocol::utils::asset::RawContract;
-use shade_protocol::{
-    utils::generic_response::ResponseStatus,
-    utils::{ExecuteCallback, InstantiateCallback, Query},
-    Contract,
+use shade_toolkit::{
+    {ExecuteCallback, InstantiateCallback, Query},
+    Contract, RawContract, ResponseStatus
 };
 
 use self::mock::ConfigResponse;
@@ -144,10 +141,10 @@ pub enum RawProvider {
 }
 
 impl RawProvider {
-    pub fn into_valid(self, api: &dyn Api) -> StdResult<Provider> {
+    pub fn validate(self, api: &dyn Api) -> StdResult<Provider> {
         match self {
-            RawProvider::Band(c) => Ok(Provider::Band(c.into_valid(api)?)),
-            RawProvider::Ojo(c) => Ok(Provider::Ojo(c.into_valid(api)?)),
+            RawProvider::Band(c) => Ok(Provider::Band(c.validate(api)?)),
+            RawProvider::Ojo(c) => Ok(Provider::Ojo(c.validate(api)?)),
         }
     }
 }

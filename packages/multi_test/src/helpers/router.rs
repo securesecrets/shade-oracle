@@ -157,8 +157,9 @@ mod test {
     use super::*;
     use multi_test_helpers::Asserter;
     use shade_oracles::{
-        core::admin::helpers::AdminPermissions, unit_test_interface::prices::PricesFixture,
+        unit_test_interface::prices::PricesFixture,
     };
+    use shade_toolkit::interfaces::admin_auth::AdminPermissions;
 
     /// Tests set protection, remove key protection, update protection, query protected keys.
     #[test]

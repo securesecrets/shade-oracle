@@ -4,7 +4,7 @@ use super::*;
 use crate::BLOCK_SIZE;
 use better_secret_math::U256;
 use better_secret_math::traits::PriceMath;
-use shade_protocol::utils::Query;
+use shade_toolkit::Query;
 
 pub mod config;
 

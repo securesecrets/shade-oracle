@@ -46,8 +46,7 @@ mod state {
     use std::collections::HashSet;
 
     use secret_borsh_storage::BorshItem;
-    use shade_protocol::admin::{QueryMsg, ValidateAdminPermissionResponse};
-
+    use shade_toolkit::interfaces::admin_auth::{ValidateAdminPermissionResponse, QueryMsg};
     use crate::{
         error::CommonOracleError,
         interfaces::router::msg::{
@@ -55,7 +54,6 @@ mod state {
         },
         querier::{query_price, require_admin, require_admin_or_bot, require_bot},
     };
-
     use super::*;
 
     impl CommonConfig {
@@ -97,7 +95,7 @@ mod state {
             storage: &mut dyn Storage,
             router: RawContract,
         ) -> StdResult<Self> {
-            let router = router.into_valid(api)?;
+            let router = router.validate(api)?;
             Self::SUPPORTED_KEYS.save(storage, &HashSet::new())?;
             Ok(CommonConfig {
                 router,
@@ -112,7 +110,7 @@ mod state {
             router: Option<RawContract>,
         ) -> StdResult<()> {
             if let Some(router) = router {
-                self.router = router.into_valid(api)?;
+                self.router = router.validate(api)?;
             }
             self.enabled = status.unwrap_or(self.enabled);
             Ok(())

@@ -22,5 +22,6 @@ default = []
 [dependencies]
 cosmwasm-std = { workspace = true }
 shade-oracles = { path = "../shade_oracles", features = ["core"] }
-shade-protocol = { workspace = true, features = [ "multi-test", "snip20" ] }
 cosmwasm-schema = { workspace = true }
+shade-toolkit = { workspace = true }
+snip20 = { workspace = true }

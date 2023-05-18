@@ -1,11 +1,14 @@
 use super::*;
-use shade_multi_test::multi::snip20::Snip20;
+use cosmwasm_std::from_binary;
 use shade_oracles::{
     asset::{Asset, RawAsset},
     better_secret_math::U256,
 };
-use shade_protocol::snip20::{helpers::TokenInfo, *};
+use shade_toolkit::implement_testable;
+use ::snip20::{helpers::TokenInfo, msg::*};
+use ::snip20 as snip20;
 
+implement_testable!(Snip20, snip20);
 create_test_helper!(Snip20Helper);
 
 impl Snip20Helper {
@@ -21,15 +24,19 @@ impl Snip20Helper {
         prng_seed: &Binary,
         label: &str,
     ) -> Self {
-        let config = InitConfig {
-            public_total_supply: Some(true),
-            enable_deposit: None,
-            enable_redeem: None,
-            enable_mint: Some(true),
-            enable_burn: Some(true),
-            enable_transfer: Some(true),
-        };
-
+        let init_config: InitConfig = from_binary(&Binary::from(
+            format!(
+                "{{\"public_total_supply\":true,
+            \"enable_deposit\":{},
+            \"enable_redeem\":{},
+            \"enable_mint\":{},
+            \"enable_burn\":{},
+            \"can_modify_denoms\":{}}}",
+                false, false, true, true, true
+            )
+            .as_bytes(),
+        ))
+        .unwrap();
         let msg = InstantiateMsg {
             name: name.to_owned(),
             admin: Some(admin.to_string()),
@@ -37,8 +44,8 @@ impl Snip20Helper {
             decimals,
             initial_balances: initial_balances.clone(),
             prng_seed: prng_seed.clone(),
-            config: Some(config),
-            query_auth: None,
+            config: Some(init_config),
+            supported_denoms: None,
         };
 
         let contract = user.init(app, &msg, Snip20::default(), label).unwrap();
@@ -71,6 +78,8 @@ impl Snip20Helper {
             amount: amount.into(),
             memo: None,
             padding: None,
+            decoys: None,
+            entropy: None,
         };
         sender.exec(app, &msg, &self.0).unwrap();
     }
@@ -140,6 +149,8 @@ impl Snip20Helper {
                 amount: amount.into(),
                 memo: None,
                 padding: None,
+                entropy: None,
+                decoys: None,
             },
             &self.0,
         )
@@ -176,6 +187,8 @@ impl Snip20Helper {
                 msg,
                 memo: None,
                 padding: None,
+                entropy: None,
+                decoys: None,
             },
             &self.0,
         )
@@ -195,6 +208,8 @@ impl Snip20Helper {
                 amount: amount.into(),
                 memo: None,
                 padding: None,
+                entropy: None,
+                decoys: None,
             },
             &self.0,
         )

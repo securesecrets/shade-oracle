@@ -5,7 +5,7 @@ use crate::interfaces::common::{PriceResponse, PricesResponse};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
 use secret_storage_plus::{Item, ItemStorage, Map};
-use shade_protocol::{utils::asset::RawContract, Contract};
+use shade_toolkit::{RawContract, Contract};
 
 pub mod msg {
 
@@ -84,7 +84,7 @@ mod state {
 
     use super::*;
     use cosmwasm_std::{Api, QuerierWrapper, StdResult, Storage, Uint128, Uint256};
-    use shade_protocol::snip20::helpers::TokenInfo;
+    use snip20::helpers::TokenInfo;
 
     #[cw_serde]
     /// Pair is the LP pair & symbol is the key we'll use to
@@ -167,7 +167,7 @@ mod state {
             data: RawPairData,
             is_market: bool,
         ) -> StdResult<StoredPairData> {
-            let pair = data.pair.into_valid(api)?;
+            let pair = data.pair.validate(api)?;
             let base_token = data
                 .base_token
                 .into_asset(&self.config.router, querier, api)?;

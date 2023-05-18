@@ -7,16 +7,13 @@ use crate::querier::query_price;
 use better_secret_math::common::{bankers_round, checked_add, exp10, muldiv};
 use better_secret_math::U256;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256};
+use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256, Uint128};
 use secret_storage_plus::Map;
-use shade_protocol::{
-    contract_interfaces::snip20::helpers::token_info,
-    contract_interfaces::snip20::ExecuteMsg as Snip20ExecuteMsg,
+use snip20::{
+    helpers::query_token_info,
+    msg::ExecuteMsg as Snip20ExecuteMsg
 };
-use shade_protocol::{
-    utils::{asset::RawContract, ExecuteCallback},
-    Contract,
-};
+use shade_toolkit::{Contract, InstantiateCallback, ExecuteCallback, RawContract};
 
 #[derive(Eq)]
 #[cw_serde]
@@ -182,8 +179,8 @@ impl RawAsset {
         if resp.is_err() {
             return Err(AssetError::InvalidSymbol(self.quote_symbol).into());
         }
-        let contract = self.contract.clone().into_valid(api)?;
-        let decimals = token_info(querier, &contract)?.decimals;
+        let contract = self.contract.clone().validate(api)?;
+        let decimals = query_token_info(querier, &contract)?.decimals;
         Ok(Asset::new(contract, decimals, self.quote_symbol))
     }
     pub fn into_asset_without_symbol_check(
@@ -191,8 +188,8 @@ impl RawAsset {
         api: &dyn Api,
         querier: &QuerierWrapper,
     ) -> StdResult<Asset> {
-        let contract = self.contract.clone().into_valid(api)?;
-        let decimals = token_info(querier, &contract)?.decimals;
+        let contract = self.contract.clone().validate(api)?;
+        let decimals = query_token_info(querier, &contract)?.decimals;
         Ok(Asset::new(contract, decimals, self.quote_symbol))
     }
 }

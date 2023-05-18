@@ -34,15 +34,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "airdrop"
-version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?rev=lend-v1#0f504c20bbc52238cff3a35c0523963655af04f6"
-dependencies = [
- "rs_merkle",
- "shade-protocol",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -73,6 +64,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "base64"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
+
+[[package]]
 name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -85,11 +82,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 
 [[package]]
+name = "bech32"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
+
+[[package]]
 name = "better-secret-math"
 version = "0.3.0"
+source = "git+https://github.com/securesecrets/shade-plus#a0a8f7da6a0ed39d032bfba953a2530b2d41996d"
 dependencies = [
  "borsh",
- "btr-macros 0.1.0",
+ "btr-macros",
  "cosmwasm-schema",
  "derive-from-ext",
  "ethnum",
@@ -185,17 +189,7 @@ dependencies = [
 [[package]]
 name = "btr-macros"
 version = "0.1.0"
-dependencies = [
- "paste",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "btr-macros"
-version = "0.1.0"
-source = "git+https://github.com/securesecrets/better-secret-math#4362e72958000309606db12778d3ed41da07de60"
+source = "git+https://github.com/securesecrets/shade-plus#a0a8f7da6a0ed39d032bfba953a2530b2d41996d"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -472,7 +466,7 @@ dependencies = [
 [[package]]
 name = "ethnum"
 version = "1.3.2"
-source = "git+https://github.com/securesecrets/ethnum-rs#59dacfb63c83304de654d16badb78a750b34af7d"
+source = "git+https://github.com/securesecrets/ethnum-rs?branch=v1.1.10-secret#63c8ce7c57914cb03f4f9ab31831e8a4ba14997c"
 dependencies = [
  "borsh",
  "ethnum-macros",
@@ -483,7 +477,7 @@ dependencies = [
 [[package]]
 name = "ethnum-macros"
 version = "1.1.0"
-source = "git+https://github.com/securesecrets/ethnum-rs#59dacfb63c83304de654d16badb78a750b34af7d"
+source = "git+https://github.com/securesecrets/ethnum-rs?branch=v1.1.10-secret#63c8ce7c57914cb03f4f9ab31831e8a4ba14997c"
 
 [[package]]
 name = "ff"
@@ -566,7 +560,7 @@ checksum = "89ca545a94061b6365f2c7355b4b32bd20df3ff95f02da9329b34ccc3bd6ee72"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.15",
+ "syn 2.0.16",
 ]
 
 [[package]]
@@ -750,24 +744,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "multi-derive"
-version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?rev=lend-v1#0f504c20bbc52238cff3a35c0523963655af04f6"
-
-[[package]]
 name = "multi-test-helpers"
 version = "0.1.0"
 dependencies = [
+ "admin",
  "anyhow",
  "cosmwasm-schema",
- "multi-derive",
+ "query_auth",
  "rstest",
  "schemars 0.8.12",
  "secret-cosmwasm-std",
  "serde",
- "shade-multi-test",
  "shade-oracles",
- "shade-protocol",
+ "shade-toolkit",
+ "snip20-reference-impl",
  "strum",
  "thiserror",
 ]
@@ -819,7 +809,8 @@ dependencies = [
  "cosmwasm-schema",
  "secret-cosmwasm-std",
  "shade-oracles",
- "shade-protocol",
+ "shade-toolkit",
+ "snip20-reference-impl",
 ]
 
 [[package]]
@@ -893,9 +884,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.56"
+version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b63bdb0cd06f1f4dedf69b254734f9b45af66e4a031e42a7480257d9898b435"
+checksum = "fa1fb82fc0c281dd9671101b66b771ebbe1eaf967b96ac8740dcba4b70005ca8"
 dependencies = [
  "unicode-ident",
 ]
@@ -928,7 +919,24 @@ name = "query-authentication"
 version = "0.1.0"
 source = "git+https://github.com/securesecrets/query-authentication?branch=cosmwasm_v1_upgrade#473dae556a10a811a4a55563813df9107b18781a"
 dependencies = [
- "bech32",
+ "bech32 0.8.1",
+ "cosmwasm-schema",
+ "remain",
+ "ripemd160",
+ "schemars 0.8.12",
+ "secp256k1",
+ "secret-cosmwasm-std",
+ "serde",
+ "sha2 0.9.9",
+ "thiserror",
+]
+
+[[package]]
+name = "query-authentication"
+version = "0.1.0"
+source = "git+https://github.com/securesecrets/shade-plus#a0a8f7da6a0ed39d032bfba953a2530b2d41996d"
+dependencies = [
+ "bech32 0.8.1",
  "cosmwasm-schema",
  "remain",
  "ripemd160",
@@ -1021,7 +1029,7 @@ checksum = "e13cca257d068dd3a390d04b2c3009a3fad2ee5048dfa8f239d048372810470c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.15",
+ "syn 2.0.16",
 ]
 
 [[package]]
@@ -1036,6 +1044,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ripemd"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
+dependencies = [
+ "digest 0.10.6",
+]
+
+[[package]]
 name = "ripemd160"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1044,14 +1061,6 @@ dependencies = [
  "block-buffer 0.9.0",
  "digest 0.9.0",
  "opaque-debug",
-]
-
-[[package]]
-name = "rs_merkle"
-version = "1.1.0"
-source = "git+https://github.com/FloppyDisck/rs-merkle?branch=node_export#b35c0aa203fdd7ba6c963ba84efb46906792c660"
-dependencies = [
- "sha2 0.9.9",
 ]
 
 [[package]]
@@ -1181,12 +1190,15 @@ dependencies = [
 
 [[package]]
 name = "secret-borsh-storage"
-version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
+version = "1.0.0"
+source = "git+https://github.com/securesecrets/shade-plus#a0a8f7da6a0ed39d032bfba953a2530b2d41996d"
 dependencies = [
  "borsh",
  "schemars 0.8.12",
  "secret-cosmwasm-std",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/shade-plus)",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1232,24 +1244,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "secret-multi-test"
-version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
-dependencies = [
- "anyhow",
- "derivative",
- "itertools",
- "nanoid",
- "prost",
- "schemars 0.8.12",
- "secret-cosmwasm-std",
- "secret-storage-plus",
- "secret-utils",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
 source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
@@ -1261,14 +1255,124 @@ dependencies = [
 ]
 
 [[package]]
-name = "secret-utils"
+name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/secret-plus-utils#d19ea5f16823fc270b99e10934b1441d6a605fa6"
+source = "git+https://github.com/securesecrets/shade-plus#a0a8f7da6a0ed39d032bfba953a2530b2d41996d"
 dependencies = [
+ "bincode2",
  "schemars 0.8.12",
  "secret-cosmwasm-std",
  "serde",
- "thiserror",
+]
+
+[[package]]
+name = "secret-toolkit"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "secret-toolkit-crypto",
+ "secret-toolkit-permit",
+ "secret-toolkit-serialization",
+ "secret-toolkit-snip20",
+ "secret-toolkit-snip721",
+ "secret-toolkit-storage",
+ "secret-toolkit-utils",
+ "secret-toolkit-viewing-key",
+]
+
+[[package]]
+name = "secret-toolkit-crypto"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "secret-cosmwasm-std",
+ "sha2 0.10.6",
+]
+
+[[package]]
+name = "secret-toolkit-permit"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "bech32 0.9.1",
+ "remain",
+ "ripemd",
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "secret-toolkit-crypto",
+ "serde",
+]
+
+[[package]]
+name = "secret-toolkit-serialization"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "bincode2",
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "serde",
+]
+
+[[package]]
+name = "secret-toolkit-snip20"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "secret-toolkit-utils",
+ "serde",
+]
+
+[[package]]
+name = "secret-toolkit-snip721"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "secret-toolkit-utils",
+ "serde",
+]
+
+[[package]]
+name = "secret-toolkit-storage"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "secret-cosmwasm-std",
+ "secret-cosmwasm-storage",
+ "secret-toolkit-serialization",
+ "serde",
+]
+
+[[package]]
+name = "secret-toolkit-utils"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "secret-cosmwasm-storage",
+ "serde",
+]
+
+[[package]]
+name = "secret-toolkit-viewing-key"
+version = "0.8.2"
+source = "git+https://github.com/hoomp3/secret-toolkit#f50ee9119ae5102c7469ead5d0a430d57da18e78"
+dependencies = [
+ "base64 0.21.0",
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "secret-cosmwasm-storage",
+ "secret-toolkit-crypto",
+ "secret-toolkit-utils",
+ "serde",
+ "subtle",
 ]
 
 [[package]]
@@ -1303,7 +1407,7 @@ checksum = "8c805777e3930c8883389c602315a24224bcc738b63905ef87cd1420353ea93e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.15",
+ "syn 2.0.16",
 ]
 
 [[package]]
@@ -1365,15 +1469,19 @@ dependencies = [
 
 [[package]]
 name = "shade-multi-test"
-version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?rev=lend-v1#0f504c20bbc52238cff3a35c0523963655af04f6"
+version = "0.13.4"
+source = "git+https://github.com/securesecrets/shade-plus#a0a8f7da6a0ed39d032bfba953a2530b2d41996d"
 dependencies = [
- "admin",
- "airdrop",
- "multi-derive",
- "query_auth",
- "shade-protocol",
- "snip20",
+ "anyhow",
+ "derivative",
+ "itertools",
+ "nanoid",
+ "prost",
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/shade-plus)",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1383,7 +1491,7 @@ dependencies = [
  "anyhow",
  "better-secret-math",
  "borsh",
- "btr-macros 0.1.0 (git+https://github.com/securesecrets/better-secret-math)",
+ "btr-macros",
  "cosmwasm-schema",
  "derive-from-ext",
  "paste",
@@ -1391,9 +1499,10 @@ dependencies = [
  "schemars 0.8.12",
  "secret-borsh-storage",
  "secret-cosmwasm-std",
- "secret-storage-plus",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/shade-plus)",
  "serde",
- "shade-protocol",
+ "shade-toolkit",
+ "snip20-reference-impl",
  "thiserror",
 ]
 
@@ -1404,15 +1513,13 @@ dependencies = [
  "index_oracle",
  "mock_band",
  "mock_ojo",
- "multi-derive",
  "multi-test-helpers",
  "oracle_mocks",
  "oracle_router",
  "rstest",
  "secret-cosmwasm-std",
- "shade-multi-test",
  "shade-oracles",
- "shade-protocol",
+ "shade-toolkit",
  "shade_staking_derivatives_oracle",
  "shadeswap_market_oracle",
  "shadeswap_spot_oracle",
@@ -1428,27 +1535,44 @@ name = "shade-protocol"
 version = "0.1.0"
 source = "git+https://github.com/securesecrets/shade?rev=lend-v1#0f504c20bbc52238cff3a35c0523963655af04f6"
 dependencies = [
- "anyhow",
  "base64 0.12.3",
  "chrono",
  "const_format",
  "contract-derive",
  "cosmwasm-schema",
- "query-authentication",
+ "query-authentication 0.1.0 (git+https://github.com/securesecrets/query-authentication?branch=cosmwasm_v1_upgrade)",
  "rand_chacha 0.2.2",
  "rand_core 0.5.1",
  "remain",
  "schemars 0.8.12",
  "secret-cosmwasm-std",
  "secret-cosmwasm-storage",
- "secret-multi-test",
- "secret-storage-plus",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/secret-plus-utils)",
  "serde",
  "sha2 0.9.9",
  "strum",
  "strum_macros",
  "subtle",
  "thiserror",
+]
+
+[[package]]
+name = "shade-toolkit"
+version = "0.1.0"
+source = "git+https://github.com/securesecrets/shade-plus#a0a8f7da6a0ed39d032bfba953a2530b2d41996d"
+dependencies = [
+ "anyhow",
+ "better-secret-math",
+ "borsh",
+ "cosmwasm-schema",
+ "query-authentication 0.1.0 (git+https://github.com/securesecrets/shade-plus)",
+ "remain",
+ "rstest",
+ "schemars 0.8.12",
+ "secret-cosmwasm-std",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/shade-plus)",
+ "serde",
+ "shade-multi-test",
 ]
 
 [[package]]
@@ -1473,6 +1597,7 @@ version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
+ "snip20-reference-impl",
 ]
 
 [[package]]
@@ -1489,6 +1614,7 @@ version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
+ "snip20-reference-impl",
 ]
 
 [[package]]
@@ -1497,6 +1623,7 @@ version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
+ "snip20-reference-impl",
 ]
 
 [[package]]
@@ -1519,12 +1646,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "snip20"
-version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade?rev=lend-v1#0f504c20bbc52238cff3a35c0523963655af04f6"
+name = "snip20-reference-impl"
+version = "1.0.0"
+source = "git+https://github.com/securesecrets/snip20-reference-impl?branch=toolkit#dd8c74d8f2a7874cc96471286010a30a8a4f66ff"
 dependencies = [
+ "base64 0.21.0",
+ "cosmwasm-schema",
+ "rand",
+ "schemars 0.8.12",
  "secret-cosmwasm-std",
- "shade-protocol",
+ "secret-cosmwasm-storage",
+ "secret-toolkit",
+ "secret-toolkit-crypto",
+ "serde",
+ "shade-toolkit",
 ]
 
 [[package]]
@@ -1534,9 +1669,10 @@ dependencies = [
  "cosmwasm-schema",
  "schemars 0.8.12",
  "secret-cosmwasm-std",
- "secret-storage-plus",
+ "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/shade-plus)",
  "serde",
- "shade-protocol",
+ "shade-toolkit",
+ "snip20-reference-impl",
  "thiserror",
 ]
 
@@ -1605,9 +1741,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.15"
+version = "2.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a34fcf3e8b60f57e6a14301a2e916d323af98b0ea63c599441eec8558660c822"
+checksum = "a6f671d4b5ffdb8eadec19c0ae67fe2639df8684bd7bc4b83d986b8db549cf01"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1642,7 +1778,7 @@ checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.15",
+ "syn 2.0.16",
 ]
 
 [[package]]
