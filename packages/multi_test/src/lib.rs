@@ -9,7 +9,7 @@ pub(crate) use harness::*;
 pub(crate) extern crate multi_test_helpers;
 
 pub(crate) mod mocks;
-use cosmwasm_std::{to_binary, Addr, Decimal256, StdResult, Uint128, Uint256, Uint64};
+use cosmwasm_std::{to_binary, Decimal256, StdResult, Uint128, Uint256, Uint64};
 use multi_test_helpers::{snip20::Snip20Helper, User};
 use shade_oracles::{
     asset::RawAsset,
@@ -19,8 +19,7 @@ use shade_toolkit::multi_test::{App, AppResponse};
 
 use shade_toolkit::{
     {
-        {Contract, RawContract},
-        ExecuteCallback, InstantiateCallback, MultiTestable, Query,
+        {Contract, RawContract}, MultiTestable, Query,
     },
     AnyResult,
 };

@@ -2,7 +2,7 @@ use crate::{interfaces::{
     common::{OracleQuery, PriceResponse, PricesResponse},
     router::msg::{ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg},
 }};
-use cosmwasm_std::{QuerierWrapper, StdError, StdResult, Uint128};
+use cosmwasm_std::{QuerierWrapper, StdError, StdResult};
 use shade_toolkit::{Contract, Query, interfaces::admin_auth::{
     AdminPermissions,
     validate_admin,

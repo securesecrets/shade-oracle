@@ -16,6 +16,7 @@ mod test {
     use shade_oracles::{
         interfaces::providers::RawProvider, unit_test_interface::prices::PricesFixture,
     };
+    use shade_toolkit::{ExecuteCallback, InstantiateCallback};
 
     fn create_mock_lp_token(admin: &User, app: &mut App) -> (String, Snip20Helper) {
         let mock_liquidity_token_key = "MOCKLP";

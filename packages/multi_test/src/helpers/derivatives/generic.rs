@@ -67,6 +67,7 @@ mod test {
     use crate::mocks::MockShadeStkdScrtHelper;
 
     use super::*;
+    use cosmwasm_std::Addr;
     use multi_test_helpers::Asserter;
     use shade_oracles::{
         interfaces::{common::OraclePrice, providers::ReferenceData},

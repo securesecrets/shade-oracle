@@ -140,6 +140,7 @@ mod test {
         use super::*;
         use crate::mocks::MockSiennaPair;
         use oracle_mocks::sienna_pair::contract as mock_sienna_pair;
+        use shade_toolkit::{ExecuteCallback, InstantiateCallback};
 
         #[allow(clippy::too_many_arguments)]
         fn basic_market_test(

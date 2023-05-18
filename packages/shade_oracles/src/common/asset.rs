@@ -7,7 +7,7 @@ use crate::querier::query_price;
 use better_secret_math::common::{bankers_round, checked_add, exp10, muldiv};
 use better_secret_math::U256;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256, Uint128};
+use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256};
 use secret_storage_plus::Map;
 use snip20::{
     helpers::query_token_info,
