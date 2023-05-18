@@ -5,6 +5,7 @@ on:
     branches:
       - "**MULBERRY**"
       - release
+      - develop
 
 env:
   CARGO_TERM_COLOR: always
