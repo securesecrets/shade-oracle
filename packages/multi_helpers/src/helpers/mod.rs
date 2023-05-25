@@ -3,8 +3,7 @@ use cosmwasm_std::{Addr, StdError};
 use serde::de::DeserializeOwned;
 use shade_toolkit::{
     multi_test::{App, AppResponse},
-    MultiTestable,
-    AnyResult,
+    multi::{MultiTestable, AnyResult},
 };
 use std::{
     fmt::{Debug, Display},

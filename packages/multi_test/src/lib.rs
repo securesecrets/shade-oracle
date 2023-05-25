@@ -19,8 +19,8 @@ use shade_toolkit::multi_test::{App, AppResponse};
 
 use shade_toolkit::{
     {
-        {Contract, RawContract}, MultiTestable, Query,
+        {Contract, RawContract}, Query,
     },
-    AnyResult,
-};
+    multi::{MultiTestable, AnyResult},
+ };
 use std::collections::HashMap;
