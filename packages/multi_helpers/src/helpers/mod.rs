@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, StdError};
 use serde::de::DeserializeOwned;
 use shade_toolkit::{
     multi_test::{App, AppResponse},
-    multi::{MultiTestable, AnyResult},
+    multi::{MultiTestable, AnyResult, Tester},
 };
 use std::{
     fmt::{Debug, Display},
@@ -70,53 +70,19 @@ impl Asserter {
 pub struct User {
     pub address: Addr,
 }
+impl Tester for User {
+    fn addr(&self) -> Addr {
+        self.address.clone()
+    }
+}
+
 impl User {
     pub fn new(address: impl Into<String>) -> Self {
         let address = Addr::unchecked(address);
         User { address }
     }
-
-    pub fn addr(&self) -> Addr {
-        self.address.clone()
-    }
     pub fn str(&self) -> String {
         self.address.to_string()
-    }
-    pub fn init(
-        &self,
-        app: &mut App,
-        msg: &impl InstantiateCallback,
-        testable: impl MultiTestable,
-        label: &str,
-    ) -> AnyResult<ContractInfo> {
-        msg.test_init(testable, app, self.address.clone(), label, &[])
-    }
-    pub fn init_with_funds(
-        &self,
-        app: &mut App,
-        msg: &impl InstantiateCallback,
-        testable: impl MultiTestable,
-        label: &str,
-        send_funds: &[Coin],
-    ) -> AnyResult<ContractInfo> {
-        msg.test_init(testable, app, self.address.clone(), label, send_funds)
-    }
-    pub fn exec(
-        &self,
-        app: &mut App,
-        msg: &(impl ExecuteCallback + std::fmt::Debug),
-        contract: &ContractInfo,
-    ) -> AnyResult<AppResponse> {
-        msg.test_exec(contract, app, self.address.clone(), &[])
-    }
-    pub fn exec_with_funds(
-        &self,
-        app: &mut App,
-        msg: &(impl ExecuteCallback + std::fmt::Debug),
-        contract: &ContractInfo,
-        send_funds: &[Coin],
-    ) -> AnyResult<AppResponse> {
-        msg.test_exec(contract, app, self.address.clone(), send_funds)
     }
 }
 

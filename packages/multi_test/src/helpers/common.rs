@@ -4,6 +4,7 @@ use cosmwasm_std::Timestamp;
 use multi_test_helpers::admin_auth::AdminAuthHelper;
 use shade_oracles::interfaces::providers::mock::{BandExecuteMsg, BandMockPrice, MockPrice};
 use shade_oracles::interfaces::providers::{self, Provider, RawProvider};
+use shade_toolkit::multi::Tester;
 use shade_toolkit::{multi_test::App, multi::AnyResult, Contract};
 
 create_test_helper!(MockProviderHelper);
@@ -121,14 +122,15 @@ impl OracleCore {
     /// based off the prices argument with them being quoted in "USD".
     pub fn setup(
         app: &mut App,
-        admin: &User,
+        admin: &impl Tester,
         prices: HashMap<String, Uint128>,
         provider: Option<MockProviderHelper>,
         oracle_router: Option<OracleRouterHelper>,
         admin_auth: Option<AdminAuthHelper>,
     ) -> AnyResult<Self> {
         let quote_symbol: String = "USD".into();
-        let admin_auth = admin_auth.unwrap_or_else(|| AdminAuthHelper::init(app, admin, None));
+        let admin = User::new(admin.addr());
+        let admin_auth = admin_auth.unwrap_or_else(|| AdminAuthHelper::init(app, &admin, None));
         let mut initial_prices = vec![];
         // Configure mock provider prices
         for (sym, price) in prices {
@@ -137,7 +139,7 @@ impl OracleCore {
 
         let provider = provider.unwrap_or_else(|| {
             MockProviderHelper::init_band(
-                admin,
+                &admin,
                 app,
                 initial_prices,
                 admin_auth.clone().into(),
@@ -147,7 +149,7 @@ impl OracleCore {
 
         let oracle_router = oracle_router.unwrap_or_else(|| {
             OracleRouterHelper::init(
-                admin,
+                &admin,
                 app,
                 &admin_auth.clone().0.into(),
                 RawProvider::Band(provider.clone().into()),

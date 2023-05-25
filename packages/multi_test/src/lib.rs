@@ -21,6 +21,6 @@ use shade_toolkit::{
     {
         {Contract, RawContract}, Query,
     },
-    multi::{MultiTestable, AnyResult},
+    multi::{MultiTestable, AnyResult, Tester},
  };
 use std::collections::HashMap;
