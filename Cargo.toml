@@ -31,8 +31,8 @@ borsh = "0.10.3"
 paste = "1.0"
 derive-from-ext = "0.2"
 
-admin = { git = "https://github.com/securesecrets/shade", rev = "lend-v1" }
-query_auth = { git = "https://github.com/securesecrets/shade", rev = "lend-v1" }
+admin = { git = "https://github.com/securesecrets/shade" }
+query_auth = { git = "https://github.com/securesecrets/shade" }
 
 shade-multi-test = { git = "https://github.com/securesecrets/shade-plus" }
 better-secret-math = { git = "https://github.com/securesecrets/shade-plus" }
@@ -41,7 +41,7 @@ btr-macros = { git = "https://github.com/securesecrets/shade-plus" }
 secret-storage-plus = { git = "https://github.com/securesecrets/shade-plus" }
 secret-borsh-storage = { git = "https://github.com/securesecrets/shade-plus" }
 
-snip20 = { package = "snip20-reference-impl", git = "https://github.com/securesecrets/snip20-reference-impl", branch = "shade-plus", features = ["library"] }
+snip20 = { package = "snip20-reference-impl", git = "https://github.com/securesecrets/snip20-reference-impl" }
 
 anyhow = "1.0.71"
 rstest = "0.15.0"
