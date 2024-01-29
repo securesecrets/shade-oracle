@@ -1,12 +1,12 @@
 use super::*;
+use ::snip20;
+use ::snip20::{helpers::TokenInfo, msg::*};
 use cosmwasm_std::from_binary;
 use shade_oracles::{
     asset::{Asset, RawAsset},
     better_secret_math::U256,
 };
 use shade_toolkit::implement_harness;
-use ::snip20::{helpers::TokenInfo, msg::*};
-use ::snip20 as snip20;
 
 implement_harness!(Snip20, snip20);
 create_test_helper!(Snip20Helper);

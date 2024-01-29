@@ -45,8 +45,7 @@ pub use state::*;
 mod state {
     use std::collections::HashSet;
 
-    use secret_borsh_storage::BorshItem;
-    use shade_toolkit::interfaces::admin_auth::{ValidateAdminPermissionResponse, QueryMsg};
+    use super::*;
     use crate::{
         error::CommonOracleError,
         interfaces::router::msg::{
@@ -54,7 +53,8 @@ mod state {
         },
         querier::{query_price, require_admin, require_admin_or_bot, require_bot},
     };
-    use super::*;
+    use secret_borsh_storage::BorshItem;
+    use shade_toolkit::interfaces::admin_auth::{QueryMsg, ValidateAdminPermissionResponse};
 
     impl CommonConfig {
         pub const SUPPORTED_KEYS: BorshItem<'static, HashSet<String>> =

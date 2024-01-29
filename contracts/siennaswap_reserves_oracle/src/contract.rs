@@ -8,11 +8,8 @@ use shade_oracles::interfaces::common::config::{CommonConfig, CommonConfigRespon
 use shade_oracles::interfaces::common::{OraclePrice, PriceResponse, PricesResponse};
 use shade_oracles::protocols::siennaswap::SiennaSwapQuerier;
 use shade_oracles::{
-    common::querier::{query_prices as query_router_prices},
-    core::pad_query_result,
-    interfaces::dex::generic::*,
-    ssp::ItemStorage,
-    BLOCK_SIZE,
+    common::querier::query_prices as query_router_prices, core::pad_query_result,
+    interfaces::dex::generic::*, ssp::ItemStorage, BLOCK_SIZE,
 };
 use snip20::helpers::query_token_info;
 

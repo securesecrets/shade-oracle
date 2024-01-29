@@ -1,7 +1,5 @@
 use super::*;
-use shade_toolkit::interfaces::admin_auth::{
-    AdminPermissions, validate_admin
-};
+use shade_toolkit::interfaces::admin_auth::{validate_admin, AdminPermissions};
 
 #[cw_serde]
 pub struct BandInstantiateMsg {

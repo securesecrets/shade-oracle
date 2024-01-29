@@ -4,8 +4,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Api, QuerierWrapper, Timestamp, Uint128, Uint256, Uint64};
 use cosmwasm_std::{StdError, StdResult};
 use shade_toolkit::{
-    {ExecuteCallback, InstantiateCallback, Query},
-    Contract, RawContract, ResponseStatus
+    Contract, RawContract, ResponseStatus, {ExecuteCallback, InstantiateCallback, Query},
 };
 
 use self::mock::ConfigResponse;

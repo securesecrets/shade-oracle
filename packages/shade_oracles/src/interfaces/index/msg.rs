@@ -5,7 +5,7 @@ use crate::{
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal256, Uint256, Uint64};
-use shade_toolkit::{RawContract, Contract};
+use shade_toolkit::{Contract, RawContract};
 
 use super::{AssetSymbol, AssetWeights, Peg};
 

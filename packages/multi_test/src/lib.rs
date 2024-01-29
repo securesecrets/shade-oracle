@@ -18,9 +18,9 @@ use shade_oracles::{
 use shade_toolkit::multi_test::{App, AppResponse};
 
 use shade_toolkit::{
+    multi::{AnyResult, MultiTestable, Tester},
     {
-        {Contract, RawContract}, Query,
+        Query, {Contract, RawContract},
     },
-    multi::{MultiTestable, AnyResult, Tester},
- };
+};
 use std::collections::HashMap;

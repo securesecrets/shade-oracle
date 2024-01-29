@@ -2,8 +2,8 @@ use super::*;
 use cosmwasm_std::{Addr, StdError};
 use serde::de::DeserializeOwned;
 use shade_toolkit::{
+    multi::{nanoid::nanoid, AnyResult, MultiTestable, Tester},
     multi_test::{App, AppResponse},
-    multi::{MultiTestable, AnyResult, Tester},
 };
 use std::{
     fmt::{Debug, Display},
@@ -15,6 +15,15 @@ pub mod query_auth;
 pub mod snip20;
 
 pub type AppResult = AnyResult<AppResponse>;
+
+/// Alphabet used by nanoid for generating addresses. Has the characters '-' and '_' removed and upper case characters so that generated address is normalized.
+/// Very low probability of collisions - https://alex7kom.github.io/nano-nanoid-cc.
+/// Using address length of 40.
+pub const SAFE_NANOID: [char; 36] = [
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+    'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+];
+pub const SAFE_NANOID_LENGTH: usize = 40;
 
 pub struct Asserter;
 
@@ -83,6 +92,12 @@ impl User {
     }
     pub fn str(&self) -> String {
         self.address.to_string()
+    }
+    pub fn gen() -> User {
+        User::new(format!(
+            "secret{}",
+            nanoid!(SAFE_NANOID_LENGTH, &SAFE_NANOID)
+        ))
     }
 }
 

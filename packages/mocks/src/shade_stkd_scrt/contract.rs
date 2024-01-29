@@ -6,7 +6,7 @@ use shade_oracles::{
     protocols::shade_staking_derivatives::{StakingDerivativeQueryMsg, StakingInfoResponse},
     ssp::Item,
 };
-use snip20::helpers::{TokenInfo};
+use snip20::helpers::TokenInfo;
 use snip20::msg::QueryAnswer;
 
 #[cw_serde]

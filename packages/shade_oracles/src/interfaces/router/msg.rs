@@ -8,7 +8,7 @@ use crate::{
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint256;
-use shade_toolkit::{RawContract, Contract};
+use shade_toolkit::{Contract, RawContract};
 
 use super::registry::ProtectedKeyInfo;
 

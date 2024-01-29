@@ -7,7 +7,7 @@ pub mod querier {
     use super::msg::ConfigResponse;
     use super::msg::*;
     use cosmwasm_std::{QuerierWrapper, StdResult};
-    use shade_toolkit::{Query, Contract};
+    use shade_toolkit::{Contract, Query};
 
     pub fn get_admin_auth(
         router: &Contract,

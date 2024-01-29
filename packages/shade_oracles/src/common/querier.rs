@@ -1,12 +1,12 @@
-use crate::{interfaces::{
+use crate::interfaces::{
     common::{OracleQuery, PriceResponse, PricesResponse},
     router::msg::{ConfigResponse as RouterConfigResponse, QueryMsg as RouterQueryMsg},
-}};
+};
 use cosmwasm_std::{QuerierWrapper, StdError, StdResult};
-use shade_toolkit::{Contract, Query, interfaces::admin_auth::{
-    AdminPermissions,
-    validate_admin,
-}};
+use shade_toolkit::{
+    interfaces::admin_auth::{validate_admin, AdminPermissions},
+    Contract, Query,
+};
 
 pub fn query_price(
     oracle: &Contract,

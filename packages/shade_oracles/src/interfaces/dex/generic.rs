@@ -5,7 +5,7 @@ use crate::interfaces::common::{PriceResponse, PricesResponse};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
 use secret_storage_plus::{Item, ItemStorage, Map};
-use shade_toolkit::{RawContract, Contract};
+use shade_toolkit::{Contract, RawContract};
 
 pub mod msg {
 

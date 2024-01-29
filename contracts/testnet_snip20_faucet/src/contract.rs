@@ -2,9 +2,11 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{entry_point, Addr, StdError, Uint128};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use secret_storage_plus::{Item, Map};
-use shade_toolkit::{ExecuteCallback, Query, pad_query_result, pad_execute_result, BLOCK_SIZE, RawContract, Contract};
-use snip20::helpers::{query_token_info};
-use snip20::msg::{QueryAnswer, ExecuteMsg as Snip20ExecuteMsg, QueryMsg as Snip20QueryMsg};
+use shade_toolkit::{
+    pad_execute_result, pad_query_result, Contract, ExecuteCallback, Query, RawContract, BLOCK_SIZE,
+};
+use snip20::helpers::query_token_info;
+use snip20::msg::{ExecuteMsg as Snip20ExecuteMsg, QueryAnswer, QueryMsg as Snip20QueryMsg};
 
 #[cw_serde]
 pub struct InstantiateMsg {

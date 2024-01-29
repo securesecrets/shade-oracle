@@ -1,5 +1,8 @@
-use shade_toolkit::{implement_harness, interfaces::admin_auth::{InstantiateMsg, RegistryAction, ExecuteMsg}};
 use super::*;
+use shade_toolkit::{
+    implement_harness,
+    interfaces::admin_auth::{ExecuteMsg, InstantiateMsg, RegistryAction},
+};
 
 implement_harness!(Admin, admin);
 create_test_helper!(AdminAuthHelper);

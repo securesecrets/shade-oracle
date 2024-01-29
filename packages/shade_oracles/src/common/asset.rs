@@ -9,11 +9,8 @@ use better_secret_math::U256;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Api, CosmosMsg, QuerierWrapper, StdError, StdResult, Storage, Uint256};
 use secret_storage_plus::Map;
-use snip20::{
-    helpers::query_token_info,
-    msg::ExecuteMsg as Snip20ExecuteMsg
-};
-use shade_toolkit::{Contract, InstantiateCallback, ExecuteCallback, RawContract};
+use shade_toolkit::{Contract, ExecuteCallback, InstantiateCallback, RawContract};
+use snip20::{helpers::query_token_info, msg::ExecuteMsg as Snip20ExecuteMsg};
 
 #[derive(Eq)]
 #[cw_serde]

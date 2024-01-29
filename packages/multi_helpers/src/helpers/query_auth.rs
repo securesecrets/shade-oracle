@@ -1,4 +1,7 @@
-use shade_toolkit::{implement_harness, interfaces::query_auth::{InstantiateMsg, ExecuteMsg}};
+use shade_toolkit::{
+    implement_harness,
+    interfaces::query_auth::{ExecuteMsg, InstantiateMsg},
+};
 
 use super::*;
 use ::query_auth as query_auth_crate;
