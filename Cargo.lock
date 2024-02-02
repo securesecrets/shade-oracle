@@ -93,7 +93,7 @@ name = "better-secret-math"
 version = "0.3.0"
 source = "git+https://github.com/securesecrets/shade-plus#48188199c3cbc5e362baeda08203aabb75fc77d9"
 dependencies = [
- "borsh",
+ "borsh 0.10.3",
  "btr-macros",
  "cosmwasm-schema",
  "derive-from-ext",
@@ -142,6 +142,15 @@ checksum = "4114279215a005bc675e386011e594e1d9b800918cea18fcadadcce864a2046b"
 dependencies = [
  "borsh-derive",
  "hashbrown 0.13.2",
+]
+
+[[package]]
+name = "borsh"
+version = "1.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f58b559fd6448c6e2fd0adb5720cd98a2506594cafa4737ff98c396f3e82f667"
+dependencies = [
+ "cfg_aliases",
 ]
 
 [[package]]
@@ -224,6 +233,12 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "cfg_aliases"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
 name = "chrono"
@@ -472,7 +487,7 @@ name = "ethnum"
 version = "1.3.2"
 source = "git+https://github.com/securesecrets/ethnum-rs?branch=v1.1.10-secret#63c8ce7c57914cb03f4f9ab31831e8a4ba14997c"
 dependencies = [
- "borsh",
+ "borsh 0.10.3",
  "ethnum-macros",
  "secret-cosmwasm-std",
  "serde",
@@ -1215,7 +1230,7 @@ name = "secret-borsh-storage"
 version = "1.0.0"
 source = "git+https://github.com/securesecrets/shade-plus#48188199c3cbc5e362baeda08203aabb75fc77d9"
 dependencies = [
- "borsh",
+ "borsh 0.10.3",
  "schemars 0.8.16",
  "secret-cosmwasm-std",
  "secret-storage-plus 0.13.4 (git+https://github.com/securesecrets/shade-plus)",
@@ -1513,7 +1528,7 @@ version = "1.0.0"
 dependencies = [
  "anyhow",
  "better-secret-math",
- "borsh",
+ "borsh 1.3.1",
  "btr-macros",
  "cosmwasm-schema",
  "derive-from-ext",
@@ -1586,7 +1601,7 @@ source = "git+https://github.com/securesecrets/shade-plus#48188199c3cbc5e362baed
 dependencies = [
  "anyhow",
  "better-secret-math",
- "borsh",
+ "borsh 0.10.3",
  "cosmwasm-schema",
  "query-authentication 0.1.0 (git+https://github.com/securesecrets/shade-plus)",
  "remain",
