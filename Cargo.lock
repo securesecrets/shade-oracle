@@ -79,7 +79,7 @@ checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 [[package]]
 name = "better-secret-math"
 version = "0.3.0"
-source = "git+https://github.com/securesecrets/shade-plus#acbc406092b12236f6b1825b519b900a69521edf"
+source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
 dependencies = [
  "borsh",
  "borsh-derive",
@@ -157,7 +157,7 @@ dependencies = [
 [[package]]
 name = "btr-macros"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-plus#acbc406092b12236f6b1825b519b900a69521edf"
+source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -938,7 +938,7 @@ dependencies = [
  "remain",
  "ripemd160",
  "schemars 0.8.16",
- "secp256k1 0.27.0",
+ "secp256k1",
  "secret-cosmwasm-std",
  "serde",
  "sha2 0.9.9",
@@ -948,14 +948,14 @@ dependencies = [
 [[package]]
 name = "query-authentication"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-plus#acbc406092b12236f6b1825b519b900a69521edf"
+source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
 dependencies = [
  "bech32 0.8.1",
  "cosmwasm-schema",
  "remain",
  "ripemd160",
  "schemars 0.8.16",
- "secp256k1 0.20.3",
+ "secp256k1",
  "secret-cosmwasm-std",
  "serde",
  "sha2 0.9.9",
@@ -1186,29 +1186,11 @@ dependencies = [
 
 [[package]]
 name = "secp256k1"
-version = "0.20.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97d03ceae636d0fed5bae6a7f4f664354c5f4fcedf6eef053fef17e49f837d0a"
-dependencies = [
- "secp256k1-sys 0.4.2",
-]
-
-[[package]]
-name = "secp256k1"
 version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25996b82292a7a57ed3508f052cfff8640d38d32018784acd714758b43da9c8f"
 dependencies = [
- "secp256k1-sys 0.8.1",
-]
-
-[[package]]
-name = "secp256k1-sys"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "957da2573cde917463ece3570eab4a0b3f19de6f1646cde62e6fd3868f566036"
-dependencies = [
- "cc",
+ "secp256k1-sys",
 ]
 
 [[package]]
@@ -1223,7 +1205,7 @@ dependencies = [
 [[package]]
 name = "secret-borsh-storage"
 version = "1.0.0"
-source = "git+https://github.com/securesecrets/shade-plus#acbc406092b12236f6b1825b519b900a69521edf"
+source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
 dependencies = [
  "borsh",
  "borsh-derive",
@@ -1290,7 +1272,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/shade-plus#acbc406092b12236f6b1825b519b900a69521edf"
+source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
 dependencies = [
  "bincode2",
  "schemars 0.8.16",
@@ -1320,7 +1302,7 @@ source = "git+https://github.com/securesecrets/secret-toolkit#9e139bedab9eeb60f2
 dependencies = [
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
- "secp256k1 0.27.0",
+ "secp256k1",
  "secret-cosmwasm-std",
  "sha2 0.10.8",
 ]
@@ -1504,7 +1486,7 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/shade-plus#acbc406092b12236f6b1825b519b900a69521edf"
+source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
 dependencies = [
  "anyhow",
  "derivative",
@@ -1593,7 +1575,7 @@ dependencies = [
 [[package]]
 name = "shade-toolkit"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-plus#acbc406092b12236f6b1825b519b900a69521edf"
+source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
 dependencies = [
  "anyhow",
  "better-secret-math",
@@ -1927,9 +1909,9 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "winnow"
-version = "0.5.36"
+version = "0.5.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "818ce546a11a9986bc24f93d0cdf38a8a1a400f1473ea8c82e59f6e0ffab9249"
+checksum = "a7cad8365489051ae9f054164e459304af2e7e9bb407c958076c8bf4aef52da5"
 dependencies = [
  "memchr",
 ]
