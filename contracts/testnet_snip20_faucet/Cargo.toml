@@ -27,4 +27,4 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 secret-storage-plus = { workspace = true }
 shade-toolkit = { workspace = true }
-snip20 = { workspace = true }
+snip20 = { path = "../snip20", package = "snip20-reference-impl", features = ["library"] }

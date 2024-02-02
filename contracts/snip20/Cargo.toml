@@ -1,0 +1,54 @@
+[package]
+name = "snip20-reference-impl"
+version = "1.0.0"
+authors = ["Itzik <itzik@keytango.io>"]
+edition = "2021"
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true
+
+[features]
+# for quicker tests, cargo test --lib
+# for more explicit tests, cargo test --features=backtraces
+#default = ["debug-print"]
+backtraces = ["cosmwasm-std/backtraces"]
+library = []
+
+# debug-print = ["cosmwasm-std/debug-print"]
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+cosmwasm-schema = { workspace = true }
+
+shade-toolkit = { workspace = true }
+
+secret-toolkit = { git = "https://github.com/securesecrets/secret-toolkit", features = [
+  "permit",
+  "viewing-key",
+] }
+secret-toolkit-crypto = { git = "https://github.com/securesecrets/secret-toolkit", features = [
+  "rand",
+  "hash",
+] }
+
+rand = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+base64 = { workspace = true }

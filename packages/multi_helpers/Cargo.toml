@@ -23,7 +23,7 @@ thiserror = { workspace = true }
 shade-oracles = { path = "../shade_oracles" }
 
 admin = { workspace = true }
-snip20 = { workspace = true, features = [] }
+snip20 = { path = "../../contracts/snip20", package = "snip20-reference-impl", features = [] }
 query_auth = { workspace = true }
 shade-toolkit = { workspace = true, features = ["query-auth"] }
 

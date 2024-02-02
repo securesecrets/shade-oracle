@@ -42,7 +42,7 @@ borsh = { workspace = true }
 paste = { workspace = true }
 derive-from-ext = { workspace = true }
 
-snip20 = { workspace = true }
+snip20 = { path = "../../contracts/snip20", package = "snip20-reference-impl", features = ["library"] }
 shade-toolkit = { workspace = true, features = ["admin-auth"] }
 
 btr-macros = { workspace = true }

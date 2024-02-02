@@ -24,4 +24,4 @@ cosmwasm-std = { workspace = true }
 shade-oracles = { path = "../shade_oracles", features = ["core"] }
 cosmwasm-schema = { workspace = true }
 shade-toolkit = { workspace = true }
-snip20 = { workspace = true }
+snip20 = { path = "../../contracts/snip20", package = "snip20-reference-impl", features = ["library"] }
