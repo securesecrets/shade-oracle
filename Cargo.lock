@@ -79,7 +79,7 @@ checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 [[package]]
 name = "better-secret-math"
 version = "0.3.0"
-source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
+source = "git+https://github.com/securesecrets/shade-plus#d40154e19e7a478b8cc70bd243575c3533e29e07"
 dependencies = [
  "borsh",
  "borsh-derive",
@@ -157,7 +157,7 @@ dependencies = [
 [[package]]
 name = "btr-macros"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
+source = "git+https://github.com/securesecrets/shade-plus#d40154e19e7a478b8cc70bd243575c3533e29e07"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -948,7 +948,7 @@ dependencies = [
 [[package]]
 name = "query-authentication"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
+source = "git+https://github.com/securesecrets/shade-plus#d40154e19e7a478b8cc70bd243575c3533e29e07"
 dependencies = [
  "bech32 0.8.1",
  "cosmwasm-schema",
@@ -1205,7 +1205,7 @@ dependencies = [
 [[package]]
 name = "secret-borsh-storage"
 version = "1.0.0"
-source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
+source = "git+https://github.com/securesecrets/shade-plus#d40154e19e7a478b8cc70bd243575c3533e29e07"
 dependencies = [
  "borsh",
  "borsh-derive",
@@ -1272,7 +1272,7 @@ dependencies = [
 [[package]]
 name = "secret-storage-plus"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
+source = "git+https://github.com/securesecrets/shade-plus#d40154e19e7a478b8cc70bd243575c3533e29e07"
 dependencies = [
  "bincode2",
  "schemars 0.8.16",
@@ -1486,7 +1486,7 @@ dependencies = [
 [[package]]
 name = "shade-multi-test"
 version = "0.13.4"
-source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
+source = "git+https://github.com/securesecrets/shade-plus#d40154e19e7a478b8cc70bd243575c3533e29e07"
 dependencies = [
  "anyhow",
  "derivative",
@@ -1575,7 +1575,7 @@ dependencies = [
 [[package]]
 name = "shade-toolkit"
 version = "0.1.0"
-source = "git+https://github.com/securesecrets/shade-plus#c69a8fe27d05ea7111d8e83afd65b355c65608b6"
+source = "git+https://github.com/securesecrets/shade-plus#d40154e19e7a478b8cc70bd243575c3533e29e07"
 dependencies = [
  "anyhow",
  "better-secret-math",
