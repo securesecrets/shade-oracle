@@ -51,15 +51,13 @@ pub enum DShdQueryMsg {
     StakingInfo { }
 }
 
-pub enum DShdQueryResponse {
-    StakingInfo { 
-        unbonding_time: Uint128,
-        bonded_shd: Uint128,
-        available_shd: Uint128,
-        rewards: Uint128,
-        total_derivative_token_supply: Uint128,
-        price: Uint128,
-    }
+pub struct StakingInfoResponse { 
+    unbonding_time: Uint128,
+    bonded_shd: Uint128,
+    available_shd: Uint128,
+    rewards: Uint128,
+    total_derivative_token_supply: Uint128,
+    price: Uint128,
 }
 
 pub const UNDERLYING_KEY = "SHD";
@@ -133,11 +131,21 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     pad_query_result(
         match msg {
             QueryMsg::GetPrice { key } => {
+                Ok(OraclePrice::new(key, {
+                    rate: query_by_key(
+                          deps,
+                          key,
+                          config.router,
+                          config.dshd,
+                      )?,
+                    last_updated_base: env.block.time.seconds,
+                    last_updated_quote: env.block.time.seconds,
+                }))
             },
             QueryMsg::GetPrices { keys } => {
             },
@@ -146,7 +154,7 @@ pub fn query(deps: Deps, _env: Env, msg: BandQueryMsg) -> StdResult<Binary> {
     )
 }
 
-fn query_by_key(
+fn query_oracle_price_by_key(
     deps: Deps,
     key: String,
     router: Contract,
@@ -164,16 +172,19 @@ fn query_by_key(
 fn query_price(
     deps: Deps,
     router: Contract,
-) -> StdResult<Binary> {
-    let underlying_price = query_underlying_price(deps, router)?;
+) -> StdResult<Uint128> {
+    let underlying_price = query_router_price(router, deps.querier, UNDERLYING_KEY)?.rate;
     let rate = query_rate(deps, dshd)?;
-    Ok(underlying_price * rate)
+    Ok((underlying_price * rate) / exp10(18))
 }
 
 fn query_rate(
     deps: Deps,
     dshd: Contract,
-) -> StdResult<Binary> {
+) -> StdResult<Uint128> {
+    let staking_info = query_staking_info(dshd, deps.querier)?;
+    // normalize from 10^6 to 10^18
+    Ok(staking_info.price * exp10(12))
 }
 
 pub fn query_router_price(
@@ -185,9 +196,8 @@ pub fn query_router_price(
 }
 
 pub fn query_staking_info(
-    oracle: &Contract,
+    dshd: &Contract,
     querier: &QuerierWrapper,
-    key: impl Into<String>,
-) -> StdResult<PriceResponse> {
-    OracleQuery::GetPrice { key: key.into() }.query(querier, oracle)
+) -> StdResult<StakingInfoResponse> {
+    DShdQueryMsg::StakingInfo { }.query(querier, dshd)
 }
