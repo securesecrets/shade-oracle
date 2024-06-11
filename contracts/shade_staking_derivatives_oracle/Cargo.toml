@@ -1,0 +1,21 @@
+[package]
+name = "shade_staking_derivatives_oracle"
+version = "0.1.0"
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp"]
+edition = "2021"
+
+exclude = [
+  "contract.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["derivatives"] }
