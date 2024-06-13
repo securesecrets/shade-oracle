@@ -1,102 +1,23 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{entry_point, Addr, QuerierWrapper, StdError, Storage, Uint128, Uint256};
+use cosmwasm_std::{entry_point, QuerierWrapper, StdError, Uint128, Uint256};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use shade_oracles::better_secret_math::common::exp10;
-use shade_oracles::core::{pad_query_result, validate_admin, AdminPermissions, ResponseStatus};
+use shade_oracles::core::{pad_query_result, validate_admin, AdminPermissions};
 use shade_oracles::interfaces::common::{OraclePrice, OracleQuery, PriceResponse};
 use shade_oracles::interfaces::providers::ReferenceData;
-use shade_oracles::ssp::{Item, Map};
-use shade_toolkit::{Contract, Query, RawContract, BLOCK_SIZE};
+use shade_oracles::ssp::Item;
+use shade_toolkit::{Contract, Query, BLOCK_SIZE};
 
-#[cw_serde]
-pub struct Config {
-    router: Contract,
-    dshd: Contract,
-    admin_auth: Contract,
-    enabled: bool,
-}
+use crate::msg::*;
 
-#[cw_serde]
-pub struct InstantiateMsg {
-    router: RawContract,
-    dshd: RawContract,
-    admin_auth: RawContract,
-}
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        router: Option<RawContract>,
-        dshd: Option<RawContract>,
-        admin_auth: Option<RawContract>,
-        enabled: Option<bool>,
-    },
-}
-
-#[cw_serde]
-pub enum QueryMsg {
-    GetPrice { key: String },
-    GetPrices { keys: Vec<String> },
-    GetConfig {},
-}
-
-#[cw_serde]
-pub enum DShdQueryMsg {
-    StakingInfo {},
-}
-
-impl Query for DShdQueryMsg {
-    const BLOCK_SIZE: usize = BLOCK_SIZE;
-}
-
-#[cw_serde]
-pub struct Fee {
-    pub rate: u32,
-    pub decimal_places: u8,
-}
-
-#[cw_serde]
-pub struct FeeInfo {
-    pub staking: Fee,
-    pub unbonding: Fee,
-    pub collector: Addr,
-}
-
-#[cw_serde]
-pub enum ContractStatusLevel {
-    NormalRun,
-    Panicked,
-    StopAll,
-}
-
-#[cw_serde]
-pub enum DShdQueryResponse {
-    StakingInfo {
-        unbonding_time: Uint128,
-        bonded_shd: Uint128,
-        rewards: Uint128,
-        total_derivative_token_supply: Uint128,
-        price: Uint128,
-        fee_info: FeeInfo,
-        status: ContractStatusLevel,
-    },
-}
-
-#[cw_serde]
-pub struct StakingInfoResponse {
-    unbonding_time: Uint128,
-    bonded_shd: Uint128,
-    rewards: Uint128,
-    total_derivative_token_supply: Uint128,
-    price: Uint128,
-    fee_info: FeeInfo,
-    status: ContractStatusLevel,
-}
-
+// Key used to query router
 pub const UNDERLYING_KEY: &str = "SHD";
+// Key for the "price" (underlying * redemption_rate)
 pub const PRICE_KEY: &str = "Shade Derivative";
+// Key for the redemption rate
 pub const RATE_KEY: &str = "Shade Derivative Rate";
 
+// Storage
 const CONFIG: Item<Config> = Item::new("config");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -176,17 +97,16 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
+    require_enabled(&config)?;
     pad_query_result(
         match msg {
-            QueryMsg::GetPrice { key } => {
-                return to_binary(&query_oracle_price_by_key(
-                    &deps,
-                    &env,
-                    key,
-                    &config.router,
-                    &config.dshd,
-                )?);
-            }
+            QueryMsg::GetPrice { key } => to_binary(&query_oracle_price_by_key(
+                &deps,
+                &env,
+                key,
+                &config.router,
+                &config.dshd,
+            )?),
             QueryMsg::GetPrices { keys } => {
                 let mut results = vec![];
                 for key in keys {
@@ -218,7 +138,10 @@ fn query_oracle_price_by_key(
     } else if key == RATE_KEY.to_string() {
         query_rate(deps, env, dshd)
     } else {
-        Err(StdError::generic_err("Invalid Key"))
+        Err(StdError::generic_err(format!(
+            "Invalid Key, expected one of {}, {}",
+            PRICE_KEY, RATE_KEY
+        )))
     }
 }
 
@@ -248,7 +171,7 @@ fn query_rate(deps: &Deps, env: &Env, dshd: &Contract) -> StdResult<OraclePrice>
     Ok(OraclePrice {
         key: RATE_KEY.to_string(),
         data: ReferenceData {
-            // price is 10^8, upscaling by 10^10 to get 10^18
+            // price is in utkn (8 decimal SHD), upscaling by 10^10 to get 10^18
             rate: Uint256::from(staking_info.price * Uint128::new(exp10(10).as_u128())),
             last_updated_base: now,
             last_updated_quote: now,
@@ -267,9 +190,9 @@ pub fn query_router_price(
 pub fn query_staking_info(
     dshd: &Contract,
     querier: &QuerierWrapper,
-) -> StdResult<StakingInfoResponse> {
-    match (DShdQueryMsg::StakingInfo {}.query(querier, dshd)?) {
-        DShdQueryResponse::StakingInfo {
+) -> StdResult<dshd::StakingInfoResponse> {
+    match (dshd::QueryMsg::StakingInfo {}.query(querier, dshd)?) {
+        dshd::QueryResponse::StakingInfo {
             unbonding_time,
             bonded_shd,
             rewards,
@@ -277,7 +200,7 @@ pub fn query_staking_info(
             price,
             fee_info,
             status,
-        } => Ok(StakingInfoResponse {
+        } => Ok(dshd::StakingInfoResponse {
             unbonding_time,
             bonded_shd,
             rewards,
@@ -286,6 +209,5 @@ pub fn query_staking_info(
             fee_info,
             status,
         }),
-        _ => Err(StdError::generic_err("Unexpected response from dSHD")),
     }
 }

@@ -1,6 +1,6 @@
-pub(crate) use cosmwasm_std::{to_binary, Binary, Coin, ContractInfo, StdResult, Uint128};
+pub(crate) use cosmwasm_std::{to_binary, Binary, StdResult, Uint128};
 
-pub(crate) use shade_toolkit::{ExecuteCallback, InstantiateCallback, Query};
+pub(crate) use shade_toolkit::{Query};
 
 #[cfg(not(target_arch = "wasm32"))]
 mod helpers;
