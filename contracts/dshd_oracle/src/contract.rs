@@ -8,7 +8,7 @@ use shade_oracles::interfaces::providers::ReferenceData;
 use shade_oracles::ssp::Item;
 use shade_toolkit::{Contract, Query, BLOCK_SIZE};
 
-use crate::msg::*;
+use crate::{dshd, msg::*};
 
 // Key used to query router
 pub const UNDERLYING_KEY: &str = "SHD";
@@ -23,7 +23,7 @@ const CONFIG: Item<Config> = Item::new("config");
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {

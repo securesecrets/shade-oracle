@@ -11,6 +11,8 @@ create_harness!(band, MockBand, mock_band);
 create_harness!(ojo, MockOjo, mock_ojo);
 create_harness!(router, OracleRouter, oracle_router);
 create_harness!(index, IndexOracle, index_oracle);
+create_harness!(dshd, MockDShd, mock_dshd);
+create_harness!(dshd_oracle, DShdOracle, dshd_oracle);
 
 pub mod dex {
     pub mod siennaswap {
