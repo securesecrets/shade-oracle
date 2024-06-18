@@ -29,7 +29,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let stakingInfo = StakingInfoResponse {
+    let staking_info = StakingInfoResponse {
         unbonding_time: Uint128::zero(),
         bonded_shd: Uint128::zero(),
         rewards: Uint128::zero(),
@@ -49,7 +49,7 @@ pub fn instantiate(
         status: ContractStatusLevel::NormalRun,
     };
 
-    STAKING_INFO.save(deps.storage, &stakingInfo)?;
+    STAKING_INFO.save(deps.storage, &staking_info)?;
 
     Ok(Response::default())
 }

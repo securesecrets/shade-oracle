@@ -1,58 +1,28 @@
 use super::*;
 use shade_oracles::{
-    interfaces::{dshd_oracle::msg::*, providers::RawProvider},
+    interfaces::{mock_dshd::msg::*, providers::RawProvider},
     status::ContractStatus,
 };
 
-create_test_helper!(DShdOracleHelper);
+create_test_helper!(DShdHelper);
 
-impl DShdOracleHelper {
-    pub fn init(
-        user: &User,
-        app: &mut App,
-        router: &Contract,
-        dshd: &Contract,
-        admin_auth: &Contract,
-    ) -> Self {
+impl DShdHelper {
+    pub fn init(user: &User, app: &mut App, price: &Uint128) -> Self {
         let contract = user
-            .init(
-                app,
-                &InstantiateMsg {
-                    router: router.clone().into(),
-                    dshd: dshd.clone().into(),
-                    admin_auth: admin_auth.clone().into(),
-                },
-                OracleRouter::default(),
-                "oracle_router",
-            )
+            .init(app, &InstantiateMsg { price }, MockDShd::default(), "dshd")
             .unwrap();
         Self(contract)
     }
 
-    pub fn update_config(
+    pub fn query_staking_info(
         &self,
-        sender: &User,
-        app: &mut App,
-        router: &Option<Into<RawContract>>,
-        dshd: &Option<Into<RawContract>>,
-        admin_auth: &Option<Into<RawContract>>,
-        enabled: &Option<bool>,
-    ) -> AnyResult<AppResponse> {
-        sender.exec(app, &ExecuteMsg::UpdateConfig(operation), &self.0)
-    }
-
-    pub fn query_config(&self, app: &App) -> StdResult<Config> {
-        QueryMsg::GetConfig {}.test_query(&self.0, app)
-    }
-
-    pub fn query_price(&self, app: &App, key: String) -> StdResult<PriceResponse> {
-        QueryMsg::GetPrice { key }.test_query(&self.0, app)
-    }
-
-    pub fn query_prices(&self, app: &App, keys: Vec<String>) -> StdResult<PricesResponse> {
-        QueryMsg::GetPrices { keys }.test_query(&self.0, app)
+        app: &App,
+        keys: Vec<String>,
+    ) -> StdResult<StakingInfoResponse> {
+        QueryMsg::StakingInfo {}.test_query(&self.0, app)
     }
 }
+/*
 
 #[cfg(test)]
 mod test {
@@ -298,3 +268,4 @@ mod test {
         assert_eq!(oracle.oracle, router.clone().into());
     }
 }
+*/

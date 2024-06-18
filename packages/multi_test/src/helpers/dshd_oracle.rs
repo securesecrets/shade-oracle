@@ -1,8 +1,8 @@
-use super::*;
-use shade_oracles::{
-    interfaces::{dshd_oracle::msg::*, providers::RawProvider},
-    status::ContractStatus,
+use super::{
+    App, AppResponse, Contract, OracleRouter, PricesResponse, RawContract, StdResult, User,
 };
+use dshd_oracle::msg::*;
+use shade_oracles::{interfaces::providers::RawProvider, status::ContractStatus};
 
 create_test_helper!(DShdOracleHelper);
 
@@ -33,9 +33,9 @@ impl DShdOracleHelper {
         &self,
         sender: &User,
         app: &mut App,
-        router: &Option<Into<RawContract>>,
-        dshd: &Option<Into<RawContract>>,
-        admin_auth: &Option<Into<RawContract>>,
+        router: &Option<RawContract>,
+        dshd: &Option<RawContract>,
+        admin_auth: &Option<RawContract>,
         enabled: &Option<bool>,
     ) -> AnyResult<AppResponse> {
         sender.exec(app, &ExecuteMsg::UpdateConfig(operation), &self.0)
