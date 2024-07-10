@@ -1,5 +1,5 @@
 [package]
-name = "persistence_staking_derivatives_oracle"
+name = "eris_staking_derivatives_oracle"
 version = "0.1.0"
 authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp"]
 edition = "2021"
