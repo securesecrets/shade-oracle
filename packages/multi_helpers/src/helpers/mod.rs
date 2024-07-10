@@ -2,8 +2,8 @@ use super::*;
 use cosmwasm_std::{Addr, StdError};
 use serde::de::DeserializeOwned;
 use shade_toolkit::{
-    multi::{nanoid::nanoid, AnyResult, MultiTestable, Tester},
-    multi_test::{App, AppResponse},
+    multi::{nanoid::nanoid, AnyResult, Tester},
+    multi_test::{AppResponse},
 };
 use std::{
     fmt::{Debug, Display},
