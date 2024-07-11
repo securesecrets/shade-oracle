@@ -382,6 +382,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dshd_oracle"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "secret-cosmwasm-std",
+ "shade-oracles",
+ "shade-toolkit",
+]
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -445,6 +455,14 @@ name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
+
+[[package]]
+name = "eris_staking_derivatives_oracle"
+version = "0.1.0"
+dependencies = [
+ "secret-cosmwasm-std",
+ "shade-oracles",
+]
 
 [[package]]
 name = "ethnum"
@@ -723,6 +741,16 @@ dependencies = [
  "cosmwasm-schema",
  "secret-cosmwasm-std",
  "shade-oracles",
+]
+
+[[package]]
+name = "mock_dshd"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "secret-cosmwasm-std",
+ "shade-oracles",
+ "shade-toolkit",
 ]
 
 [[package]]
@@ -1526,8 +1554,10 @@ dependencies = [
 name = "shade-oracles-multi-test"
 version = "0.1.0"
 dependencies = [
+ "dshd_oracle",
  "index_oracle",
  "mock_band",
+ "mock_dshd",
  "mock_ojo",
  "multi-test-helpers",
  "oracle_mocks",
