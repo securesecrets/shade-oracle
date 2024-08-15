@@ -1,8 +1,6 @@
 use super::*;
-use shade_oracles::{
-    interfaces::{mock_dshd::msg::*, providers::RawProvider},
-    status::ContractStatus,
-};
+use mock_dshd::msg::*;
+use shade_oracles::{interfaces::providers::RawProvider, status::ContractStatus};
 
 create_test_helper!(DShdHelper);
 

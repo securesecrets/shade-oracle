@@ -1,8 +1,11 @@
 use super::{
-    App, AppResponse, Contract, OracleRouter, PricesResponse, RawContract, StdResult, User,
+    AnyResult, App, AppResponse, Contract, OracleRouter, PriceResponse, PricesResponse,
+    RawContract, StdResult, User,
 };
+use crate::harness::dshd_oracle::DShdOracle;
 use dshd_oracle::msg::*;
-use shade_oracles::{interfaces::providers::RawProvider, status::ContractStatus};
+use shade_oracles::{core::Query, interfaces::providers::RawProvider, status::ContractStatus};
+use shade_toolkit::{multi::Tester, ExecuteCallback, InstantiateCallback};
 
 create_test_helper!(DShdOracleHelper);
 
@@ -22,8 +25,8 @@ impl DShdOracleHelper {
                     dshd: dshd.clone().into(),
                     admin_auth: admin_auth.clone().into(),
                 },
-                OracleRouter::default(),
-                "oracle_router",
+                DShdOracle::default(),
+                "dshd_oracle",
             )
             .unwrap();
         Self(contract)
