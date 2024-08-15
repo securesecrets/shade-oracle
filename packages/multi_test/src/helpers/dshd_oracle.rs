@@ -3,9 +3,14 @@ use super::{
     RawContract, StdResult, User,
 };
 use crate::harness::dshd_oracle::DShdOracle;
+use crate::helpers::TestScenario;
 use dshd_oracle::msg::*;
+use shade_oracles::interfaces::router;
 use shade_oracles::{core::Query, interfaces::providers::RawProvider, status::ContractStatus};
-use shade_toolkit::{multi::Tester, ExecuteCallback, InstantiateCallback};
+use shade_toolkit::{
+    multi::{MultiTestable, Tester},
+    ExecuteCallback, InstantiateCallback,
+};
 
 create_test_helper!(DShdOracleHelper);
 
@@ -36,12 +41,21 @@ impl DShdOracleHelper {
         &self,
         sender: &User,
         app: &mut App,
-        router: &Option<RawContract>,
-        dshd: &Option<RawContract>,
-        admin_auth: &Option<RawContract>,
-        enabled: &Option<bool>,
+        router: Option<RawContract>,
+        dshd: Option<RawContract>,
+        admin_auth: Option<RawContract>,
+        enabled: Option<bool>,
     ) -> AnyResult<AppResponse> {
-        sender.exec(app, &ExecuteMsg::UpdateConfig(operation), &self.0)
+        sender.exec(
+            app,
+            &ExecuteMsg::UpdateConfig {
+                router,
+                dshd,
+                admin_auth,
+                enabled,
+            },
+            &self.0,
+        )
     }
 
     pub fn query_config(&self, app: &App) -> StdResult<Config> {
@@ -81,7 +95,8 @@ mod test {
         let app = &mut app;
 
         let dshd = DShdHelper::init(user);
-        let dshd_oracle = DShdOracleHelper::init(user, app, router, dshd, admin_auth);
+        let dshd_oracle =
+            DShdOracleHelper::init(&user, app, &router.contract(), dshd, admin_auth.contract());
 
         /*
         let usd_protection = ProtectedKeyInfo::new(
@@ -213,7 +228,7 @@ mod test {
             .update_config(
                 &user,
                 &mut app,
-                UpdateConfig {
+                router::msg::ExecuteMsg::UpdateConfig {
                     admin_auth: None,
                     provider: None,
                     quote_symbol: Some("JPY".to_string()),
@@ -229,7 +244,7 @@ mod test {
             .update_config(
                 &user,
                 &mut app,
-                UpdateConfig {
+                router::msg::ExecuteMsg::UpdateConfig {
                     admin_auth: None,
                     provider: None,
                     quote_symbol: Some("USD".to_string())
@@ -244,7 +259,7 @@ mod test {
             .update_config(
                 &user,
                 &mut app,
-                UpdateConfig {
+                router::msg::ExecuteMsg::UpdateConfig {
                     admin_auth: None,
                     provider: None,
                     quote_symbol: Some("USD".to_string())
@@ -286,11 +301,11 @@ mod test {
         assert_eq!(oracle.oracle, router.clone().into());
 
         let operations = vec![
-            RegistryOperation::SetKeys {
+            router::msg::RegistryOperation::SetKeys {
                 oracle: provider.into(),
                 keys: keys_to_remove.clone(),
             },
-            RegistryOperation::RemoveKeys {
+            router::msg::RegistryOperation::RemoveKeys {
                 keys: keys_to_remove,
             },
         ];
