@@ -1,6 +1,9 @@
 use cosmwasm_schema::cw_serde;
 
+use shade_oracles::impl_msg_callbacks;
 use shade_toolkit::{Contract, RawContract};
+
+impl_msg_callbacks!();
 
 #[cw_serde]
 pub struct Config {

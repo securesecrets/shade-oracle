@@ -1,15 +1,20 @@
 use super::*;
-use shade_oracles::{
-    interfaces::{mock_dshd::msg::*, providers::RawProvider},
-    status::ContractStatus,
-};
+use mock_dshd::msg::*;
+use shade_oracles::{interfaces::providers::RawProvider, status::ContractStatus};
 
 create_test_helper!(DShdHelper);
 
 impl DShdHelper {
     pub fn init(user: &User, app: &mut App, price: &Uint128) -> Self {
         let contract = user
-            .init(app, &InstantiateMsg { price }, MockDShd::default(), "dshd")
+            .init(
+                app,
+                &InstantiateMsg {
+                    price: price.clone(),
+                },
+                MockDShd::default(),
+                "dshd",
+            )
             .unwrap();
         Self(contract)
     }
