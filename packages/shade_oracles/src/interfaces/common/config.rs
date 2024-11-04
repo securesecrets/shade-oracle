@@ -20,6 +20,8 @@ pub enum BotPermission {
     UpdateLidoRates,
     UpdateIstPrice,
     UpdateMilkyWayRates,
+    UpdateErisRates,
+    UpdateDropRates,
 }
 
 const PERMISSION_PREFIX: &str = "SHADE_ORACLES_";
@@ -39,6 +41,8 @@ impl ToString for BotPermission {
             BotPermission::UpdateMilkyWayRates => {
                 format!("{}MILKY_WAY_PRICE_BOT", PERMISSION_PREFIX)
             }
+            BotPermission::UpdateErisRates => format!("{}ERIS_PRICE_BOT", PERMISSION_PREFIX),
+            BotPermission::UpdateDropRates => format!("{}DROP_PRICE_BOT", PERMISSION_PREFIX),
         }
     }
 }
