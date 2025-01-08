@@ -798,6 +798,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "multiplier_oracle"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "secret-cosmwasm-std",
+ "shade-oracles",
+ "shade-toolkit",
+]
+
+[[package]]
 name = "nanoid"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
