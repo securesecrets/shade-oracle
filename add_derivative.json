@@ -1,0 +1,11 @@
+{
+  "set_derivatives": [
+    {
+      "key": "Drop Protocol ATOM",
+      "underlying_key": "ATOM",
+      "initial_rate": "1.012625597295035186",
+      "rate_timeout": 97200,
+      "rate_max_change": "0.1"
+    }
+  ]
+}

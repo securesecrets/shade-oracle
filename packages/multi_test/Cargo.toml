@@ -23,8 +23,8 @@ mock_band = { path = "../../contracts/mock_band" }
 mock_ojo = { path = "../../contracts/mock_ojo" }
 
 index_oracle = { path = "../../contracts/index_oracle" }
-mock_dshd = { path = "../../contracts/mock_dshd" }
-dshd_oracle = { path = "../../contracts/dshd_oracle" }
+mock_derivative = { path = "../../contracts/mock_derivative" }
+derivative_oracle = { path = "../../contracts/derivative_oracle" }
 
 shade_staking_derivatives_oracle = { path = "../../contracts/shade_staking_derivatives_oracle" }
 stride_staking_derivatives_oracle = { path = "../../contracts/staking_derivatives/stride" }

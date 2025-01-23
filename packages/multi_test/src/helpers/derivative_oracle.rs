@@ -2,9 +2,9 @@ use super::{
     AnyResult, App, AppResponse, Contract, OracleRouter, PriceResponse, PricesResponse,
     RawContract, StdResult, User,
 };
-use crate::harness::dshd_oracle::DShdOracle;
+use crate::harness::derivative_oracle::DerivativeOracle;
 use crate::helpers::TestScenario;
-use dshd_oracle::msg::*;
+use derivative_oracle::msg::*;
 use shade_oracles::interfaces::router;
 use shade_oracles::{core::Query, interfaces::providers::RawProvider, status::ContractStatus};
 use shade_toolkit::{
@@ -12,26 +12,32 @@ use shade_toolkit::{
     ExecuteCallback, InstantiateCallback,
 };
 
-create_test_helper!(DShdOracleHelper);
+create_test_helper!(DerivativeOracleHelper);
 
-impl DShdOracleHelper {
+impl DerivativeOracleHelper {
     pub fn init(
         user: &User,
         app: &mut App,
         router: &Contract,
-        dshd: &Contract,
+        derivative: &Contract,
         admin_auth: &Contract,
+        underlying_key: String,
+        price_key: String,
+        rate_key: String,
     ) -> Self {
         let contract = user
             .init(
                 app,
                 &InstantiateMsg {
                     router: router.clone().into(),
-                    dshd: dshd.clone().into(),
+                    derivative: derivative.clone().into(),
                     admin_auth: admin_auth.clone().into(),
+                    underlying_key,
+                    price_key,
+                    rate_key,
                 },
-                DShdOracle::default(),
-                "dshd_oracle",
+                DerivativeOracle::default(),
+                "derivative_oracle",
             )
             .unwrap();
         Self(contract)
@@ -42,16 +48,22 @@ impl DShdOracleHelper {
         sender: &User,
         app: &mut App,
         router: Option<RawContract>,
-        dshd: Option<RawContract>,
+        derivative: Option<RawContract>,
         admin_auth: Option<RawContract>,
+        underlying_key: Option<String>,
+        price_key: Option<String>,
+        rate_key: Option<String>,
         enabled: Option<bool>,
     ) -> AnyResult<AppResponse> {
         sender.exec(
             app,
             &ExecuteMsg::UpdateConfig {
                 router,
-                dshd,
+                derivative,
                 admin_auth,
+                underlying_key,
+                price_key,
+                rate_key,
                 enabled,
             },
             &self.0,

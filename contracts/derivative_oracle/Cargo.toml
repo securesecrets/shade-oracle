@@ -1,5 +1,5 @@
 [package]
-name = "mock_dshd"
+name = "derivative_oracle"
 version = "0.2.0"
 authors = ["Jackson Swenson <jacksonswenson@securesecrets.org>"]
 edition = "2021"

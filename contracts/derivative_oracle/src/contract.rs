@@ -8,14 +8,16 @@ use shade_oracles::interfaces::providers::ReferenceData;
 use shade_oracles::ssp::Item;
 use shade_toolkit::{Contract, Query, BLOCK_SIZE};
 
-use crate::{dshd, msg::*};
+use crate::{derivative, msg::*};
 
+/*
 // Key used to query router
 pub const UNDERLYING_KEY: &str = "SHD";
 // Key for the "price" (underlying * redemption_rate)
 pub const PRICE_KEY: &str = "Shade Derivative";
 // Key for the redemption rate
 pub const RATE_KEY: &str = "Shade Derivative Rate";
+*/
 
 // Storage
 const CONFIG: Item<Config> = Item::new("config");
@@ -27,18 +29,18 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let admin_auth = msg.admin_auth.validate(deps.api)?;
-    let router = msg.router.validate(deps.api)?;
-    let dshd = msg.dshd.validate(deps.api)?;
-
-    let config = Config {
-        admin_auth,
-        router,
-        dshd,
-        enabled: true,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.save(
+        deps.storage,
+        &Config {
+            admin_auth: msg.admin_auth.validate(deps.api)?,
+            router: msg.router.validate(deps.api)?,
+            derivative: msg.derivative.validate(deps.api)?,
+            underlying_key: msg.underlying_key,
+            price_key: msg.price_key,
+            rate_key: msg.rate_key,
+            enabled: true,
+        },
+    )?;
 
     Ok(Response::default())
 }
@@ -61,8 +63,11 @@ pub fn execute(
     match msg {
         ExecuteMsg::UpdateConfig {
             router,
-            dshd,
+            derivative,
             admin_auth,
+            underlying_key,
+            price_key,
+            rate_key,
             enabled,
         } => {
             validate_admin(
@@ -80,9 +85,21 @@ pub fn execute(
                 config.admin_auth = admin_auth.validate(deps.api)?;
                 resp = resp.add_attribute("admin_auth", config.admin_auth.address.clone());
             }
-            if let Some(dshd) = dshd {
-                config.dshd = dshd.validate(deps.api)?;
-                resp = resp.add_attribute("dshd", config.dshd.address.clone());
+            if let Some(derivative) = derivative {
+                config.derivative = derivative.validate(deps.api)?;
+                resp = resp.add_attribute("derivative", config.derivative.address.clone());
+            }
+            if let Some(underlying_key) = underlying_key {
+                config.underlying_key = underlying_key;
+                resp = resp.add_attribute("underlying_key", config.underlying_key.clone());
+            }
+            if let Some(price_key) = price_key {
+                config.price_key = price_key;
+                resp = resp.add_attribute("price_key", config.price_key.clone());
+            }
+            if let Some(rate_key) = rate_key {
+                config.rate_key = rate_key;
+                resp = resp.add_attribute("rate_key", config.rate_key.clone());
             }
             if let Some(enabled) = enabled {
                 config.enabled = enabled;
@@ -100,23 +117,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     require_enabled(&config)?;
     pad_query_result(
         match msg {
-            QueryMsg::GetPrice { key } => to_binary(&query_oracle_price_by_key(
-                &deps,
-                &env,
-                key,
-                &config.router,
-                &config.dshd,
-            )?),
+            QueryMsg::GetPrice { key } => {
+                to_binary(&query_oracle_price_by_key(&deps, &env, key, &config)?)
+            }
             QueryMsg::GetPrices { keys } => {
                 let mut results = vec![];
                 for key in keys {
-                    results.push(query_oracle_price_by_key(
-                        &deps,
-                        &env,
-                        key,
-                        &config.router,
-                        &config.dshd,
-                    )?);
+                    results.push(query_oracle_price_by_key(&deps, &env, key, &config)?);
                 }
                 to_binary(&results)
             }
@@ -130,31 +137,26 @@ fn query_oracle_price_by_key(
     deps: &Deps,
     env: &Env,
     key: String,
-    router: &Contract,
-    dshd: &Contract,
+    config: &Config,
 ) -> StdResult<OraclePrice> {
-    if key == PRICE_KEY.to_string() {
-        query_price(deps, env, router, dshd)
-    } else if key == RATE_KEY.to_string() {
-        query_rate(deps, env, dshd)
+    if key == config.price_key.to_string() {
+        query_price(deps, env, config)
+    } else if key == config.rate_key.to_string() {
+        query_rate(deps, env, config)
     } else {
         Err(StdError::generic_err(format!(
             "Invalid Key, expected one of {}, {}",
-            PRICE_KEY, RATE_KEY
+            config.price_key, config.rate_key
         )))
     }
 }
 
-fn query_price(
-    deps: &Deps,
-    env: &Env,
-    router: &Contract,
-    dshd: &Contract,
-) -> StdResult<OraclePrice> {
-    let underlying_price = query_router_price(&router, &deps.querier, UNDERLYING_KEY.to_string())?;
-    let rate = query_rate(deps, env, dshd)?;
+fn query_price(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice> {
+    let underlying_price =
+        query_router_price(&config.router, &deps.querier, config.underlying_key.clone())?;
+    let rate = query_rate(deps, env, config)?;
     Ok(OraclePrice {
-        key: PRICE_KEY.to_string(),
+        key: config.price_key.to_string(),
         data: ReferenceData {
             rate: (underlying_price.data.rate * rate.data.rate)
                 / Uint256::from(exp10(18).as_u128()),
@@ -164,12 +166,12 @@ fn query_price(
     })
 }
 
-fn query_rate(deps: &Deps, env: &Env, dshd: &Contract) -> StdResult<OraclePrice> {
-    let staking_info = query_staking_info(&dshd, &deps.querier)?;
+fn query_rate(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice> {
+    let staking_info = query_staking_info(&config.derivative, &deps.querier)?;
     let now = env.block.time.seconds();
     // normalize from 10^6 to 10^18
     Ok(OraclePrice {
-        key: RATE_KEY.to_string(),
+        key: config.rate_key.to_string(),
         data: ReferenceData {
             // price is in utkn (8 decimal SHD), upscaling by 10^10 to get 10^18
             rate: Uint256::from(staking_info.price * Uint128::new(exp10(10).as_u128())),
@@ -188,11 +190,11 @@ pub fn query_router_price(
 }
 
 pub fn query_staking_info(
-    dshd: &Contract,
+    derivative: &Contract,
     querier: &QuerierWrapper,
-) -> StdResult<dshd::StakingInfoResponse> {
-    match (dshd::QueryMsg::StakingInfo {}.query(querier, dshd)?) {
-        dshd::QueryResponse::StakingInfo {
+) -> StdResult<derivative::StakingInfoResponse> {
+    match (derivative::QueryMsg::StakingInfo {}.query(querier, derivative)?) {
+        derivative::QueryResponse::StakingInfo {
             unbonding_time,
             bonded_shd,
             rewards,
@@ -200,7 +202,7 @@ pub fn query_staking_info(
             price,
             fee_info,
             status,
-        } => Ok(dshd::StakingInfoResponse {
+        } => Ok(derivative::StakingInfoResponse {
             unbonding_time,
             bonded_shd,
             rewards,

@@ -1,10 +1,10 @@
 use super::*;
-use mock_dshd::msg::*;
+use mock_derivative::msg::*;
 use shade_oracles::{interfaces::providers::RawProvider, status::ContractStatus};
 
-create_test_helper!(DShdHelper);
+create_test_helper!(DerivativeHelper);
 
-impl DShdHelper {
+impl DerivativeHelper {
     pub fn init(user: &User, app: &mut App, price: &Uint128) -> Self {
         let contract = user
             .init(
@@ -12,8 +12,8 @@ impl DShdHelper {
                 &InstantiateMsg {
                     price: price.clone(),
                 },
-                MockDShd::default(),
-                "dshd",
+                MockDerivative::default(),
+                "derivative",
             )
             .unwrap();
         Self(contract)
@@ -52,8 +52,8 @@ mod test {
         let user = admin;
         let app = &mut app;
 
-        let dshd = DShdHelper::init(user);
-        let dshd_oracle = DShdOracleHelper::init(user, app, router, dshd, admin_auth);
+        let derivative = DerivativeHelper::init(user);
+        let derivative_oracle = DerivativeOracleHelper::init(user, app, router, derivative, admin_auth);
 
         /*
         let usd_protection = ProtectedKeyInfo::new(
