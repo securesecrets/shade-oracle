@@ -1,0 +1,26 @@
+[package]
+name = "multiplier_oracle"
+version = "0.2.0"
+authors = ["Jackson Swenson <jacksonswenson@securesecrets.org>"]
+edition = "2021"
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+# for quicker tests, cargo test --lib
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std = { workspace = true }
+shade-oracles = { path = "../../packages/shade_oracles", features = ["core"] }
+shade-toolkit = { workspace = true }
