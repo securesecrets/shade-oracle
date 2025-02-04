@@ -36,6 +36,7 @@ pub fn instantiate(
             router: msg.router.validate(deps.api)?,
             derivative: msg.derivative.validate(deps.api)?,
             underlying_key: msg.underlying_key,
+            underlying_decimals: msg.underlying_decimals,
             price_key: msg.price_key,
             rate_key: msg.rate_key,
             enabled: true,
@@ -66,6 +67,7 @@ pub fn execute(
             derivative,
             admin_auth,
             underlying_key,
+            underlying_decimals,
             price_key,
             rate_key,
             enabled,
@@ -92,6 +94,13 @@ pub fn execute(
             if let Some(underlying_key) = underlying_key {
                 config.underlying_key = underlying_key;
                 resp = resp.add_attribute("underlying_key", config.underlying_key.clone());
+            }
+            if let Some(underlying_decimals) = underlying_decimals {
+                config.underlying_decimals = underlying_decimals;
+                resp = resp.add_attribute(
+                    "underlying_decimals",
+                    config.underlying_decimals.to_string(),
+                );
             }
             if let Some(price_key) = price_key {
                 config.price_key = price_key;
@@ -174,7 +183,9 @@ fn query_rate(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice>
         key: config.rate_key.to_string(),
         data: ReferenceData {
             // price is in utkn (8 decimal SHD), upscaling by 10^10 to get 10^18
-            rate: Uint256::from(staking_info.price * Uint128::new(exp10(10).as_u128())),
+            rate: Uint256::from(
+                staking_info.price * Uint128::new(exp10(18 - config.underlying_decimals).as_u128()),
+            ),
             last_updated_base: now,
             last_updated_quote: now,
         },
