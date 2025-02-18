@@ -9,7 +9,19 @@ use shade_oracles::interfaces::providers::ReferenceData;
 use shade_oracles::ssp::Item;
 use shade_toolkit::{Contract, Query, BLOCK_SIZE};
 
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
 use crate::{derivative, msg::*};
+
+/*
+========
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
+// Key used to query router
+pub const UNDERLYING_KEY: &str = "SHD";
+// Key for the "price" (underlying * redemption_rate)
+pub const PRICE_KEY: &str = "Shade Derivative";
+// Key for the redemption rate
+pub const RATE_KEY: &str = "Shade Derivative Rate";
+*/
 
 // Storage
 const CONFIG: Item<Config> = Item::new("config");
@@ -21,6 +33,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
     CONFIG.save(
         deps.storage,
         &Config {
@@ -34,6 +47,21 @@ pub fn instantiate(
             enabled: true,
         },
     )?;
+========
+    let admin_auth = msg.admin_auth.validate(deps.api)?;
+    let router = msg.router.validate(deps.api)?;
+
+    let config = Config {
+        admin_auth,
+        router,
+        enabled: true,
+        base_key: msg.base_key,
+        multiplier: msg.multiplier,
+        price_key: msg.price_key,
+    };
+
+    CONFIG.save(deps.storage, &config)?;
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
 
     Ok(Response::default())
 }
@@ -56,7 +84,10 @@ pub fn execute(
     match msg {
         ExecuteMsg::UpdateConfig {
             router,
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
             derivative,
+========
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
             admin_auth,
             underlying_key,
             underlying_decimals,
@@ -80,6 +111,7 @@ pub fn execute(
                 config.admin_auth = admin_auth.validate(deps.api)?;
                 resp = resp.add_attribute("admin_auth", config.admin_auth.address.clone());
             }
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
             if let Some(derivative) = derivative {
                 config.derivative = derivative.validate(deps.api)?;
                 resp = resp.add_attribute("derivative", config.derivative.address.clone());
@@ -103,9 +135,15 @@ pub fn execute(
                 config.rate_key = rate_key;
                 resp = resp.add_attribute("rate_key", config.rate_key.clone());
             }
+========
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
             if let Some(enabled) = enabled {
                 config.enabled = enabled;
                 resp = resp.add_attribute("enabled", config.enabled.to_string());
+            }
+            if let Some(multiplier) = multiplier {
+                config.multiplier = multiplier;
+                resp = resp.add_attribute("multiplier", config.multiplier.to_string());
             }
             CONFIG.save(deps.storage, &config)?;
             Ok(resp.add_attribute("action", "update_config"))
@@ -119,6 +157,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     require_enabled(&config)?;
     pad_query_result(
         match msg {
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
             QueryMsg::GetPrice { key } => {
                 to_binary(&query_oracle_price_by_key(&deps, &env, key, &config)?)
             }
@@ -126,6 +165,29 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 let mut results = vec![];
                 for key in keys {
                     results.push(query_oracle_price_by_key(&deps, &env, key, &config)?);
+========
+            QueryMsg::GetPrice { key } => to_binary(&query_oracle_price_by_key(
+                &deps,
+                &env,
+                key,
+                &config.router,
+                &config.base_key,
+                &config.price_key,
+                &config.multiplier,
+            )?),
+            QueryMsg::GetPrices { keys } => {
+                let mut results = vec![];
+                for key in keys {
+                    results.push(query_oracle_price_by_key(
+                        &deps,
+                        &env,
+                        key,
+                        &config.router,
+                        &config.base_key,
+                        &config.price_key,
+                        &config.multiplier,
+                    )?);
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
                 }
                 to_binary(&results)
             }
@@ -139,6 +201,7 @@ fn query_oracle_price_by_key(
     deps: &Deps,
     env: &Env,
     key: String,
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
     config: &Config,
 ) -> StdResult<OraclePrice> {
     if key == config.price_key.to_string() {
@@ -149,16 +212,43 @@ fn query_oracle_price_by_key(
         Err(StdError::generic_err(format!(
             "Invalid Key, expected one of {}, {}",
             config.price_key, config.rate_key
+========
+    router: &Contract,
+    base_key: &String,
+    price_key: &String,
+    multiplier: &Decimal256,
+) -> StdResult<OraclePrice> {
+    if key == price_key.to_string() {
+        query_price(deps, env, router, base_key, price_key, multiplier)
+    } else {
+        Err(StdError::generic_err(format!(
+            "Invalid Key, expected {}",
+            price_key,
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
         )))
     }
 }
 
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
 fn query_price(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice> {
     let underlying_price =
         query_router_price(&config.router, &deps.querier, config.underlying_key.clone())?;
     let rate = query_rate(deps, env, config)?;
     Ok(OraclePrice {
         key: config.price_key.to_string(),
+========
+fn query_price(
+    deps: &Deps,
+    env: &Env,
+    router: &Contract,
+    base_key: &String,
+    price_key: &String,
+    multiplier: &Decimal256,
+) -> StdResult<OraclePrice> {
+    let underlying_price = query_router_price(&router, &deps.querier, base_key.to_string())?;
+    Ok(OraclePrice {
+        key: price_key.to_string(),
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
         data: ReferenceData {
             rate: ((Decimal256::from_ratio(underlying_price.data.rate, exp10(18).as_u128())
                 * multiplier)
@@ -170,6 +260,7 @@ fn query_price(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice
     })
 }
 
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
 fn query_rate(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice> {
     let staking_info = query_staking_info(&config.derivative, &deps.querier)?;
     let now = env.block.time.seconds();
@@ -187,6 +278,8 @@ fn query_rate(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice>
     })
 }
 
+========
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs
 pub fn query_router_price(
     router: &Contract,
     querier: &QuerierWrapper,
@@ -194,6 +287,7 @@ pub fn query_router_price(
 ) -> StdResult<PriceResponse> {
     OracleQuery::GetPrice { key: key.into() }.query(querier, router)
 }
+<<<<<<<< HEAD:contracts/derivative_oracle/src/contract.rs
 
 pub fn query_staking_info(
     derivative: &Contract,
@@ -219,3 +313,5 @@ pub fn query_staking_info(
         }),
     }
 }
+========
+>>>>>>>> origin/develop:contracts/multiplier_oracle/src/contract.rs

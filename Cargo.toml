@@ -19,6 +19,7 @@ members = [
   "contracts/testnet_snip20_faucet",
   "contracts/snip20",
   "contracts/staking_derivatives/*",
+  "contracts/multiplier_oracle",
 ]
 
 [workspace.dependencies]
