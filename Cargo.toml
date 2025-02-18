@@ -8,6 +8,7 @@ members = [
   "contracts/mock_ojo",
   "contracts/oracle_router",
   "contracts/derivative_oracle",
+  "contracts/x_token_oracle",
   "contracts/mock_derivative",
   "contracts/shade_staking_derivatives_oracle",
   "contracts/shadeswap_market_oracle",
