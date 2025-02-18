@@ -350,6 +350,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "derivative_oracle"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "secret-cosmwasm-std",
+ "shade-oracles",
+ "shade-toolkit",
+]
+
+[[package]]
 name = "derive-from-ext"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -387,16 +397,6 @@ version = "0.1.0"
 dependencies = [
  "secret-cosmwasm-std",
  "shade-oracles",
-]
-
-[[package]]
-name = "dshd_oracle"
-version = "0.2.0"
-dependencies = [
- "cosmwasm-schema",
- "secret-cosmwasm-std",
- "shade-oracles",
- "shade-toolkit",
 ]
 
 [[package]]
@@ -760,7 +760,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mock_dshd"
+name = "mock_derivative"
 version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
@@ -1583,10 +1583,10 @@ dependencies = [
 name = "shade-oracles-multi-test"
 version = "0.1.0"
 dependencies = [
- "dshd_oracle",
+ "derivative_oracle",
  "index_oracle",
  "mock_band",
- "mock_dshd",
+ "mock_derivative",
  "mock_ojo",
  "multi-test-helpers",
  "oracle_mocks",

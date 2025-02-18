@@ -8,24 +8,36 @@ impl_msg_callbacks!();
 #[cw_serde]
 pub struct Config {
     pub router: Contract,
-    pub dshd: Contract,
+    pub derivative: Contract,
     pub admin_auth: Contract,
+    pub underlying_key: String,
+    pub underlying_decimals: u8,
+    pub price_key: String,
+    pub rate_key: String,
     pub enabled: bool,
 }
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub router: RawContract,
-    pub dshd: RawContract,
+    pub derivative: RawContract,
     pub admin_auth: RawContract,
+    pub underlying_key: String,
+    pub underlying_decimals: u8,
+    pub price_key: String,
+    pub rate_key: String,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
     UpdateConfig {
         router: Option<RawContract>,
-        dshd: Option<RawContract>,
+        derivative: Option<RawContract>,
         admin_auth: Option<RawContract>,
+        underlying_key: Option<String>,
+        underlying_decimals: Option<u8>,
+        price_key: Option<String>,
+        rate_key: Option<String>,
         enabled: Option<bool>,
     },
 }

@@ -1,3 +1,3 @@
 pub mod contract;
-pub mod dshd;
+pub mod derivative;
 pub mod msg;
