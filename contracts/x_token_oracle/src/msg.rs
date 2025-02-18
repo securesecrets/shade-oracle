@@ -13,10 +13,6 @@ pub struct Config {
     pub admin_auth: Contract,
     pub money_market: Contract,
     pub enabled: bool,
-    // base asset to apply multiplier to
-    pub base_key: String,
-    pub multiplier: Decimal256,
-    pub price_key: String,
 }
 
 #[cw_serde]
@@ -29,13 +25,7 @@ pub struct KeyConfig {
 pub struct InstantiateMsg {
     pub router: RawContract,
     pub admin_auth: RawContract,
-<<<<<<<< HEAD:contracts/x_token_oracle/src/msg.rs
     pub money_market: RawContract,
-========
-    pub base_key: String,
-    pub multiplier: Decimal256,
-    pub price_key: String,
->>>>>>>> origin/develop:contracts/multiplier_oracle/src/msg.rs
 }
 
 #[cw_serde]
@@ -45,7 +35,6 @@ pub enum ExecuteMsg {
         admin_auth: Option<RawContract>,
         money_market: Option<RawContract>,
         enabled: Option<bool>,
-        multiplier: Option<Decimal256>,
     },
     RegisterVault(KeyConfig),
     RegisterVaults(Vec<KeyConfig>),

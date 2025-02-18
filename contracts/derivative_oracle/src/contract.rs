@@ -1,7 +1,6 @@
-use cosmwasm_std::{entry_point, Decimal256, QuerierWrapper, StdError, Uint256};
+use cosmwasm_std::{entry_point, QuerierWrapper, StdError, Uint128, Uint256};
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
-use crate::msg::{Config, ExecuteMsg, InstantiateMsg, QueryMsg};
 use shade_oracles::better_secret_math::common::exp10;
 use shade_oracles::core::{pad_query_result, validate_admin, AdminPermissions};
 use shade_oracles::interfaces::common::{OraclePrice, OracleQuery, PriceResponse};
@@ -10,6 +9,15 @@ use shade_oracles::ssp::Item;
 use shade_toolkit::{Contract, Query, BLOCK_SIZE};
 
 use crate::{derivative, msg::*};
+
+/*
+// Key used to query router
+pub const UNDERLYING_KEY: &str = "SHD";
+// Key for the "price" (underlying * redemption_rate)
+pub const PRICE_KEY: &str = "Shade Derivative";
+// Key for the redemption rate
+pub const RATE_KEY: &str = "Shade Derivative Rate";
+*/
 
 // Storage
 const CONFIG: Item<Config> = Item::new("config");
@@ -63,7 +71,6 @@ pub fn execute(
             price_key,
             rate_key,
             enabled,
-            multiplier,
         } => {
             validate_admin(
                 &deps.querier,
@@ -160,10 +167,8 @@ fn query_price(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice
     Ok(OraclePrice {
         key: config.price_key.to_string(),
         data: ReferenceData {
-            rate: ((Decimal256::from_ratio(underlying_price.data.rate, exp10(18).as_u128())
-                * multiplier)
-                * Uint256::from(exp10(18).as_u128())),
-
+            rate: (underlying_price.data.rate * rate.data.rate)
+                / Uint256::from(exp10(18).as_u128()),
             last_updated_base: underlying_price.data.last_updated_base,
             last_updated_quote: underlying_price.data.last_updated_quote,
         },
