@@ -182,7 +182,7 @@ fn query_rate(deps: &Deps, env: &Env, config: &Config) -> StdResult<OraclePrice>
     Ok(OraclePrice {
         key: config.rate_key.to_string(),
         data: ReferenceData {
-            // price is in utkn (8 decimal SHD), upscaling by 10^10 to get 10^18
+            // price is in utkn, upscaling by 10^(18-decimals) to get 10^18
             rate: Uint256::from(
                 staking_info.price * Uint128::new(exp10(18 - config.underlying_decimals).as_u128()),
             ),
